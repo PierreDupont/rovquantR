@@ -31,7 +31,7 @@ gc()
 ## ------ IMPORT REQUIRED LIBRARIES ------
 library(devtools)
 #library(dplyr)
-load_all()
+load_all("rovquantR")
 
 ##---------------------------------------------------
 
