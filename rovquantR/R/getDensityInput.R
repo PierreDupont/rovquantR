@@ -4,11 +4,12 @@
 #'
 #' The \code{getDensityInput} function is used in advance of density extraction with function \code{getDensity}.
 #'
-#' @param regions Raster denoting the region(s) for which density will be calculated, at the desired resolution.
+#' @param regions Raster of the region(s) for which density will be calculated, 
+#' at the desired resolution.
 #' @param habitat Raster of the habitat (as used in the SCR model). 
 #' @param s Array of MCMC samples for individual activity center x- and y-coordinates 
-#' (make sure these are in the same projection than the \code{habitat} and \code{regions} objects)
-#' @param resolution resolution used to extract density, only used if \code{regions} is a Spatial Polygon.
+#' (NB: make sure these are in the same projection than the \code{habitat} and \code{regions}
+#'  objects).
 #' @param plot.check A visualization option (if TRUE); 
 #' displays the raster of the different regions that will be used to extract density,
 #' as well as potential mismatches between the \code{habitat} and \code{regions} rasters.
@@ -31,7 +32,6 @@
 getDensityInput <- function( regions, 
                              habitat,
                              s = NULL,
-                             # resolution = NULL,
                              plot.check = TRUE
 ){
   ##-- 1. If a raster is provided as input, use its resolution.

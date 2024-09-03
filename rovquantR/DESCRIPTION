@@ -16,6 +16,7 @@ Depends:
     R (>= 4.0.0)
 Imports: 
     dplyr,
+    fasterize,
     magrittr,
     methods,
     nimbleSCR,
@@ -30,6 +31,7 @@ Imports:
     ggplot2,
     knitr,
     rmarkdown,
+    rstudioapi
 Suggests: 
     basicMCMCplots,
     coda,

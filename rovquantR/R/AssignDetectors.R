@@ -1,7 +1,7 @@
 #' @title Detectors Assignment Function
 #'
 #' @description
-#' \code{AssignDetectors} identifies and assigns the closest detectors for each detection in \code{myData}.
+#' \code{AssignDetectors} identifies and assigns the closest detector to each detection in \code{myData}.
 #'
 #' @param myData A \code{sf} object containing the detection data
 #' @param myDetector A \code{list} of sf objects containing the detector locations
@@ -10,12 +10,10 @@
 #' Any detection further than \code{radius}m from any detector will not be assigned to any detector. Instead it will get a 'NA'.
 #'
 #' @return A \code{sf} object with the x and y locations of the
-#'  different samples with associated detector's Id 
+#'  different detections with associated detector's Id 
 #'  
-#' @import sf
-#' @importFrom RANN nn2
-#'
-#' @examples \dontrun{}
+#' @importFrom RANN nn2 
+#' @importFrom sf st_geometry 
 #'
 #' @rdname AssignDetectors
 #' @export
@@ -26,14 +24,14 @@ AssignDetectors <- function(
     mysubDetectors = NULL,
     radius = 20000)
 {
-  myData$record.id <- 1:dim(myData)[1]
+  #myData$record.id <- 1:dim(myData)[1]
   
   ##-- RETRIEVE NUMBER OF YEARS 
   if(is.null(myData$Year)){myData$Year <- 1}
   years <- min(unique(myData$Year)):max(unique(myData$Year))
   
   ##-- SET UP THE DETECTORS LIST
-  if(!sum(class(myDetectors) %in% "list")==1){myDetectors <- list(myDetectors)}
+  if(!inherits(myDetectors,"list")){myDetectors <- list(myDetectors)}
   
   ##-- CHECK THAT THE NUMBER OF YEARS MATCH THE LENGTH OF THE DETECTORS LIST
   if(length(myDetectors) != length(years)){
@@ -43,7 +41,7 @@ AssignDetectors <- function(
   ##-- IF PAB PROCESS
   if(!is.null(mysubDetectors)){
     ##-- SET UP THE SUB-DETECTORS LIST
-    if(!sum(class(mysubDetectors) %in% "list") == 1){
+    if(!inherits(mysubDetectors,"list")){
       mysubDetectors <- list(mysubDetectors)
     }
     
@@ -55,19 +53,16 @@ AssignDetectors <- function(
     myData$Detector <- NA
     for(t in 1:length(years)){
       
-      #-- Using sf package:
-      myDetectors.sf <- mysubDetectors[[t]]
-      myData.sf <- myData[myData$Year == years[t],]
-      
       ##-- Get coordinate matrices
-      detector_coords <- do.call(rbind, st_geometry(myDetectors.sf))
-      detection_coords <- do.call(rbind, st_geometry(myData.sf))
+      detector_coords <- do.call(rbind, sf::st_geometry(mysubDetectors[[t]]))
+      detection_coords <- do.call(rbind, sf::st_geometry(myData[myData$Year == years[t], ]))
+      
       if(!is.null(detection_coords)){
         
         ##-- Fast nearest neighbour search
-        closest <- nn2(data = detector_coords,
-                       query = data.frame( detection_coords[,1],
-                                           detection_coords[,2]),
+        closest <- RANN::nn2(data = detector_coords,
+                       query = data.frame( detection_coords[ ,1],
+                                           detection_coords[ ,2]),
                        k = 1, searchtype = "radius", radius = radius)
         closest$nn.idx[closest$nn.idx==0] <- NA
         myData$sub.detector[myData$Year == years[t]] <- closest$nn.idx
@@ -86,22 +81,18 @@ AssignDetectors <- function(
   } else {
     myData$Detector <- NA
     for(t in 1:length(years)){
-      #-- Using sf package:
-      myDetectors.sf<- myDetectors[[t]]
-      myData.sf<- myData[myData$Year == years[t],]
-      
       ##-- Get coordinate matrices
-      detector_coords <- do.call(rbind, st_geometry(myDetectors.sf))
-      detection_coords <- do.call(rbind, st_geometry(myData.sf))
+      detector_coords <- do.call(rbind, sf::st_geometry(myDetectors[[t]]))
+      detection_coords <- do.call(rbind, sf::st_geometry(myData[myData$Year == years[t],]))
       
       if(!is.null(detection_coords)){
         ##-- Fast nearest neighbour search
-        closest <- nn2( data = detector_coords,
+        closest <- RANN::nn2( data = detector_coords,
                         query = data.frame(detection_coords[,1],
                                            detection_coords[,2]),
                         k = 1, searchtype = "radius", radius = radius)
         
-        closest$nn.idx[closest$nn.idx==0]<-NA
+        closest$nn.idx[closest$nn.idx==0] <- NA
         myData$Detector[myData$Year == years[t]] <- closest$nn.idx
       }#if 
     }

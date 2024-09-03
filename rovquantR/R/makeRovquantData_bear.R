@@ -1,9 +1,9 @@
 #' @title Data preparation.
 #'
 #' @description
-#' \code{makeRovquantData_bear} calls a custom Rmarkdown template that identifies and loads
-#'  the most recent Rovbase data available on dropbox for the specified species
-#'  and conducts a set of data cleaning steps that include:
+#' \code{makeRovquantData_bear} calls a custom Rmarkdown template that identifies
+#'  and loads the most recent Rovbase data available for the specified 
+#'  species and conducts a set of data cleaning steps that include:
 #'  - removing un-identified samples
 #'  - checking sex-assignment
 #'  - removing flagged samples from RovData/Mike
@@ -23,6 +23,11 @@
 #' 
 #' @examples
 #' makeRovquantData_bear(2012:2021)
+#' 
+#' @import sf 
+#' @import raster
+#' @import fasterize
+#' @import dplyr
 #' 
 #' @rdname makeRovquantData_bear
 #' @export
@@ -57,11 +62,6 @@ makeRovquantData_bear <- function(
   
   ## ---------------------------------------------------------------------------
   ## ------ 0. BASIC SET-UP ------
-  
-  require(sf)
-  require(raster)
-  require(dplyr)
-  
   if(is.null(working_dir)){working_dir <- getwd()}
   
   habitat <- list( resolution = habitat.res,
@@ -83,18 +83,17 @@ makeRovquantData_bear <- function(
   ## ------   1. HABITAT DATA -----
   
   ##-- Load pre-defined habitat rasters and shapefiles
-  load(file.path(data_dir, "GIS/spatialDomain/Habitat_shp.RData"))
-  load(file.path(data_dir, "GIS/spatialDomain/HabitatAllResolutions.RData"))
-  
-  load(file.path(data_dir, "GIS/spatialDomain/Habitat20kmNewSweCounties.RData"))
-  
+  load( system.file("extdata", "Habitat_shp.RData", package = "rovquantR"))
+  load( system.file("extdata", "HabitatAllResolutionsNewSweCounties.RData", package = "rovquantR"))
+  load( system.file("extdata", "Habitat20kmNewSweCounties.RData", package = "rovquantR"))
+
   
   ##-- Disaggregate habitat raster to the desired resolution
-  habRaster <- disaggregate(
+  habRaster <- raster::disaggregate(
     x = habitatRasters[["Habitat"]],
     fact = res(habitatRasters[["Habitat"]])/habitat.res)
   
-  ##-- Merge Norwegian counties for practical resasons
+  ##-- Merge Norwegian counties for practical reasons
   COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c("Sør-Trøndelag",
                                          "Nord-Trøndelag",
                                          "Nordland")] <- "Nord-Trøndelag"
@@ -113,21 +112,20 @@ makeRovquantData_bear <- function(
                                           "Vestfold","Vest-Agder",
                                           "Ãstfold" )] <- "Hedmark"
   COUNTIES <- COUNTIES %>%
-    filter(., NAME_1 %in% c("Nord-Trøndelag","Hedmark","Finnmark")) %>%
-    group_by(NAME_1) %>%
-    summarise() 
+    dplyr::filter(., NAME_1 %in% c("Nord-Trøndelag","Hedmark","Finnmark")) %>%
+    dplyr::group_by(NAME_1) %>%
+    dplyr::summarise(.) %>%
+    dplyr::mutate(id = as.character(1:nrow(.))
   
-  COUNTIES$id <- as.character(1:nrow(COUNTIES))
-  
-  
+                  
   
   ## ------   2. DETECTORS DATA ----- 
   ## ------     2.1. DISTANCE TO ROADS -----
   ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster(file.path(data_dir,"GIS/Roads/MinDistAllRoads1km.tif"))
+  DistAllRoads <- raster::raster(file.path(data_dir,"GIS/Roads/MinDistAllRoads1km.tif"))
   
   ##-- Fasterize to remove values that fall in the sea
-  r <- fasterize(st_as_sf(GLOBALMAP), DistAllRoads)
+  r <- fasterize::fasterize(st_as_sf(GLOBALMAP), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
   
@@ -147,14 +145,14 @@ makeRovquantData_bear <- function(
   
   skandObs <- skandObs %>%
     ##-- Extract important info (e.g. month, year)
-    mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
+    dplyr::mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
             year = as.numeric(format(date,"%Y")),
             month = as.numeric(format(date,"%m"))) %>%
     ##-- Turn into spatial points object
     sf::st_as_sf( x = .,
                   coords = c("longitude","latitude")) %>%
-    st_set_crs(., "EPSG:4326") %>%
-    st_transform(., st_crs(COUNTIES))
+    sf::st_set_crs(., "EPSG:4326") %>%
+    sf::st_transform(., st_crs(COUNTIES))
   
   
   
@@ -164,12 +162,12 @@ makeRovquantData_bear <- function(
                                 extension = ".csv",
                                 pattern = "all_samples") %>%
     ##-- Filter out samples without coordinates
-    filter( !is.na(East_UTM33),
+    dplyr::filter( !is.na(East_UTM33),
             Species %in% c("Bjørn","Fjellrev","Gaupe","Hund","Jerv","Rødrev","Ulv"),
             Sample_type %in% c("Ekskrement","Har","Urin","Valpeekskrement (Ulv)",
                                "Sekret (Jerv)","Saliv/Spytt")) %>%
     ##-- Extract important info (e.g. month, year, country of collection)
-    mutate( Sample_type = translateForeignCharacters( dat = Sample_type,
+    dplyr::mutate( Sample_type = translateForeignCharacters( dat = Sample_type,
                                                       dir.translation = data_dir),
             Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
             year = as.numeric(format(Date,"%Y")),
@@ -177,7 +175,7 @@ makeRovquantData_bear <- function(
             country = substrRight(County,3)) %>%
     ##-- Turn into spatial points object
     sf::st_as_sf( x = ., coords = c("East_UTM33","North_UTM33")) %>%
-    st_set_crs(., st_crs(COUNTIES))
+    sf::st_set_crs(., st_crs(COUNTIES))
   
   
   
@@ -198,17 +196,20 @@ makeRovquantData_bear <- function(
   legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
   
   myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
-    mutate( legal = ifelse(Death_cause %in% legalCauses, "yes", "no"))
+    dplyr::mutate( legal = ifelse(Death_cause %in% legalCauses, "yes", "no"))
   
-  legal.death <- filter(myFullData.sp$dead.recovery, legal %in% "yes")
-  Other.death <- filter(myFullData.sp$dead.recovery, legal %in% "no")
+  legal.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "yes")
+  Other.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "no")
 
   
   if(is.null(years)){
-    years <- sort(unique(c(myFullData.sp$alive$Year,myFullData.sp$dead.recovery$Year)))
+    years <- base::sort(unique(c(myFullData.sp$alive$Year,
+                                 myFullData.sp$dead.recovery$Year)))
   }
   data$years <- years
   n.years <- length(years)
+  
+  
   
   ## ---------------------------------------------------------------------------
   ## ------ II. CREATE OPSCR DATA ------
@@ -223,10 +224,10 @@ makeRovquantData_bear <- function(
   ##-- Determine study area based on NGS detections
   ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
   studyArea <- myFullData.sp$alive %>%
-    st_buffer(., dist = habitat$buffer) %>%
-    st_union() %>%
-    st_intersection(., COUNTIES) %>%
-    st_as_sf()
+    sf::st_buffer(., dist = habitat$buffer) %>%
+    sf::st_union() %>%
+    sf::st_intersection(., COUNTIES) %>%
+    sf::st_as_sf()
   
   ##-- Make habitat from predefined scandinavian raster of suitable habitat
   habitat <- MakeHabitatFromRastersf(
@@ -237,8 +238,8 @@ makeRovquantData_bear <- function(
     append(habitat,.)
   
   ##-- ???
-  habitat$buffered.habitat.poly <- st_simplify(habitat$buffered.habitat.poly, dTolerance = 0)
-  st_crs(habitat$buffered.habitat.poly) <- st_crs(habitat$habitat.sp)
+  habitat$buffered.habitat.poly <- sf::st_simplify(habitat$buffered.habitat.poly, dTolerance = 0)
+  sf::st_crs(habitat$buffered.habitat.poly) <- sf::st_crs(habitat$habitat.sp)
   
   ##-- Retrieve number of habitat windows 
   isHab <- habitat$habitat.r[] == 1
@@ -253,7 +254,7 @@ makeRovquantData_bear <- function(
   
   ## ------       1.2.1. DEAD RECOVERIES (ALL YEARS) -----
   
-  centroids <- as_Spatial(myFullData.sp$dead.recovery)
+  centroids <- sf::(myFullData.sp$dead.recovery)
   centroids$id <- 1
   centroids@data <- data.frame(id = centroids@data$id) 
   kern <- raster(

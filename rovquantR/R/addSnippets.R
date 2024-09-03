@@ -9,6 +9,8 @@
 #' @param snippetsFile A \code{character} object with the name of thefile containing the snippets definitions.
 #'  
 #' @return boolean invisible(FALSE) if nothing was added, invisible(TRUE) if snippet definitions were added
+#' 
+#' @importFrom rstudioapi versionInfo
 #'
 #' @examples \dontrun{addSnippets()}
 #' 
@@ -68,7 +70,7 @@ addSnippets <- function( path = getwd(),
   ##-- find defintions appearing in custom snippets but not in rstudioSnippets
   ##-- if no snippets are missing go to next file
   snippetsToCopy <- setdiff(trimws(snippetsFileDefinitions), trimws(rstudioSnippetDefinitions))
-  snippetsNotToCopy <- intersect(trimws(snippetsFileDefinitions), trimws(rstudioSnippetDefinitions))
+  snippetsNotToCopy <- base::intersect(trimws(snippetsFileDefinitions), trimws(rstudioSnippetDefinitions))
 
   ##-- Inform user about changes, ask to confirm action
   if (interactive()) {
@@ -94,14 +96,14 @@ addSnippets <- function( path = getwd(),
     ##-- First find start of next defintion and return
     ##-- previous line number or lastline if already in last definiton
     endLine <- allSnippetDefinitonStarts[allSnippetDefinitonStarts > startLine][1] -1
-    if (is.na(endLine)) {
+    if(is.na(endLine)) {
       endLine <- length(snippetsFileContentSanitized)
     }
     
     snippetText <- paste0(snippetsFileContentSanitized[startLine:endLine], collapse = "\n")
     
     ##-- Make sure there is at least one empty line between entries
-    if (tail(readLines(rstudioSnippetsFilePath), n=1) != "") {
+    if(tail(readLines(rstudioSnippetsFilePath), n=1) != "") {
       snippetText <- paste0("\n", snippetText)
     }
     

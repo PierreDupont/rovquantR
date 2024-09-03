@@ -9,17 +9,28 @@
 #'  - removing flagged samples from RovData/Mike
 #'
 #' @param species A \code{character} string with the name of the focal species
-#' @param dead_recoveries A \code{DataFrame} object containing the raw dead recoveries data.
-#' @param species_id A \code{Numeric} object containing the id of the focal species (1=Bears;2=Wolverines;3:Wolves).
-#' @param country_polygon A \code{SpatialPointsDataFrame} with Country polygon for correct assignment of samples to countries
-#' @param threshold_month A \code{Numeric} with initial month of the biological year: 1:January...12=December. all samples with months<threshold get year-1. so they get similar year.  
-#' @param keep_dead A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#'  ("bear", "wolf", or "wolverine").
+#' @param years A \code{numeric} vector containing the years of interest. 
+#' Only data for those years will be cleaned and returned.
+#' @param data_dir the \code{path} pointing to the directory containing the raw 
+#' data from Rovbase.
+#' @param output_dir the \code{path} pointing to the directory where the cleaned 
+#' data will be stored. The clean data, as well as a \code{.html} report describing 
+#' the content of the clean data, will be placed in a folder with the species name,
+#' inside a subfolder with the date of extraction of the raw Rovbase data.
+#' @param Rmd_template the \code{path} to the \code{.rmd} template to be used for
+#'  cleaning the data. By default, the \code{.rmd} template provided with the 
+#'  \code{rovquantR} package is used.  
+#' @param overwrite A \code{logical} Whether previously existing clean data should
+#' be overwritten or not (default = FALSE).
 #' 
-#' @return 
-#' A \code{.RData} file with the clean NGS and dead recovery data objects
-#' for the species and period specified.
-#' A \code{html} report summarizing the data cleaning process
-#' Additional \code{.png} images that can be reused somewhere else.
+#' @return This function returns:
+#' \enumerate{
+#' \item A \code{.RData} file with the clean NGS and dead recovery data objects
+#'  for the species and period specified.
+#' \item A \code{.html} report summarizing the data cleaning process. 
+#' \item Additional \code{.png} images that can be reused somewhere else.
+#' }
 #'
 #' @author Pierre Dupont
 #' 
@@ -36,8 +47,8 @@
 cleanRovbaseData <- function( species,
                               years = NULL, 
                               data_dir = "./Data",
-                              Rmd_template = NULL,
                               output_dir = "./Data",
+                              Rmd_template = NULL,
                               overwrite = FALSE){
   ##-- Check if years are provided -----
   ##-- (if not, uses the period 1990 until now)
