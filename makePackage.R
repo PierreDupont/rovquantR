@@ -1,9 +1,8 @@
 rm(list=ls())
 library(devtools)
 library(roxygen2)
-library(nimble, warn.conflicts = FALSE)
-
-library(basicMCMCplots)
+#library(nimble, warn.conflicts = FALSE)
+#library(basicMCMCplots)
 
 if(Sys.info()['user'] == 'dturek') {
     baseDir <- '~/github/nimble/rovquantR/'                   ## Daniel

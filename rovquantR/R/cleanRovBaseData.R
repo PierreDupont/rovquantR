@@ -8,6 +8,8 @@
 #'  - checking sex-assignment
 #'  - removing flagged samples from RovData/Mike
 #'
+#' @name cleanRovbaseData
+#' 
 #' @param species A \code{character} string with the name of the focal species
 #'  ("bear", "wolf", or "wolverine").
 #' @param years A \code{numeric} vector containing the years of interest. 
@@ -39,11 +41,13 @@
 #' cleanRovbaseData("Jerv", 2020)
 #' cleanRovbaseData("Gray wolf", 2018:2022)
 #' 
-#' @importFrom rmarkdown::render
+#' @importFrom rmarkdown render
 #' 
+#' 
+#' 
+NULL
 #' @rdname cleanRovbaseData
 #' @export
-#' 
 cleanRovbaseData <- function( species,
                               years = NULL, 
                               data_dir = "./Data",

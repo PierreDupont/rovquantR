@@ -21,9 +21,7 @@
 #' @importFrom readxl read_excel
 #' @importFrom readr guess_encoding 
 #' 
-#' @export
 NULL
-
 #' @rdname readMostRecent
 #' @export
 ##-- Generic function to read the most recent file with a given extension (and optionally pattern)
@@ -93,8 +91,8 @@ readMostRecent <- function(
   
 }
 
-
-#' @rdname readMostRecent.csv
+NULL
+#' @rdname readMostRecent
 #' @export
 ##-- Function to read the most recent .csv file
 ##-- (More restrictive than 'readMostRecent()')
@@ -124,8 +122,8 @@ readMostRecent.csv <- function(
   }
 }
 
-
-#' @rdname readMostRecent.excel
+NULL
+#' @rdname readMostRecent
 #' @export
 ##-- function to read the most recent .xls or .xlsx file
 ##-- (More restrictive than 'readMostRecent()')
@@ -147,8 +145,8 @@ readMostRecent.excel <- function(
   }
 }
 
-
-#' @rdname readMostRecent.RData
+NULL
+#' @rdname readMostRecent
 #' @export
 ##-- function to load the most recent .RData file
 ##-- (More restrictive than 'readMostRecent()')
@@ -176,8 +174,8 @@ readMostRecent.RData <- function(
   }
 }
 
-
-#' @rdname getMostRecent
+NULL
+#' @rdname readMostRecent
 #' @export
 ##-- function to get the most recent modification date
 getMostRecent <- function(
@@ -193,8 +191,8 @@ getMostRecent <- function(
     as.Date()
 }
 
-
-#' @rdname writeMostRecent.csv
+NULL
+#' @rdname readMostRecent
 #' @export
 ##-- function to write ".csv" (but first checks if the file exists) 
 writeMostRecent.csv <- function(

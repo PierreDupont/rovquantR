@@ -107,7 +107,6 @@ CheckDistanceDetections <- function(
     }
   }
   
-  
   print(paste("Detections removed: ", sum(y * y.flagged), " of ",sum(y),sep=""))
   print(paste("Individuals affected: ", sum(apply(y.flagged, 1, function(x) sum(x)>0)), " of ", sum(apply(y, 1, function(x)sum(x)>0)), sep=""))
   
