@@ -18,16 +18,16 @@ if(Sys.info()['user'] == 'dturek') {
 if(!('makePackage.R' %in% list.files(baseDir))) stop('')
 
 
-document(paste0(baseDir, 'rovquantR'))
+document(baseDir)
 
 
 if(.Platform$OS.type == 'windows') {
-    system(paste0('R CMD build ', baseDir, 'rovquantR'))
+    system(paste0('R CMD build ', baseDir))
 } else {
-    system(paste0('R CMD BUILD ', baseDir, 'rovquantR'))
+    system(paste0('R CMD BUILD ', baseDir))
 }
 
-check(paste0(baseDir, 'rovquantR'))
+check(baseDir)
 
 
 suppressMessages(try(remove.packages('rovquantR'), silent = TRUE))

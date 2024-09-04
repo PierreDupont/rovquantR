@@ -1,0 +1,49 @@
+Type: Package
+Package: rovquantR
+Title: OPSCR analyses from project 'RovQuant'
+Version: 0.1
+Authors@R: 
+    person("Pierre", "Dupont", , "pierre.dup@live.fr", role = c("aut", "cre"),
+           comment = c(ORCID = "0000-0002-7438-7995"))
+Maintainer: Pierre Dupont <pierre.dup@live.fr>
+Description: This R package provides a set of user-friendly wrapper
+    functions and vignettes to replicate the Open-Population Spatial
+    Capture-Recapture (OPSCR) analyses of the Scandinavian large carnivore
+    data performed by the AQEG group under project RovQuant.
+License: GPL (>= 2)
+Depends: 
+    nimble,
+    R (>= 4.0.0)
+Imports: 
+    adehabitatHR,
+    dplyr,
+    fasterize,
+    ggplot2,
+    knitr,
+    magrittr,
+    methods,
+    nimbleSCR,
+    R.utils,
+    RANN,
+    raster,
+    Rcpp (>= 1.0.13),
+    readr,
+    readxl,
+    rmarkdown,
+    rstudioapi,
+    sf,
+    spatstat.geom,
+    stars,
+    utils
+Suggests: 
+    basicMCMCplots,
+    coda,
+    testthat (>= 3.0.0)
+LinkingTo: 
+    Rcpp,
+    RcppArmadillo,
+    RcppProgress
+Encoding: UTF-8
+LazyData: true
+RoxygenNote: 7.3.2
+VignetteBuilder: knitr
