@@ -13,7 +13,9 @@
 #' @param returnIdvector OPTIONAL: A \code{logical} to return the vector of individual ID.
 #' 
 #' @return A \code{Array} object with the individual in rows, the detectors in columns and years in third dimension. 
-
+#' 
+#' @export
+#' 
 MakeYsf <- function( myData,                 
                    myDetectors,           
                    method = "Bernoulli",

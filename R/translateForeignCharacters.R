@@ -1,55 +1,35 @@
-# fromto <- read.table(text="
-# from to
-#                      š s
-#                      œ oe
-#                      ž z
-#                      ß ss
-#                      þ y
-#                      à a
-#                      á a
-#                      â a
-#                      ã a
-#                      ä a
-#                      å a
-#                      æ ae
-#                      ç c
-#                      è e
-#                      é e
-#                      ê e
-#                      ë e
-#                      ì i
-#                      í i
-#                      î i
-#                      ï i
-#                      ð d
-#                      ñ n
-#                      ò o
-#                      ó o
-#                      ô o
-#                      õ o
-#                      ö o
-#                      ø oe
-#                      ù u
-#                      ú u
-#                      û u
-#                      ü u
-#                      ý y
-#                      ÿ y
-# 
-# Ø Oe
-# Å a
-# Ä A
-# Ö O
-# Æ Ae
-# 
-# ğ g",header=TRUE)
-# save(fromto,file="C:/PROJECTS/RovQuant/Analyses/CharacterTranslation.RData")
+#' Scandinavian character translation
+#' 
+#' Replaces Scandinavian characters for easier processing. 
+#'  
+#' @param data a character vector where matches are sought, or an object which can be coerced by as.character to a character vector.
+#' @param dir.translation (optional) the path to the file containing special characters and their "non-special" translation.
+#' 
+#' @return the same object than \code{data} with all Scandinavian characters translated.
+#' 
+#' @author Richard Bischof and Pierre Dupont
+#' 
+#' @examples
+#' translateForeignCharacters("bjørn")
+#'
+#' @rdname translateForeignCharacters
+#' @export
+translateForeignCharacters <- function( data,
+                                        dir.translation = NULL) 
+{
+  ##-- Load .RData file with special characters
+  if(is.null(dir.translation)){
+    load(system.file("extdata", "CharacterTranslation.RData", package = "rovquantR"))
+  } else {
+    load(dir.translation)
+  }
+  
+  ##-- Replace special characters in data
+  for(i in 1:nrow(fromto)) {
+    data <- gsub( pattern = fromto$from[i],
+                  replacement = fromto$to[i], 
+                  x = data)
+  }#i
+  return(data)
+}
 
-translateForeignCharacters <- function(dat,dir.translation) {
-   load(paste(dir.translation,"/CharacterTranslation.RData",sep=""))
-  for(i in 1:nrow(fromto) ) {
-                     dat <- gsub(fromto$from[i],fromto$to[i],dat)
-                     }
-                     dat
-                     }
-                     

@@ -5,6 +5,8 @@
 #' multiple small size bites. This reduces memory usage and allows saving MCMC 
 #' samples on the fly.
 #' 
+#' @name runMCMCbites
+#' 
 #' \code{restartMCMCbites} is a wrapper R function to restart and extend a previous
 #' MCMC run, starting from the last point it was saved (as .rds file). In addition to
 #' the saved model and MCMC states, this requires the MCMC configuration, nimble model
@@ -17,13 +19,19 @@
 #' \code{coda} package). If multiple chains were run, MCMC bites are combined 
 #' chain-wise and compiled into a \code{mcmc.list} object.
 #' 
-#' @param mcmc a \code{NIMBLE MCMC algorithm}. See details. 
+#' @param mcmc a \code{NIMBLE MCMC algorithm} object. 
+#' @param model a \code{NIMBLE model} object.
+#' @param conf a \code{NIMBLE MCMC configuration} object.
 #' @param bite.size an \code{integer} denoting the number of MCMC iterations in 
 #' each MCMC bite. 
-#' @param bite.number an \code{integer} denoting the number of MCMC bites to be run.
-#' @param path a \code{character string} of the path where MCMC bite outputs are
-#'  to be saved as .RData files (when using \code{runMCMCbites}) or looked for 
-#'  (when using \code{collectMCMCbites}). 
+#' @param bite.number an \code{integer} denoting the number of MCMC bites to run.
+#' @param path a \code{character string} denoting the path where MCMC bite outputs are
+#'  to be saved as .RData files (when using \code{runMCMCbites} or \code{restartMCMCbites}) 
+#'  or looked for (when using \code{collectMCMCbites}). 
+#' @param save.rds (optional) a \code{logical value}. if TRUE, the state of the
+#' nimble model is saved at the end of every MCMC bite. This is later used to restart 
+#' the MCMC sampling process if necessary using \code{restartMCMCbites}.
+#' @param path.rds (optional) a \code{path} to the folder containing the last MCMC model state file.
 #' @param burnin an \code{integer} denoting the number of MCMC bites to be removed 
 #' as burn-in. 
 #' @param pattern a \code{character string} denoting the name of the object containing
@@ -32,15 +40,33 @@
 #' that are to be ignored when combining MCMC bites.
 #' @param progress.bar a \code{logical value}. if TRUE, a separate progress bar is 
 #' printed for each MCMC chain.
-
-##-- Run MCMC in multiple bites
+#' @param samplerDef a  \code{NIMBLE sampler definition} object.
+#' @param modelState \code{NIMBLE model state} object.
+#' @param mcmcState \code{NIMBLE MCMC state} object.
+#' 
+#' @return \code{runMCMCbites} and \code{restartMCMCbites} run and save locally 
+#' nimble MCMC posterior samples. \code{collectMCMCbites} combines multiple MCMC
+#'  bites (and MCMC chains) and returns them in the commnonly used \code{mcmc.list}
+#'  format from the \code{coda} package.
+#'
+#' @author Pierre Dupont
+#' 
+#' @import nimble 
+#' @importFrom utils txtProgressBar setTxtProgressBar
+#' @importFrom coda as.mcmc as.mcmc.list
+#' 
+NULL
+#' @rdname runMCMCbites
+#' @export
 runMCMCbites <- function( mcmc,
                           model = NULL,
                           conf = NULL,
                           bite.size,
                           bite.number,
                           path,
-                          save.rds = FALSE){
+                          save.rds = FALSE)
+  {
+  
   if(!dir.exists(path))dir.create(path, showWarnings = F, recursive = T)
   if(save.rds & is.null(model))stop("You must provide a nimble model object (obtained from 'nimbleModel(...)') in order to use the 'save.rds' option")
   if(save.rds & is.null(conf))stop("You must provide a nimble configuration object (obtained from 'configureMCMC(...)') in order to use the 'save.rds' option")
@@ -82,7 +108,7 @@ runMCMCbites <- function( mcmc,
     
     ##-- Save .rds file (current state of the model)
     if(save.rds){
-      saveRDS(list( modelState = getModelState(model),
+      base::saveRDS(list( modelState = getModelState(model),
                     mcmcState = getMCMCstate(conf, mcmc)),
               file = file.path(path, paste0("MCMC_bite_", nb, ".rds")))
     }
@@ -95,8 +121,9 @@ runMCMCbites <- function( mcmc,
   }#nb
 }
 
-
-##-- Restart MCMC run from saved model state
+NULL
+#' @rdname runMCMCbites
+#' @export
 restartMCMCbites <- function( mcmc,
                               model,
                               conf,
@@ -104,7 +131,9 @@ restartMCMCbites <- function( mcmc,
                               bite.number,
                               path,
                               save.rds = TRUE,
-                              path.rds = NULL){
+                              path.rds = NULL)
+  {
+  
   ##-- Load the .rds file 
   if(is.null(path.rds)){
     file.rds <- list.files(path)[grepl(".rds",list.files(path))]
@@ -169,15 +198,16 @@ restartMCMCbites <- function( mcmc,
   }#nb
 }
 
-
-##-- Combine MCMC bites 
+NULL
+#' @rdname runMCMCbites
+#' @export
 collectMCMCbites <- function( path,
                               burnin = 0,
                               pattern = "mcmcSamples",
                               param.omit = NULL,
-                              progress.bar = T){
-  require(coda)
-  
+                              progress.bar = T)
+  {
+
   ##-- Two possibilities:
   if(length(list.dirs(path, recursive = F)) == 0){
     ## 1 - the path contains multiple bite files (== one chain)
@@ -199,7 +229,7 @@ collectMCMCbites <- function( path,
   
   ##-- Set-up progress bar 
   if(progress.bar){
-    pb = txtProgressBar( min = burnin+1,
+    pb = utils::txtProgressBar( min = burnin+1,
                          max = num.bites,
                          initial = 0,
                          style = 3) 
@@ -246,16 +276,16 @@ collectMCMCbites <- function( path,
         out.list2[[b]] <- out2[ ,paramInd2]   
       }
       ## Print progress bar
-      if(progress.bar){ setTxtProgressBar(pb,b) }
+      if(progress.bar){ utils::setTxtProgressBar(pb,b) }
     }#b
     if(progress.bar)close(pb)
     
     ## Combine into matrices
     out.mx <- do.call(rbind, out.list)
-    res[[p]] <- as.mcmc(out.mx)
+    res[[p]] <- coda::as.mcmc(out.mx)
     if(sp2yes){
       out.mx2 <- do.call(rbind, out.list2)
-      res2[[p]] <- as.mcmc(out.mx2)
+      res2[[p]] <- coda::as.mcmc(out.mx2)
     }
   }#p
   
@@ -267,7 +297,7 @@ collectMCMCbites <- function( path,
     for(x in 1:length(res)){
       if(nrow(res[[x]]) > minSamples){
         index <- sort(sample(nrow(res[[x]]), minSamples))
-        res[[x]] <- as.mcmc(res[[x]][index, ])               
+        res[[x]] <- coda::as.mcmc(res[[x]][index, ])               
       }
     }
   }
@@ -279,7 +309,7 @@ collectMCMCbites <- function( path,
       for(x in 1:length(res2)){
         if(nrow(res2[[x]]) > minSamples2){
           index2 <- sort(sample(nrow(res2[[x]]), minSamples2))
-          res2[[x]] <- as.mcmc(res2[[x]][index2, ])               
+          res2[[x]] <- coda::as.mcmc(res2[[x]][index2, ])               
         }
       }
     }
@@ -288,20 +318,22 @@ collectMCMCbites <- function( path,
 
   ##-- Output
   if(sp2yes){
-    res <- as.mcmc.list(res)
-    res2 <- as.mcmc.list(res2)
+    res <- coda::as.mcmc.list(res)
+    res2 <- coda::as.mcmc.list(res2)
     return(list(samples = res,
                 samples2 = res2))
   }else{
-    res <- as.mcmc.list(res)
+    res <- coda::as.mcmc.list(res)
     return(res)
   }
   
 }
 
-
-##-- Get state variable names
-getStateVariableNames <- function(samplerDef) {
+NULL
+#' @rdname runMCMCbites
+#' @export
+getStateVariableNames <- function(samplerDef) 
+  {
   resetMethod <- body(samplerDef$reset)
   stateVars <- character()
   if(resetMethod[[1]] != '{') stop('something wrong')
@@ -323,9 +355,11 @@ getStateVariableNames <- function(samplerDef) {
   return(stateVars)
 }
 
-
-##-- Get & set model state
-getModelState <- function( model) {
+NULL
+#' @rdname runMCMCbites
+#' @export
+getModelState <- function(model) 
+  {
   modelVarNames <- model$getVarNames()
   modelVarValuesList <- vector('list', length(modelVarNames))
   names(modelVarValuesList) <- modelVarNames
@@ -335,8 +369,12 @@ getModelState <- function( model) {
   return(modelVarValuesList)
 }
 
+NULL
+#' @rdname runMCMCbites
+#' @export
 setModelState <- function( model,
-                           modelState) {
+                           modelState) 
+  {
   modelVarNames <- model$getVarNames()
   if(!identical(sort(modelVarNames), sort(names(modelState)))) stop('saved model variables don\'t agree')
   for(var in modelVarNames) {
@@ -345,9 +383,12 @@ setModelState <- function( model,
   invisible(model$calculate())
 }
 
-##-- Get & set MCMC state
+NULL
+#' @rdname runMCMCbites
+#' @export
 getMCMCstate <- function( conf,
-                          mcmc) {
+                          mcmc) 
+  {
   stateVarNamesList <- vector('list', length(conf$samplerConfs))
   mcmcStateValuesList <- vector('list', length(conf$samplerConfs))
   for(i in seq_along(conf$samplerConfs)) {
@@ -376,9 +417,13 @@ getMCMCstate <- function( conf,
   return(mcmcStateValuesList)
 }
 
+NULL
+#' @rdname runMCMCbites
+#' @export
 setMCMCstate <- function( conf,
                           mcmc,
-                          mcmcState) {
+                          mcmcState) 
+  {
   if(length(mcmcState) != length(conf$samplerConfs)) stop('saved mcmc samplers don\'t agree')
   for(i in seq_along(conf$samplerConfs)) {
     theseStateValuesList <- mcmcState[[i]]

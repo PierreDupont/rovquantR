@@ -40,8 +40,9 @@ gc()
 
 
 ```{r libraries, warning = FALSE, message = FALSE}
-#library(rovquantR)
+library(nimble)
 library(nimbleSCR)
+library(rovquantR)
 ```
 
 
@@ -54,11 +55,6 @@ Here, we define the directories containing all the relevant data for the analysi
 3. directories to store model outputs such as density maps, tables of abundance and vital rates,...
 
 ```{r setup}
-library(devtools)
-#library(dplyr)
-load_all("rovquantR")
-
-
 ##-- DATA DIRECTORY
 ##-- Directory containing the raw data necessary for the analysis
 ##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
@@ -70,7 +66,7 @@ working_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/R
 
 
 ##-- Create folder structure for the analysis
-makeDirectories(path = working_dir)
+#makeDirectories(path = working_dir)
 ```
 
 
@@ -79,7 +75,7 @@ makeDirectories(path = working_dir)
 
 ### 1. NGS data 
 
-```{r }
+```{r, eval = FALSE, warning = FALSE, message = FALSE}
 ##-- Load raw excel file imported from rovbase 
 DNA <- readxl::read_xlsx(file.path(data_dir,"DNA.xlsx")) %>%
   ##-- Remove any duplicates
@@ -151,7 +147,7 @@ DNA <- readxl::read_xlsx(file.path(data_dir,"DNA.xlsx")) %>%
 
 ### 2. Dead recovery data
 
-```{r}
+```{r, eval = FALSE, warning = FALSE, message = FALSE}
 ##-- Load raw excel file imported from rovbase 
 DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
   ##-- Remove any duplicates
@@ -215,7 +211,7 @@ DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
 
 ## Clean and check ROVBASE data
 
-```{r, eval=FALSE}
+```{r}
 cleanRovbaseData( species = "bear",
                   years = 2020:2024,
                   data_dir = data_dir,

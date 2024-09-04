@@ -25,6 +25,10 @@
 #'  @return buffered.habitat.poly: A \code{SpatialPolygons} that includes the buffer. 
 #'  @return habitat.poly: A \code{SpatialPolygons} with the original polygon used. 
 #'  @return habitat.index: A \code{vector} with ID cell of the raster that fall within the suitable habitat. 
+#'  
+#'  @import sf 
+#'  
+#'  
 MakeHabitatFromRastersf <- function( 
     poly,
     habitat.r, 			  
@@ -37,7 +41,7 @@ MakeHabitatFromRastersf <- function(
     }
   
   ## ----- Create buffer around study area polygon
-  polyBuffered <- st_buffer(poly, dist = buffer)
+  polyBuffered <- sf::st_buffer(poly, dist = buffer)
 
   ## ----- Mask and crop habitat with the buffer 
   habitat.r <- mask(habitat.r, polyBuffered)

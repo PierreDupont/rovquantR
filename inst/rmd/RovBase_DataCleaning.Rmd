@@ -65,8 +65,6 @@ require(readxl)
 require(knitr)
 require(kableExtra)
 require(ggplot2)
-substrRight <- function(x,n){substr(x, nchar(x)-n+1, nchar(x))}
-
 
 # ##-- Identify user and load corresponding working directories
 # if(Sys.info()['user'] == 'pidu') {
@@ -326,7 +324,7 @@ if(engSpecies == "wolf"){
   
   ##-- Translate Scandinavian characters
   colnames(INDIVIDUAL_ID) <- translateForeignCharacters(
-    dat = colnames(INDIVIDUAL_ID),
+    data = colnames(INDIVIDUAL_ID),
     dir.translation = dir.analysis)
   
   ##-- Overwrite gender from Micke's data when available

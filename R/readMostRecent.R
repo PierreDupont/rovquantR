@@ -1,25 +1,35 @@
 #' Read most recent version of a file
 #'
-#' The \code{readMostRecent} functions provide a suite of utility fucntions to identify and load the most recent file matching a set of characteristics.
+#' The \code{readMostRecent} functions provide a suite of utility functions to 
+#' identify and load the most recent file matching a set of characteristics.
 #' 
 #' @name readMostRecent
 #'
 #' @param path Vector of individual detection frequencies.
-#' @param extension Integer specifying the number of realizations to generate.  Only n = 1 is supported.
-#' @param pattern Vector of indices of traps where the detections in \emph{x} were recorded; from the \emph{detIndices} object returned by the \code{\link{getSparseY}} function. 
-#' @param returnDate Number of traps with at least one detection recorded in \emph{x}; from the \emph{detNums} object returned by the \code{\link{getSparseY}} function. 
+#' @param extension Integer specifying the number of realizations to generate. 
+#' Only n = 1 is supported.
+#' @param pattern Vector of indices of traps where the detections in \emph{x}
+#'  were recorded; from the \emph{detIndices} object returned by the \code{\link{getSparseY}} function. 
+#' @param returnDate Number of traps with at least one detection recorded in 
+#' \emph{x}; from the \emph{detNums} object returned by the \code{\link{getSparseY}} function. 
 #' @param sep Vector of the number of trials (zero or more) for each trap (\emph{trapCoords}).
-#' @param dec Baseline detection probability (scalar) used in the half-normal detection function. For trap-specific baseline detection probabilities use argument \emph{p0Traps} (vector) instead.
-#' @param fileEncoding Vector of baseline detection probabilities for each trap used in the half-normal detection function. When \emph{p0Traps} is used, \emph{p0} should not be provided. 
+#' @param dec Baseline detection probability (scalar) used in the half-normal 
+#' detection function. For trap-specific baseline detection probabilities use 
+#' argument \emph{p0Traps} (vector) instead.
+#' @param fileEncoding Vector of baseline detection probabilities for each trap 
+#' used in the half-normal detection function. When \emph{p0Traps} is used, 
+#' \emph{p0} should not be provided. 
 #' @param x Scale parameter of the half-normal detection function.
-#' @param file Individual activity center x- and y-coordinates scaled to the habitat (see (\code{\link{scaleCoordsToHabitatGrid}}).
+#' @param file Individual activity center x- and y-coordinates scaled to the 
+#' habitat (see (\code{\link{scaleCoordsToHabitatGrid}}).
 #' 
-#' @return The Data loaded
+#' @return The data loaded
 #'
 #' @author Pierre Dupont
 #'
 #' @importFrom readxl read_excel
 #' @importFrom readr guess_encoding 
+#' @importFrom utils read.csv write.csv
 #' 
 NULL
 #' @rdname readMostRecent
@@ -32,7 +42,8 @@ readMostRecent <- function(
     returnDate = FALSE,
     sep = ",",
     dec = ".",
-    ...){
+    ...)
+  {
   
   ##-- List all files with the requested extension (including in sub-directories)
   infiles <- list.files( path = path,
@@ -58,7 +69,7 @@ readMostRecent <- function(
   
   ##-- read the most recent .csv file
   if(length(grep("csv", extension, ignore.case = T)) > 0){
-    data <- read.csv( file = file.path(path,infiles[lastFile]),
+    data <- utils::read.csv( file = file.path(path,infiles[lastFile]),
                       header = TRUE,
                       sep = sep,
                       dec = dec,
@@ -68,10 +79,10 @@ readMostRecent <- function(
   ##-- function to read the most recent .xls or .xlsx file
   if(length(grep("xls", extension, ignore.case = T)) > 0){
     require(readxl)
-    data <- read_excel(path = file.path(path, infiles[lastFile]), ...)
+    data <- readlxl::read_excel(path = file.path(path, infiles[lastFile]), ...)
   }
   
-  ##-- function to load the most recent .RData file
+  ##-- function to load and return the most recent .RData file
   if(length(grep("RData", extension, ignore.case = T)) > 0){
     fileName <- file.path(path,infiles[lastFile])
     readRData <- function(fileName, ...){
@@ -100,7 +111,8 @@ readMostRecent.csv <- function(
     path,
     returnDate = F,
     fileEncoding = NULL,
-    ...){
+    ...)
+  {
   infiles <- list.files(path = path, pattern = ".csv", recursive = TRUE)
   modTime <- lapply(file.path(path, infiles), file.mtime)
   lastFile <- which.max(unlist(modTime))
@@ -130,13 +142,14 @@ NULL
 readMostRecent.excel <- function( 
     path,
     returnDate = F,
-    ...){
+    ...)
+  {
   infiles <- list.files(path = path, pattern = ".xls", recursive = TRUE)
   modTime <- lapply(file.path(path, infiles), file.mtime)
   lastFile <- which.max(unlist(modTime))
   message(paste('Loading file', infiles[lastFile], 'last modified on', as.character(modTime[[lastFile]])))
   date <- as.Date(modTime[[lastFile]])
-  data <- read_excel(path = file.path(path,infiles[lastFile]), ...)
+  data <- readxl::read_excel(path = file.path(path,infiles[lastFile]), ...)
   if(returnDate) {
     return(list("data" = data,
                 "date" = date))
@@ -154,7 +167,8 @@ readMostRecent.RData <- function(
     path,
     pattern = ".RData",
     returnDate = F,
-    ...){
+    ...)
+  {
   infiles <- list.files(path = path, pattern = pattern, recursive = TRUE)
   modTime <- lapply(file.path(path, infiles), file.mtime)
   lastFile <- which.max(unlist(modTime))
@@ -180,7 +194,8 @@ NULL
 ##-- function to get the most recent modification date
 getMostRecent <- function(
     path,
-    pattern){
+    pattern)
+  {
   dir( path = path,
        pattern = pattern,
        recursive = TRUE,
@@ -197,7 +212,8 @@ NULL
 ##-- function to write ".csv" (but first checks if the file exists) 
 writeMostRecent.csv <- function(
     x,
-    file){
+    file)
+  {
   if(file.exists(file)){
     message(paste0("A file named '", file, "' already exists in the specified directory."))
     message("Are you sure you want to proceed and overwrite existing data? (y/n) ")
@@ -206,9 +222,9 @@ writeMostRecent.csv <- function(
       message("Not overwriting existing file...")
     } else {
       message(paste0("Now overwriting '", file, "'."))
-      write.csv( x = x, file = file, row.names = F)
+      utils::write.csv( x = x, file = file, row.names = F)
     }
   } else {
-    write.csv( x = x, file = file, row.names = F)
+    utils::write.csv( x = x, file = file, row.names = F)
   }
 }

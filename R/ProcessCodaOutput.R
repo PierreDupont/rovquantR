@@ -1,27 +1,41 @@
-
 #' @title Process coda output 
 #'
 #' @description
-#' \code{ProcessCodaOutput} Process a coda output to make readable. those functions are from https://github.com/kenkellner/jagsUI/blob/master/R/processoutput.R  
+#' \code{ProcessCodaOutput} Process a coda output to make readable. Those functions
+#'  are from https://github.com/kenkellner/jagsUI/blob/master/R/processoutput.R  
+#'  
+#' @name ProcessCodaOutput
 #'
-#' @param x A \code{"mcmc.list"} object from coda.samples()functions in rjags
-#' @param DIC A \code{logical} if DIC statistics should be computed or not 
-#' @param params.omit A \code{vector} of parameters for which statistics should not be computed 
+#' @param x A \code{mcmc.list} object.
+#' @param DIC A \code{logical} if DIC statistics should be computed or not. 
+#' @param params.omit A \code{vector} of parameters for which statistics should not be computed.
 
-#' @return A \code{list} with sims lists, rhat and in the format jagsUI
-
-ProcessCodaOutput <- function(x,DIC=F, params.omit=NULL, verbose=TRUE) {
+#' @return A \code{list} with sims lists, parameter ummary values and rhat values.
+#' 
+#' @importFrom coda gelman.diag
+#' @importFrom stats var 
+#' 
+NULL
+#' @rdname ProcessCodaOutput
+#' @export
+ProcessCodaOutput <- function( x,
+                               DIC = F,
+                               params.omit = NULL,
+                               verbose = TRUE)
+  {
    
    if(verbose){cat('Calculating statistics.......','\n')}  
    
    #Get parameter names
    params <- colnames(x[[1]])
+   
    #Get number of chains
    m <- length(x)
    
    #Collapse mcmc.lists into matrix
    mat = do.call(rbind,x)
    colnames.sims <- colnames(mat)
+   
    #Get # of iterations / chain
    n <- dim(mat)[1] / m
    
@@ -59,7 +73,7 @@ ProcessCodaOutput <- function(x,DIC=F, params.omit=NULL, verbose=TRUE) {
    
    #Gelman diag function
    gd <- function(i,hold){
-      r <- try(gelman.diag(hold[,i], autoburnin=FALSE)$psrf[1], silent=TRUE)
+      r <- try(coda::gelman.diag(hold[,i], autoburnin=FALSE)$psrf[1], silent=TRUE)
       if(inherits(r, "try-error") || !is.finite(r)) {
          r <- NA
       }
@@ -117,7 +131,7 @@ ProcessCodaOutput <- function(x,DIC=F, params.omit=NULL, verbose=TRUE) {
          #If parameter is a scalar
       } else {
          
-         if(m > 1 && (!i%in%params.omit)){rhat[[i]] <<- gelman.diag(x[,i],autoburnin=FALSE)$psrf[1]}
+         if(m > 1 && (!i%in%params.omit)){rhat[[i]] <<- coda::gelman.diag(x[,i],autoburnin=FALSE)$psrf[1]}
          
          sims.list[[i]] <<- mat[,i]
          
@@ -171,8 +185,11 @@ ProcessCodaOutput <- function(x,DIC=F, params.omit=NULL, verbose=TRUE) {
    
 }
 
-
-get.dim <- function(params){
+NULL
+#' @rdname ProcessCodaOutput
+#' @export
+get.dim <- function(params)
+  {
    
    #Get all unique parameters (i.e., collapse indexed non-scalars)
    ps <- unique(sapply(strsplit(params, "\\["), "[", 1)) 
@@ -204,8 +221,13 @@ get.dim <- function(params){
    
 }
 
-
-populate <- function(input,dim,simslist=FALSE,samples=NULL){
+NULL
+#' @rdname ProcessCodaOutput
+#' @export
+populate <- function( input,
+                      dim,
+                      simslist = FALSE,
+                      samples = NULL){
    
    if(!simslist){
       
