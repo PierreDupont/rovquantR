@@ -33,9 +33,9 @@
 #' @importFrom dplyr group_by summarise
 #' @importFrom graphics plot
 #'    
-#' @rdname MakeHabitatFromRastersf
+#' @rdname MakeHabitatFromRaster
 #' @export
-MakeHabitatFromRastersf <- function( 
+MakeHabitatFromRaster <- function( 
     poly,
     habitat.r, 			  
     buffer = NULL, 		 

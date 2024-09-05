@@ -1,7 +1,7 @@
 #' @title Process coda output 
 #'
 #' @description
-#' \code{ProcessCodaOutput} Process a coda output to make readable. Those functions
+#' \code{ProcessCodaOutput} Process a coda output to make it readable. Those functions
 #'  are from https://github.com/kenkellner/jagsUI/blob/master/R/processoutput.R  
 #'  
 #' @name ProcessCodaOutput
@@ -9,8 +9,9 @@
 #' @param x A \code{mcmc.list} object.
 #' @param DIC A \code{logical} if DIC statistics should be computed or not. 
 #' @param params.omit A \code{vector} of parameters for which statistics should not be computed.
-
-#' @return A \code{list} with sims lists, parameter ummary values and rhat values.
+#' @param verbose A \code{logical}. If TRUE, messages are displayed.
+#' 
+#' @return A \code{list} with sims lists, parameter summary values and rhat values.
 #' 
 #' @importFrom coda gelman.diag
 #' @importFrom stats var 
@@ -26,52 +27,52 @@ ProcessCodaOutput <- function( x,
    
    if(verbose){cat('Calculating statistics.......','\n')}  
    
-   #Get parameter names
+   ##-- Get parameter names
    params <- colnames(x[[1]])
    
-   #Get number of chains
+   ##-- Get number of chains
    m <- length(x)
    
-   #Collapse mcmc.lists into matrix
+   ##-- Collapse mcmc.lists into matrix
    mat = do.call(rbind,x)
    colnames.sims <- colnames(mat)
    
-   #Get # of iterations / chain
+   ##-- Get # of iterations / chain
    n <- dim(mat)[1] / m
    
-   #Get parameter dimensions
+   ##-- Get parameter dimensions
    dim <- get.dim(params)
    
-   #Create new parameter name vectors to handle non-scalar params
+   ##-- Create new parameter name vectors to handle non-scalar params
    expand <- sapply(strsplit(params, "\\["), "[", 1)
    params.simple <- unique(sapply(strsplit(params, "\\["), "[", 1))
    
-   #Functions for statistics
+   ##-- Functions for statistics
    qs <- function(x,y){as.numeric(quantile(x,y))}
-   #Overlap 0 function
+   ##-- Overlap 0 function
    ov <- function(x){findInterval(0,sort(c(qs(x,0.025),qs(x,0.975))))==1}
-   #f function (proportion of posterior with same sign as mean)
+   ##-- gf function (proportion of posterior with same sign as mean)
    gf <- function(x){if(mean(x)>=0){mean(x>=0)}else{mean(x<0)}}
-   #n.eff function
+   ##-- n.eff function
    calcneff <- function(x,n,m){
       xp <- matrix(x,nrow=n,ncol=m)
       xdot <- apply(xp,2,mean)
       s2 <- apply(xp,2,var)
       W <- mean(s2)
       
-      #Non-degenerate case
       if ((W > 1.e-8) && (m > 1)) {
-         B <- n*var(xdot)
-         sig2hat <- ((n-1)*W + B)/n      
-         n.eff <- round(m*n*min(sig2hat/B,1),0)
-         #Degenerate case
+        ##-- Non-degenerate case
+        B <- n*var(xdot)
+        sig2hat <- ((n-1)*W + B)/n      
+        n.eff <- round(m*n*min(sig2hat/B,1),0)
       } else {
-         n.eff <- 1
+        ##-- Degenerate case
+        n.eff <- 1
       }
       n.eff
    }
    
-   #Gelman diag function
+   ##-- Gelman diag function
    gd <- function(i,hold){
       r <- try(coda::gelman.diag(hold[,i], autoburnin=FALSE)$psrf[1], silent=TRUE)
       if(inherits(r, "try-error") || !is.finite(r)) {
@@ -80,25 +81,25 @@ ProcessCodaOutput <- function( x,
       return(r)
    }
    
-   #Make blank lists
+   ##-- Make blank lists
    sims.list <- means <- rhat <- n.eff <- se <- as.list(rep(NA,length(params.simple)))
    q2.5 <- q25 <- q50 <- q75 <- q97.5 <- overlap0 <- f <- as.list(rep(NA,length(params.simple)))
    names(sims.list) <- names(means) <- names(rhat) <- names(n.eff) <- params.simple
    names(se) <- names(q2.5) <- names(q25) <- names(q50) <- names(q75) <- names(q97.5) <- params.simple
    names(overlap0) <- names(f) <- params.simple
    
-   #This function modifies objects in global environment (output is discarded)
-   #Calculates statistics for each parameter
+   ##-- This function modifies objects in global environment (output is discarded)
+   ##-- Calculates statistics for each parameter
    calc.stats <- function(i){
       
-      #If parameter is not a scalar (e.g. vector/array)
+      ##-- If parameter is not a scalar (e.g. vector/array)
       if(!is.na(dim[i][1])){
          
-         #Get all samples
+         ##-- Get all samples
          sims.list[[i]] <<- mat[,expand==i]
          
-         #If more than 1 chain, calculate rhat 
-         #Done separately for each element of non-scalar parameter to avoid errors
+         ##-- If more than 1 chain, calculate rhat 
+         ##-- Done separately for each element of non-scalar parameter to avoid errors
          if(m > 1 && (!i%in%params.omit)){
             hold <- x[,expand==i]
             rhat.vals <- sapply(1:dim(hold[[1]])[2],gd,hold=hold)
@@ -109,7 +110,7 @@ ProcessCodaOutput <- function( x,
             rhat[[i]] <<- array(NA,dim=dim[[i]])
          }
          
-         #Calculate other statistics
+         ##-- Calculate other statistics
          ld <- length(dim(sims.list[[i]]))
          means[[i]] <<- populate(colMeans(sims.list[[i]]),dim[[i]])
          if(!i%in%params.omit){
@@ -128,7 +129,7 @@ ProcessCodaOutput <- function( x,
          
          sims.list[[i]] <<- populate(sims.list[[i]],dim=dim[[i]],simslist=T,samples=dim(mat)[1])
          
-         #If parameter is a scalar
+         ##-- If parameter is a scalar
       } else {
          
          if(m > 1 && (!i%in%params.omit)){rhat[[i]] <<- coda::gelman.diag(x[,i],autoburnin=FALSE)$psrf[1]}
@@ -150,17 +151,17 @@ ProcessCodaOutput <- function( x,
       
    }
    
-   #Actually run function(nullout not used for anything)
+   ##-- Actually run function(nullout not used for anything)
    nullout <- sapply(params.simple,calc.stats)
    
-   #Warn user if at least one Rhat value was NA
+   ##-- Warn user if at least one Rhat value was NA
    if(NA%in%unlist(rhat)&&verbose){
       options(warn=1)
       warning('At least one Rhat value could not be calculated.')
       options(warn=0,error=NULL)
    }
    
-   #Do DIC/pD calculations if requested by user
+   ##-- Do DIC/pD calculations if requested by user
    if(DIC){
       dev <- matrix(data=mat[,'deviance'],ncol=m,nrow=n)   
       pd <- numeric(m)
@@ -172,12 +173,12 @@ ProcessCodaOutput <- function( x,
       pd <- mean(pd)
       dic <- mean(dic)
       
-      #Return this list if DIC/pD requested
+      ##-- Return this list if DIC/pD requested
       if(verbose){cat('\nDone.','\n')}
       return(list(sims.list=sims.list,mean=means,sd=se,q2.5=q2.5,q25=q25,q50=q50,q75=q75,q97.5=q97.5,overlap0=overlap0,
                   f=f,Rhat=rhat,n.eff=n.eff,pD=pd,DIC=dic,colnames.sims=colnames.sims))
    } else {
-      #Otherwise return list without pD/DIC
+      ##-- Otherwise return list without pD/DIC
       if(verbose){cat('\nDone.','\n')}
       return(list(sims.list=sims.list,mean=means,sd=se,q2.5=q2.5,q25=q25,q50=q50,q75=q75,q97.5=q97.5,overlap0=overlap0,
                   f=f,Rhat=rhat,n.eff=n.eff,colnames.sims=colnames.sims))
@@ -191,15 +192,15 @@ NULL
 get.dim <- function(params)
   {
    
-   #Get all unique parameters (i.e., collapse indexed non-scalars)
+   ##-- Get all unique parameters (i.e., collapse indexed non-scalars)
    ps <- unique(sapply(strsplit(params, "\\["), "[", 1)) 
-   #Slice indexes from non-scalar parameter entries
+   ##-- Slice indexes from non-scalar parameter entries
    test <- sapply(strsplit(params, "\\["), "[", 1)
    
-   #Calculate dimension for each parameter i
+   ##-- Calculate dimension for each parameter i
    dim <- lapply(ps, function(i){
       
-      #Extract indices from each element j of parameter i
+      ##-- Extract indices from each element j of parameter i
       w <- params[test==i]
       getinds <- lapply(w,FUN=function(j){
          
@@ -210,15 +211,13 @@ get.dim <- function(params)
          
       })
       
-      #Get max value from each dimension of i
+      ##-- Get max value from each dimension of i
       collapsedinds <- do.call(rbind,getinds)
       apply(collapsedinds,2,max)  
-      
    })
    
    names(dim) = ps
    dim
-   
 }
 
 NULL
@@ -228,35 +227,23 @@ populate <- function( input,
                       dim,
                       simslist = FALSE,
                       samples = NULL){
-   
+
    if(!simslist){
-      
       charinds <- sub(".*\\[(.*)\\].*", "\\1", names(input), perl=TRUE) 
-      
-      fill <- array(NA,dim=dim)
-      
-      for (i in 1:length(input)){
-         
+      fill <- array(NA, dim = dim)
+  
+      for(i in 1:length(input)){
          ind <- lapply(strsplit(charinds[i], ','), as.integer)[[1]]
          fill[matrix(ind,1)] <- input[i]
-         
       }
    } else {
-      
       charinds <- sub(".*\\[(.*)\\].*", "\\1", colnames(input), perl=TRUE) 
-      
       fill <- array(NA,dim=c(samples,dim))
-      
       for (i in 1:length(charinds)){
-         
-         #ind <- lapply(strsplit(charinds[i], ','), as.integer)[[1]]
-         
          eval(parse(text=paste('fill[','1:',samples,',',charinds[i],']','<- input[,i]',sep="")))
-         
       }
    }
    
    return(fill)
-   
 }
 

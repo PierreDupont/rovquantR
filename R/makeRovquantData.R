@@ -1,4 +1,4 @@
-#' @title Data preparation.
+#' @title RovQuant OPSCR data preparation.
 #'
 #' @description
 #' The \code{makeRovquantData} function calls a custom Rmarkdown template that identifies 

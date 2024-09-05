@@ -1,4 +1,4 @@
-#' @title Data preparation.
+#' @title RovQuant OPSCR brown bear data preparation.
 #'
 #' @description
 #' \code{makeRovquantData_bear} calls a custom Rmarkdown template that identifies
@@ -22,9 +22,6 @@
 #' Additional \code{.png} images that can be reused somewhere else.
 #'
 #' @author Pierre Dupont
-#' 
-#' @examples
-#' makeRovquantData_bear(2012:2021)
 #' 
 #' @import sf 
 #' @import raster
@@ -243,7 +240,7 @@ makeRovquantData_bear <- function(
     sf::st_as_sf()
   
   ##-- Make habitat from predefined scandinavian raster of suitable habitat
-  habitat <- MakeHabitatFromRastersf(
+  habitat <- MakeHabitatFromRaster(
     poly = studyArea,
     habitat.r = habRaster,
     buffer = habitat$buffer,
@@ -1109,26 +1106,22 @@ makeRovquantData_bear <- function(
     ## ------     3.1. RECONSTRUCT z -----
     
     ##-- Reconstruct monthly z based on ALL detections and dead recoveries
-    zMonths <- MakeZfromScratchsf( 
+    zMonths <- MakeZfromScratch( 
       data.alive = myFullData.sp$alive,
       data.dead = myFullData.sp$dead.recovery,
       samplingMonths = unlist(sampling.months))
-    #table(zMonths)
-    
+
     ##-- Subset to focal years
     zMonths <- zMonths[ , ,dimnames(zMonths)[[3]] %in% dimnames(y.alive)[[3]]]
-    #dim(zMonths)
     
     ##-- Subset to focal individuals
     zMonths <- zMonths[dimnames(zMonths)[[1]] %in% dimnames(y.alive)[[1]], , ]
-    #dim(zMonths)
-    
+
     ##-- Augment zMonths
     zMonths <- MakeAugmentation(y = zMonths,
                                 aug.factor = data$aug.factor,
                                 replace.value = NA)
-    #dim(zMonths)
-    
+
     ##-- Compress back to yearly z
     zYears <- apply(zMonths, c(1,3), function(x){
       if(any(x[1:length(unlist(sampling.months))] == 1, na.rm = T)){
@@ -1142,8 +1135,7 @@ makeRovquantData_bear <- function(
     z.data <- zYears
     allDead <- apply(z.data, 1, function(x)all(x==4))
     z.data[allDead, ] <- 1
-    #table(z.data)
-    
+
     
     
     ## ------     3.2. STAGGERED z -----
@@ -1208,13 +1200,6 @@ makeRovquantData_bear <- function(
     
     
     ## ------     3.4. GENERATE y.dead -----
-    
-    # plot(habitat$buffered.habitat.poly)
-    # plot(habitat$habitat.poly,add=T, col = "gray80")
-    # plot( st_geometry(myFullData.sp$dead.recovery),
-    #       add = T,
-    #       col = as.numeric(as.factor(myFullData.sp$dead.recovery$Country_sample)))
-    
     legal.mx <- do.call(rbind, lapply(dimnames(y.alive)[[1]], function(x){
       out <- rep(0,dim(z.data)[2])
       if(x %in% myFullData.sp$dead.recovery$Id[myFullData.sp$dead.recovery$legal == "yes"]) out <- rep(1,dim(z.data)[2])
@@ -1233,10 +1218,8 @@ makeRovquantData_bear <- function(
     ##-- DISTINGUISH MORTALITY SOURCE IN z.data and z.init
     z.data[] <- ifelse(y.dead == 1, 3, z.data)
     z.staggered[] <- ifelse(y.dead == 1, 3, z.staggered)
-    #table(z.data, useNA = "always")
-    #table(z.init, useNA = "always")
     
-    
+  
     
     ## ------     3.5. GENERATE sxy & sxy.init ARRAYS -----
     
