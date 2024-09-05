@@ -1,11 +1,8 @@
-#' @title Run bite-size NIMBLE MCMC algorithms
+#' Run bite-size NIMBLE MCMC algorithms
 #' 
-#' @description
-#' \code{runMCMCbites} is a wrapper R function to run a compiled NIMBLE model in 
+#' the \code{runMCMCbites} is a wrapper R function to run a compiled NIMBLE model in 
 #' multiple small size bites. This reduces memory usage and allows saving MCMC 
 #' samples on the fly.
-#' 
-#' @name runMCMCbites
 #' 
 #' \code{restartMCMCbites} is a wrapper R function to restart and extend a previous
 #' MCMC run, starting from the last point it was saved (as .rds file). In addition to
@@ -18,6 +15,8 @@
 #' from the same MCMC chain into a single \code{mcmc} object (as defined in the 
 #' \code{coda} package). If multiple chains were run, MCMC bites are combined 
 #' chain-wise and compiled into a \code{mcmc.list} object.
+#' 
+#' @name runMCMCbites
 #' 
 #' @param mcmc a \code{NIMBLE MCMC algorithm} object. 
 #' @param model a \code{NIMBLE model} object.

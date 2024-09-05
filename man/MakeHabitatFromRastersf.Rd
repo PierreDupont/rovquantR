@@ -13,7 +13,7 @@ MakeHabitatFromRastersf(
 )
 }
 \arguments{
-\item{poly}{A \code{SpatialPolygon} object with the study area}
+\item{poly}{A \code{sf} object with the study area}
 
 \item{habitat.r}{A \code{raster} defining suitable habitat.}
 
@@ -43,4 +43,7 @@ A \code{List} object with the coordinates and attributes of the habitat
 }
 \description{
 \code{MakeHabitatFromRaster} returns a \code{List} of objects necessary to define the habitat in SCR (can be slow for large habitat...)
+}
+\author{
+Cyril Milleret
 }

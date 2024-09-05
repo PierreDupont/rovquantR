@@ -1,7 +1,7 @@
 #' @title Data preparation.
 #'
 #' @description
-#' \code{makeRovquantData} calls a custom Rmarkdown template that identifies 
+#' The \code{makeRovquantData} function calls a custom Rmarkdown template that identifies 
 #' and loads the most recent Rovbase data available for the specified species 
 #' and performs the OPSCR data preparation for model fitting. 
 #' The data preparation is specific to each species and incorporates the
@@ -31,15 +31,10 @@
 #'
 #' @author Pierre Dupont
 #' 
-#' @examples
-#' makeRovquantData_bear(2012:2021)
-#' 
-#' 
-#' @rdname makeRovquantData_bear
+#' @rdname makeRovquantData
 #' @export
-#' 
 makeRovquantData <- function(
-    ##-- paths
+  ##-- paths
   species = c("bear","wolf","wolverine"),
   data_dir = "./Data",
   working_dir = NULL,

@@ -36,14 +36,7 @@
 #'
 #' @author Pierre Dupont
 #' 
-#' @examples
-#' cleanRovbaseData("bear", 2012:2021)
-#' cleanRovbaseData("Jerv", 2020)
-#' cleanRovbaseData("Gray wolf", 2018:2022)
-#' 
 #' @importFrom rmarkdown render
-#' 
-#' 
 #' 
 NULL
 #' @rdname cleanRovbaseData
@@ -53,7 +46,8 @@ cleanRovbaseData <- function( species,
                               data_dir = "./Data",
                               output_dir = "./Data",
                               Rmd_template = NULL,
-                              overwrite = FALSE){
+                              overwrite = FALSE)
+  {
   ##-- Check if years are provided -----
   ##-- (if not, uses the period 1990 until now)
   if(is.null(years)){

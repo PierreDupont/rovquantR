@@ -52,12 +52,6 @@ This function returns:
  - checking sex-assignment
  - removing flagged samples from RovData/Mike
 }
-\examples{
-cleanRovbaseData("bear", 2012:2021)
-cleanRovbaseData("Jerv", 2020)
-cleanRovbaseData("Gray wolf", 2018:2022)
-
-}
 \author{
 Pierre Dupont
 }

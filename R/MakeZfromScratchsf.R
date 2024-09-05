@@ -1,6 +1,26 @@
-MakeZfromScratchsf <- function(data.alive,
-                             data.dead = NULL, 
-                             samplingMonths = 1:12){
+#' @title Create initial values for individual states
+#'
+#' @description \code{MakeZfromScratchsf} creates a sequence of states for each individual
+#' that is compatile with its detection history, i.e. "unborn" before the first detection,
+#' "alive" between the first and last detection and "dead" after that.
+#'  the dimensions of an object along
+#'
+#' @param data.alive A \code{sf dataframe} object containing individual detections.
+#' @param aug.factor A \code{numeric} object defining the augmentation factor to be used.
+#' @param aug.years A \code{numeric} object defining the number of years to be added to the data (e.g. for population forecasting).
+#' @param replace.value A \code{numeric} object defining the value to be repeated for augmented individuals.
+#' 
+#' @return A \code{Vector}, \code{Matrix} or \code{Array} object containing the augmented y.
+#'
+#' @examples \dontrun{MakeAugmentation()}
+#' 
+#' @rdname MakeAugmentation
+#' @export
+MakeZfromScratchsf <- function(
+    data.alive,
+    data.dead = NULL, 
+    samplingMonths = 1:12)
+{
   
   ## MAKE SURE ONLY ONE DEAD RECOVERY PER INDIVIDUAL
   if(sum(duplicated(data.dead$Id))>0){stop("INDIVIDUALS CANNOT BE DEAD TWICE!!!!")}

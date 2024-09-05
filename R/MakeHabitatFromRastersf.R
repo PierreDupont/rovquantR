@@ -3,7 +3,7 @@
 #' @description
 #' \code{MakeHabitatFromRaster} returns a \code{List} of objects necessary to define the habitat in SCR (can be slow for large habitat...)
 #'
-#' @param poly A \code{SpatialPolygon} object with the study area
+#' @param poly A \code{sf} object with the study area
 #' @param buffer A \code{Numeric} with the size of the buffer area around the study area (in meters in poly is UTM).
 #' @param habitat.r A \code{raster} defining suitable habitat.
 #' @param plot.check A \code{Logical} to display checking plots (if TRUE).
@@ -26,9 +26,15 @@
 #'  @return habitat.poly: A \code{SpatialPolygons} with the original polygon used. 
 #'  @return habitat.index: A \code{vector} with ID cell of the raster that fall within the suitable habitat. 
 #'  
-#'  @import sf 
-#'  
-#'  
+#' @author Cyril Milleret
+#' 
+#' @import sf 
+#' @importFrom raster mask crop xyFromCell res
+#' @importFrom dplyr group_by summarise
+#' @importFrom graphics plot
+#'    
+#' @rdname MakeHabitatFromRastersf
+#' @export
 MakeHabitatFromRastersf <- function( 
     poly,
     habitat.r, 			  
@@ -44,11 +50,11 @@ MakeHabitatFromRastersf <- function(
   polyBuffered <- sf::st_buffer(poly, dist = buffer)
 
   ## ----- Mask and crop habitat with the buffer 
-  habitat.r <- mask(habitat.r, polyBuffered)
+  habitat.r <- raster::mask(habitat.r, polyBuffered)
   buffered.habitat.poly <- sf::st_as_sf(stars::st_as_stars(habitat.r), 
                                     as_points = FALSE, merge = TRUE)
   buffered.habitat.poly <- buffered.habitat.poly[buffered.habitat.poly$Habitat>0,]
-  habitat.r <- crop(habitat.r, buffered.habitat.poly)
+  habitat.r <- raster::crop(habitat.r, buffered.habitat.poly)
   
   ## ----- Create Habitat matrix (habitat : 1 and non-habitat: 0) -----
   habitat.r[is.na(habitat.r)] <- 0                                     ## Give 0 values to raster cells outside the study area
@@ -60,40 +66,42 @@ MakeHabitatFromRastersf <- function(
   IDCells.mx <- as.matrix(IDCells.r)				## Convert to matrix
   
   ## ----- Obtain xy coordinates of cells -----   
-  habitat.xy <- xyFromCell(habitat.r, 1:ncell(habitat.r))
+  habitat.xy <- raster::xyFromCell(habitat.r, 1:ncell(habitat.r))
   dimnames(habitat.xy) <- list(1:length(habitat.xy[,"x"]), c("x","y"))
   habitat.xy <- as.data.frame(habitat.xy)
-  habitat.sp <-  st_as_sf(habitat.xy, coords = c("x", "y"))
-  st_crs(habitat.sp) <- st_crs(poly)
+  habitat.sp <- sf::st_as_sf(habitat.xy, coords = c("x", "y"))
+  sf::st_crs(habitat.sp) <- sf::st_crs(poly)
 
   poly$id <- 1
-  polyAggregated <- poly %>% group_by(id) %>% summarize()
+  polyAggregated <- poly %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarise()
   
-  habitat.index <- which(!as.numeric(unlist(st_intersects(habitat.sp, polyAggregated))))
+  habitat.index <- which(!as.numeric(unlist(sf::st_intersects(habitat.sp, polyAggregated))))
   habitat.clip.sp <- habitat.sp[habitat.index, ]
   
   ## ----- Obtain lower and upper cell coordinates
-  resolution <- res(habitat.r)[1]
+  resolution <- raster::res(habitat.r)[1]
   lower.hab.sp <- data.frame(st_coordinates(habitat.sp) - resolution/2)
   upper.hab.sp <- data.frame(st_coordinates(habitat.sp) + resolution/2)
   colnames(lower.hab.sp) <- colnames(upper.hab.sp) <- c("x", "y")
-  upper.hab.sp <-  st_as_sf(upper.hab.sp, coords = c("x", "y"))
-  lower.hab.sp <-  st_as_sf(lower.hab.sp, coords = c("x", "y"))
-  st_crs(lower.hab.sp) <- st_crs(poly)
-  st_crs(upper.hab.sp) <- st_crs(poly)
+  upper.hab.sp <- sf::st_as_sf(upper.hab.sp, coords = c("x", "y"))
+  lower.hab.sp <- sf::st_as_sf(lower.hab.sp, coords = c("x", "y"))
+  sf::st_crs(lower.hab.sp) <- sf::st_crs(poly)
+  sf::st_crs(upper.hab.sp) <- sf::st_crs(poly)
 
   ## ----- Create an habitat raster without buffer
   polyBuffered$id <- 1
-  polyBuffAggregated <- polyBuffered %>% group_by(id) %>% summarize()
-  CellsInBuffer  <- as.numeric(st_intersects(habitat.sp, polyBuffAggregated,sparse = F))
-  
+  polyBuffAggregated <- polyBuffered %>% 
+    dplyr::group_by(id) %>% 
+    dplyr::summarise()
+  CellsInBuffer  <- as.numeric(sf::st_intersects(habitat.sp, polyBuffAggregated, sparse = F))
   CellsInBuffer[CellsInBuffer > 0] <- 1
   whichCellsInBuffer <- which(CellsInBuffer %in% 1)
   
   ##-- Get cells in buffer that are "close" from the searched area
-  dist <- as.numeric(st_distance(habitat.sp[whichCellsInBuffer, ], polyAggregated))
+  dist <- as.numeric(sf::st_distance(habitat.sp[whichCellsInBuffer, ], polyAggregated))
   whichFarFromBuffer <- whichCellsInBuffer[dist > tolerance]
-  
   habitat.rSearchedAndBuffer <- habitat.rWthBuffer <- habitat.r
   whichFarFromBufferInHabitat <- whichFarFromBuffer[habitat.rWthBuffer[whichFarFromBuffer]%in%1]
   
@@ -105,7 +113,7 @@ MakeHabitatFromRastersf <- function(
   if(plot.check){
     plot(habitat.r, col = c("white","green"), legend = F)							    
     plot(habitat.rWthBuffer, add = T, col = c("white","brown"), legend = F)
-    plot(st_geometry(poly), add = TRUE)						
+    plot(sf::st_geometry(poly), add = TRUE)						
   }
   
   ## ----- List of output objects 

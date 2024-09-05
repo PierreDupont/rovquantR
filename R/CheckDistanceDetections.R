@@ -17,13 +17,13 @@
 #'
 #' @rdname CheckDistanceDetections
 #' @export
-#' 
 CheckDistanceDetections <- function(  
     y = y,
     detector.xy = detector.xy,
     max.distance = NULL,
     method = "pairwise",
-    plot.check = TRUE){
+    plot.check = TRUE)
+  {
   
   ##-- MAKE CONTAINER FOR FLAGS
   y.flagged <- y.distance <- y

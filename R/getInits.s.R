@@ -18,7 +18,9 @@
 #' When the habitat grid only consists of a single row or column of windows, an additional row or column of dummy indices has to be added because the \code{nimble} model code requires a matrix.
 #' @param baseIntensities Vector of baseline habitat intensities for all habitat windows.
 #' @param sd Standard deviation of the isotropic bivariate normal distribution.
-#'
+#' @param detNums an \code{integer} denoting the number of detections of the focal individual.
+#' @param detIndices a vector of length \emph{detNums} denoting the IDs of the detectors where the focal individual was detected.
+#' 
 #' @return This function returns a 2- or 3-dimensional array of initial AC locations.
 #' 
 #' @author Pierre Dupont
@@ -33,7 +35,8 @@ getInits.s <- function( y,
                         baseIntensities = NULL,
                         sd = NULL,
                         detNums = NULL,
-                        detIndices = NULL){
+                        detIndices = NULL)
+  {
   if(is.null(detNums)){
     detNums <- y[ ,1, ]
     nMaxDetectors <- (dim(y)[2]-1)/2

@@ -36,6 +36,10 @@ When the habitat grid only consists of a single row or column of windows, an add
 \item{baseIntensities}{Vector of baseline habitat intensities for all habitat windows.}
 
 \item{sd}{Standard deviation of the isotropic bivariate normal distribution.}
+
+\item{detNums}{an \code{integer} denoting the number of detections of the focal individual.}
+
+\item{detIndices}{a vector of length \emph{detNums} denoting the IDs of the detectors where the focal individual was detected.}
 }
 \value{
 This function returns a 2- or 3-dimensional array of initial AC locations.

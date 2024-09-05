@@ -11,6 +11,8 @@ MakeAugmentation(y, aug.factor = NULL, aug.years = NULL, replace.value = NA)
 
 \item{aug.factor}{A \code{numeric} object defining the augmentation factor to be used.}
 
+\item{aug.years}{A \code{numeric} object defining the number of years to be added to the data (e.g. for population forecasting).}
+
 \item{replace.value}{A \code{numeric} object defining the value to be repeated for augmented individuals.}
 }
 \value{
@@ -20,4 +22,8 @@ A \code{Vector}, \code{Matrix} or \code{Array} object containing the augmented y
 \code{MakeAugmentation} increases the dimensions of an object along
  the individual and/or the year dimension. It returns a \code{Vector}, \code{Matrix} 
  or \code{Array} object with the expanded object.
+}
+\examples{
+\dontrun{MakeAugmentation()}
+
 }

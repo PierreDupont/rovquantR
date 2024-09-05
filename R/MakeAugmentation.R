@@ -6,14 +6,21 @@
 #'
 #' @param y A \code{Vector}, \code{Matrix} or \code{Array} object containing the individual detection histories.
 #' @param aug.factor A \code{numeric} object defining the augmentation factor to be used.
+#' @param aug.years A \code{numeric} object defining the number of years to be added to the data (e.g. for population forecasting).
 #' @param replace.value A \code{numeric} object defining the value to be repeated for augmented individuals.
 #' 
 #' @return A \code{Vector}, \code{Matrix} or \code{Array} object containing the augmented y.
-
+#'
+#' @examples \dontrun{MakeAugmentation()}
+#' 
+#' @rdname MakeAugmentation
+#' @export
 MakeAugmentation <- function( y,
                               aug.factor= NULL,
                               aug.years = NULL,
-                              replace.value = NA){
+                              replace.value = NA)
+  {
+  
   ## Vector Data augmentation
   if(is.vector(y)){
     if(is.null(names(y))){ 

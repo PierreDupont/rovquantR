@@ -2,20 +2,27 @@
 % Please edit documentation in R/ProcessCodaOutput.R
 \name{ProcessCodaOutput}
 \alias{ProcessCodaOutput}
+\alias{get.dim}
+\alias{populate}
 \title{Process coda output}
 \usage{
 ProcessCodaOutput(x, DIC = F, params.omit = NULL, verbose = TRUE)
+
+get.dim(params)
+
+populate(input, dim, simslist = FALSE, samples = NULL)
 }
 \arguments{
-\item{x}{A \code{"mcmc.list"} object from coda.samples()functions in rjags}
+\item{x}{A \code{mcmc.list} object.}
 
-\item{DIC}{A \code{logical} if DIC statistics should be computed or not}
+\item{DIC}{A \code{logical} if DIC statistics should be computed or not.}
 
-\item{params.omit}{A \code{vector} of parameters for which statistics should not be computed}
+\item{params.omit}{A \code{vector} of parameters for which statistics should not be computed.}
 }
 \value{
-A \code{list} with sims lists, rhat and in the format jagsUI
+A \code{list} with sims lists, parameter ummary values and rhat values.
 }
 \description{
-\code{ProcessCodaOutput} Process a coda output to make readable. those functions are from https://github.com/kenkellner/jagsUI/blob/master/R/processoutput.R
+\code{ProcessCodaOutput} Process a coda output to make readable. Those functions
+ are from https://github.com/kenkellner/jagsUI/blob/master/R/processoutput.R
 }

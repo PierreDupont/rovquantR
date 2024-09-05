@@ -17,7 +17,6 @@
 #'
 #' @rdname AssignDetectors
 #' @export
-#' 
 AssignDetectors <- function( 
     myData,                              
     myDetectors,

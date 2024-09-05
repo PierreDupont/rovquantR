@@ -17,7 +17,8 @@
 #' @rdname addSnippets
 #' @export
 addSnippets <- function( path = getwd(),
-                         snippetsFile = "snippets.R"){
+                         snippetsFile = "snippets.R")
+  {
   
   added <- FALSE
   

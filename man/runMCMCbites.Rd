@@ -2,6 +2,13 @@
 % Please edit documentation in R/runMCMCbites.R
 \name{runMCMCbites}
 \alias{runMCMCbites}
+\alias{restartMCMCbites}
+\alias{collectMCMCbites}
+\alias{getStateVariableNames}
+\alias{getModelState}
+\alias{setModelState}
+\alias{getMCMCstate}
+\alias{setMCMCstate}
 \title{Run bite-size NIMBLE MCMC algorithms}
 \usage{
 runMCMCbites(
@@ -13,18 +20,57 @@ runMCMCbites(
   path,
   save.rds = FALSE
 )
+
+restartMCMCbites(
+  mcmc,
+  model,
+  conf,
+  bite.size,
+  bite.number,
+  path,
+  save.rds = TRUE,
+  path.rds = NULL
+)
+
+collectMCMCbites(
+  path,
+  burnin = 0,
+  pattern = "mcmcSamples",
+  param.omit = NULL,
+  progress.bar = T
+)
+
+getStateVariableNames(samplerDef)
+
+getModelState(model)
+
+setModelState(model, modelState)
+
+getMCMCstate(conf, mcmc)
+
+setMCMCstate(conf, mcmc, mcmcState)
 }
 \arguments{
-\item{mcmc}{a \code{NIMBLE MCMC algorithm}. See details.}
+\item{mcmc}{a \code{NIMBLE MCMC algorithm} object.}
+
+\item{model}{a \code{NIMBLE model} object.}
+
+\item{conf}{a \code{NIMBLE MCMC configuration} object.}
 
 \item{bite.size}{an \code{integer} denoting the number of MCMC iterations in 
 each MCMC bite.}
 
-\item{bite.number}{an \code{integer} denoting the number of MCMC bites to be run.}
+\item{bite.number}{an \code{integer} denoting the number of MCMC bites to run.}
 
-\item{path}{a \code{character string} of the path where MCMC bite outputs are
-to be saved as .RData files (when using \code{runMCMCbites}) or looked for 
-(when using \code{collectMCMCbites}).}
+\item{path}{a \code{character string} denoting the path where MCMC bite outputs are
+to be saved as .RData files (when using \code{runMCMCbites} or \code{restartMCMCbites}) 
+or looked for (when using \code{collectMCMCbites}).}
+
+\item{save.rds}{(optional) a \code{logical value}. if TRUE, the state of the
+nimble model is saved at the end of every MCMC bite. This is later used to restart 
+the MCMC sampling process if necessary using \code{restartMCMCbites}.}
+
+\item{path.rds}{(optional) a \code{path} to the folder containing the last MCMC model state file.}
 
 \item{burnin}{an \code{integer} denoting the number of MCMC bites to be removed 
 as burn-in.}
@@ -37,12 +83,25 @@ that are to be ignored when combining MCMC bites.}
 
 \item{progress.bar}{a \code{logical value}. if TRUE, a separate progress bar is 
 printed for each MCMC chain.}
+
+\item{samplerDef}{a  \code{NIMBLE sampler definition} object.}
+
+\item{modelState}{\code{NIMBLE model state} object.}
+
+\item{mcmcState}{\code{NIMBLE MCMC state} object.}
+}
+\value{
+\code{runMCMCbites} and \code{restartMCMCbites} run and save locally 
+nimble MCMC posterior samples. \code{collectMCMCbites} combines multiple MCMC
+ bites (and MCMC chains) and returns them in the commnonly used \code{mcmc.list}
+ format from the \code{coda} package.
 }
 \description{
-\code{runMCMCbites} is a wrapper R function to run a compiled NIMBLE model in 
+the \code{runMCMCbites} is a wrapper R function to run a compiled NIMBLE model in 
 multiple small size bites. This reduces memory usage and allows saving MCMC 
 samples on the fly.
-
+}
+\details{
 \code{restartMCMCbites} is a wrapper R function to restart and extend a previous
 MCMC run, starting from the last point it was saved (as .rds file). In addition to
 the saved model and MCMC states, this requires the MCMC configuration, nimble model
@@ -54,4 +113,7 @@ the \code{path.rds} option allows to use a specific .rds file as starting point 
 from the same MCMC chain into a single \code{mcmc} object (as defined in the 
 \code{coda} package). If multiple chains were run, MCMC bites are combined 
 chain-wise and compiled into a \code{mcmc.list} object.
+}
+\author{
+Pierre Dupont
 }
