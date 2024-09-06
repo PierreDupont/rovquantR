@@ -17,8 +17,10 @@ Depends:
 Imports: 
     adehabitatHR,
     dplyr,
+    coda,
     fasterize,
     ggplot2,
+    grDevices,
     knitr,
     magrittr,
     methods,
@@ -32,12 +34,14 @@ Imports:
     rmarkdown,
     rstudioapi,
     sf,
+    spatstat,
     spatstat.geom,
     stars,
+    terra,
     utils
 Suggests: 
     basicMCMCplots,
-    coda,
+    ggplot2,
     testthat (>= 3.0.0)
 LinkingTo: 
     Rcpp,

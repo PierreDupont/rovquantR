@@ -29,7 +29,7 @@
 #' @importFrom fasterize fasterize
 #' @importFrom adehabitatHR estUDm2spixdf kernelUD
 #' @importFrom stats density
-#' @importFrom spatstat.geom as.owin ppp
+#' @importFrom grDevices adjustcolor 
 #' @importFrom stars st_as_stars
 #' 
 #' @rdname processRovquantOutput_bear

@@ -32,7 +32,6 @@
 #'
 #' @examples
 #' # Use the distribution in R
-#' 
 #' z <- 2
 #' gamma <- 0.2
 #' mhH <- 0.4

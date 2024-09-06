@@ -55,7 +55,9 @@ check(baseDir)
 
 ## ------ INSTALL PACKAGE FROM .tar ------
 suppressMessages(try(remove.packages('rovquantR'), silent = TRUE))
-tarFiles <- grep('\\.tar\\.gz', list.files(baseDir, include.dirs = TRUE), value = TRUE)
+tarFiles <- grep( pattern = '\\.tar\\.gz',
+                  x = list.files(baseDir, include.dirs = TRUE),
+                  value = TRUE)
 lastTarFile <- tarFiles[length(tarFiles)]
 message('installing package version ', gsub('\\.tar\\.gz$', '', lastTarFile))
 if(.Platform$OS.type == 'windows') {

@@ -19,8 +19,8 @@
 #'  as prepared by \code{\link{cleanRovBaseData}}.
 #' @param working_dir A \code{path} to the directory for this analysis containing
 #'  the \code{nimbleInputFiles} folder to store the prepared data.  
-#' @param nburnin A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
-#' @param niter A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#' @param nburnin An \code{integer} denoting the number of MCMC  dead recovery should be included (TRUE) or not (FALSE)
+#' @param niter A \code{logical} Whether dead recovery should be included (TRUE) or not (FALSE)
 #' @param extraction.res A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
 #' @param plot.check A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
 #' @param print.report A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)

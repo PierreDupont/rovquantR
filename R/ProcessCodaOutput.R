@@ -14,7 +14,7 @@
 #' @return A \code{list} with sims lists, parameter summary values and rhat values.
 #' 
 #' @importFrom coda gelman.diag
-#' @importFrom stats var 
+#' @importFrom stats var sd
 #' 
 NULL
 #' @rdname ProcessCodaOutput
@@ -71,7 +71,6 @@ ProcessCodaOutput <- function( x,
       }
       n.eff
    }
-   
    ##-- Gelman diag function
    gd <- function(i,hold){
       r <- try(coda::gelman.diag(hold[,i], autoburnin=FALSE)$psrf[1], silent=TRUE)
@@ -175,8 +174,21 @@ ProcessCodaOutput <- function( x,
       
       ##-- Return this list if DIC/pD requested
       if(verbose){cat('\nDone.','\n')}
-      return(list(sims.list=sims.list,mean=means,sd=se,q2.5=q2.5,q25=q25,q50=q50,q75=q75,q97.5=q97.5,overlap0=overlap0,
-                  f=f,Rhat=rhat,n.eff=n.eff,pD=pd,DIC=dic,colnames.sims=colnames.sims))
+      return(list( sims.list = sims.list,
+                  mean = means,
+                  sd = se,
+                  q2.5 = q2.5,
+                  q25 =  q25,
+                  q50 = q50,
+                  q75 = q75,
+                  q97.5 = q97.5,
+                  overlap0 = overlap0,
+                  f = f,
+                  Rhat = rhat,
+                  n.eff = n.eff,
+                  pD = pd,
+                  DIC = dic,
+                  colnames.sims = colnames.sims))
    } else {
       ##-- Otherwise return list without pD/DIC
       if(verbose){cat('\nDone.','\n')}
@@ -185,65 +197,3 @@ ProcessCodaOutput <- function( x,
    }
    
 }
-
-NULL
-#' @rdname ProcessCodaOutput
-#' @export
-get.dim <- function(params)
-  {
-   
-   ##-- Get all unique parameters (i.e., collapse indexed non-scalars)
-   ps <- unique(sapply(strsplit(params, "\\["), "[", 1)) 
-   ##-- Slice indexes from non-scalar parameter entries
-   test <- sapply(strsplit(params, "\\["), "[", 1)
-   
-   ##-- Calculate dimension for each parameter i
-   dim <- lapply(ps, function(i){
-      
-      ##-- Extract indices from each element j of parameter i
-      w <- params[test==i]
-      getinds <- lapply(w,FUN=function(j){
-         
-         w2 <- strsplit(j,'\\[')[[1]][2]
-         w3 <- strsplit(w2,"\\]")[[1]] 
-         w4 <- as.numeric(unlist(strsplit(w3,",")))
-         return(w4)
-         
-      })
-      
-      ##-- Get max value from each dimension of i
-      collapsedinds <- do.call(rbind,getinds)
-      apply(collapsedinds,2,max)  
-   })
-   
-   names(dim) = ps
-   dim
-}
-
-NULL
-#' @rdname ProcessCodaOutput
-#' @export
-populate <- function( input,
-                      dim,
-                      simslist = FALSE,
-                      samples = NULL){
-
-   if(!simslist){
-      charinds <- sub(".*\\[(.*)\\].*", "\\1", names(input), perl=TRUE) 
-      fill <- array(NA, dim = dim)
-  
-      for(i in 1:length(input)){
-         ind <- lapply(strsplit(charinds[i], ','), as.integer)[[1]]
-         fill[matrix(ind,1)] <- input[i]
-      }
-   } else {
-      charinds <- sub(".*\\[(.*)\\].*", "\\1", colnames(input), perl=TRUE) 
-      fill <- array(NA,dim=c(samples,dim))
-      for (i in 1:length(charinds)){
-         eval(parse(text=paste('fill[','1:',samples,',',charinds[i],']','<- input[,i]',sep="")))
-      }
-   }
-   
-   return(fill)
-}
-

@@ -35,7 +35,7 @@ species <- params$species
 dir.in <- params$dir.in
 dir.out <- params$dir.out
 
-if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjørn", species, ignore.case = T))>0){
+if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
   engSpecies <- "bear"
   norSpecies <- "Bjørn"
 }
@@ -53,33 +53,18 @@ months = c("January","February","March","April","May","June",
 
 
 ##-- load libraries
-require(stringr)
-require(boot)
-require(abind)
-require(R.utils)
-require(sf)
-require(fasterize)
-require(RANN)
-require(dplyr)
-require(readxl)
-require(knitr)
-require(kableExtra)
-require(ggplot2)
-
-# ##-- Identify user and load corresponding working directories
-# if(Sys.info()['user'] == 'pidu') {
-#   source("C:/My_documents/RovQuant/workingDirectories.R") ## Pierre
-# } else if(Sys.info()['user'] == 'cymi') {
-#   source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/workingDirectories.R") ## Cyril
-# } else if(Sys.info()['user'] == 'arichbi') {
-#   source("C:/PROJECTS/RovQuant/workingDirectories.R") ## Richard
-# } else stop('unknown user')
-# # source(file.path(getwd(),"workingDirectories.R"))
-# 
-# ##-- Additional functions
-# ##-- IDEALLY, WE WOULD NOT NEED OUR "PERSONNAL" LIBRARY OF FUNCTIONS
-# ##-- (WOULD MAKE IT EASIER TO SHARE WITH EXTERNAL USERS)
-# sourceDirectory(dir.function, modifiedOnly = FALSE)
+# require(stringr)
+# require(boot)
+# require(abind)
+# require(R.utils)
+# require(sf)
+# require(fasterize)
+# require(RANN)
+# require(dplyr)
+# require(readxl)
+# require(knitr)
+library(kableExtra)
+library(ggplot2)
 
 ##-- Load age look-up table
 # load(file.path(dir.in,"MISC DATA/age.lookup.table.RData"))
@@ -87,8 +72,8 @@ require(ggplot2)
 ##-- Load pre-processed habitat shapefiles
 load(system.file("extdata", "Habitat_shp.RData", package = "rovquantR"))
 COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
-  group_by(ISO) %>%
-  summarize()
+  dplyr::group_by(ISO) %>%
+  dplyr::summarise()
 ```
 
 ### `r Sys.Date()`
@@ -122,7 +107,7 @@ DNA <- readMostRecent(
   extension = ".csv",
   pattern = paste0("dna_",engSpecies,".csv")) %>%
   ##-- Filter out samples from other species
-  filter(., Species == norSpecies)
+  dplyr::filter(., Species == norSpecies)
 
 
 ##-- Load the most recent .csv dead recovery file
@@ -131,7 +116,7 @@ DR <- readMostRecent(
   extension = ".csv",
   pattern = paste0("dead_",engSpecies,".csv")) %>%
   ##-- Filter out dead recoveries of other species
-  filter(., Species == norSpecies)
+  dplyr::filter(., Species == norSpecies)
   
 
 ##-- Merge DNA and dead recoveries files using all shared names columns
@@ -143,7 +128,7 @@ DATA <- merge( DR, DNA,
                by = c("Id","RovbaseID","DNAID","Species", "Sex","Date","East_UTM33","North_UTM33", "County"),
                all = TRUE) %>%
   ##-- Add some columns
-  mutate( 
+  dplyr::mutate( 
     ##-- Add "Country" column
     Country_sample = substrRight(County, 3),
     ##-- Change date format
@@ -180,7 +165,7 @@ noCoords <- sum(is.na(DATA$East_UTM33))  ## number of samples without Coords
 
 ##-- Filter out unusable samples
 DATA <- DATA %>%
-  filter(., 
+  dplyr::filter(., 
          ##-- Filter out samples with no ID
          !is.na(Id),
          ##-- Filter out samples with no Coordinates
@@ -323,9 +308,7 @@ if(engSpecies == "wolf"){
     fileEncoding = "latin1")  
   
   ##-- Translate Scandinavian characters
-  colnames(INDIVIDUAL_ID) <- translateForeignCharacters(
-    data = colnames(INDIVIDUAL_ID),
-    dir.translation = dir.analysis)
+  colnames(INDIVIDUAL_ID) <- translateForeignCharacters( data = colnames(INDIVIDUAL_ID))
   
   ##-- Overwrite gender from Micke's data when available
   micke.sex <- as.character(unlist(lapply(DATA$Id,
@@ -367,7 +350,7 @@ if(engSpecies == "bear"){
 ##-- Turn into sf points dataframe
 alive <- sf::st_as_sf( x = alive,
                        coords = c("East_UTM33","North_UTM33")) %>%
-  st_set_crs(.,st_crs(32633)) 
+  sf::st_set_crs(.,sf::st_crs(32633)) 
 
 ##-- Intersect and extract country name
 alive$Country_sf <- COUNTRIES$ISO[as.numeric(st_intersects(alive, COUNTRIES))]
@@ -376,10 +359,10 @@ alive$Country_sf <- COUNTRIES$ISO[as.numeric(st_intersects(alive, COUNTRIES))]
 ##-- Turn into sf points dataframe
 dead.recovery <- sf::st_as_sf( x = dead.recovery,
                          coords = c("East_UTM33","North_UTM33")) %>%
-  st_set_crs(.,st_crs(32633))
+  sf::st_set_crs(.,sf::st_crs(32633))
 
 ##-- Intersect and extract country name
-dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(st_intersects(dead.recovery, COUNTRIES))]
+dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
 ```
 
 ```{r, rovbase data summary, echo = F, collapse = TRUE}
@@ -450,13 +433,13 @@ After this initial clean-up, we are left with `r paste0(samples["Total","Total"]
 ```{r, num samples, echo = F, fig.align = "center"}
 ##-- Number of samples
 dat.alive <- alive %>%
-  group_by(Date) %>%
-  summarise(n = n())
+  dplyr::group_by(Date) %>%
+  dplyr::summarise(n = n())
 dat.alive$type = "NGS"
 
 dat.dead <- dead.recovery %>%
-  group_by(Date) %>%
-  summarise(n = -n())
+  dplyr::group_by(Date) %>%
+  dplyr::summarise(n = -n())
 dat.dead$type = "dead.recovery"
 
 dat <- rbind(dat.alive, dat.dead)
@@ -488,13 +471,13 @@ In terms of individuals identified, these correspond to `r paste0(ids["Total","T
 ```{r, num ids, echo = F, fig.align = "center", warning = FALSE, message = FALSE}
 ##-- Number of IDs
 dat.alive <- alive %>% 
-  group_by(Year) %>% 
-  summarise(n = length(unique(Id)))
+  dplyr::group_by(Year) %>% 
+  dplyr::summarise(n = length(unique(Id)))
 dat.alive$type="NGS"
 
 dat.dead <- dead.recovery %>% 
-  group_by(Year) %>% 
-  summarise(n = -length(unique(Id)))
+  dplyr::group_by(Year) %>% 
+  dplyr::summarise(n = -length(unique(Id)))
 dat.dead$type = "dead.recovery"
 
 dat <- rbind(dat.alive,dat.dead)
@@ -522,13 +505,13 @@ kable(deadIds, align = "lc",
 
 ```{r, previous det, echo = F, fig.align = "center", warning = FALSE, message = FALSE}
 dat.alive <- alive %>%
-  group_by(Year, detected.earlier) %>%
-  summarise(n = length(unique(Id)))
+  dplyr::group_by(Year, detected.earlier) %>%
+  dplyr::summarise(n = length(unique(Id)))
 dat.alive$type = "NGS"
 
 dat.dead <- dead.recovery %>%
-  group_by(Year, detected.earlier) %>%
-  summarise(n = length(unique(Id)))
+  dplyr::group_by(Year, detected.earlier) %>%
+  dplyr::summarise(n = length(unique(Id)))
 dat.dead$type = "dead.recovery"
 
 ggplot() +
@@ -679,7 +662,7 @@ NGS_map <- ggplot(data = alive) +
 NGS_map
 
 ##-- Save maps as .png
-png(filename = file.path(dir.out, 
+grDevices::png(filename = file.path(dir.out, 
                          paste0(species, "_NGS_", years[1]," to ", years[length(years)], ".png")),
     width = 8, height = 6, units = "in", res = 300)
 NGS_map
@@ -711,7 +694,7 @@ dead_map <- ggplot(data = dead.recovery) +
 dead_map
 
 ##-- Save maps as .png
-png(filename = file.path(dir.out, 
+grDevices::png(filename = file.path(dir.out, 
                          paste0(engSpecies, "_DEAD_", years[1]," to ", years[length(years)], ".png")),
     width = 8, height = 6, units = "in", res = 300)
 dead_map
@@ -744,5 +727,5 @@ Finally, we save the cleaned **alive** and **dead.recovery** sf objects as a .RD
 # Metadata
 
 ```{r, metadata, echo = F}
-sessionInfo()
+utils::sessionInfo()
 ```

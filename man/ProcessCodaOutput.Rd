@@ -18,11 +18,13 @@ populate(input, dim, simslist = FALSE, samples = NULL)
 \item{DIC}{A \code{logical} if DIC statistics should be computed or not.}
 
 \item{params.omit}{A \code{vector} of parameters for which statistics should not be computed.}
+
+\item{verbose}{A \code{logical}. If TRUE, messages are displayed.}
 }
 \value{
-A \code{list} with sims lists, parameter ummary values and rhat values.
+A \code{list} with sims lists, parameter summary values and rhat values.
 }
 \description{
-\code{ProcessCodaOutput} Process a coda output to make readable. Those functions
+\code{ProcessCodaOutput} Process a coda output to make it readable. Those functions
  are from https://github.com/kenkellner/jagsUI/blob/master/R/processoutput.R
 }

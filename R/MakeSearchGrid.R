@@ -1,5 +1,5 @@
 #' @title Function to create detectors
-#' #'
+#' 
 #' @description
 #' \code{MakeSearchGrid} creates  detectors within a defined area (data) and 
 #' resolution between detectors. Division precises if subspatial division should
@@ -9,7 +9,7 @@
 #' @param resolution Numeric variable denoting the size of grid cells in units of (\code{polygon}).
 #' @param div Numeric variable denoting the number of equally-sized subplots grid cell is to be divided into.
 #' @param center Logical variable denoting whether nodes of the resulting search grid are to be centered within their respective subplots.
-#' @param plot Logical for whether \code{True} or not (\code{FALSE}) check plots are to be generated.
+#' @param plot Logical for whether (\code{TRUE}) or not (\code{FALSE}) check plots are to be generated.
 #' 
 #' @author Richard Bischof, \email{richard.bischof@@nmbu.no} and Pierre Dupont
 #' 
@@ -17,8 +17,8 @@
 #' @import raster
 #' @importFrom dplyr group_by summarise
 #' @importFrom graphics plot points
-#' @importFrom fasterize fasterize
 #' @importFrom stars st_as_stars
+#' @importFrom methods as
 #'    
 #' @rdname MakeSearchGrid 
 #' @export
@@ -27,8 +27,7 @@ MakeSearchGrid <- function(
     resolution = resolution,
     div = 1,
     center = T,
-    plot = TRUE,
-    fasterize = FALSE)
+    plot = TRUE)
 {
   
   ##-- if the data is already a raster   
@@ -130,10 +129,7 @@ MakeSearchGrid <- function(
   
   ##-- MAKE A PLOTTING FUNCTION 
   if(plot){
-    if(sum(class(data) %in% c("SpatialPolygons","SpatialPoints","SpatialLines"))>0){
-      plot(data, col=grey(0.3))
-    }else{
-      plot(data)}
+    plot(data, col= "gray20")
     plot(st_geometry(maindetector.poly), add=TRUE, lwd=3)
     plot(st_geometry(subdetector.poly), add=TRUE)
     plot(st_geometry(sub.detector.sp), pch=19, cex=0.6, col=as.numeric(sub.detector.sp$main.cell.id), add=TRUE)

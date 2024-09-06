@@ -4,7 +4,7 @@
 #' \code{AssignDetectors} identifies and assigns the closest detector to each detection in \code{myData}.
 #'
 #' @param myData A \code{sf} object containing the detection data
-#' @param myDetector A \code{list} of sf objects containing the detector locations
+#' @param myDetectors A \code{list} of sf objects containing the detector locations
 #' @param mysubDetectors Optional; a \code{list} of sf objects containing the subdetectors locations (for PAB models only)
 #' @param radius a \code{numeric} value denoting the maximum radius to consider for detector assignment. 
 #' Any detection further than \code{radius}m from any detector will not be assigned to any detector. Instead it will get a 'NA'.

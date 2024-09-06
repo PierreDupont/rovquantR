@@ -353,8 +353,7 @@ makeRovquantData_bear <- function(
     data = subdetectors.r,
     resolution = detectors$detResolution,
     div = (detectors$resolution/detectors$resolution.sub)^2,
-    plot = FALSE,
-    fasterize = TRUE) %>%
+    plot = FALSE) %>%
     append(detectors,.)
   
   ##-- Extract numbers of detectors
