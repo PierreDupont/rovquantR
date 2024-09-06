@@ -27,7 +27,10 @@
 #' @author Pierre Dupont
 #'
 #' @importFrom graphics plot points
+#' @importFrom raster disaggregate aggregate crop factorValues
+#' @importFrom nimbleSCR scaleCoordsToHabitatGrid
 #'
+#' @rdname getDensityInput
 #' @export
 getDensityInput <- function( regions, 
                              habitat,
@@ -54,7 +57,7 @@ getDensityInput <- function( regions,
   
   
   ##-- 2. Crop the habitat raster to the extent of the region of interest
-  habitat <- crop(habitat, extent(regions))
+  habitat <- raster::crop(habitat, extent(regions))
   
   
   ##-- 3. Check if all the cells in the 'regions' raster are 
@@ -89,7 +92,7 @@ getDensityInput <- function( regions,
   regions.rgmx <- do.call(rbind, lapply(regionsNames, function(x)newRaster[] == x))
   regions.rgmx[is.na(regions.rgmx)] <- 0
   if(is.factor(regions)){##
-    row.names(regions.rgmx) <- factorValues(regions, regionsNames)[,1]
+    row.names(regions.rgmx) <- raster::factorValues(regions, regionsNames)[,1]
     }else{
       row.names(regions.rgmx) <- regionsNames
     }
@@ -118,7 +121,7 @@ getDensityInput <- function( regions,
   
   ##-- 8. Rescale activity center x- and y- coordinates
   if(!is.null(s)){
-    rescaled_s <- scaleCoordsToHabitatGrid( coordsData = s,
+    rescaled_s <- nimbleSCR::scaleCoordsToHabitatGrid( coordsData = s,
                                             coordsHabitatGridCenter = coordinates(regions),
                                             scaleToGrid = T)
     
@@ -134,13 +137,13 @@ getDensityInput <- function( regions,
                     sy = split_s$y)
     
   }else{
-    rescaled_hab <- scaleCoordsToHabitatGrid( coordsData = coordinates(regions),
+    rescaled_hab <- nimbleSCR::scaleCoordsToHabitatGrid( coordsData = coordinates(regions),
                                             coordsHabitatGridCenter = coordinates(regions),
                                             scaleToGrid = T)$coordsHabitatGridCenterScaled
     
     habitat.xy  <- rescaled_hab[isHabitat,]
     
-    rescaled_s <- scaleCoordsToHabitatGrid( coordsData = s,
+    rescaled_s <- nimbleSCR::scaleCoordsToHabitatGrid( coordsData = s,
                                             coordsHabitatGridCenter = coordinates(regions),
                                             scaleToGrid = T)$coordsDataScaled
     
@@ -151,8 +154,6 @@ getDensityInput <- function( regions,
     
   }
   
-  
   ##-- 9. OUTPUT LIST
-  
   return(output)
 }

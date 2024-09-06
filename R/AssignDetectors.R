@@ -60,9 +60,9 @@ AssignDetectors <- function(
         
         ##-- Fast nearest neighbour search
         closest <- RANN::nn2(data = detector_coords,
-                       query = data.frame( detection_coords[ ,1],
-                                           detection_coords[ ,2]),
-                       k = 1, searchtype = "radius", radius = radius)
+                             query = data.frame( detection_coords[ ,1],
+                                                 detection_coords[ ,2]),
+                             k = 1, searchtype = "radius", radius = radius)
         closest$nn.idx[closest$nn.idx==0] <- NA
         myData$sub.detector[myData$Year == years[t]] <- closest$nn.idx
         
@@ -87,9 +87,9 @@ AssignDetectors <- function(
       if(!is.null(detection_coords)){
         ##-- Fast nearest neighbour search
         closest <- RANN::nn2( data = detector_coords,
-                        query = data.frame(detection_coords[,1],
-                                           detection_coords[,2]),
-                        k = 1, searchtype = "radius", radius = radius)
+                              query = data.frame(detection_coords[,1],
+                                                 detection_coords[,2]),
+                              k = 1, searchtype = "radius", radius = radius)
         
         closest$nn.idx[closest$nn.idx==0] <- NA
         myData$Detector[myData$Year == years[t]] <- closest$nn.idx

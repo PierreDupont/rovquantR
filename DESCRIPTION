@@ -20,19 +20,17 @@ Imports:
     coda,
     fasterize,
     ggplot2,
+    graphics,
     grDevices,
-    knitr,
     magrittr,
     methods,
     nimbleSCR,
-    R.utils,
     RANN,
     raster,
     Rcpp (>= 1.0.13),
     readr,
     readxl,
     rmarkdown,
-    rstudioapi,
     sf,
     spatstat,
     spatstat.geom,
@@ -41,7 +39,6 @@ Imports:
     utils
 Suggests: 
     basicMCMCplots,
-    ggplot2,
     testthat (>= 3.0.0)
 LinkingTo: 
     Rcpp,

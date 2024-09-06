@@ -9,12 +9,12 @@ AssignDetectors(myData, myDetectors, mysubDetectors = NULL, radius = 20000)
 \arguments{
 \item{myData}{A \code{sf} object containing the detection data}
 
+\item{myDetectors}{A \code{list} of sf objects containing the detector locations}
+
 \item{mysubDetectors}{Optional; a \code{list} of sf objects containing the subdetectors locations (for PAB models only)}
 
 \item{radius}{a \code{numeric} value denoting the maximum radius to consider for detector assignment. 
 Any detection further than \code{radius}m from any detector will not be assigned to any detector. Instead it will get a 'NA'.}
-
-\item{myDetector}{A \code{list} of sf objects containing the detector locations}
 }
 \value{
 A \code{sf} object with the x and y locations of the

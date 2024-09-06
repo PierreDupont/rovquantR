@@ -9,7 +9,7 @@
 #' The possible transitions are:
 #' \itemize{
 #' \item If z_{i,t} = 1, individual i can be recruited (transition to state 2) with probability \code{gamma}, so that z_{i,t+1} ~ dcat(1-gamma, gamma, 0, 0, 0) where gamma represents the probability of an unborn individual to be recruited.
-#' \item If z_{i,t} = 2, individual i can die from one cause of mortality (e.g. culling) and transition to z_{i,t+1}=3 with log-hazard rate ´\code{mhH}, or die from the second mortality cause with log-hazard rate \code{mhW} and transition to z_{i,t+1}=4. If the individual does not die it can survive and remain in state 2
+#' \item If z_{i,t} = 2, individual i can die from one cause of mortality (e.g. culling) and transition to z_{i,t+1}=3 with log-hazard rate \code{mhH}, or die from the second mortality cause with log-hazard rate \code{mhW} and transition to z_{i,t+1}=4. If the individual does not die it can survive and remain in state 2
 #' \item Individuals in dead states (z_{i,t} = 3 or 4) transition to z_{i,t+1} = 4, the absorbing state, with probability 1.
 #' } 
 #' 
@@ -28,7 +28,7 @@
 #' 
 #' @author Pierre Dupont
 #'
-#' @import nimble
+#' @importFrom nimble dcat rcat
 #'
 #' @examples
 #' # Use the distribution in R
@@ -54,7 +54,6 @@
 #' 
 #' @export
 NULL
-
 #' @rdname dcatHR
 #' @export
 #### 1.Density function ####
@@ -70,7 +69,7 @@ dcatHR <- nimbleFunction(run = function(
   returnType(double(0))
   
   if(z == 1){
-    logLikelihood <- dcat(x, prob = c(1 - gamma, gamma), log=1)
+    logLikelihood <- nimble::dcat(x, prob = c(1 - gamma, gamma), log=1)
     if(log == 1){return(logLikelihood)}else{return(exp(logLikelihood))}
   }
   
@@ -82,17 +81,20 @@ dcatHR <- nimbleFunction(run = function(
     w <- (1-exp(-(mhH1+mhW1)))* (mhW1/(mhH1+mhW1))
     phi <- 1-h-w
     
-    logLikelihood <- dcat(x, prob = c(0, phi, h, w), log=1)
+    logLikelihood <- nimble::dcat(x, prob = c(0, phi, h, w), log=1)
     if(log == 1){return(logLikelihood)}else{return(exp(logLikelihood))}
   }
   
   if(z == 3 | z == 4){
-    logLikelihood <- dcat(x, prob = c(0, 0, 0, 1), log=1)
+    logLikelihood <- nimble::dcat(x, prob = c(0, 0, 0, 1), log=1)
     if(log == 1){return(logLikelihood)}else{return(exp(logLikelihood))}
   }
 })
 
 
+NULL
+#' @rdname dcatHR
+#' @export
 #### 2.Sampling function ####
 rcatHR <- nimbleFunction(run = function( 
     n = integer(0),
@@ -105,7 +107,7 @@ rcatHR <- nimbleFunction(run = function(
   returnType(double(0))
 
   if(z == 1){
-    state <- rcat(1, prob = c(1 - gamma, gamma))
+    state <- nimble::rcat(1, prob = c(1 - gamma, gamma))
     return(state)
   }
   
@@ -117,7 +119,7 @@ rcatHR <- nimbleFunction(run = function(
     w <- (1-exp(-(mhH1+mhW1)))* (mhW1/(mhH1+mhW1))
     phi <- 1-h-w
     
-    state <- rcat(1, prob = c(0, phi, h, w))
+    state <- nimble::rcat(1, prob = c(0, phi, h, w))
     return(state)
   }
   
@@ -127,18 +129,4 @@ rcatHR <- nimbleFunction(run = function(
   }
   
 })
-
-#### 3.Registration ####
-registerDistributions(list(
-  dcatHR = list(
-    BUGSdist = "dcatHR(z, gamma, mhH, mhW)",
-    types = c( "value = double(0)",
-               "z = double(0)",
-               "gamma = double(0)",
-               "mhH = double(0)",
-               "mhW = double(0)"
-    ),
-    pqAvail = FALSE,
-    discrete = TRUE
-  )))
 

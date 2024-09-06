@@ -11,7 +11,7 @@
 #' 
 #' @return A \code{list} object with the distances between detections and centroid of detections and which detection(s) from which id are outside the max.distance. 
 #' 
-#' @import sf 
+#' @importFrom sf st_as_sf st_distance st_coordinates st_geometry
 #' @importFrom graphics plot lines box 
 #' @importFrom utils combn 
 #'
@@ -22,8 +22,8 @@ CheckDistanceDetections <- function(
     detector.xy = detector.xy,
     max.distance = NULL,
     method = "pairwise",
-    plot.check = TRUE)
-  {
+    plot.check = FALSE)
+{
   
   ##-- MAKE CONTAINER FOR FLAGS
   y.flagged <- y.distance <- y
@@ -43,7 +43,6 @@ CheckDistanceDetections <- function(
   # detector.index <- apply(y, 1, function(x) detector.sf[which(x>0), ])
   # detections.sp.ls <- apply(y, 1 ,function(x) detector.sf[which(x>0), ])
 
-  
   if(method == "pairwise"){ 
     for(i in 1:dim(y)[1]){
       detector.index <- which(y[i, ]>0)
@@ -74,7 +73,7 @@ CheckDistanceDetections <- function(
                 return(xx)
               }
             })
-            try(out <- out[ ,1],silent=TRUE)
+            try(out <- out[ ,1], silent = TRUE)
             return(out) 
           })
           
@@ -93,11 +92,15 @@ CheckDistanceDetections <- function(
           ext[2,2] <- ext[1,2] + max.distance
           ext[2,1] <- ext[1,1]
           
-          ext <-  st_as_sf(ext, coords = c("X", "Y"))
+          ext <- st_as_sf(ext, coords = c("X", "Y"))
           
           graphics::plot(sf::st_geometry(this.det), main=i, pch=19, col="grey", cex=1)
           graphics::lines(sf::st_coordinates(ext), main=i, col="green")
-          graphics::plot(this.det[to.remove, ], add=TRUE, pch=19, col="red", cex=0.8)
+          graphics::plot( this.det[to.remove, ],
+                          add = TRUE,
+                          pch = 19,
+                          col = "red",
+                          cex = 0.8)
           graphics::box()
         }
       }

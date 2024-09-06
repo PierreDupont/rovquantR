@@ -2,15 +2,9 @@
 % Please edit documentation in R/ProcessCodaOutput.R
 \name{ProcessCodaOutput}
 \alias{ProcessCodaOutput}
-\alias{get.dim}
-\alias{populate}
 \title{Process coda output}
 \usage{
 ProcessCodaOutput(x, DIC = F, params.omit = NULL, verbose = TRUE)
-
-get.dim(params)
-
-populate(input, dim, simslist = FALSE, samples = NULL)
 }
 \arguments{
 \item{x}{A \code{mcmc.list} object.}

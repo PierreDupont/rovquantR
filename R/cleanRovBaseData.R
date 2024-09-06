@@ -54,7 +54,6 @@ cleanRovbaseData <- function( species,
     years <- 1990:as.numeric(format(Sys.Date(), "%Y"))
   }
   
-  
   ##-- Check species and set corresponding sampling period
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
     SPECIES <- "bear"
@@ -69,12 +68,10 @@ cleanRovbaseData <- function( species,
     SP <- list(12,1:5)
   }
   
-  
   ##-- Extract the date from the last .csv data file
   DATE <- getMostRecent( path = data_dir,
                          pattern = paste0("_",SPECIES,".csv"))
 
-  
   ##-- Find the .rmd template used to clean the data and print out the report.
   if(is.null(Rmd_template)){
     Rmd_template <- system.file("rmd", "RovBase_DataCleaning.Rmd", package = "rovquantR")
@@ -83,10 +80,8 @@ cleanRovbaseData <- function( species,
     } 
   }
   
-  
   ##-- Check output directory 
   output_folder <- file.path(output_dir, SPECIES, DATE)
-
 
   ##-- Check that the "report" does not already exist to avoid overwriting
   if(file.exists(file.path(output_folder, paste0("Data_", SPECIES, "_", DATE,".html")))){

@@ -2,16 +2,14 @@
 % Please edit documentation in R/MakeSearchGrid.R
 \name{MakeSearchGrid}
 \alias{MakeSearchGrid}
-\title{Function to create detectors
-#'}
+\title{Function to create detectors}
 \usage{
 MakeSearchGrid(
   data = data,
   resolution = resolution,
   div = 1,
   center = T,
-  plot = TRUE,
-  fasterize = FALSE
+  plot = TRUE
 )
 }
 \arguments{
@@ -23,7 +21,7 @@ MakeSearchGrid(
 
 \item{center}{Logical variable denoting whether nodes of the resulting search grid are to be centered within their respective subplots.}
 
-\item{plot}{Logical for whether \code{True} or not (\code{FALSE}) check plots are to be generated.}
+\item{plot}{Logical for whether (\code{TRUE}) or not (\code{FALSE}) check plots are to be generated.}
 }
 \description{
 \code{MakeSearchGrid} creates  detectors within a defined area (data) and 

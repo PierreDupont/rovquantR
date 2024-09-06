@@ -9,7 +9,7 @@ CheckDistanceDetections(
   detector.xy = detector.xy,
   max.distance = NULL,
   method = "pairwise",
-  plot.check = TRUE
+  plot.check = FALSE
 )
 }
 \arguments{

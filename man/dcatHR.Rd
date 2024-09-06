@@ -2,10 +2,13 @@
 % Please edit documentation in R/dcatHR.R
 \name{dcatHR}
 \alias{dcatHR}
+\alias{rcatHR}
 \title{Density and random generation of a categorical distribution describing OPSCR
  state transitions with one alive and two dead states}
 \usage{
 dcatHR(x, z, gamma, mhH, mhW, log = 0)
+
+rcatHR(n, z, gamma, mhH, mhW)
 }
 \arguments{
 \item{x}{Scalar, individual arrival state (corresponding to z_{i,t+1}).}
@@ -34,13 +37,12 @@ two competing mortality causes.
 The possible transitions are:
 \itemize{
 \item If z_{i,t} = 1, individual i can be recruited (transition to state 2) with probability \code{gamma}, so that z_{i,t+1} ~ dcat(1-gamma, gamma, 0, 0, 0) where gamma represents the probability of an unborn individual to be recruited.
-\item If z_{i,t} = 2, individual i can die from one cause of mortality (e.g. culling) and transition to z_{i,t+1}=3 with log-hazard rate ´\code{mhH}, or die from the second mortality cause with log-hazard rate \code{mhW} and transition to z_{i,t+1}=4. If the individual does not die it can survive and remain in state 2
+\item If z_{i,t} = 2, individual i can die from one cause of mortality (e.g. culling) and transition to z_{i,t+1}=3 with log-hazard rate \code{mhH}, or die from the second mortality cause with log-hazard rate \code{mhW} and transition to z_{i,t+1}=4. If the individual does not die it can survive and remain in state 2
 \item Individuals in dead states (z_{i,t} = 3 or 4) transition to z_{i,t+1} = 4, the absorbing state, with probability 1.
 }
 }
 \examples{
 # Use the distribution in R
-
 z <- 2
 gamma <- 0.2
 mhH <- 0.4
