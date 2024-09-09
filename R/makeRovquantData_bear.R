@@ -28,9 +28,11 @@
 #' @import dplyr
 #' @importFrom fasterize fasterize
 #' @importFrom adehabitatHR estUDm2spixdf kernelUD
-#' @importFrom stats density
+#' @importFrom stats density 
 #' @importFrom spatstat.geom as.owin ppp
 #' @importFrom stars st_as_stars
+#' @importFrom nimbleSCR getSparseY
+#' 
 #' 
 NULL
 #' @rdname makeRovquantData_bear
@@ -526,14 +528,14 @@ makeRovquantData_bear <- function(
   
   ##-- Smooth binary map
   ## we tried adjust = 0.05, 0.037,0.02 and decided to go for 0.02 
-  habOwin <- spatstat::as.owin(as.vector(raster::extent(r.detector)))
+  habOwin <- spatstat.geom::as.owin(as.vector(raster::extent(r.detector)))
   ds.list <- lapply( data$years, function(y){
     ##-- ROVBASE DATA 
     pts <- sf::st_coordinates(rovbaseObs)[rovbaseObs$year %in% y, ]
     ##-- SKANDOBS
     pts <- rbind(pts, sf::st_coordinates(skandObs)[skandObs$year %in% y, ])
     ##-- SMOOTH AND RASTERIZE
-    p <- spatstat::ppp(pts[ ,1], pts[ ,2], window = habOwin)
+    p <- spatstat.geom::ppp(pts[ ,1], pts[ ,2], window = habOwin)
     ds <- stats::density(p, adjust = 0.02)               #-- change bandwith (smoothing) with "adjust
     ds <- raster::raster(ds)
     ds <- ds1 <- raster::resample(ds, r.detector) #-- mask(ds,rasterToPolygons(habitat$habitat.rWthBuffer,function(x) x==1))

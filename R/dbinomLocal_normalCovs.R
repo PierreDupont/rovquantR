@@ -45,7 +45,10 @@
 #' @param indicator Logical argument specifying whether the individual is available for detection.
 #' @param lengthYCombined The length of the  x argument when the (\emph{yCombined}) format of the detection data is provided (as returned by the \emph{lengthYCombined} object from \code{\link{getSparseY}}). 
 #' @param allowNoLocal To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE). 
-#' 
+#' @param trapCovs To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE). 
+#' @param trapCovsIntercept To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE). 
+#' @param trapBetas To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE). 
+
 #' @param log Logical argument, specifying whether to return the log-probability of the distribution.
 #'
 #' @return The log-likelihood value associated with the vector of detections, given the location of the activity center (s),

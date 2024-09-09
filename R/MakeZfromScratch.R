@@ -5,16 +5,15 @@
 #' "alive" between the first and last detection and "dead" after that.
 #'  the dimensions of an object along
 #'
-#' @param data.alive A \code{sf dataframe} object containing individual detections.
-#' @param aug.factor A \code{numeric} object defining the augmentation factor to be used.
-#' @param aug.years A \code{numeric} object defining the number of years to be added to the data (e.g. for population forecasting).
-#' @param replace.value A \code{numeric} object defining the value to be repeated for augmented individuals.
+#' @param data.alive A \code{sf dataframe}. object containing individual detections.
+#' @param data.dead A \code{sf dataframe}.
+#' @param samplingMonths A \code{numeric}.
 #' 
-#' @return A \code{Vector}, \code{Matrix} or \code{Array} object containing the augmented y.
+#' @return A \code{Matrix} containing the set of initial states z.
 #'
 #' @examples \dontrun{MakeZfromScratch()}
 #' 
-#' @rdname MakeAugmentation
+#' @rdname MakeZfromScratch
 #' @export
 MakeZfromScratch <- function(
     data.alive,

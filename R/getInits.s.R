@@ -16,6 +16,7 @@
 #' One row for each window. Each window should be of size 1x1.
 #' @param habitatGrid Matrix of habitat window indices. Cell values should correspond to the order of habitat windows in \code{lowerCoords} and \code{upperCoords}. 
 #' When the habitat grid only consists of a single row or column of windows, an additional row or column of dummy indices has to be added because the \code{nimble} model code requires a matrix.
+#' @param known.s coordinates of known AC locations.
 #' @param baseIntensities Vector of baseline habitat intensities for all habitat windows.
 #' @param sd Standard deviation of the isotropic bivariate normal distribution.
 #' @param detNums an \code{integer} denoting the number of detections of the focal individual.
@@ -25,6 +26,9 @@
 #' 
 #' @author Pierre Dupont
 #'
+#' @importFrom nimbleSCR rbernppACmovement_normal rbernppAC
+#' 
+#' @rdname getInits.s
 #' @export
 getInits.s <- function( y,
                         trapCoords,
@@ -51,7 +55,7 @@ getInits.s <- function( y,
   numHabWindows <- nrow(lowerCoords)
   if(is.null(baseIntensities)){baseIntensities <- rep(2,numHabWindows)}
   logIntensities <- log(baseIntensities)
-  logSumbaseIntensities <- sum(logIntensities)
+  logSumIntensity <- log(sum(baseIntensities))
   s <- array(NA, c(n.individuals, 2, n.years))
   
   ##-- Check if trap coords vary among years

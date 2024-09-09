@@ -26,7 +26,9 @@
 #'
 #' @author Pierre Dupont
 #'
-#' @importFrom graphics plot points
+#' @importFrom graphics plot points 
+#' @importFrom grDevices adjustcolor
+#' @importFrom stats na.omit
 #' @importFrom raster disaggregate aggregate crop factorValues
 #' @importFrom nimbleSCR scaleCoordsToHabitatGrid
 #'
@@ -87,7 +89,7 @@ getDensityInput <- function( regions,
   
   ##-- 5. Create a matrix of regions binary indicators
   ## (rows == number of distinct regions ; columns == habitat raster cells)
-  regionsNames <- sort(unique(na.omit(newRaster[])))
+  regionsNames <- sort(unique(stats::na.omit(newRaster[])))
   regionsNames <- regionsNames[regionsNames > 0]
   regions.rgmx <- do.call(rbind, lapply(regionsNames, function(x)newRaster[] == x))
   regions.rgmx[is.na(regions.rgmx)] <- 0

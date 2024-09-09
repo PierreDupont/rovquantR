@@ -85,6 +85,12 @@ The \emph{yCombined} object combines \emph{detNums}, \emph{x}, and \emph{detIndi
 
 \item{allowNoLocal}{To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE).}
 
+\item{trapCovs}{To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE).}
+
+\item{trapCovsIntercept}{To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE).}
+
+\item{trapBetas}{To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE).}
+
 \item{log}{Logical argument, specifying whether to return the log-probability of the distribution.}
 
 \item{n}{Integer specifying the number of realizations to generate.  Only n = 1 is supported.}

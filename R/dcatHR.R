@@ -28,7 +28,7 @@
 #' 
 #' @author Pierre Dupont
 #'
-#' @importFrom nimble dcat rcat
+#' @import nimble
 #'
 #' @examples
 #' # Use the distribution in R
@@ -69,7 +69,7 @@ dcatHR <- nimbleFunction(run = function(
   returnType(double(0))
   
   if(z == 1){
-    logLikelihood <- nimble::dcat(x, prob = c(1 - gamma, gamma), log=1)
+    logLikelihood <- dcat(x, prob = c(1 - gamma, gamma), log=1)
     if(log == 1){return(logLikelihood)}else{return(exp(logLikelihood))}
   }
   
@@ -81,12 +81,12 @@ dcatHR <- nimbleFunction(run = function(
     w <- (1-exp(-(mhH1+mhW1)))* (mhW1/(mhH1+mhW1))
     phi <- 1-h-w
     
-    logLikelihood <- nimble::dcat(x, prob = c(0, phi, h, w), log=1)
+    logLikelihood <- dcat(x, prob = c(0, phi, h, w), log=1)
     if(log == 1){return(logLikelihood)}else{return(exp(logLikelihood))}
   }
   
   if(z == 3 | z == 4){
-    logLikelihood <- nimble::dcat(x, prob = c(0, 0, 0, 1), log=1)
+    logLikelihood <- dcat(x, prob = c(0, 0, 0, 1), log=1)
     if(log == 1){return(logLikelihood)}else{return(exp(logLikelihood))}
   }
 })
@@ -107,7 +107,7 @@ rcatHR <- nimbleFunction(run = function(
   returnType(double(0))
 
   if(z == 1){
-    state <- nimble::rcat(1, prob = c(1 - gamma, gamma))
+    state <- rcat(1, prob = c(1 - gamma, gamma))
     return(state)
   }
   
@@ -119,7 +119,7 @@ rcatHR <- nimbleFunction(run = function(
     w <- (1-exp(-(mhH1+mhW1)))* (mhW1/(mhH1+mhW1))
     phi <- 1-h-w
     
-    state <- nimble::rcat(1, prob = c(0, phi, h, w))
+    state <- rcat(1, prob = c(0, phi, h, w))
     return(state)
   }
   
