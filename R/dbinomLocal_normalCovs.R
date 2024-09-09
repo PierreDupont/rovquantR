@@ -57,7 +57,7 @@
 #' @author Cyril Milleret, Soumen Dey, Pierre Dupont
 #'
 #' @import nimble 
-#' @importFrom stats dbinom
+#' @importFrom stats dbinom rbinom
 #' 
 #' @export
 NULL

@@ -19,7 +19,20 @@
 #'  as prepared by \code{\link{cleanRovBaseData}}.
 #' @param working_dir A \code{path} to the directory for this analysis containing
 #'  the \code{nimbleInputFiles} folder to store the prepared data.  
-#' @param keep_dead A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#' @param years A \code{list}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#' @param sex A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.
+#' @param aug.factor A \code{numeric} to the directory containing the clean Rovbase data,
+#' @param sampling.months A \code{list}.
+#' @param habitat.res A \code{numeric}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#' @param buffer.size A \code{numeric} denoting the species; can be any of "bear", "wolf" or "wolverine.
+#' @param max.move.dist A \code{numeric}.
+#' @param detector.res A \code{numeric} to the directory for this analysis containing
+#' @param subdetector.res A \code{numeric}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#' @param max.det.dist A \code{numeric} denoting the species; can be any of "bear", "wolf" or "wolverine.
+#' @param resize.factor A \code{numeric}.
+#' @param plot.check A \code{logical}. 
+#' @param print.report A \code{logical}.
+#' 
 #' 
 #' @return This function returns:
 #' \enumerate{

@@ -10,15 +10,25 @@
 #'
 #' @name makeRovquantData_bear
 #'
-#' @param dead_recoveries A \code{DataFrame} object containing the raw dead recoveries data.
-#' @param country_polygon A \code{SpatialPointsDataFrame} with Country polygon for correct assignment of samples to countries
-#' @param threshold_month A \code{Numeric} with initial month of the biological year: 1:January...12=December. all samples with months<threshold get year-1. so they get similar year.  
-#' @param keep_dead A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#' @param data_dir A \code{path}.
+#' @param working_dir A \code{path}.
+#' @param years A \code{list}.  
+#' @param sex A \code{character}.
+#' @param aug.factor A \code{Numeric}.
+#' @param sampling.months A \code{list}.
+#' @param habitat.res A \code{Numeric}.  
+#' @param buffer.size A \code{Numeric}.
+#' @param max.move.dist A \code{Numeric}.
+#' @param detector.res A \code{Numeric}.
+#' @param subdetector.res A \code{Numeric}.
+#' @param max.det.dist A \code{Numeric}.  
+#' @param resize.factor A \code{Numeric}.
+#' @param plot.check A \code{Logical}.
+#' @param print.report A \code{Logical}.
+#' 
 #' 
 #' @return 
-#' A \code{.RData} file with the clean NGS and dead recovery data objects
-#' for the species and period specified.
-#' A \code{html} report summarizing the data cleaning process
+#' A \code{html} report summarizing the data preparation process
 #' Additional \code{.png} images that can be reused somewhere else.
 #'
 #' @author Pierre Dupont
@@ -28,7 +38,7 @@
 #' @import dplyr
 #' @importFrom fasterize fasterize
 #' @importFrom adehabitatHR estUDm2spixdf kernelUD
-#' @importFrom stats density 
+#' @importFrom stats density runif
 #' @importFrom spatstat.geom as.owin ppp
 #' @importFrom stars st_as_stars
 #' @importFrom nimbleSCR getSparseY
@@ -121,7 +131,7 @@ makeRovquantData_bear <- function(
                                           "Vestfold","Vest-Agder",
                                           "Østfold" )] <- "Hedmark"
   COUNTIES <- COUNTIES %>%
-    dplyr::filter(., NAME_1 %in% c("Nord-Trøndelag","Hedmark","Finnmark")) %>%
+    dplyr::filter( , NAME_1 %in% c("Nord-Trøndelag","Hedmark","Finnmark")) %>%
     dplyr::group_by(NAME_1) %>%
     dplyr::summarise() 
   
@@ -160,10 +170,9 @@ makeRovquantData_bear <- function(
                    year = as.numeric(format(date,"%Y")),
                    month = as.numeric(format(date,"%m"))) %>%
     ##-- Turn into spatial points object
-    sf::st_as_sf( x = .,
-                  coords = c("longitude","latitude")) %>%
-    sf::st_set_crs(., "EPSG:4326") %>%
-    sf::st_transform(., st_crs(COUNTIES))
+    sf::st_as_sf( , coords = c("longitude","latitude")) %>%
+    sf::st_set_crs( , "EPSG:4326") %>%
+    sf::st_transform( , st_crs(COUNTIES))
   
   
   
@@ -185,8 +194,8 @@ makeRovquantData_bear <- function(
                    month = as.numeric(format(Date,"%m")),
                    country = substrRight(County,3)) %>%
     ##-- Turn into spatial points object
-    sf::st_as_sf( x = ., coords = c("East_UTM33","North_UTM33")) %>%
-    sf::st_set_crs(., sf::st_crs(COUNTIES))
+    sf::st_as_sf( , coords = c("East_UTM33","North_UTM33")) %>%
+    sf::st_set_crs( , sf::st_crs(COUNTIES))
   
   
   
@@ -1237,7 +1246,7 @@ makeRovquantData_bear <- function(
                 ##-- Id could be dead in the spatial extent but can be outside the habitat 
                 ##-- because in a cell < 49% habitat
                 buff <- sf::st_buffer(temp, dist = habitat$resolution)
-                inter <- raster::intersection(buff, habitat$buffered.habitat.poly)
+                inter <-sf::st_intersection(buff, habitat$buffered.habitat.poly)
                 s.data[i, ,t] <- sf::st_coordinates(sf::st_sample( x = inter,
                                                                    size = 1,
                                                                    type = "random"))
@@ -1345,15 +1354,15 @@ makeRovquantData_bear <- function(
       nimInits <- list( "sxy" = s.init,
                         "z" = z.init,
                         "tau" = 0.4,
-                        "betaDens" = matrix(runif(4,0,1),nrow = 2),
+                        "betaDens" = matrix(stats::runif(4,0,1),nrow = 2),
                         "omeg1" = c(0.7,0.3),
-                        "gamma" = runif(dim(y.alive)[3]-1,0.02,0.1),
-                        "mhW" = runif(dim(y.alive)[3]-1,0.1,0.3),
-                        "mhH" = runif(dim(y.alive)[3]-1,0.1,0.2),
-                        "p0" = array(runif(nimConstants$n.counties*n.years,0,0.1),
+                        "gamma" = stats::runif(dim(y.alive)[3]-1,0.02,0.1),
+                        "mhW" = stats::runif(dim(y.alive)[3]-1,0.1,0.3),
+                        "mhH" = stats::runif(dim(y.alive)[3]-1,0.1,0.2),
+                        "p0" = array(stats::runif(nimConstants$n.counties*n.years,0,0.1),
                                      c(nimConstants$n.counties,n.years)),
-                        "betaDet" = runif(2,-0.5,0.5),
-                        "sigma" = runif(1,0.1,0.4))
+                        "betaDet" = stats::runif(2,-0.5,0.5),
+                        "sigma" = stats::runif(1,0.1,0.4))
       
       save( modelCode,
             nimData,

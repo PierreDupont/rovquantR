@@ -19,7 +19,7 @@
 #' @importFrom graphics plot points
 #' 
 #' @export
-MakeYsf <- function( myData,                 
+MakeY <- function( myData,                 
                      myDetectors,           
                      method = "Bernoulli",
                      myData2 = NULL, 

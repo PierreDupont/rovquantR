@@ -1,6 +1,6 @@
 #' Density objects preparation
 #'
-#' R utility function to prepare input objects for the \code{getDensity} function (\code{\link{getDensity}}).
+#' R utility function to prepare input objects for the \code{getDensity} function.
 #'
 #' The \code{getDensityInput} function is used in advance of density extraction with function \code{getDensity}.
 #'

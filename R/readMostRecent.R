@@ -22,6 +22,7 @@
 #' @param x Scale parameter of the half-normal detection function.
 #' @param file Individual activity center x- and y-coordinates scaled to the 
 #' habitat (see (\code{\link{scaleCoordsToHabitatGrid}}).
+#' @param ... additional optional parameters.
 #' 
 #' @return The data loaded
 #'

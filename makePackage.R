@@ -11,8 +11,7 @@
 ##
 ## Copyright (c) Applied Quantitative Ecology Group (AQEG), 2024
 ## Faculty of Environmental Sciences and Natural Resource Management (MINA)
-## Norwegian Univeristy of Life Sciences (NMBU), Ås, Norway 
-##
+## Norwegian University of Life Sciences (NMBU), Ås, Norway 
 ##
 ## -----------------------------------------------------------------------------
 ##

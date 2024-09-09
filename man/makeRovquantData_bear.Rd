@@ -23,18 +23,36 @@ makeRovquantData_bear(
 )
 }
 \arguments{
-\item{dead_recoveries}{A \code{DataFrame} object containing the raw dead recoveries data.}
+\item{data_dir}{A \code{path}.}
 
-\item{country_polygon}{A \code{SpatialPointsDataFrame} with Country polygon for correct assignment of samples to countries}
+\item{working_dir}{A \code{path}.}
 
-\item{threshold_month}{A \code{Numeric} with initial month of the biological year: 1:January...12=December. all samples with months<threshold get year-1. so they get similar year.}
+\item{years}{A \code{list}.}
 
-\item{keep_dead}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+\item{sex}{A \code{character}.}
+
+\item{aug.factor}{A \code{Numeric}.}
+
+\item{sampling.months}{A \code{list}.}
+
+\item{habitat.res}{A \code{Numeric}.}
+
+\item{buffer.size}{A \code{Numeric}.}
+
+\item{detector.res}{A \code{Numeric}.}
+
+\item{subdetector.res}{A \code{Numeric}.}
+
+\item{max.det.dist}{A \code{Numeric}.}
+
+\item{resize.factor}{A \code{Numeric}.}
+
+\item{plot.check}{A \code{Logical}.}
+
+\item{print.report}{A \code{Logical}.}
 }
 \value{
-A \code{.RData} file with the clean NGS and dead recovery data objects
-for the species and period specified.
-A \code{html} report summarizing the data cleaning process
+A \code{html} report summarizing the data preparation process
 Additional \code{.png} images that can be reused somewhere else.
 }
 \description{

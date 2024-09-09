@@ -19,7 +19,6 @@ Imports:
     coda,
     dplyr,
     fasterize,
-    ggplot2,
     graphics,
     grDevices,
     magrittr,
@@ -27,14 +26,12 @@ Imports:
     nimbleSCR,
     RANN,
     raster,
-    Rcpp (>= 1.0.13),
     readr,
     readxl,
     rmarkdown,
     sf,
     spatstat.geom,
     stars,
-    terra,
     utils
 Suggests: 
     basicMCMCplots,
