@@ -32,7 +32,7 @@ This function returns a list of objects:
 }
 }
 \description{
-R utility function to prepare input objects for the \code{getDensity} function (\code{\link{getDensity}}).
+R utility function to prepare input objects for the \code{getDensity} function.
 }
 \details{
 The \code{getDensityInput} function is used in advance of density extraction with function \code{getDensity}.

@@ -47,6 +47,8 @@ were recorded; from the \emph{detIndices} object returned by the \code{\link{get
 detection function. For trap-specific baseline detection probabilities use 
 argument \emph{p0Traps} (vector) instead.}
 
+\item{...}{additional optional parameters.}
+
 \item{fileEncoding}{Vector of baseline detection probabilities for each trap 
 used in the half-normal detection function. When \emph{p0Traps} is used, 
 \emph{p0} should not be provided.}

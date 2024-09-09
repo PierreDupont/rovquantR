@@ -41,5 +41,5 @@ LinkingTo:
     RcppArmadillo,
     RcppProgress
 Encoding: UTF-8
-LazyData: true
+LazyData: false
 RoxygenNote: 7.3.2

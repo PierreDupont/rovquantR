@@ -16,7 +16,7 @@
 #' 
 #' @param species A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.
 #' @param data_dir A \code{path} to the directory containing the clean Rovbase data,
-#'  as prepared by \code{\link{cleanRovBaseData}}.
+#'  as prepared by \code{cleanRovBaseData}.
 #' @param working_dir A \code{path} to the directory for this analysis containing
 #'  the \code{nimbleInputFiles} folder to store the prepared data.  
 #' @param years A \code{list}  Whether dead recovery should be included (TRUE) or not(FALSE)

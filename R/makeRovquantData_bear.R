@@ -103,9 +103,15 @@ makeRovquantData_bear <- function(
   ## ------   1. HABITAT DATA -----
   
   ##-- Load pre-defined habitat rasters and shapefiles
-  load( system.file("extdata", "Habitat_shp.RData", package = "rovquantR"))
-  load( system.file("extdata", "HabitatAllResolutionsNewSweCounties.RData", package = "rovquantR"))
-  load( system.file("extdata", "Habitat20kmNewSweCounties.RData", package = "rovquantR"))
+  # load( system.file("extdata", "Habitat_shp.RData", package = "rovquantR"))
+  # load( system.file("extdata", "HabitatAllResolutionsNewSweCounties.RData", package = "rovquantR"))
+  # load( system.file("extdata", "Habitat20kmNewSweCounties.RData", package = "rovquantR"))
+  
+  data(COUNTRIES, envir = environment()) 
+  data(COUNTIES, envir = environment()) 
+  data(habitatRasters, envir = environment()) 
+  data(GLOBALMAP, envir = environment()) 
+  
   
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(

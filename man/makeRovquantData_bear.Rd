@@ -39,6 +39,8 @@ makeRovquantData_bear(
 
 \item{buffer.size}{A \code{Numeric}.}
 
+\item{max.move.dist}{A \code{Numeric}.}
+
 \item{detector.res}{A \code{Numeric}.}
 
 \item{subdetector.res}{A \code{Numeric}.}

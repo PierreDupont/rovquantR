@@ -27,12 +27,36 @@ makeRovquantData(
 \item{species}{A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.}
 
 \item{data_dir}{A \code{path} to the directory containing the clean Rovbase data,
-as prepared by \code{\link{cleanRovBaseData}}.}
+as prepared by \code{cleanRovBaseData}.}
 
 \item{working_dir}{A \code{path} to the directory for this analysis containing
 the \code{nimbleInputFiles} folder to store the prepared data.}
 
-\item{keep_dead}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+\item{years}{A \code{list}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+
+\item{sex}{A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.}
+
+\item{aug.factor}{A \code{numeric} to the directory containing the clean Rovbase data,}
+
+\item{sampling.months}{A \code{list}.}
+
+\item{habitat.res}{A \code{numeric}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+
+\item{buffer.size}{A \code{numeric} denoting the species; can be any of "bear", "wolf" or "wolverine.}
+
+\item{max.move.dist}{A \code{numeric}.}
+
+\item{detector.res}{A \code{numeric} to the directory for this analysis containing}
+
+\item{subdetector.res}{A \code{numeric}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+
+\item{max.det.dist}{A \code{numeric} denoting the species; can be any of "bear", "wolf" or "wolverine.}
+
+\item{resize.factor}{A \code{numeric}.}
+
+\item{plot.check}{A \code{logical}.}
+
+\item{print.report}{A \code{logical}.}
 }
 \value{
 This function returns:

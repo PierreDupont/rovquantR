@@ -19,7 +19,8 @@ translateForeignCharacters <- function( data,
 {
   ##-- Load .RData file with special characters
   if(is.null(dir.translation)){
-    load(system.file("extdata", "CharacterTranslation.RData", package = "rovquantR"))
+    data(fromto, envir = environment()) 
+    #load(system.file("extdata", "CharacterTranslation.RData", package = "rovquantR"))
   } else {
     load(dir.translation)
   }

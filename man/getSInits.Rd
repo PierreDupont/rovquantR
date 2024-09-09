@@ -34,6 +34,8 @@ One row for each window. Each window should be of size 1x1.}
 \item{habitatGrid}{Matrix of habitat window indices. Cell values should correspond to the order of habitat windows in \code{lowerCoords} and \code{upperCoords}. 
 When the habitat grid only consists of a single row or column of windows, an additional row or column of dummy indices has to be added because the \code{nimble} model code requires a matrix.}
 
+\item{intensity}{A \code{numeric} vector.}
+
 \item{sd}{Standard deviation of the isotropic bivariate normal distribution.}
 
 \item{movementMethod}{a character denoting the nimbleSCR to be used.}

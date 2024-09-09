@@ -37,7 +37,7 @@ two competing mortality causes.
 The possible transitions are:
 If \code{z_{i,t} = 1}, individual i can be recruited (transition to state 2) with probability \code{gamma}, so that \code{z_{i,t+1} ~ dcat(1-gamma, gamma, 0, 0, 0)} where gamma represents the probability of an unborn individual to be recruited.
 If \code{z_{i,t} = 2}, individual i can die from one cause of mortality (e.g. culling) and transition to \code{z_{i,t+1} = 3} with log-hazard rate \code{mhH}, or die from the second mortality cause with log-hazard rate \code{mhW} and transition to \code{z_{i,t+1} = 4}. If the individual does not die it can survive and remain in state 2
-Individuals in dead states \code{z_{i,t} = 3} or {4}, transition to \code{z_{i,t+1} = 4}, the absorbing state, with probability 1.
+Individuals in dead states \code{z_{i,t} = 3 or 4}, transition to \code{z_{i,t+1} = 4}, the absorbing state, with probability 1.
 }
 \examples{
 # Use the distribution in R
