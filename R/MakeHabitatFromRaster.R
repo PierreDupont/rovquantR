@@ -29,7 +29,7 @@
 #' @author Cyril Milleret
 #' 
 #' @import sf 
-#' @importFrom raster mask crop xyFromCell res
+#' @importFrom raster mask crop xyFromCell res as.matrix ncell plot
 #' @importFrom dplyr group_by summarise
 #' @importFrom graphics plot
 #'    
@@ -43,30 +43,30 @@ MakeHabitatFromRaster <- function(
     tolerance = NULL){ 
   
   if(is.null(tolerance)){
-    tolerance <- (res(habitat.r)[1]/5)
+    tolerance <- (raster::res(habitat.r)[1]/5)
     }
   
-  ## ----- Create buffer around study area polygon
+  ##-- Create buffer around study area polygon
   polyBuffered <- sf::st_buffer(poly, dist = buffer)
 
-  ## ----- Mask and crop habitat with the buffer 
+  ##-- Mask and crop habitat with the buffer 
   habitat.r <- raster::mask(habitat.r, polyBuffered)
   buffered.habitat.poly <- sf::st_as_sf(stars::st_as_stars(habitat.r), 
                                     as_points = FALSE, merge = TRUE)
   buffered.habitat.poly <- buffered.habitat.poly[buffered.habitat.poly$Habitat>0,]
   habitat.r <- raster::crop(habitat.r, buffered.habitat.poly)
   
-  ## ----- Create Habitat matrix (habitat : 1 and non-habitat: 0) -----
+  ##-- Create Habitat matrix (habitat : 1 and non-habitat: 0) 
   habitat.r[is.na(habitat.r)] <- 0                                     ## Give 0 values to raster cells outside the study area
   habitat.mx <- as.matrix(habitat.r)                                   ## Convert to matrix
   
-  ## ----- Give unique IDs to cells ----- 
+  ##-- Give unique IDs to cells 
   IDCells.r <- habitat.r
-  IDCells.r[] <- 1:length(IDCells.r)				## Cell ID starts from the top left corner 
-  IDCells.mx <- as.matrix(IDCells.r)				## Convert to matrix
+  IDCells.r[] <- 1:length(IDCells.r)				  ## Cell ID starts from the top left corner 
+  IDCells.mx <- raster::as.matrix(IDCells.r)	## Convert to matrix
   
-  ## ----- Obtain xy coordinates of cells -----   
-  habitat.xy <- raster::xyFromCell(habitat.r, 1:ncell(habitat.r))
+  ##-- Obtain xy coordinates of cells 
+  habitat.xy <- raster::xyFromCell(habitat.r, 1:raster::ncell(habitat.r))
   dimnames(habitat.xy) <- list(1:length(habitat.xy[,"x"]), c("x","y"))
   habitat.xy <- as.data.frame(habitat.xy)
   habitat.sp <- sf::st_as_sf(habitat.xy, coords = c("x", "y"))
@@ -80,17 +80,17 @@ MakeHabitatFromRaster <- function(
   habitat.index <- which(!as.numeric(unlist(sf::st_intersects(habitat.sp, polyAggregated))))
   habitat.clip.sp <- habitat.sp[habitat.index, ]
   
-  ## ----- Obtain lower and upper cell coordinates
+  ##-- Obtain lower and upper cell coordinates
   resolution <- raster::res(habitat.r)[1]
-  lower.hab.sp <- data.frame(st_coordinates(habitat.sp) - resolution/2)
-  upper.hab.sp <- data.frame(st_coordinates(habitat.sp) + resolution/2)
+  lower.hab.sp <- data.frame(sf::st_coordinates(habitat.sp) - resolution/2)
+  upper.hab.sp <- data.frame(sf::st_coordinates(habitat.sp) + resolution/2)
   colnames(lower.hab.sp) <- colnames(upper.hab.sp) <- c("x", "y")
   upper.hab.sp <- sf::st_as_sf(upper.hab.sp, coords = c("x", "y"))
   lower.hab.sp <- sf::st_as_sf(lower.hab.sp, coords = c("x", "y"))
   sf::st_crs(lower.hab.sp) <- sf::st_crs(poly)
   sf::st_crs(upper.hab.sp) <- sf::st_crs(poly)
 
-  ## ----- Create an habitat raster without buffer
+  ##-- Create an habitat raster without buffer
   polyBuffered$id <- 1
   polyBuffAggregated <- polyBuffered %>% 
     dplyr::group_by(id) %>% 
@@ -109,14 +109,14 @@ MakeHabitatFromRaster <- function(
   habitat.rWthBuffer[whichFarFromBufferInHabitat] <- NA
   habitat.rSearchedAndBuffer[whichFarFromBufferInHabitat] <- 2
 
-  ## ----- Visual plotting to check if everything is right 
+  ##-- Visual plotting to check if everything is right 
   if(plot.check){
-    plot(habitat.r, col = c("white","green"), legend = F)							    
-    plot(habitat.rWthBuffer, add = T, col = c("white","brown"), legend = F)
-    plot(sf::st_geometry(poly), add = TRUE)						
+    raster::plot(habitat.r, col = c("white","green"), legend = F)							    
+    raster::plot(habitat.rWthBuffer, add = T, col = c("white","brown"), legend = F)
+    graphics::plot(sf::st_geometry(poly), add = TRUE)						
   }
   
-  ## ----- List of output objects 
+  ##-- List of output objects 
   output <- list( habitat.sp = habitat.sp,
                   habitat.clip.sp = habitat.clip.sp,
                   habitat.xy = habitat.xy,

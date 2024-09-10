@@ -29,11 +29,12 @@ gc()
 
 
 ## ------ IMPORT REQUIRED LIBRARIES ------
-library(devtools)
-#library(dplyr)
-load_all("rovquantR")
+#library(devtools)
+library(dplyr)
+library(readxl)
+library(rovquantR)
 
-##---------------------------------------------------
+##------------------------------------------------------------------------------
 
 ##-- DATA DIRECTORY
 ##-- Directory containing the raw data necessary for the analysis
@@ -42,7 +43,7 @@ data_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQ
 
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test1"
+working_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test2"
 
 
 ##-- Create folder structure for the analysis

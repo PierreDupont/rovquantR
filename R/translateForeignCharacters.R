@@ -18,10 +18,10 @@ translateForeignCharacters <- function( data,
                                         dir.translation = NULL) 
 {
   ##-- Load .RData file with special characters
-  if(is.null(dir.translation)){
-    data(fromto, envir = environment()) 
+  if(!is.null(dir.translation)){
+   # data(fromto, envir = environment()) 
     #load(system.file("extdata", "CharacterTranslation.RData", package = "rovquantR"))
-  } else {
+  #} else {
     load(dir.translation)
   }
   

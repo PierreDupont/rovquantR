@@ -27,7 +27,7 @@ gc()
 ##-- Identify user and set corresponding DropBox directory
 if(Sys.info()['user'] == 'pidu') {
   dir.git <- "C:/My_documents/RovQuant"
-  dir.projects <- "C:/Users/pidu/OneDrive - Norwegian University of Life Sciences/PROJECTS"
+  dir.dropbox <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant"
 }
 if(Sys.info()['user'] == 'pierredupont') {
   dir.git <- "/Users/pierredupont/Documents/RovQuant"
@@ -50,7 +50,7 @@ if(Sys.info()['user'] == 'seasunci') {
 
 ##-- Create a folder to contain this script, as well as other R scripts used during package development
 library(usethis)
-usethis::use_data_raw()
+#usethis::use_data_raw()
 
 
 
@@ -64,6 +64,24 @@ usethis::use_data(fromto, internal = TRUE, overwrite = TRUE)
 
 ##-- Load and prepare other necessary data (COUNTRIES and COUNTIES maps in our case)
 ##-- These are saved in ./data 
+load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat_shp.RData"))
+load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20kmNewSweCounties.RData"))
+load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
 
 
-use_data(COUNTIES)
+##-- Check for non-ASCII characters
+##-- Use encoding() to learn the current encoding of the elements in a 
+##-- character vector and functions such as enc2utf8() or iconv() to convert 
+##-- between encodings.
+COUNTIES$NAME_1 <- stri_trans_general(COUNTIES$NAME_1, "Latin-ASCII")
+stri_enc_isutf8(COUNTIES$NAME_1)
+
+
+##-- Save necessary data in the right folder (./data)
+use_data(COUNTIES, overwrite = TRUE)
+use_data(COUNTRIES, overwrite = TRUE)
+use_data(COUNTRIESWaterHumans, overwrite = TRUE)
+use_data(GLOBALMAP, overwrite = TRUE)
+use_data(habitatRasterResolution, overwrite = TRUE)
+use_data(habitatRasters, overwrite = TRUE)
+

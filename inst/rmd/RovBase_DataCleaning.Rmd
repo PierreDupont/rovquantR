@@ -70,7 +70,9 @@ library(ggplot2)
 # load(file.path(dir.in,"MISC DATA/age.lookup.table.RData"))
 
 ##-- Load pre-processed habitat shapefiles
-load(system.file("extdata", "Habitat_shp.RData", package = "rovquantR"))
+#load(system.file("extdata", "Habitat_shp.RData", package = "rovquantR"))
+data(COUNTRIESWaterHumans, envir = environment()) 
+
 COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
   dplyr::group_by(ISO) %>%
   dplyr::summarise()

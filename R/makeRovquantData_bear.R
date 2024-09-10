@@ -153,7 +153,7 @@ makeRovquantData_bear <- function(
   DistAllRoads <- raster::raster(file.path(data_dir,"GIS/Roads/MinDistAllRoads1km.tif"))
   
   ##-- Fasterize to remove values that fall in the sea
-  r <- fasterize::fasterize(st_as_sf(GLOBALMAP), DistAllRoads)
+  r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
   
@@ -176,9 +176,9 @@ makeRovquantData_bear <- function(
                    year = as.numeric(format(date,"%Y")),
                    month = as.numeric(format(date,"%m"))) %>%
     ##-- Turn into spatial points object
-    sf::st_as_sf( , coords = c("longitude","latitude")) %>%
-    sf::st_set_crs( , "EPSG:4326") %>%
-    sf::st_transform( , st_crs(COUNTIES))
+    sf::st_as_sf(., coords = c("longitude","latitude")) %>%
+    sf::st_set_crs(. , value = "EPSG:4326") %>%
+    sf::st_transform(. ,sf::st_crs(COUNTIES))
   
   
   
@@ -200,8 +200,8 @@ makeRovquantData_bear <- function(
                    month = as.numeric(format(Date,"%m")),
                    country = substrRight(County,3)) %>%
     ##-- Turn into spatial points object
-    sf::st_as_sf( , coords = c("East_UTM33","North_UTM33")) %>%
-    sf::st_set_crs( , sf::st_crs(COUNTIES))
+    sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
+    sf::st_set_crs(. , sf::st_crs(COUNTIES))
   
   
   
@@ -274,8 +274,8 @@ makeRovquantData_bear <- function(
   n.habwindows <- habitat$n.habwindows <- sum(isHab)
   habitat$habitat.df <- cbind.data.frame(
     "id" = 1:habitat$n.habwindows,
-    "x" = coordinates(habitat$habitat.r)[isHab,1],
-    "y" = coordinates(habitat$habitat.r)[isHab,2])
+    "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
+    "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
   
   
   
@@ -283,18 +283,13 @@ makeRovquantData_bear <- function(
   
   ## ------       1.2.1. DEAD RECOVERIES (ALL YEARS) -----
   
-  centroids <- sf::st_coordinates(myFullData.sp$dead.recovery)
-  centroids$id <- 1
-  centroids@data <- data.frame(id = centroids@data$id) 
-  # kern <- raster::raster(
-  #   adehabitatHR::estUDm2spixdf(x = kernelUD( centroids,
-  #                                             h = 60000,
-  #                                             grid = as(habitat$habitat.r, 'SpatialPixels'))))
-  kern <- centroids %>%
+  kern <- sf::st_coordinates(myFullData.sp$dead.recovery) %>%
+    sp::SpatialPoints(.,  
+                      proj4string = sp::CRS(raster::proj4string(habitat$habitat.r)),
+                      bbox = NULL) %>%
     adehabitatHR::kernelUD( .,
                             h = 60000,
                             grid = as(habitat$habitat.r, 'SpatialPixels')) %>%
-    adehabitatHR::estUDm2spixdf(x = .) %>%
     raster::raster(.)
   
   ##-- Truncate to max value observed in Norway
