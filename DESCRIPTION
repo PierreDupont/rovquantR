@@ -15,6 +15,7 @@ Depends:
     nimble,
     R (>= 4.0.0)
 Imports: 
+    abind,
     adehabitatHR,
     coda,
     dplyr,
@@ -30,8 +31,11 @@ Imports:
     readxl,
     rmarkdown,
     sf,
+    sp,
+    spatstat.explore,
     spatstat.geom,
     stars,
+    stringi,
     utils
 Suggests: 
     basicMCMCplots,
@@ -41,5 +45,5 @@ LinkingTo:
     RcppArmadillo,
     RcppProgress
 Encoding: UTF-8
-LazyData: false
+LazyData: true
 RoxygenNote: 7.3.2

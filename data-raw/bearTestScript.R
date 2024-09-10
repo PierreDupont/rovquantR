@@ -32,7 +32,10 @@ gc()
 #library(devtools)
 library(dplyr)
 library(readxl)
+library(nimbleSCR)
 library(rovquantR)
+
+
 
 ##------------------------------------------------------------------------------
 
@@ -200,9 +203,28 @@ cleanRovbaseData( species = "bear",
 ##------------------------------------------------------------------------------
 ## ----- III. PREPARE OPSCR DATA ------
 
-makeRovquantData( species = "bear",
-                  data_dir = data_dir,
-                  working_dir = working_dir)
+makeRovquantData(    
+  ##-- paths
+  species = "bear",
+  data_dir = data_dir,
+  working_dir = working_dir,
+  ##-- data
+  years = NULL,
+  sex = c("Hann","Hunn"),
+  aug.factor = 2,
+  sampling.months = list(4,5,6,7,8,9,10,11),
+  ##-- habitat
+  habitat.res = 20000, 
+  buffer.size = 50000,
+  max.move.dist = 250000,
+  ##-- detectors
+  detector.res = 5000,
+  subdetector.res = 1000,
+  max.det.dist = 70000,
+  resize.factor = 1,
+  ##-- miscellanious
+  plot.check = FALSE,
+  print.report = TRUE)
 
 
 
@@ -229,7 +251,7 @@ conf <- configureMCMC( model,
                        monitors = nimParams,
                        thin = 1,
                        monitors2 = nimParams2,
-                       thin2 = 10)
+                       thin2 = 5)
 Rmcmc <- buildMCMC(conf)
 compiledList <- compileNimble( list(model = model,
                                     mcmc = Rmcmc),
@@ -238,7 +260,7 @@ Cmcmc <- compiledList$mcmc
 
 ##-- RUN NIMBLE MCMC IN SUCCESSIVE BITES
 system.time(runMCMCbites( mcmc = Cmcmc,
-                          bite.size = 200,
+                          bite.size = 100,
                           bite.number = 5,
                           path = file.path(working_dir,"nimbleOutfiles/Hunn")))
 
@@ -265,7 +287,7 @@ conf <- configureMCMC(model,
                       monitors = nimParams,
                       thin = 1,
                       monitors2 = nimParams2,
-                      thin2 = 10)
+                      thin2 = 5)
 Rmcmc <- buildMCMC(conf)
 compiledList <- compileNimble(list(model = model,
                                    mcmc = Rmcmc),
@@ -274,7 +296,7 @@ Cmcmc <- compiledList$mcmc
 
 ##-- RUN NIMBLE MCMC IN SUCCESSIVE BITES
 system.time(runMCMCbites( mcmc = Cmcmc,
-                          bite.size = 200,
+                          bite.size = 100,
                           bite.number = 5,
                           path = file.path(working_dir,"nimbleOutfiles/Hann")))
 
@@ -282,10 +304,19 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 
 ##------------------------------------------------------------------------------
 ## ----- V. PROCESS ROVQUANT OUTPUT ------
-processRovquantOutput( species = "bear",
-                       data_dir = data_dir,
-                       working_dir = working_dir,
-                       extraction.raster = habitatRasterResolution$`5km`[["Regions"]]) 
+processRovquantOutput(   
+  ##-- paths
+  species = "bear",
+  data_dir = data_dir,
+  working_dir = working_dir,
+  ##-- MCMC processing
+  nburnin = 0,
+  ##-- Density extraction
+  niter = 100,
+  extraction.res = 5000,
+  ##-- miscellanious
+  plot.check = FALSE,
+  print.report = TRUE)
 
 
 

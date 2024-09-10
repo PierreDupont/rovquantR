@@ -50,6 +50,7 @@ if(Sys.info()['user'] == 'seasunci') {
 
 ##-- Create a folder to contain this script, as well as other R scripts used during package development
 library(usethis)
+library(stringi)
 #usethis::use_data_raw()
 
 

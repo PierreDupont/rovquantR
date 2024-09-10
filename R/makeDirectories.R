@@ -25,11 +25,11 @@ makeDirectories <- function( path = NULL,
 
   ##-- Set-up directory structure
   if(twoSex){
-  dir.create( file.path(path, "nimbleInFiles/Hann"), showWarnings = F)
-  dir.create( file.path(path, "nimbleInFiles/Hunn"), showWarnings = F)
-  dir.create( file.path(path, "nimbleOutFiles/Hann"), showWarnings = F)
-  dir.create( file.path(path, "nimbleOutFiles/Hunn"), showWarnings = F)
-  } else{
+  dir.create( file.path(path, "nimbleInFiles/Hann"), showWarnings = F, recursive = T)
+  dir.create( file.path(path, "nimbleInFiles/Hunn"), showWarnings = F, recursive = T)
+  dir.create( file.path(path, "nimbleOutFiles/Hann"), showWarnings = F, recursive = T)
+  dir.create( file.path(path, "nimbleOutFiles/Hunn"), showWarnings = F, recursive = T)
+  } else {
     dir.create( file.path(path, "nimbleInFiles"), showWarnings = F)
     dir.create( file.path(path, "nimbleOutFiles"), showWarnings = F)  
   }

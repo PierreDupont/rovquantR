@@ -36,13 +36,16 @@
 #' @import sf 
 #' @import raster
 #' @import dplyr
-#' @importFrom fasterize fasterize
 #' @importFrom adehabitatHR estUDm2spixdf kernelUD
-#' @importFrom stats density runif
+#' @importFrom fasterize fasterize
+#' @importFrom nimbleSCR getSparseY scaleCoordsToHabitatGrid
+#' @importFrom sp SpatialPoints CRS
 #' @importFrom spatstat.geom as.owin ppp
+#' @importFrom spatstat.explore density.ppp
 #' @importFrom stars st_as_stars
-#' @importFrom nimbleSCR getSparseY
-#' 
+#' @importFrom stats runif
+#' @importFrom stringi stri_trans_general 
+#' @importFrom utils data
 #' 
 NULL
 #' @rdname makeRovquantData_bear
@@ -50,30 +53,43 @@ NULL
 makeRovquantData_bear <- function(
     
   ##-- paths
-  data_dir = "./Data",
-  working_dir = NULL,
+  data_dir = "./Data"
+  ,
+  working_dir = NULL
+  ,
   
   ##-- data
-  years = NULL,
-  sex = c("Hann","Hunn"),
-  aug.factor = 2,
-  sampling.months = list(4,5,6,7,8,9,10,11),
+  years = NULL
+  ,
+  sex = c("Hann","Hunn")
+  ,
+  aug.factor = 2
+  ,
+  sampling.months = list(4,5,6,7,8,9,10,11)
+  ,
   
   ##-- habitat
-  habitat.res = 20000, 
-  buffer.size = 50000,
-  max.move.dist = 250000,
+  habitat.res = 20000
+  , 
+  buffer.size = 50000
+  ,
+  max.move.dist = 250000
+  ,
   
   ##-- detectors
-  detector.res = 5000,
-  subdetector.res = 1000,
-  max.det.dist = 70000,
-  resize.factor = 1,
+  detector.res = 5000
+  ,
+  subdetector.res = 1000
+  ,
+  max.det.dist = 70000
+  ,
+  resize.factor = 1
+  ,
   
   ##-- miscellanious
-  plot.check = FALSE,
+  plot.check = FALSE
+  ,
   print.report = TRUE
-  
 ){
   
   ## ---------------------------------------------------------------------------
@@ -119,9 +135,9 @@ makeRovquantData_bear <- function(
     fact = raster::res(habitatRasters[["Habitat"]])/habitat.res)
   
   ##-- Merge Norwegian counties for practical reasons
-  COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c("Sør-Trøndelag",
-                                         "Nord-Trøndelag",
-                                         "Nordland")] <- "Nord-Trøndelag"
+  COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c("Sor-Trondelag",
+                                         "Nord-Trondelag",
+                                         "Nordland")] <- "Nord-Trondelag"
   
   COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c("Troms",
                                          "Finnmark")] <- "Finnmark"
@@ -129,15 +145,15 @@ makeRovquantData_bear <- function(
   COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c( "Akershus","Aust-Agder",
                                           "Buskerud",
                                           "Hedmark", "Hordaland",
-                                          "Møre og Romsdal",
+                                          "More og Romsdal",
                                           "Oslo", "Oppland",
                                           "Rogaland",
                                           "Sogn og Fjordane",
                                           "Telemark",
                                           "Vestfold","Vest-Agder",
-                                          "Østfold" )] <- "Hedmark"
+                                          "Astfold" )] <- "Hedmark"
   COUNTIES <- COUNTIES %>%
-    dplyr::filter( , NAME_1 %in% c("Nord-Trøndelag","Hedmark","Finnmark")) %>%
+    dplyr::filter( , NAME_1 %in% c("Nord-Trondelag","Hedmark","Finnmark")) %>%
     dplyr::group_by(NAME_1) %>%
     dplyr::summarise() 
   
@@ -188,9 +204,11 @@ makeRovquantData_bear <- function(
   rovbaseObs <- readMostRecent( path = data_dir,
                                 extension = ".csv",
                                 pattern = "all_samples") %>%
+    ##-- Deal with Scandinavian characters
+    mutate(Species = stringi::stri_trans_general(Species, "Latin-ASCII")) %>%
     ##-- Filter out samples without coordinates
     dplyr::filter( !is.na(East_UTM33),
-                   Species %in% c("Bjørn","Fjellrev","Gaupe","Hund","Jerv","Rødrev","Ulv"),
+                   Species %in% c("Bjorn","Fjellrev","Gaupe","Hund","Jerv","Rodrev","Ulv"),
                    Sample_type %in% c("Ekskrement","Har","Urin","Valpeekskrement (Ulv)",
                                       "Sekret (Jerv)","Saliv/Spytt")) %>%
     ##-- Extract important info (e.g. month, year, country of collection)
@@ -261,7 +279,7 @@ makeRovquantData_bear <- function(
     poly = studyArea,
     habitat.r = habRaster,
     buffer = habitat$buffer,
-    plot.check = TRUE) %>%
+    plot.check = FALSE) %>%
     append(habitat,.)
   
   ##-- ???
@@ -311,7 +329,7 @@ makeRovquantData_bear <- function(
   ## ------       1.2.2. NUMBER OF OBSERVATIONS ------
   
   ##-- Rasterize SkandObs bear observations at the habitat level
-  rl <- raster::rasterize( x = skandObs[skandObs$species %in% "Björn",1],
+  rl <- raster::rasterize( x = skandObs[skandObs$species %in% "Bjorn",1],
                            y = habitat$habitat.r,
                            fun = "count")[[1]]
   rl[is.na(rl[ ])] <- 0
@@ -375,8 +393,8 @@ makeRovquantData_bear <- function(
   n.trials <- as.vector(table(detectors$detector.sp$main.cell.id))
   detectors$detectors.df <- cbind.data.frame(
     "id" = 1:detectors$n.detectors,
-    "x" = st_coordinates(detectors$main.detector.sp)[ ,1],
-    "y" = st_coordinates(detectors$main.detector.sp)[ ,2],
+    "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
+    "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
     "size" = n.trials)
   
   # ##-- Plot check
@@ -434,7 +452,7 @@ makeRovquantData_bear <- function(
   ##-- AGGREGATE TO MATCH THE DETECTORS RESOLUTION
   DistAllRoads <- raster::aggregate( 
     x = DistAllRoads,
-    fact = detectors$resolution/res(DistAllRoads),
+    fact = detectors$resolution/raster::res(DistAllRoads),
     fun = mean)
   
   ##-- EXTRACT ROAD DISTANCE FOR EACH DETECTOR
@@ -513,7 +531,7 @@ makeRovquantData_bear <- function(
       ##-- ...based on monitoring season
       month %in% unlist(sampling.months),
       ##-- ... based on space 
-      !is.na(as.numeric(st_intersects(., habitat.rWthBufferPol))))
+      !is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
   
   # ##-- Rasterize at the detector level
   # r.list <- lapply(years, function(y){
@@ -545,14 +563,19 @@ makeRovquantData_bear <- function(
     ##-- SKANDOBS
     pts <- rbind(pts, sf::st_coordinates(skandObs)[skandObs$year %in% y, ])
     ##-- SMOOTH AND RASTERIZE
-    p <- spatstat.geom::ppp(pts[ ,1], pts[ ,2], window = habOwin)
-    ds <- stats::density(p, adjust = 0.02)               #-- change bandwith (smoothing) with "adjust
-    ds <- raster::raster(ds)
+    # p <- spatstat.geom::ppp(pts[ ,1], pts[ ,2], window = habOwin)
+    # ds <- stats::density(p, adjust = 0.02)        #-- change bandwith (smoothing) with "adjust
+    # ds <- raster::raster(ds)
+    
+    ds <- spatstat.geom::ppp(pts[ ,1], pts[ ,2], window = habOwin) %>%
+      spatstat.explore::density.ppp(., adjust = 0.02) %>%    
+      raster::raster(.)
+    
     ds <- ds1 <- raster::resample(ds, r.detector) #-- mask(ds,rasterToPolygons(habitat$habitat.rWthBuffer,function(x) x==1))
     threshold <- 0.1 / prod(res(ds))              #-- number per 1 unit of the projected raster (meters)
     ds1[] <- ifelse(ds[] < threshold,0,1)
-    ds1 <- mask(ds1, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
-    ds <- mask(ds, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
+    ds1 <- raster::mask(ds1, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
+    ds <- raster::mask(ds, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
     
     return(list(ds,ds1))
   })
@@ -695,7 +718,7 @@ makeRovquantData_bear <- function(
   ## ------   3. RESCALE COORDINATES -----
   
   ##-- Rescale coordinates
-  scaledCoords <- scaleCoordsToHabitatGrid(
+  scaledCoords <- nimbleSCR::scaleCoordsToHabitatGrid(
     coordsData = detectors$detectors.df[ ,c("x","y")],
     coordsHabitatGridCenter = habitat$habitat.df[ ,c("x","y")])
   
@@ -883,7 +906,7 @@ makeRovquantData_bear <- function(
     
     ## ------     6.6. TRANSFORM Y TO SPARSE MATRICES -----
     
-    y.sparse <- getSparseY(y.alive)
+    y.sparse <- nimbleSCR::getSparseY(y.alive)
     
     
     
@@ -1141,7 +1164,7 @@ makeRovquantData_bear <- function(
         if(any(x[1:length(unlist(sampling.months))] >= 2, na.rm = T)){
           4 }
         else {NA}}})
-    table(zYears)
+    #table(zYears)
     
     z.data <- zYears
     allDead <- apply(z.data, 1, function(x)all(x==4))
@@ -1264,7 +1287,7 @@ makeRovquantData_bear <- function(
     dimnames(s.data) <- list("id" = dimnames(y.alive)[[1]],
                              "coord" = c("x","y"),
                              "year" = years)
-    s.data <- scaleCoordsToHabitatGrid(
+    s.data <- nimbleSCR::scaleCoordsToHabitatGrid(
       coordsData = s.data,
       coordsHabitatGridCenter = habitat$habitat.df[ ,c("x","y")])$coordsDataScaled
     
@@ -1376,6 +1399,7 @@ makeRovquantData_bear <- function(
                               paste0("nimbleInput_",c,".RData")))
     }#c
   }#thisSex
-  ## ---------------------------------------------------------------------------
+  
+  
 }
 
