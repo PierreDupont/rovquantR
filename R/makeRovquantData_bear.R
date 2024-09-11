@@ -190,8 +190,9 @@ makeRovquantData_bear <- function(
     ##-- Extract important info (e.g. month, year)
     dplyr::mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
                    year = as.numeric(format(date,"%Y")),
-                   month = as.numeric(format(date,"%m"))) %>%
-    ##-- Turn into spatial points object
+                   month = as.numeric(format(date,"%m")),
+                   species = stringi::stri_trans_general(species, "Latin-ASCII")) %>%
+                     ##-- Turn into spatial points object
     sf::st_as_sf(., coords = c("longitude","latitude")) %>%
     sf::st_set_crs(. , value = "EPSG:4326") %>%
     sf::st_transform(. ,sf::st_crs(COUNTIES))
@@ -572,7 +573,7 @@ makeRovquantData_bear <- function(
       raster::raster(.)
     
     ds <- ds1 <- raster::resample(ds, r.detector) #-- mask(ds,rasterToPolygons(habitat$habitat.rWthBuffer,function(x) x==1))
-    threshold <- 0.1 / prod(res(ds))              #-- number per 1 unit of the projected raster (meters)
+    threshold <- 0.1 / prod(raster::res(ds))              #-- number per 1 unit of the projected raster (meters)
     ds1[] <- ifelse(ds[] < threshold,0,1)
     ds1 <- raster::mask(ds1, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
     ds <- raster::mask(ds, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))

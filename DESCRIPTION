@@ -26,6 +26,7 @@ Imports:
     methods,
     nimbleSCR,
     RANN,
+    Rcpp (>= 1.0.0),
     raster,
     readr,
     readxl,

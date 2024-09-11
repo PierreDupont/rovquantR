@@ -321,6 +321,3 @@ processRovquantOutput(
 
 
 ##------------------------------------------------------------------------------
-
-
-habitatRasterResolution$10km
