@@ -46,12 +46,14 @@ if(Sys.info()['user'] == 'dturek') {
 ## ------ CHECK IF THIS SCRIPT EXISTS IN THE PACKAGE DIRECTORY ------
 #if(!('makePackage.R' %in% list.files(baseDir))) stop('')
 
+## ------ CHECK PACKAGE ------
+document(baseDir)
 
+## ------ BUILD PACKAGE ------
+system(paste0('R CMD build ', baseDir))
 
 ## ------ CHECK PACKAGE ------
 check(baseDir)
-
-
 
 ## ------ INSTALL PACKAGE FROM .tar ------
 suppressMessages(try(remove.packages('rovquantR'), silent = TRUE))
@@ -60,11 +62,7 @@ tarFiles <- grep( pattern = '\\.tar\\.gz',
                   value = TRUE)
 lastTarFile <- tarFiles[length(tarFiles)]
 message('installing package version ', gsub('\\.tar\\.gz$', '', lastTarFile))
-if(.Platform$OS.type == 'windows') {
-  system(paste0('R CMD INSTALL --build ', lastTarFile))
-} else {
-  system(paste0('R CMD install ', lastTarFile))
-}
+system(paste0('R CMD INSTALL --build ', lastTarFile))
 
 
 
