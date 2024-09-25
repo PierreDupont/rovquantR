@@ -36,18 +36,11 @@
 #' @rdname processRovquantOutput_bear
 #' @export
 processRovquantOutput_bear <- function(
-    ##-- paths
   data_dir = "./Data",
   working_dir = NULL,
-  
-  ##-- MCMC processing
   nburnin = 0,
-  
-  ##-- Density extraction
   niter = 100,
   extraction.res = 5000,
-  
-  ##-- miscellanious
   plot.check = FALSE,
   print.report = TRUE
 ){
@@ -626,7 +619,8 @@ processRovquantOutput_bear <- function(
       width = 12, height = 8.5)
   par(mar = c(5,5,1,1))
   plot(-1000,
-       xlim = c(0.5, n.years + 0.5), ylim = c(0,180),
+       xlim = c(0.5, n.years + 0.5),
+       ylim = c(0,180),
        xlab = "", ylab = paste("Number of bears"), xaxt = "n", axes = F, cex.lab = 1.6)
   axis(1, at = c(1:n.years), labels = years, cex.axis = 1.6)
   axis(2, at = seq(0,170,20), labels = seq(0,170,20), cex.axis = 1.6)

@@ -1,66 +1,95 @@
-##------------------------------------------------------------------------------
-##
-## Script name: RovQuant BEAR OPSCR analysis 
-##
-## Purpose of script: 
-## This R script performs:
-## 1. the initial cleaning of the large carnivore NGS data downloaded from RovBase.3.0
-## 2. the data preparation for analysis with the 'nimbleSCR' package
-## 3. the model fitting using 'nimble' and 'nimbleSCR'
-## 4. the post-processing of the MCMC output
-##
-## Author: Pierre Dupont
-## Email: pierre.dupont@nmbu.no
-##
-## Date Created: `r paste(Sys.Date())`
-##
-## Copyright (c) Applied Quantitative Ecology Group (AQEG), `r paste(format(Sys.Date(), "%Y"))`
-## Faculty of Environmental Sciences and Natural Resource Management (MINA)
-## Norwegian University of Life Sciences (NMBU), Ås, Norway 
-##
-##------------------------------------------------------------------------------
-##
-## Notes: 
-##   
-##
-##------------------------------------------------------------------------------
+---
+title: "Bear Example"
+subtitle : "RovQuant OPSCR analysis"
+output: 
+  html_document: 
+    theme: "cerulean" 
+    toc_depth: 2
+    toc: yes
+    toc_float: yes
+    highlight: zenburn
+vignette: >
+  %\VignetteIndexEntry{Bear_Vignette}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+bibliography: references.bib  
+author: "Pierre Dupont"
+---
+
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+### `r Sys.Date()`
+
+Pierre Dupont^1^ ([pierre.dup\@live.fr](mailto:pierre.dup@live.fr)),
+Cyril Milleret^1^,
+Asunción Semper-Pascual^1^,
+Richard Bischof^1^
+
+^1^ Faculty of Environmental Sciences and Natural Resource Management, PB 5003, NO-1432 Ås, Norway
+
+# Introduction
+
+This document presents the workflow of an OPSCR analysis of the Scandinavian Brown bear monitoring data available from [RovBase 3.0](https://rovbase.no/), as performed by the [RovQuant project](https://www.nmbu.no/en/projects/rovquant). 
+
+```{r, echo=F}
 rm(list = ls())
 gc()
+```
 
+We start by loading the different R packages necessary for the analysis, and in particular the 'rovquantR' package, which contains a set of custom wrapper functions to facilitate the analysis.
 
-## ------ IMPORT REQUIRED LIBRARIES ------
-
+```{r library}
 library(devtools)
 library(dplyr)
 library(readxl)
 library(nimbleSCR)
 library(rovquantR)
+```
 
 
 
-##------------------------------------------------------------------------------
-## ------ I. SET-UP WORKING ENVIRONMENT ------
+Next, we need to set-up the general working environment for the analysis. This includes the location of the raw data files (imported from RovBase) and the directory chosen for the analysis. 
+The first directory is called 'data_dir' and corresponds to the folder where the raw data is located. 
 
-##-- DATA DIRECTORY
-##-- Directory containing the raw data necessary for the analysis
-##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
+It contains the different files necessary for the OPSCR analysis:
+* an excel file of all the brown bear DNA samples available from Rovbase
+* an excel file of all the brown bear dead recoveries available from Rovbase
+* an excel file of all large carnivore observations available from Skandobs
+* multiple spatial covariates (in the 'GIS' folder)
+
+Note that this is NOT the working directory. For all intent and purposes, it should be treated as a 'read-only' directory.
+
+```{r set-up1}
+
 data_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/Data"
+```
 
 
-##-- WORKING DIRECTORY (= main folder for the analysis)
+
+
+The second directory will be used to store all the files and outputs from the analysis.
+```{r set-up2}
 working_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test2"
+``` 
 
+To make it easier (and more reproducible), we can use the 'makeDirectories' function. This will create a set of folders in the location specific by 'working_dir' that will later be used to store processed data, model input and output, as well as results figures and tables.
 
-##-- Create folder structure for the analysis
+```{r setup3}
 makeDirectories(path = working_dir)
+``` 
 
+Before we dive in the OPSCR analysis itself, there is one more step we need to take.
+The raw export from Rovbase contain variable column names and Scandinavian characters which make it cumbersome to work with in R. We therefore rename the columns here for easier processing.
 
+In addition, we have noted that, over the years, certain fields have been added, while others had their names changed. For this reason, it is very difficult/impossible to automatize this process and the user has to make sure the field names below are up to date.
 
-##------------------------------------------------------------------------------
-## ----- II. LOAD AND FIX RAW ROVBASE.3.0 DATA -----
-
-## -----    1. NGS SAMPLES ------
-
+```{r rename_ DNA}
 ##-- Load raw excel file imported from rovbase 
 DNA <- readxl::read_xlsx(file.path(data_dir,"DNA.xlsx")) %>%
   ##-- Remove any duplicates
@@ -127,11 +156,13 @@ DNA <- readxl::read_xlsx(file.path(data_dir,"DNA.xlsx")) %>%
   filter(., Species == "Bjørn") %>%
   ##-- Save as.csv 
   writeMostRecent.csv( ., file = file.path(data_dir, "dna_bear.csv"))
+```
 
 
 
-## -----    2. DEAD RECOVERY DATA ------
+We also have to rename the dead recovery file for easier handling.
 
+```{r rename_DR}
 ##-- Load raw excel file imported from rovbase 
 DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
   ##-- Remove any duplicates
@@ -188,22 +219,28 @@ DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
   filter(., Species == "Bjørn") %>%
   ##-- Save as.csv 
   writeMostRecent.csv( ., file = file.path(data_dir, "dead_bear.csv"))
+```
 
 
 
-##------------------------------------------------------------------------------
+Now, we clean the data. This step involves multiples actions, such as subsetting the data to the species and period of interest for the analysis,  checking individual sex assigments, etc...
+In order to evaluate the cleaning procedure, the cleaing function prints out a report in .html format summarizing the content of the cleaned dataset. This report can be found in the 'data' folder of the analysis directory, labbled with the date corresponding to the last modification date of the raw data.
+
+```{r clean}
 ## ----- III. CLEAN NGS DATA -----
-
 cleanRovbaseData( species = "bear",
                   years = 2020:2024,
                   data_dir = data_dir,
                   output_dir = file.path(working_dir, "data"))
+```
 
 
 
-##------------------------------------------------------------------------------
+Now that we have cleaned out the data, it is time to format it for analysis using nimbleSCR.
+This process can be quite opaque and complex and this is why we have created the 'makeRovquantData' wrapper function, which encapsulates the latest data formatting scripts for the different species.
+
+```{r make}
 ## ----- IV. PREPARE OPSCR DATA ------
-
 makeRovquantData(    
   ##-- paths
   species = "bear",
@@ -226,11 +263,11 @@ makeRovquantData(
   ##-- miscellanious
   plot.check = FALSE,
   print.report = TRUE)
+```
 
 
 
-##------------------------------------------------------------------------------
-## ----- V. FIT ROVQUANT MODELS ------
+```{r run}
 ## -----   1. Females ------
 ##-- List all prepared input files
 inputFiles <- list.files(file.path(working_dir, "nimbleInFiles/Hunn"),
@@ -266,7 +303,6 @@ system.time(runMCMCbites( mcmc = Cmcmc,
                           path = file.path(working_dir,"nimbleOutfiles/Hunn")))
 
 
-
 ## -----   2. Males ------
 ##-- List all prepared input files
 inputFiles <- list.files(file.path(working_dir, "nimbleInFiles/Hann"),
@@ -300,10 +336,11 @@ system.time(runMCMCbites( mcmc = Cmcmc,
                           bite.size = 100,
                           bite.number = 5,
                           path = file.path(working_dir,"nimbleOutfiles/Hann")))
+```
 
 
 
-##------------------------------------------------------------------------------
+```{r process}
 ## ----- VI. PROCESS ROVQUANT OUTPUT ------
 processRovquantOutput(   
   ##-- paths
@@ -318,7 +355,9 @@ processRovquantOutput(
   ##-- miscellanious
   plot.check = FALSE,
   print.report = TRUE)
+```
 
 
+```{r visualize}
 
-##------------------------------------------------------------------------------
+```
