@@ -10,7 +10,15 @@
 using namespace arma;
 using namespace Rcpp;
 
-// @export
+//' Quantile calculation 
+//'
+//' This function returns sample quantiles corresponding to the given 
+//' probabilities (\code{q}). The smallest observation corresponds to a 
+//' probability of 0 and the largest to a probability of 1.
+//'
+//' @param x A numeric vector whose sample quantiles are wanted.
+//' @param q A numeric vector of probabilities.
+//' @export
 // [[Rcpp::export]]
 NumericVector quantileCpp(NumericVector x, NumericVector q) 
   {
@@ -19,7 +27,14 @@ NumericVector quantileCpp(NumericVector x, NumericVector q)
   return y[x.size()*(q - 0.000000001)];
 }
 
-// @export
+
+//' Mode  calculation 
+//'
+//' This function returns the sample mode.
+//' 
+//' @param x A numeric vector whose sample quantiles are wanted.
+//' @param narm A logical, whether to remove NA values before calculation or not.
+//' @export
 // [[Rcpp::export]]
 int fastIntMode(NumericVector x, bool narm = false) 
 {
@@ -46,7 +61,14 @@ int fastIntMode(NumericVector x, bool narm = false)
   return myMode;
 }
 
-// @export
+
+//' Mode  calculation 
+//'
+//' This function returns the sample mode.
+//' 
+//' @param x A numeric vector whose sample quantiles are wanted.
+//' @param narm A logical, whether to remove NA values before calculation or not.
+//' @export
 // [[Rcpp::export]]
 NumericVector extractUniquePositiveValues(NumericMatrix matrix) 
   {
@@ -64,7 +86,6 @@ NumericVector extractUniquePositiveValues(NumericMatrix matrix)
   return NumericVector(uniquePositiveValues.begin(), uniquePositiveValues.end());
 }
 
-// @export
 // [[Rcpp::export]]
 NumericMatrix createTransitionMatrix(NumericVector values) 
   {
@@ -85,7 +106,15 @@ NumericMatrix createTransitionMatrix(NumericVector values)
   return result;
 }
 
-// @export
+
+//' AC-based density extraction 
+//'
+//' This function extract density estimates for a set of grid cells based on
+//' individual posterior activty center coordinates.he sample mode.
+//' 
+//' @param x A numeric vector whose sample quantiles are wanted.
+//' @param narm A logical, whether to remove NA values before calculation or not.
+//' @export
 // [[Rcpp::export]]
 List GetDensity(NumericMatrix sx,             // X COORDINATES
                 NumericMatrix sy,                // Y COORDINATES 
@@ -250,7 +279,6 @@ List GetDensity(NumericMatrix sx,             // X COORDINATES
   
 }
 
-// @export
 // [[Rcpp::export]]
 List GetSpaceUse(NumericMatrix sx,                   // X COORDINATES 
                   NumericMatrix sy,           // Y COORDINATES 
@@ -417,7 +445,6 @@ List GetSpaceUse(NumericMatrix sx,                   // X COORDINATES
   }
 }
 
-// @export
 // [[Rcpp::export]]
 List GetDetectability_normal( NumericMatrix p0,                 // detector-specific values of p0   
                                NumericVector sigma,              // SIGMA VALUES 
@@ -587,7 +614,6 @@ List GetDetectability_normal( NumericMatrix p0,                 // detector-spec
   }
 }
 
-// @export
 // [[Rcpp::export]]
 List GetDetectability_mean( NumericVector p0,             // detector-specific values of p0   
                              double sigma,                 // SIGMA VALUES 
@@ -630,7 +656,6 @@ List GetDetectability_mean( NumericVector p0,             // detector-specific v
   return List::create(Named("MeanCell") = pTot);
 }
 
-// @export
 // [[Rcpp::export]]
 List GetTransitions( NumericMatrix sx1,               // X COORDINATES
                      NumericMatrix sy1,               // Y COORDINATES 

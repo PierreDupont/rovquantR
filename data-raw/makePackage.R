@@ -47,13 +47,13 @@ if(Sys.info()['user'] == 'dturek') {
 #if(!('makePackage.R' %in% list.files(baseDir))) stop('')
 
 ## ------ CHECK PACKAGE ------
-document(baseDir)
+#document(baseDir)
 
 ## ------ BUILD PACKAGE ------
 system(paste0('R CMD build ', baseDir))
 
 ## ------ CHECK PACKAGE ------
-check(baseDir)
+#check(baseDir)
 
 ## ------ INSTALL PACKAGE FROM .tar ------
 suppressMessages(try(remove.packages('rovquantR'), silent = TRUE))
@@ -74,6 +74,7 @@ system(paste0('R CMD INSTALL --build ', lastTarFile))
 
 library(rovquantR)
 
+rovquantR::GetDensity()
 
 
 
