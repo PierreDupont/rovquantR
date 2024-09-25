@@ -149,7 +149,7 @@ plotDensityMaps <- function(
     grDevices::pdf(file = file.path(path, paste0(name,"_LastYear.pdf")),
                    width = 8, height = 8)
     
-    t <- length(years)
+    t <- length(density)
     
     par(mar = c(0,0,0,0))
     plot(sf::st_geometry(background), border = NA, col = "gray80")
