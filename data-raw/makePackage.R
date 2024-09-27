@@ -41,7 +41,7 @@ if(Sys.info()['user'] == 'dturek') {
   baseDir <- 'C:/PROJECTS/rovquantR/'                       ## Richard
 } else stop('unknown user')
 
-
+usethis::use_readme_rmd()
 
 ## ------ CHECK IF THIS SCRIPT EXISTS IN THE PACKAGE DIRECTORY ------
 #if(!('makePackage.R' %in% list.files(baseDir))) stop('')

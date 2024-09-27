@@ -1,18 +1,14 @@
 ---
 title: "Bear Example"
 subtitle : "RovQuant OPSCR analysis"
-output: 
-  html_document: 
-    theme: "cerulean" 
-    toc_depth: 2
-    toc: yes
-    toc_float: yes
-    highlight: zenburn
+author: "Pierre Dupont"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+bibliography: references.bib  
 vignette: >
-  %\VignetteIndexEntry{Bear_Vignette}
+  %\VignetteIndexEntry{Wolverine Example}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
-author: "Pierre Dupont"
 ---
 
 
@@ -23,20 +19,7 @@ knitr::opts_chunk$set(
 )
 ```
 
-### `r Sys.Date()`
-
-Pierre Dupont^1^ ([pierre.dup\@live.fr](mailto:pierre.dup@live.fr)),
-Cyril Milleret^1^,
-Asunción Semper-Pascual^1^,
-Richard Bischof^1^
-
-^1^ Faculty of Environmental Sciences and Natural Resource Management, PB 5003, NO-1432 Ås, Norway
-
-
-
-# Introduction
-
-This document presents a workflow for the analysis of the Scandinavian Brown bear monitoring data as performed by the **[RovQuant project](https://www.nmbu.no/en/projects/rovquant)**. It consists in the Open-Population Spatial Capture-Recapture (OPSCR) analysis of the non-invasive genetic sampling and dead recovery data collected by the Norwegian and Swedish authorities and made available in the transnational large carnivore database **[Rovbase 3.0](https://rovbase.no/)**.
+This vignette presents a workflow for the analysis of the Scandinavian Brown bear monitoring data as performed by the **[RovQuant project](https://www.nmbu.no/en/projects/rovquant)**. It consists in the Open-Population Spatial Capture-Recapture (OPSCR) analysis of the non-invasive genetic sampling and dead recovery data collected by the Norwegian and Swedish authorities and made available in the transnational large carnivore database **[Rovbase 3.0](https://rovbase.no/)**.
 
 Since 2017, the **Applied Quantitative Ecology Group** ([AQEG](https://www.nmbu.no/en/research/groups/applied-quantitative-ecology-group-aqeg)) has developed specialized methods for the Spatial Capture-Recapture analysis of large-scale individual-based datasets in a Bayesian framework.
 
