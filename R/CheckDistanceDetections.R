@@ -7,7 +7,8 @@
 #' @param detector.xy A \code{matrix} object with xy coordinates of detectors. 
 #' @param max.distance A \code{numeric} distance (radius) used to identify  which detections are too far.
 #' @param method A \code{character} describing the method to be used to select which detections to remove.
-#' @param plot.check A \code{logical} plot distance histogram if \code{TRUE}.
+#' @param plot.che#' @param plot.check A \code{logical} plot distance histogram if \code{TRUE}.
+#' @param verbose A \code{logical}. Prints out information messages if set to TRUE.
 #' 
 #' @return A \code{list} object with the distances between detections and centroid of detections and which detection(s) from which id are outside the max.distance. 
 #' 
@@ -22,7 +23,8 @@ CheckDistanceDetections <- function(
     detector.xy = detector.xy,
     max.distance = NULL,
     method = "pairwise",
-    plot.check = FALSE)
+    plot.check = FALSE,
+    verbose = FALSE)
 {
   
   ##-- MAKE CONTAINER FOR FLAGS
@@ -109,10 +111,10 @@ CheckDistanceDetections <- function(
       y.distance[i,detector.index[to.remove]] <- unlist(lapply(to.remove, function(x) max(dist.det[x,])))
     }
   }
-  
+  if(verbose){
   print(paste("Detections removed: ", sum(y * y.flagged), " of ",sum(y),sep=""))
   print(paste("Individuals affected: ", sum(apply(y.flagged, 1, function(x) sum(x)>0)), " of ", sum(apply(y, 1, function(x)sum(x)>0)), sep=""))
-  
+  }
   out <- list( y.flagged = y.flagged, 
                y.distance = y.distance) 
   return(out)

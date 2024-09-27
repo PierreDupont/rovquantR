@@ -747,13 +747,15 @@ makeRovquantData_bear <- function(
   habitat$localObjects <- getLocalObjects(
     habitatMask = habitat$habitat.mx,
     coords = habitat$scaledCoords,
-    dmax = habitat$maxDist/habitat$resolution)
+    dmax = habitat$maxDist/habitat$resolution,
+    plot.check = F)
   
   ##-- Get local detectors
   detectors$localObjects <- getLocalObjects(
     habitatMask = habitat$habitat.mx,
     coords = detectors$scaledCoords,
-    dmax = detectors$maxDist/detectors$resolution)
+    dmax = detectors$maxDist/detectors$resolution,
+    plot.check = F)
   
   
   
@@ -851,7 +853,8 @@ makeRovquantData_bear <- function(
         detector.xy = detectors$detectors.df[ ,c("x","y")], 
         max.distance = detectors$maxDist,
         method = "pairwise",
-        plot.check = F)
+        plot.check = F,
+        verbose = F)
       
       # ##-- Plot individuals with detections further than the threshold distance
       # if(plot.check){
