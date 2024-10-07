@@ -32,7 +32,8 @@ functions to facilitate the reproduction of SCR and OPSCR analyses of
 the Scandinavian large carnivore monitoring data originally performed by
 the [Applied Quantitative Ecology Group
 (AQEG)](https://www.nmbu.no/en/research/groups/applied-quantitative-ecology-group-aqeg)
-during project [RovQuant](https://www.nmbu.no/en/projects/rovquant).
+during project
+[RovQuant](https://www.nmbu.no/forside/en/projects/rovquant).
 
 This package represents a collaborative effort between the `nimble`
 development team and Project RovQuant.
@@ -43,8 +44,8 @@ You can install the development version of rovquantR from
 [GitHub](https://github.com/) with:
 
 ``` r
-# install.packages("pak")
-pak::pak("PierreDupont/rovquantR")
+# install.packages("devtools")
+devtools::install_github("PierreDupont/rovquantR")
 ```
 
 ## Example

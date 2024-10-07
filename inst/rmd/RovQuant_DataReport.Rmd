@@ -1,0 +1,378 @@
+---
+params:
+  species: "bear"
+  working_dir: "./data"
+  data_dir: NULL
+title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
+subtitle: "RovQuant - OPSCR Data Preparation"
+output:
+  html_document: 
+    theme: "cerulean" 
+    toc_depth: 2
+    toc: yes
+    toc_float: yes
+    #css: bootstrap.css
+    highlight: zenburn
+  pdf_document: default
+  word_document: default
+---
+
+
+
+```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
+years <- if(is.null(params$years)){ 
+  2012:as.numeric(format(Sys.Date(), "%Y"))
+} else { 
+  params$years
+}
+samplingMonths <- params$samplingMonths
+sex <- params$sex
+species <- params$species
+data_dir <- params$data_dir
+working_dir <- params$working_dir
+
+if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
+  engSpecies <- "bear"
+  norSpecies <- "Bjørn"
+}
+if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
+  engSpecies <- "wolf"
+  norSpecies <- "Ulv"
+}
+if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
+  engSpecies <- "wolverine"
+  norSpecies <- "Jerv"
+}
+
+months = c("January","February","March","April","May","June",
+           "July","August","September","October","November","December")
+
+
+##-- load libraries
+library(kableExtra)
+library(ggplot2)
+library(mapview)
+mapviewOptions(fgb = FALSE)
+
+
+##-- Load age look-up table
+# load(file.path(dir.in,"MISC DATA/age.lookup.table.RData"))
+
+##-- Load pre-processed habitat shapefiles
+#load(system.file("extdata", "Habitat_shp.RData", package = "rovquantR"))
+data(COUNTRIESWaterHumans, envir = environment()) 
+
+COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
+  dplyr::group_by(ISO) %>%
+  dplyr::summarise()
+```
+
+
+### `r Sys.Date()`
+
+
+# Introduction
+
+This document summarizes the data preparation process of the **`r species`** DNA data available from [RovBase 3.0](https://rovbase.no/), for analysis with an OPSCR model as done by the [AQEG team](https://www.nmbu.no/en/projects/rovquant). In this particular instance, we focus on the **`r species`** data collected during the period **`r years[1]`** to **`r years[length(years)]`**.
+
+
+------------------------------------------------------------------------
+
+# Habitat definition
+ 
+```{r load habitat, echo = FALSE}
+load(file.path(working_dir, "data/Habitat.RData"))
+```
+
+
+
+## Habitat characteristics
+
+The habitat, sometimes called state-space (add REFS), describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of 
+`r numHabiWindows` habitat grid cells, each of size `r (habResolution/1000)^2` $km^2$.
+
+```{r, num samples, echo = F, fig.align = "center"}
+##-- Number of samples
+dat.alive <- alive %>%
+  dplyr::group_by(Date) %>%
+  dplyr::summarise(n = n())
+dat.alive$type = "NGS"
+
+dat.dead <- dead.recovery %>%
+  dplyr::group_by(Date) %>%
+  dplyr::summarise(n = -n())
+dat.dead$type = "dead.recovery"
+
+dat <- rbind(dat.alive, dat.dead)
+
+ggplot(dat) +
+  geom_col(aes(x = Date, y = n, fill = type)) +
+  ylab("Number of samples") +
+  guides(fill = guide_legend(reverse = TRUE)) +
+  theme(legend.title = element_blank(),
+        legend.position.inside = c(0.1,0.9)) 
+```
+
+```{r, echo = F}
+##-- Number of NGS samples
+kable(samples, align = "lc",
+      caption = "Number of NGS samples per year and country") %>%
+  kable_styling(full_width = F)
+
+##-- Number of dead recoveries
+kable(deadSamples, align = "lc",
+      caption = "Number of DNA samples from dead animals per year and country") %>% kable_styling(full_width = F)
+```
+
+
+## Habitat covariates 
+
+
+
+
+------------------------------------------------------------------------
+
+# Detectors definition
+
+```{r load detectors, echo = FALSE}
+load(file.path(working_dir, "data/Detectors.RData"))
+```
+
+
+
+## Detectors characteristics
+
+The surveyed area, also called detector-space (add REFS), describes the region that was searched for `r species` DNA samples. Although the area searched is continuous, it is discretized for practical reasons in the model. In the case of the `r species` OPSCR analysis, we used a grid with `r detResolution/1000` km resolution. The area surveyed is determined by using a buffer around the DNA samples collected. 
+
+It is composed of `r numDetectors` detector grid cells, each of size `r (detResolution/1000)^2` $km^2$, leading to a total surveyed area of `r numDetectors*(detResolution/1000)^2` $km^2$.
+
+```{r, detectors maps}
+#| label: Final plot
+#| echo: false 
+#| warning: false
+#| message: false
+#| fig-cap: "Number of detections per lièvre variable and by sex, and B) distances between detections of the same individual in a given year in the Réotier nature reserve." 
+#| out-width: 100%  
+mapview( detectors$grid,
+         zcol = "year",
+         burst = TRUE,
+         col.regions = colYears,
+         col = colYears,
+         map.types = c( "OpenTopoMap",
+                        "Esri.WorldShadedRelief",
+                        "OpenStreetMap.DE")) +
+  mapview( searchTracks.inter,
+           col.regions = colYears,
+           col = colYears,
+           layer.name = years) +
+  mapview( list("habitat grid" = st_geometry(habitat$grid)),
+           col.regions = "snow",
+           col = "black",
+           hide = TRUE) +	
+  mapview( ngs,
+           zcol = "year",
+           col.regions = colYears,
+           col = colYears,
+           burst = TRUE,
+           hide = TRUE)
+
+```
+
+
+
+## Detectors covariates
+
+
+
+------------------------------------------------------------------------
+
+# Individual detection histories
+
+We can also add maps of the NGS samples collected year:
+
+```{r, NGS maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
+# alive.sf <- st_as_sf(alive)
+# dead.sf <- st_as_sf(dead.recovery)
+# COUNTRIES.sf <- st_as_sf(COUNTRIES)
+
+##-- NGS map
+numRows <- ceiling(length(years)/5)
+numCols <- 5
+NGS_map <- ggplot(data = alive) +
+  geom_sf(data = COUNTRIES,
+          aes(fill = ISO),
+          alpha = 0.3,
+          color = NA) +
+  geom_sf(color = "black",
+          alpha = 0.3, size = 0.8, pch = 3) +
+  facet_wrap(~Year, nrow = numRows, ncol = numCols) +
+  theme(axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = "none",
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank())
+NGS_map
+
+##-- Save maps as .png
+grDevices::png(filename = file.path(dir.out, 
+                         paste0(species, "_NGS_", years[1]," to ", years[length(years)], ".png")),
+    width = 8, height = 6, units = "in", res = 300)
+NGS_map
+graphics.off()
+```
+
+and a series of maps for the dead recoveries each year:
+
+```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
+dead_map <- ggplot(data = dead.recovery) +
+  geom_sf(data = COUNTRIES, 
+          aes(fill = ISO),
+          alpha = 0.3,
+          color = NA) + 
+  geom_sf(color = "black", alpha = 0.5, size = 0.8, pch = 3) +
+  facet_wrap(~Year, nrow = numRows, ncol = numCols) +
+  theme(axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = "none",
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank())
+dead_map
+
+##-- Save maps as .png
+grDevices::png(filename = file.path(dir.out, 
+                         paste0(engSpecies, "_DEAD_", years[1]," to ", years[length(years)], ".png")),
+    width = 8, height = 6, units = "in", res = 300)
+dead_map
+graphics.off()
+```
+
+
+```{r, map quarto}
+#| label: GPS track plot 
+#| message: false 
+#| warning: false
+#| echo: false 
+#| fig-cap: "Transects parcourus chaque année à la recherche de crottes de lièvres variables sur le site de Réotier." 
+#| out-width: 120%  
+colYears <- as.list(met.brewer( name = "Isfahan1",
+                      n = length(searchTracks.inter), 
+                      type="continuous"))
+colOccasions <- hcl.colors(n = 5, palette = "Earth")
+
+myPlots <- list()
+for(t in 1:n.years){
+  myPlots[[t]] <- ggplot(searchTracks.inter[[t]]) + 
+    geom_sf(aes(col = as.factor(occasion)),
+            show.legend = FALSE) +
+    scale_color_manual(values = colOccasions) +
+    theme( axis.line = element_blank(), 
+           axis.text = element_blank(),
+           axis.ticks = element_blank(),
+           axis.title = element_blank()) +
+     labs(title = years[t])
+}#t
+
+grid.arrange(arrangeGrob(myPlots[[1]],
+                         myPlots[[2]],
+                         myPlots[[3]],
+                         myPlots[[4]],
+                         myPlots[[5]],
+                         myPlots[[6]],
+                         myPlots[[7]],
+                         myPlots[[8]],
+                         myPlots[[9]],
+                         myPlots[[10]],ncol = 2))
+
+```
+
+We can also look at some summary statistics based on individual detections, such as number of detections per individual (total), number of individual detections per individual (each year), pairwise distance between detections (in the same year ==> equivalent to sigma), distance between consecutive naive activity centers (equivalent to Tau.)
+
+
+
+```{r data summary, echo =  F, fig.cap= "A) Nombre de détections par lièvre variable, par an, et par sexe, et B) distribution des distances entre deux detections du même individu au cours de la même année sur le site de Réotier. Les lignes pointillées montrent les valeurs moyennes pour chaque sexe.", }
+##-- Histogram of numbers of detections per individual per year
+df <- ngs %>%
+  st_drop_geometry() %>%
+  summarize(., 
+            freq = n(),
+            .by = c(id,sex,year))
+                 
+mu <- summarize( df, 
+                 grp.mean = mean(freq),
+                 .by = sex)
+
+plot1 <- ggplot(df, aes(x = freq, fill = sex)) +
+  geom_histogram( position = "dodge", 
+                  alpha = 0.5, binwidth = 1)+
+  geom_vline( data = mu,
+              aes( xintercept = grp.mean, color = sex),
+              linetype = "dashed") +
+  labs( tag = "A",
+        x = "Number of detections per year",
+        y = "Number of individuals") +
+  theme_classic( ) +
+  theme(legend.position = 'none')
+
+
+##-- Histogram of distances between detections in a year
+meanDist <- summarize( detDist, 
+                       grp.mean = mean(dist),
+                       .by = sex)
+
+plot2 <- ggplot(detDist, aes(x = dist, fill = sex)) +
+  geom_histogram( position = "dodge", 
+                  alpha = 0.5, binwidth = 100) +
+  geom_vline( data = meanDist,
+              aes( xintercept = grp.mean, color = sex),
+              linetype = "dashed") +
+  labs( tag = "B",
+        x = "Pairwise distance between detections (m)",
+        y = "Number of individuals") +
+  theme_classic()
+
+plot1 + plot2
+
+
+```
+
+
+
+------------------------------------------------------------------------
+
+# Local evaluation
+
+```{r, save data, echo = F}
+fileName <-  paste0("Data_", engSpecies, "_",params$modDate,".RData")
+
+save(alive, 
+     dead.recovery,
+     IdDoubleSex,
+     file = file.path(dir.out, fileName))
+```
+
+Finally, we save the cleaned **alive** and **dead.recovery** sf objects as a .RData file with name **`r fileName`** located in the `r engSpecies`-specific folder (`r dir.out`).
+
+
+
+
+------------------------------------------------------------------------
+
+# Metadata
+
+```{r, metadata, echo = F}
+utils::sessionInfo()
+```

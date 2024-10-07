@@ -30,9 +30,9 @@
 #' @param subdetector.res A \code{numeric}  Whether dead recovery should be included (TRUE) or not(FALSE)
 #' @param max.det.dist A \code{numeric} denoting the species; can be any of "bear", "wolf" or "wolverine.
 #' @param resize.factor A \code{numeric}.
-#' @param plot.check A \code{logical}. 
 #' @param print.report A \code{logical}.
-#' 
+#' @param Rmd_template A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
+#'
 #' 
 #' @return This function returns:
 #' \enumerate{
@@ -70,8 +70,8 @@ makeRovquantData <- function(
   resize.factor = 1,
   
   ##-- miscellanious
-  plot.check = FALSE,
-  print.report = TRUE
+  print.report = TRUE, 
+  Rmd_template = NULL
 ) {
   
   ##-- Check species and set corresponding sampling period
@@ -80,27 +80,22 @@ makeRovquantData <- function(
       ##-- paths
       data_dir,
       working_dir,
-      
       ##-- data
       years,
       sex,
       aug.factor,
       sampling.months,
-      
       ##-- habitat
       habitat.res, 
       buffer.size,
       max.move.dist,
-      
       ##-- detectors
       detector.res = 5000,
       subdetector.res = 1000,
       max.det.dist = 70000,
       resize.factor = 1,
-      
       ##-- miscellanious
-      plot.check = FALSE,
-      print.report = FALSE)
+      plot.check = FALSE)
   }
   # if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
   #   out <- makeRovquantData_wolf(...)
@@ -108,6 +103,26 @@ makeRovquantData <- function(
   # if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
   #   out <- makeRovquantData_wolverine(...)
   # }
+  
+  if(print.report){
+    
+    ##-- Find the .rmd template for the report.
+    if(is.null(Rmd_template)){
+      Rmd_template <- system.file("rmd", "RovQuant_DataReport.Rmd", package = "rovquantR")
+      if(!file.exists(Rmd_template)) {
+        stop('Can not find a .rmd template called "RovQuant_DataReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
+      } 
+    }
+    
+    ##-- Clean the data and print report
+    rmarkdown::render(
+      input = Rmd_template,
+      params = list( species = SPECIES,
+                     working_dir = working_dir,
+                     data_dir = data_dir)
+      output_dir = output_folder,
+      output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
+  }
   
   return(out)
 }

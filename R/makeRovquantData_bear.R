@@ -914,97 +914,7 @@ makeRovquantData_bear <- function(
     
     
     
-    ## ---------------------------------------------------------------------------
-    ## ------ III. PLOTS ------
-    # if(!file.exists(file.path(myVars$WD, "MODELS", myVars$modelName, "FIGURES/Detections.pdf"))){
-    #   pdf(file = file.path(myVars$WD, "MODELS", myVars$modelName, "FIGURES/Detections.pdf"))
-    #   
-    #   ##-- PLOT FULL DATA (== all detections)
-    #   plot(GLOBALMAP)
-    #   plot(studyArea, add = T)
-    #   points(myFullData.sp$alive,pch=16, col="red", cex=0.5)
-    #   points(myFullData.sp$dead.recovery,pch=16, col="blue", cex=0.3)
-    #   mtext(paste("Overall live detections", length(myFullData.sp$alive),
-    #               "; ID:", length(unique(myFullData.sp$alive$Id))
-    #   ),line = +1)
-    #   mtext(paste("Overall dead recoveries:",length(myFullData.sp$dead.recovery)))
-    #   
-    #   ##-- PLOT FILTERED DATA (== what goes in the analysis)
-    #   for(t in 1:n.years){
-    #     plot(habitat$habitat.r, main = years[t]) 
-    #     plot(detectors$main.detector.sp, add = T, pch = 16, cex = 0.1)
-    #     points(myData.alive$myData.sp[myData.alive$myData.sp$Year == years[t], ],
-    #            pch = 16, col = "red", cex = 0.7)
-    #     mtext(paste("Live detections", length(myData.alive$myData.sp[myData.alive$myData.sp$Year == years[t], ]),
-    #                 "; ID:", length(unique(myData.alive$myData.sp[myData.alive$myData.sp$Year == years[t], ]$Id))
-    #     ),line = +1)
-    #     points(myData.dead[myData.dead$Year == years[t], ],
-    #            pch = 16, col = "blue", cex = 0.7)
-    #     mtext(paste("Dead recovery:", length(myData.dead[myData.dead$Year == years[t], ])))
-    #     plot(GLOBALMAP, add = T) 
-    #   }#t
-    #   
-    #   ##-- PLOT DETECTIONS AND DETECTORS PER COUNTY
-    #   for(this.year in myVars$DATA$years){
-    #     plot(GLOBALMAP)
-    #     plot(studyArea, add = T)
-    #     points(myFullData.sp$alive[myFullData.sp$alive$Year%in%this.year,],
-    #            pch = 16, col = "red", cex = 0.3)
-    #     points(myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Year%in%this.year,],
-    #            pch = 16, col = "blue", cex = 0.3)
-    #     plot(COUNTIES, col = adjustcolor("green",0.2), border = "black", add = TRUE)
-    #     plot(COUNTIES, border = "black", add = TRUE)
-    #     mtext(this.year, 3, -1, cex = 1.6, font = 2)
-    #   }
-    #   
-    #   ##-- PLOT COVARIATES
-    #   ## Dead recovery intensity
-    #   plot(kern, main = "Dead recovery density")
-    #   plot(GLOBALMAP, add = T)
-    #   plot(habitat$buffered.habitat.poly, add = T, border = "red", lwd = 2)
-    #   
-    #   ## Counties
-    #   myCol <- terrain.colors(length(COUNTIES))
-    #   plot(GLOBALMAP, col = "gray80", main = " Counties")
-    #   points(detectors$main.detector.sp, col = myCol[detectors$detectors.df$counties], pch = 16, cex = 0.8)
-    #   plot(COUNTIES, add = TRUE)
-    #   plot(studyArea, border = "red", lwd = 2, add = T)
-    #   text(COUNTIES, labels = COUNTIES$id, col = "black")  
-    #   
-    #   ## Roads
-    #   plot(GLOBALMAP, col = "gray80", main = "Distance to roads")
-    #   plot(studyArea, col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-    #   plot(DistAllRoads,add=T)
-    #   plot(GLOBALMAP, add=T)
-    #   plot(studyArea, border = "red", lwd = 2, add = T)
-    #   plot(detectors$main.detector.sp, add = T, cex = 0.3)
-    #   
-    #   graphics.off()
-    # }
-    # 
-    # 
-    
-    
-    
-    # pdf(file = file.path(myVars$WD, "FIGURES/31.2.1.NOR/DistanceToRoads.pdf"))
-    # plot(NORWAY, col = "gray80", main = "")
-    # plot(mask(DistAllRoads,NORWAY), add = T)
-    # plot(NORWAY, add = T)
-    # graphics.off()
-    # 
-    # pdf(file = file.path(myVars$WD, "FIGURES/31.2.1.NOR/CarnivoreObs.pdf"))
-    # par(mfrow = c(2,5))
-    # for(t in 1:n.years){
-    #   plot(NORWAY, col = "gray80", main = "")
-    #   plot(mask(ds.brickCont[[t]],NORWAY), add = T)
-    #   plot(NORWAY, add = T)
-    # }
-    # graphics.off()
-    
-    
-    
-    ## ---------------------------------------------------------------------------
-    ## ------ IV. MODEL SETTING & RUNNING ------- 
+   ## ------ IV. MODEL SETTING & RUNNING ------- 
     
     ## -----    1. NIMBLE CODE ------
     
@@ -1404,6 +1314,20 @@ makeRovquantData_bear <- function(
     }#c
   }#thisSex
   
+  if(print.report){
+  message(paste0("Printing out report: 'Data_", SPECIES, "_", DATE,".html'."))
   
+  ##-- Clean the data and print report
+  rmarkdown::render(
+    input = system.file("rmd", "RovBase_DataReport.Rmd", package = "rovquantR"),
+    params = list( species = SPECIES,
+                   years = years,
+                   samplingMonths = SP,
+                   dir.in = data_dir,
+                   dir.out = output_folder,
+                   modDate = DATE),
+    output_dir = output_folder,
+    output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
+  }
 }
 

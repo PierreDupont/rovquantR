@@ -41,19 +41,22 @@ if(Sys.info()['user'] == 'dturek') {
   baseDir <- 'C:/PROJECTS/rovquantR/'                       ## Richard
 } else stop('unknown user')
 
-usethis::use_readme_rmd()
 
-## ------ CHECK IF THIS SCRIPT EXISTS IN THE PACKAGE DIRECTORY ------
-#if(!('makePackage.R' %in% list.files(baseDir))) stop('')
+## ------ SET-UP README.rmd FILE ------
+#usethis::use_readme_rmd()
 
-## ------ CHECK PACKAGE ------
+
+## ------ DOCUMENT PACKAGE ------
 #document(baseDir)
+
 
 ## ------ BUILD PACKAGE ------
 system(paste0('R CMD build ', baseDir))
 
+
 ## ------ CHECK PACKAGE ------
 #check(baseDir)
+
 
 ## ------ INSTALL PACKAGE FROM .tar ------
 suppressMessages(try(remove.packages('rovquantR'), silent = TRUE))
@@ -65,13 +68,18 @@ message('installing package version ', gsub('\\.tar\\.gz$', '', lastTarFile))
 system(paste0('R CMD INSTALL --build ', lastTarFile))
 
 
+## ------ (ALTERNATIVE) INSTALL PACKAGE FROM GITHUB ------
+#devtools::install_github("PierreDupont/rovquantR")
+
 
 ## ------ NOW QUIT R -----
+q()
+
 
 ## ------ NOW RESTART R ------
 
-## ------ TRY TO LOAD PACKAGE ------
 
+## ------ TRY TO LOAD PACKAGE ------
 library(rovquantR)
 
 rovquantR::GetDensity()
