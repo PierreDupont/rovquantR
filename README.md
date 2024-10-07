@@ -27,7 +27,7 @@ A user-friendly interface to reproduce RovQuant’s analyses.
 
 ------------------------------------------------------------------------
 
-The goal of rovquantR is to provide user-friendly `R` and `nimble`
+The goal of **rovquantR** is to provide user-friendly `R` and `nimble`
 functions to facilitate the reproduction of SCR and OPSCR analyses of
 the Scandinavian large carnivore monitoring data originally performed by
 the [Applied Quantitative Ecology Group
@@ -40,7 +40,7 @@ development team and Project RovQuant.
 
 ## Installation
 
-You can install the development version of rovquantR from
+You can install the development version of **rovquantR** from
 [GitHub](https://github.com/) with:
 
 ``` r

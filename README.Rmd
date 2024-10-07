@@ -41,7 +41,7 @@ knitr::opts_chunk$set(
 
 ---
 
-The goal of rovquantR is to provide user-friendly `R` and `nimble` functions to facilitate the reproduction of SCR and OPSCR analyses of the Scandinavian large carnivore monitoring data originally performed by the [Applied Quantitative Ecology Group (AQEG)](https://www.nmbu.no/en/research/groups/applied-quantitative-ecology-group-aqeg) during project [RovQuant](https://www.nmbu.no/forside/en/projects/rovquant).
+The goal of **rovquantR** is to provide user-friendly `R` and `nimble` functions to facilitate the reproduction of SCR and OPSCR analyses of the Scandinavian large carnivore monitoring data originally performed by the [Applied Quantitative Ecology Group (AQEG)](https://www.nmbu.no/en/research/groups/applied-quantitative-ecology-group-aqeg) during project [RovQuant](https://www.nmbu.no/forside/en/projects/rovquant).
 
 This package represents a collaborative effort between the `nimble` development team and Project RovQuant.
 
