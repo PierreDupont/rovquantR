@@ -397,20 +397,7 @@ makeRovquantData_bear <- function(
     "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
     "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
     "size" = n.trials)
-  
-  # ##-- Plot check
-  # if(myVars$plot.check){
-  #   par(mfrow = c(1,1))
-  #   plot( habitat$buffered.habitat.poly,
-  #         main = paste(n.detectors, "Detectors Alive"),
-  #         col = rgb(0.16,0.67,0.16, alpha = 0.3))
-  #   plot( st_geometry(studyArea),
-  #         add = TRUE, col = rgb(0.16,0.67,0.16,alpha = 0.5))
-  #   plot( st_geometry(detectors$main.detector.sp),
-  #         col = "red", pch = 16, cex = 0.1, add = TRUE)
-  #   plot(st_geometry(COUNTRIES), add = TRUE)
-  # }
-  
+
   
   
   ## ------     2.2. GENERATE DETECTOR-LEVEL COVARIATES -----
@@ -847,7 +834,7 @@ makeRovquantData_bear <- function(
     
     distances <- list()
     for(t in 1:n.years){
-      print(paste("------ ", t ," -------", sep = "" ))
+#      print(paste("------ ", t ," -------", sep = "" ))
       distances[[t]] <- CheckDistanceDetections(
         y = y.ar.ALIVE[,,t], 
         detector.xy = detectors$detectors.df[ ,c("x","y")], 

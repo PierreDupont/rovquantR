@@ -119,7 +119,7 @@ makeRovquantData <- function(
       input = Rmd_template,
       params = list( species = SPECIES,
                      working_dir = working_dir,
-                     data_dir = data_dir)
+                     data_dir = data_dir),
       output_dir = output_folder,
       output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
   }
