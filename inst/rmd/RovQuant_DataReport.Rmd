@@ -83,15 +83,6 @@ This document summarizes the data preparation process of the **`r species`** DNA
  
 ```{r load habitat, echo = FALSE}
 load(file.path(working_dir, "data/Habitat.RData"))
-
-habitat$grid <- makeGridFromCorners(
-  lowerCoords = st_coordinates(habitat$lower.hab.sp), 
-  upperCoords = st_coordinates(habitat$upper.hab.sp),
-  crs = st_crs(habitat$habitat.sp))
-
-isHab <- habitat$habitat.r[] == 1
-
-habitat$grid <- habitat$grid[isHab, ]
 ```
 
 

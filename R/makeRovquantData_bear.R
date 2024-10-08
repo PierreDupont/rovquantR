@@ -87,8 +87,6 @@ makeRovquantData_bear <- function(
   ,
   
   ##-- miscellanious
-  plot.check = FALSE
-  ,
   print.report = TRUE
 ){
   
@@ -119,10 +117,6 @@ makeRovquantData_bear <- function(
   ## ------   1. HABITAT DATA -----
   
   ##-- Load pre-defined habitat rasters and shapefiles
-  # load( system.file("extdata", "Habitat_shp.RData", package = "rovquantR"))
-  # load( system.file("extdata", "HabitatAllResolutionsNewSweCounties.RData", package = "rovquantR"))
-  # load( system.file("extdata", "Habitat20kmNewSweCounties.RData", package = "rovquantR"))
-  
   data(COUNTRIES, envir = environment()) 
   data(COUNTIES, envir = environment()) 
   data(habitatRasters, envir = environment()) 
@@ -296,6 +290,12 @@ makeRovquantData_bear <- function(
     "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
     "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
   
+  ##-- Make a spatial grid from polygon
+  habitat$grid <- sf::st_as_sf(raster::rasterToPolygons(habitat$habitat.r,
+                                            fun = function(x){x>0}))
+  habitat$grid$id <- 1:nrow(habitat$grid)
+  sf::st_crs(habitat$grid) <- sf::st_crs(habitat$buffered.habitat.poly)
+  
   
   
   ## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES -----
@@ -366,6 +366,12 @@ makeRovquantData_bear <- function(
     habitat$habitat.df,
     "skandObs.smooth" = base::scale(r.skandObsBinary.smooth[isHab]))
   
+  ##-- Merge with the habitat grid
+  habitat$grid <- left_join(
+    x = habitat$grid,
+    y = habitat$habitat.df,
+    by = "id")
+  
   
   
   ## ------   2. GENERATE DETECTORS -----
@@ -397,6 +403,13 @@ makeRovquantData_bear <- function(
     "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
     "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
     "size" = n.trials)
+
+  ##-- Make a spatial grid from polygon
+  detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
+    x = raster::aggregate( x = subdetectors.r,
+                           fact = sqrt(div)),
+    fun = function(x){x>0}))
+  detectors$grid$id <- 1:nrow(detectors$grid)
 
   
   
@@ -700,6 +713,13 @@ makeRovquantData_bear <- function(
                              "covariates" = c("roads", "obs"),
                              "years" = years)
   detectors$covariates <- detCovs
+  
+  
+  ##-- Merge with the habitat grid
+  detectors$grid <- left_join(
+    x = detectors$grid,
+    y = detectors$detectors.df,
+    by = "id")
   
   
   
@@ -1301,6 +1321,8 @@ makeRovquantData_bear <- function(
     }#c
   }#thisSex
   
+  
+  ##-- Render .html report summarizing the data
   if(print.report){
   message(paste0("Printing out report: 'Data_", SPECIES, "_", DATE,".html'."))
   
