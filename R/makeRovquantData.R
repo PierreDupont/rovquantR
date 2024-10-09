@@ -4,7 +4,15 @@
 #' The \code{makeRovquantData} function calls a custom Rmarkdown template that identifies 
 #' and loads the most recent Rovbase data available for the specified species 
 #' and performs the OPSCR data preparation for model fitting. 
-#' The data preparation is specific to each species and incorporates the
+#' 
+#' The data preparation process is composed of three main steps:
+#' \enumerate{
+#' \item Defining and formatting habitat characteristics
+#' \item Defining and formatting detectors characteristics
+#' \item Defining and formatting individual detection histories
+#' }
+#' 
+#' The data preparation process is specific to each species and incorporates the
 #' different developments from project RovQuant to allow fitting large-scale
 #' SCR and OPSCR models (see Turek et al., 2021 <doi.org/10.1002/ecs2.3385>  for more details):
 #' \enumerate{

@@ -1,12 +1,11 @@
 #' @title RovQuant OPSCR brown bear data preparation.
 #'
 #' @description
-#' \code{makeRovquantData_bear} calls a custom Rmarkdown template that identifies
-#'  and loads the most recent Rovbase data available for the specified 
-#'  species and conducts a set of data cleaning steps that include:
-#'  - removing un-identified samples
-#'  - checking sex-assignment
-#'  - removing flagged samples from RovData/Mike
+#' \code{makeRovquantData_bear} formats the available bear data for the OPSCR analysis using nimble and nimbleSCR.
+#' The data preparation process is composed of three main steps:
+#'  - defining and formatting habitat characteristics
+#'  - defining and formatting detectors characteristics
+#'  - defining and formatting individual detection histories
 #'
 #' @name makeRovquantData_bear
 #'
@@ -407,7 +406,7 @@ makeRovquantData_bear <- function(
   ##-- Make a spatial grid from polygon
   detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
     x = raster::aggregate( x = subdetectors.r,
-                           fact = sqrt(div)),
+                           fact = detectors$resolution/detectors$resolution.sub),
     fun = function(x){x>0}))
   detectors$grid$id <- 1:nrow(detectors$grid)
 
@@ -434,19 +433,7 @@ makeRovquantData_bear <- function(
   detectors$detectors.df$counties <- detCounties
   detectors$detectors.df$counties1 <- detCounties1
   
-  # ##-- Plot check 
-  # if(plot.check){
-  #   par(mfrow = c(1,1))
-  #   myCol <- terrain.colors(nrow(COUNTIES))
-  #   plot( st_geometry(GLOBALMAP),
-  #         col = "gray80", main = " Counties")
-  #   plot( st_geometry(studyArea),
-  #         col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  #   plot(st_geometry(detectors$main.detector.sp),
-  #        col = myCol[detCounties], pch = 16, cex = 0.8, add = T)
-  # }
-  
-  
+
   
   ## ------       2.2.2. EXTRACT DISTANCES TO ROADS -----
   
@@ -474,16 +461,7 @@ makeRovquantData_bear <- function(
   
   # ##-- CHECK IF CONTAINS NAs
   # if(any(is.na(detRoads)))print("WARNINGS!!!!!!! ONE OF THE DETECTOR MATRIX CONTAINS NA")
-  # 
-  # ##-- Plot check
-  # if(myVars$plot.check){
-  #   par(mfrow = c(1,1))
-  #   plot(st_geometry(GLOBALMAP), col = "gray80", main = "Distance to roads")
-  #   plot(st_geometry(studyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  #   plot(DistAllRoads, add = T)
-  #   plot(st_geometry(detectors$main.detector.sp), cex = scale(detRoads), pch = 16, add = T)
-  # }
-  
+
   
   
   ## ------       2.2.4. EXTRACT PRESENCE OF OTHER SAMPLES ------
@@ -556,7 +534,7 @@ makeRovquantData_bear <- function(
   
   
   ##-- Smooth binary map
-  ## we tried adjust = 0.05, 0.037,0.02 and decided to go for 0.02 
+  ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.02 
   habOwin <- spatstat.geom::as.owin(as.vector(raster::extent(r.detector)))
   ds.list <- lapply( data$years, function(y){
     ##-- ROVBASE DATA 
@@ -564,16 +542,12 @@ makeRovquantData_bear <- function(
     ##-- SKANDOBS
     pts <- rbind(pts, sf::st_coordinates(skandObs)[skandObs$year %in% y, ])
     ##-- SMOOTH AND RASTERIZE
-    # p <- spatstat.geom::ppp(pts[ ,1], pts[ ,2], window = habOwin)
-    # ds <- stats::density(p, adjust = 0.02)        #-- change bandwith (smoothing) with "adjust
-    # ds <- raster::raster(ds)
-    
     ds <- spatstat.geom::ppp(pts[ ,1], pts[ ,2], window = habOwin) %>%
       spatstat.explore::density.ppp(., adjust = 0.02) %>%    
       raster::raster(.)
     
     ds <- ds1 <- raster::resample(ds, r.detector) #-- mask(ds,rasterToPolygons(habitat$habitat.rWthBuffer,function(x) x==1))
-    threshold <- 0.1 / prod(raster::res(ds))              #-- number per 1 unit of the projected raster (meters)
+    threshold <- 0.1 / prod(raster::res(ds))      #-- number per 1 unit of the projected raster (meters)
     ds1[] <- ifelse(ds[] < threshold,0,1)
     ds1 <- raster::mask(ds1, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
     ds <- raster::mask(ds, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
@@ -589,116 +563,6 @@ makeRovquantData_bear <- function(
   detOtherSamples[ ,1:n.years] <- raster::extract(ds.brickCont,
                                                   detectors$main.detector.sp)
   detectors$detectors.df$detOtherSamples <- detOtherSamples
-  
-  
-  # ##-- plot check 
-  # if(myVars$plot.check){
-  #   pdf(file.path(WDFigures, "SamplesVsObs_years.pdf"),width = 12,height = 10)
-  #   
-  #   ##-- Plot NGS data
-  #   par(mfrow = c(3,5), mar = c(0,0,2,0))
-  #   for(t in 1:n.years){
-  #     plot(st_geometry(COUNTRIES), col = "gray80")
-  #     mtext(years[t], side = 1, line = -4)
-  #     if(t == 3){ mtext("NGS data", side = 3, cex = 3, line = -2)}
-  #     plot(st_geometry(myFullData.sp$alive[myFullData.sp$alive$Year %in% years[t], ]),
-  #          add = TRUE, pch = 3, cex = 0.2, col = "navyblue")
-  #   }#t
-  #   
-  #   ##-- Plot Dead Recoveries data
-  #   par(mfrow = c(2,5), mar = c(0,0,2,0))
-  #   for(t in 1:n.years){
-  #     plot(st_geometry(COUNTRIES), col = "gray80")
-  #     mtext(years[t], side = 1, line = -4)
-  #     if(t == 3){ mtext("Dead Recoveries", side = 3, cex = 3, line = -2)}
-  #     plot(st_geometry(myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Year %in% years[t], ]),
-  #          add = TRUE, pch = 3, cex = 0.2, col = "red")
-  #   }#t
-  #   
-  #   ##-- Plot SkandObs and RovbaseObs
-  #   par(mfrow = c(2,3), mar = c(0,0,2,0))
-  #   for(t in 1:n.years){
-  #     ## SkandObs Binary
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n SkandObs binary"))
-  #     plot(r.skandObsSamplesBinary[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES),add=T)
-  #     
-  #     ## Rovbase Binary
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n Rovbase binary"))
-  #     plot(r.OtherSamplesBinary[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES),add=T)
-  #     
-  #     ## Rovbase + SkandObs Binary
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n SkandObs + Rovbase binary"))
-  #     plot(r.SkandObsOtherSamplesBinary[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES), add=T)
-  #     
-  #     ## SkandObs continuous
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n SkandObs continuous"))
-  #     plot(r.skandObsSamplesContinuous[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(COUNTRIES,add=T)
-  #     
-  #     ## Rovbase continuous
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n Rovbase continuous"))
-  #     plot(r.OtherSamplesContinuous[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES),add=T)
-  #     
-  #     ## Rovbase + SkandObs smoothed
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n SkandObs + Rovbase smoothed binary"))
-  #     plot(ds.brickCont[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES),add=T)
-  #   }#t
-  #   
-  #   ##-- Plot Data and Obs side by side
-  #   par(mfrow = c(1,3), mar = c(0,0,2,0))
-  #   for(t in 1:n.years){
-  #     ##-- NGS data
-  #     plot(st_geometry(COUNTRIES), col = "gray80")
-  #     mtext("NGS data", side = 1, line = -4)
-  #     plot(st_geometry(myFullData.sp$alive[myFullData.sp$alive$Year %in% years[t], ]),
-  #          add = TRUE, pch = 3, cex = 0.2, col = "navyblue")
-  #     
-  #     ##-- Dead recoveries data
-  #     plot(st_geometry(COUNTRIES), col = "gray80")
-  #     mtext("Dead recoveries", side = 1, line = -4)
-  #     mtext(years[t], side = 3, cex = 3, line = -2)
-  #     plot(st_geometry(myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Year %in% years[t], ]),
-  #          add = TRUE, pch = 3, cex = 0.2, col = "red")
-  #     
-  #     ##-- Rovbase + SkandObs Binary
-  #     plot(st_geometry(COUNTRIES), col = "gray80")
-  #     mtext("SkandObs + Rovbase", side = 1, line = -4)
-  #     plot(ds.brickCont[[t]], box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES),add=T)
-  #   }#t
-  #   
-  #   
-  #   for(t in 1:n.years){
-  #     ## NGS DETECTIONS TOTAL
-  #     tempTotal <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
-  #     NGS_TabTotal <- table(tempTotal$Country_sample)
-  #     ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sample), 2, function(x) sum(x>0))
-  #     ## ALIVE DETECTIONS INSIDE STUDY AREA/SAMPLING PERIOD
-  #     tempIn <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
-  #     NGS_TabIn <- table(tempIn$Country_sample)
-  #     ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sample), 2, function(x) sum(x>0))
-  #     ## PLOT NGS SAMPLES
-  #     plot(st_geometry(GLOBALMAP), col="gray80")
-  #     plot(st_geometry(studyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-  #     # points(tempTotal, pch = 21, bg = "darkred")
-  #     plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
-  #     ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-  #     graphics::text(x = 100000, y = 7200000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="N"],"NGS"), cex = 1.1, col = "firebrick3", font = 2)
-  #     graphics::text(x = 100000, y = 7270000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
-  #     graphics::text(x = 820000, y = 6780000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="S"],"NGS"), cex = 1.1, col = "navyblue", font = 2)
-  #     graphics::text(x = 820000, y = 6850000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
-  #     ## ADD OVERALL NUMBERS
-  #     mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-  #     mtext(text = paste(sum(NGS_TabIn), "NGS/", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
-  #     mtext(text = paste(sum(NGS_TabTotal)-sum(NGS_TabIn), "NGS/", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
-  #   }#t
-  #   graphics.off()
-  # }
   
   
   
