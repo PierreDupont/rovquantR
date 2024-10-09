@@ -185,7 +185,7 @@ makeRovquantData_bear <- function(
                    year = as.numeric(format(date,"%Y")),
                    month = as.numeric(format(date,"%m")),
                    species = stringi::stri_trans_general(species, "Latin-ASCII")) %>%
-                     ##-- Turn into spatial points object
+    ##-- Turn into spatial points object
     sf::st_as_sf(., coords = c("longitude","latitude")) %>%
     sf::st_set_crs(. , value = "EPSG:4326") %>%
     sf::st_transform(. ,sf::st_crs(COUNTIES))
@@ -291,7 +291,7 @@ makeRovquantData_bear <- function(
   
   ##-- Make a spatial grid from polygon
   habitat$grid <- sf::st_as_sf(raster::rasterToPolygons(habitat$habitat.r,
-                                            fun = function(x){x>0}))
+                                                        fun = function(x){x>0}))
   habitat$grid$id <- 1:nrow(habitat$grid)
   sf::st_crs(habitat$grid) <- sf::st_crs(habitat$buffered.habitat.poly)
   
@@ -321,7 +321,7 @@ makeRovquantData_bear <- function(
   
   ##-- Put into "nimble2SCR" format
   habitat$habitat.df <- cbind.data.frame( habitat$habitat.df,
-                                          "dead.reco" = habDens1,
+                                          #"dead.reco" = habDens1,
                                           "dead.reco.trunc" = habDens2)
   
   
@@ -402,14 +402,14 @@ makeRovquantData_bear <- function(
     "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
     "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
     "size" = n.trials)
-
+  
   ##-- Make a spatial grid from polygon
   detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
     x = raster::aggregate( x = subdetectors.r,
                            fact = detectors$resolution/detectors$resolution.sub),
     fun = function(x){x>0}))
   detectors$grid$id <- 1:nrow(detectors$grid)
-
+  
   
   
   ## ------     2.2. GENERATE DETECTOR-LEVEL COVARIATES -----
@@ -433,7 +433,7 @@ makeRovquantData_bear <- function(
   detectors$detectors.df$counties <- detCounties
   detectors$detectors.df$counties1 <- detCounties1
   
-
+  
   
   ## ------       2.2.2. EXTRACT DISTANCES TO ROADS -----
   
@@ -461,10 +461,10 @@ makeRovquantData_bear <- function(
   
   # ##-- CHECK IF CONTAINS NAs
   # if(any(is.na(detRoads)))print("WARNINGS!!!!!!! ONE OF THE DETECTOR MATRIX CONTAINS NA")
-
   
   
-  ## ------       2.2.4. EXTRACT PRESENCE OF OTHER SAMPLES ------
+  
+  ## ------       2.2.3. EXTRACT PRESENCE OF OTHER SAMPLES ------
   
   habitat.rWthBufferPol <- stars::st_as_stars(habitat$habitat.rWthBuffer) %>%
     sf::st_as_sf(., 
@@ -566,7 +566,7 @@ makeRovquantData_bear <- function(
   
   
   
-  ## ------       2.2.5. FORMAT detCovs ------
+  ## ------       2.2.4. FORMAT detCovs ------
   
   detCovs <- array(NA, c(n.detectors, 2, n.years))
   for(t in 1:n.years){
@@ -688,11 +688,11 @@ makeRovquantData_bear <- function(
     ## ------     6.3. GENERATE DETECTION HISTORY ARRAYS -----
     
     y.ar <- MakeY( myData = data.alive$myData.sp,
-                     myDetectors = detectors$main.detector.sp,
-                     method = "Binomial",
-                     myData2 = data.dead,
-                     myDetectors2 = detectors$main.detector.sp,
-                     returnIdvector = TRUE)
+                   myDetectors = detectors$main.detector.sp,
+                   method = "Binomial",
+                   myData2 = data.dead,
+                   myDetectors2 = detectors$main.detector.sp,
+                   returnIdvector = TRUE)
     y.ar.ALIVE <- y.ar$y.ar
     dimnames(y.ar.ALIVE) <- dimnames(y.ar$y.ar)
     
@@ -718,7 +718,7 @@ makeRovquantData_bear <- function(
     
     distances <- list()
     for(t in 1:n.years){
-#      print(paste("------ ", t ," -------", sep = "" ))
+      # print(paste("------ ", t ," -------", sep = "" ))
       distances[[t]] <- CheckDistanceDetections(
         y = y.ar.ALIVE[,,t], 
         detector.xy = detectors$detectors.df[ ,c("x","y")], 
@@ -785,7 +785,7 @@ makeRovquantData_bear <- function(
     
     
     
-   ## ------ IV. MODEL SETTING & RUNNING ------- 
+    ## ------ IV. MODEL SETTING ------- 
     
     ## -----    1. NIMBLE CODE ------
     
@@ -929,18 +929,18 @@ makeRovquantData_bear <- function(
       data.alive = myFullData.sp$alive,
       data.dead = myFullData.sp$dead.recovery,
       samplingMonths = unlist(sampling.months))
-
+    
     ##-- Subset to focal years
     zMonths <- zMonths[ , ,dimnames(zMonths)[[3]] %in% dimnames(y.alive)[[3]]]
     
     ##-- Subset to focal individuals
     zMonths <- zMonths[dimnames(zMonths)[[1]] %in% dimnames(y.alive)[[1]], , ]
-
+    
     ##-- Augment zMonths
-    zMonths <- MakeAugmentation(y = zMonths,
-                                aug.factor = data$aug.factor,
-                                replace.value = NA)
-
+    zMonths <- MakeAugmentation( y = zMonths,
+                                 aug.factor = data$aug.factor,
+                                 replace.value = NA)
+    
     ##-- Compress back to yearly z
     zYears <- apply(zMonths, c(1,3), function(x){
       if(any(x[1:length(unlist(sampling.months))] == 1, na.rm = T)){
@@ -954,36 +954,12 @@ makeRovquantData_bear <- function(
     z.data <- zYears
     allDead <- apply(z.data, 1, function(x)all(x==4))
     z.data[allDead, ] <- 1
+    
 
     
+    ## ------     3.2. GENERATE INITIAL z -----
     
-    ## ------     3.2. STAGGERED z -----
-    
-    ##-- Identify augmented individuals
-    z.staggered <- z.data
-    fully.augmented <- dimnames(z.staggered)[[1]] == "Augmented"
-    
-    ##-- Create a staggered entry matrix 
-    temp <- do.call(cbind,
-                    lapply(1:(dim(z.data)[2]-1),
-                           function(t){
-                             this.z <- z.data[fully.augmented,t]
-                             this.z[] <- 1
-                             this.z[1:(sum(fully.augmented)/dim(z.data)[2]*t)] <- NA
-                             this.z
-                           }))
-    
-    ##-- Replace in z.staggered
-    z.staggered[fully.augmented,-dim(z.staggered)[2]] <- temp
-    
-    ##-- Create a vector of number of individuals available each year
-    n.individuals.staggered <- apply(z.staggered, 2, function(x)max(which(is.na(x))))
-    
-    
-    
-    ## ------     3.3. GENERATE INITIAL z -----
-    
-    z.init <- z.init.staggered <- t(apply(z.data, 1, function(zz){
+    z.init <- t(apply(z.data, 1, function(zz){
       out <- zz
       out[] <- 1
       if(any(!is.na(zz))){
@@ -1012,13 +988,9 @@ makeRovquantData_bear <- function(
     z.init[!is.na(z.data)] <- NA
     #table(z.init, useNA = "always")
     
-    ##-- Set all known states to NA in the staggered inits 
-    z.init.staggered[!is.na(z.data)] <- NA
-    #table(z.init.staggered, useNA = "always")
     
     
-    
-    ## ------     3.4. GENERATE y.dead -----
+    ## ------     3.3. GENERATE y.dead -----
     legal.mx <- do.call(rbind, lapply(dimnames(y.alive)[[1]], function(x){
       out <- rep(0,dim(z.data)[2])
       if(x %in% myFullData.sp$dead.recovery$Id[myFullData.sp$dead.recovery$legal == "yes"]) out <- rep(1,dim(z.data)[2])
@@ -1038,9 +1010,9 @@ makeRovquantData_bear <- function(
     z.data[] <- ifelse(y.dead == 1, 3, z.data)
     z.staggered[] <- ifelse(y.dead == 1, 3, z.staggered)
     
-  
     
-    ## ------     3.5. GENERATE sxy & sxy.init ARRAYS -----
+    
+    ## ------     3.4. GENERATE sxy & sxy.init ARRAYS -----
     
     ##-- Provide sxy as data for recovered individuals
     s.data <- array(NA, c(dim(y.alive)[1], 2, n.years))
@@ -1183,24 +1155,34 @@ makeRovquantData_bear <- function(
             file = file.path( working_dir, "nimbleInFiles", thisSex,
                               paste0("nimbleInput_",c,".RData")))
     }#c
+    
+    
+    
+    ## ------   7. SAVE DETECTION DATA ----- 
+    save( data.alive, data.dead,
+          file = file.path( working_dir, "data/Data.RData"))
+    
+    
   }#thisSex
   
   
-  ##-- Render .html report summarizing the data
-  if(print.report){
-  message(paste0("Printing out report: 'Data_", SPECIES, "_", DATE,".html'."))
   
-  ##-- Clean the data and print report
-  rmarkdown::render(
-    input = system.file("rmd", "RovBase_DataReport.Rmd", package = "rovquantR"),
-    params = list( species = SPECIES,
-                   years = years,
-                   samplingMonths = SP,
-                   dir.in = data_dir,
-                   dir.out = output_folder,
-                   modDate = DATE),
-    output_dir = output_folder,
-    output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
+  ## ------   8. RENDER .html REPORT ------
+  
+  if(print.report){
+    message(paste0("Printing out report: 'Data_", SPECIES, "_", DATE,".html'."))
+    
+    ##-- Clean the data and print report
+    rmarkdown::render(
+      input = system.file("rmd", "RovBase_DataReport.Rmd", package = "rovquantR"),
+      params = list( species = SPECIES,
+                     years = years,
+                     samplingMonths = SP,
+                     dir.in = data_dir,
+                     dir.out = output_folder,
+                     modDate = DATE),
+      output_dir = output_folder,
+      output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
   }
 }
 

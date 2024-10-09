@@ -56,11 +56,7 @@ library(mapview)
 mapviewOptions(fgb = FALSE)
 
 
-##-- Load age look-up table
-# load(file.path(dir.in,"MISC DATA/age.lookup.table.RData"))
-
 ##-- Load pre-processed habitat shapefiles
-#load(system.file("extdata", "Habitat_shp.RData", package = "rovquantR"))
 data(COUNTRIESWaterHumans, envir = environment()) 
 
 COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
@@ -92,9 +88,8 @@ load(file.path(working_dir, "data/Habitat.RData"))
 The habitat, sometimes called state-space (add REFS), describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of 
 `r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^2$.
 
-```{r, hab grid, echo = FALSE}
-mapview( x = habitat$buffered.habitat.poly,
-         col.regions = c(NA,"blue","red"),
+```{r, hab grid, echo = FALSE, fig.align = "center"}
+mapview( x = habitat$grid,
          hide = FALSE,
          legend = FALSE,
          map.types = c( "OpenTopoMap",
@@ -104,174 +99,35 @@ mapview( x = habitat$buffered.habitat.poly,
 
 ## Habitat covariates 
 
-```{r, hab covs}
-##-- roads
-plot( st_geometry(GLOBALMAP), 
-      col = "gray80",
-      main = "Distance to roads")
-plot( st_geometry(studyArea),
-      col = rgb(34/250, 139/250, 34/250,
-                alpha = 0.5),
-      add = T)
-raster::plot(DistAllRoads,add=T)
-# plot(st_geometry(detectors$main.detector.sp),
-#      cex = scale(detRoads)/2,
-#      pch = 16,
-#      add = T)
+```{r, hab covs1, echo = FALSE}
+##-- Identify number of habitat covariates
+covNames <- names(habitat$grid)[!names(habitat$grid) %in% c("Habitat","id", "x","y","geometry")]
 
+##-- Plot layout
+L <- length(covNames)
+if(L < 6){ nrows <- 1 } else{
+  if(L < 13){ nrows <- 2 } else {
+    if(L < 22){ nrows <- 3 } else {
+      if(L < 33){ nrows <- 4 } else {
+        nrows <- 5
+      }}}}
+ncols <- ceiling(L/nrows)
 ```
 
-```{r}
+In order to better capture the distribution of individual activity centers throughout the landscape, i.e. population density, spatial covariates can be used in the movement sub-model of the OPSCR.
+In the case of the `r species` model, `r L` habitat covariates were included in the OPSCR model.
 
-##-- Plot SkandObs and RovbaseObs
-par(mfrow = c(2,2), mar = c(0,0,2,0))
-for(t in 1:n.years){
-  ## Rovbase + SkandObs smoothed
-  plot(st_geometry(COUNTRIES), main = paste(years[t],"\n SkandObs + Rovbase smoothed binary"))
-  #plot(ds.brickCont[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  plot(st_geometry(COUNTRIES),add=T)
-}#t
-
-
-for(t in 1:n.years){
-  ## NGS DETECTIONS TOTAL
-  tempTotal <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
-  NGS_TabTotal <- table(tempTotal$Country_sample)
-  ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sample), 2, function(x) sum(x>0))
-  ## ALIVE DETECTIONS INSIDE STUDY AREA/SAMPLING PERIOD
-  tempIn <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
-  NGS_TabIn <- table(tempIn$Country_sample)
-  ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sample), 2, function(x) sum(x>0))
-  ## PLOT NGS SAMPLES
-  plot(st_geometry(GLOBALMAP), col="gray80")
-  plot(st_geometry(studyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-  # points(tempTotal, pch = 21, bg = "darkred")
-  plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
-  ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-  graphics::text(x = 100000, y = 7200000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="N"],"NGS"), cex = 1.1, col = "firebrick3", font = 2)
-  graphics::text(x = 100000, y = 7270000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
-  graphics::text(x = 820000, y = 6780000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="S"],"NGS"), cex = 1.1, col = "navyblue", font = 2)
-  graphics::text(x = 820000, y = 6850000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
-  ## ADD OVERALL NUMBERS
-  mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-  mtext(text = paste(sum(NGS_TabIn), "NGS/", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
-  mtext(text = paste(sum(NGS_TabTotal)-sum(NGS_TabIn), "NGS/", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
-}#t
-
-
-
-  # ##-- plot check 
-  # if(myVars$plot.check){
-  #   pdf(file.path(WDFigures, "SamplesVsObs_years.pdf"),width = 12,height = 10)
-  #   
-  #   ##-- Plot NGS data
-  #   par(mfrow = c(3,5), mar = c(0,0,2,0))
-  #   for(t in 1:n.years){
-  #     plot(st_geometry(COUNTRIES), col = "gray80")
-  #     mtext(years[t], side = 1, line = -4)
-  #     if(t == 3){ mtext("NGS data", side = 3, cex = 3, line = -2)}
-  #     plot(st_geometry(myFullData.sp$alive[myFullData.sp$alive$Year %in% years[t], ]),
-  #          add = TRUE, pch = 3, cex = 0.2, col = "navyblue")
-  #   }#t
-  #   
-  #   ##-- Plot Dead Recoveries data
-  #   par(mfrow = c(2,5), mar = c(0,0,2,0))
-  #   for(t in 1:n.years){
-  #     plot(st_geometry(COUNTRIES), col = "gray80")
-  #     mtext(years[t], side = 1, line = -4)
-  #     if(t == 3){ mtext("Dead Recoveries", side = 3, cex = 3, line = -2)}
-  #     plot(st_geometry(myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Year %in% years[t], ]),
-  #          add = TRUE, pch = 3, cex = 0.2, col = "red")
-  #   }#t
-  #   
-  #   ##-- Plot SkandObs and RovbaseObs
-  #   par(mfrow = c(2,3), mar = c(0,0,2,0))
-  #   for(t in 1:n.years){
-  #     ## SkandObs Binary
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n SkandObs binary"))
-  #     plot(r.skandObsSamplesBinary[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES),add=T)
-  #     
-  #     ## Rovbase Binary
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n Rovbase binary"))
-  #     plot(r.OtherSamplesBinary[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES),add=T)
-  #     
-  #     ## Rovbase + SkandObs Binary
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n SkandObs + Rovbase binary"))
-  #     plot(r.SkandObsOtherSamplesBinary[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES), add=T)
-  #     
-  #     ## SkandObs continuous
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n SkandObs continuous"))
-  #     plot(r.skandObsSamplesContinuous[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(COUNTRIES,add=T)
-  #     
-  #     ## Rovbase continuous
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n Rovbase continuous"))
-  #     plot(r.OtherSamplesContinuous[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES),add=T)
-  #     
-  #     ## Rovbase + SkandObs smoothed
-  #     plot(st_geometry(COUNTRIES), main = paste(years[t],"\n SkandObs + Rovbase smoothed binary"))
-  #     plot(ds.brickCont[[t]], main=paste(year,"\n Rovbase binary"), box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES),add=T)
-  #   }#t
-  #   
-  #   ##-- Plot Data and Obs side by side
-  #   par(mfrow = c(1,3), mar = c(0,0,2,0))
-  #   for(t in 1:n.years){
-  #     ##-- NGS data
-  #     plot(st_geometry(COUNTRIES), col = "gray80")
-  #     mtext("NGS data", side = 1, line = -4)
-  #     plot(st_geometry(myFullData.sp$alive[myFullData.sp$alive$Year %in% years[t], ]),
-  #          add = TRUE, pch = 3, cex = 0.2, col = "navyblue")
-  #     
-  #     ##-- Dead recoveries data
-  #     plot(st_geometry(COUNTRIES), col = "gray80")
-  #     mtext("Dead recoveries", side = 1, line = -4)
-  #     mtext(years[t], side = 3, cex = 3, line = -2)
-  #     plot(st_geometry(myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Year %in% years[t], ]),
-  #          add = TRUE, pch = 3, cex = 0.2, col = "red")
-  #     
-  #     ##-- Rovbase + SkandObs Binary
-  #     plot(st_geometry(COUNTRIES), col = "gray80")
-  #     mtext("SkandObs + Rovbase", side = 1, line = -4)
-  #     plot(ds.brickCont[[t]], box=F, axes=F,add=T)
-  #     plot(st_geometry(COUNTRIES),add=T)
-  #   }#t
-  #   
-  #   
-  #   for(t in 1:n.years){
-  #     ## NGS DETECTIONS TOTAL
-  #     tempTotal <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
-  #     NGS_TabTotal <- table(tempTotal$Country_sample)
-  #     ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sample), 2, function(x) sum(x>0))
-  #     ## ALIVE DETECTIONS INSIDE STUDY AREA/SAMPLING PERIOD
-  #     tempIn <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
-  #     NGS_TabIn <- table(tempIn$Country_sample)
-  #     ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sample), 2, function(x) sum(x>0))
-  #     ## PLOT NGS SAMPLES
-  #     plot(st_geometry(GLOBALMAP), col="gray80")
-  #     plot(st_geometry(studyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-  #     # points(tempTotal, pch = 21, bg = "darkred")
-  #     plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
-  #     ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-  #     graphics::text(x = 100000, y = 7200000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="N"],"NGS"), cex = 1.1, col = "firebrick3", font = 2)
-  #     graphics::text(x = 100000, y = 7270000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
-  #     graphics::text(x = 820000, y = 6780000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="S"],"NGS"), cex = 1.1, col = "navyblue", font = 2)
-  #     graphics::text(x = 820000, y = 6850000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
-  #     ## ADD OVERALL NUMBERS
-  #     mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-  #     mtext(text = paste(sum(NGS_TabIn), "NGS/", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
-  #     mtext(text = paste(sum(NGS_TabTotal)-sum(NGS_TabIn), "NGS/", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
-  #   }#t
-  #   graphics.off()
-  # }
+```{r, hab covs2, echo = FALSE}
+par(mfrow = c(nrows,ncols))
+for(c in 1:L){     
+  plot( st_geometry(GLOBALMAP), 
+        col = "gray80",
+        main = covNames[c])
+  plot(habitat$grid[ ,covNames[c]], add=T)
+}#c
 ```
 
-
-The prepared habitat characteristics are availale in :
+The prepared habitat characteristics are available in :
 `r file.path(working_dir, "data/Habitat.RData")`
 
 
@@ -288,43 +144,77 @@ load(file.path(working_dir, "data/Detectors.RData"))
 
 ## Detectors characteristics
 
-The surveyed area, also called detector-space (add REFS), describes the region that was searched for `r species` DNA samples. Although the area searched is continuous, it is discretized for practical reasons in the model. In the case of the `r species` OPSCR analysis, we used a grid with `r detResolution/1000` km resolution. The area surveyed is determined by using a buffer around the DNA samples collected. 
+The surveyed area, also called detector-space (add REFS), describes the region that was searched for `r species` DNA samples. Although the area searched is continuous, it is discretized for practical reasons in the model. In the case of the `r species` OPSCR analysis, we used a grid with `r detectors$resolution/1000` km resolution. The area surveyed is determined by using a buffer around the DNA samples collected. 
 
 It is composed of `r detectors$n.detectors` detector grid cells, each of size `r (detectors$resolution/1000)^2` $km^2$, leading to a total surveyed area of `r detectors$n.detectors*(detectors$resolution/1000)^2` $km^2$.
 
 ```{r, det grid, echo = FALSE, fig.align = "center"}
-#| label: Final plot
-#| echo: false 
-#| warning: false
-#| message: false
-#| fig-cap: "Number of detections per lièvre variable and by sex, and B) distances between detections of the same individual in a given year in the Réotier nature reserve." 
-#| out-width: 100%  
-mapview( detectors$grid,
-         burst = TRUE,
-         map.types = c( "OpenTopoMap",
-                        "Esri.WorldShadedRelief",
-                        "OpenStreetMap.DE")) 
-
+mapview(st_geometry(detectors$grid),
+        hide = FALSE,
+        legend = FALSE,
+        map.types = c( "OpenTopoMap",
+                       "Esri.WorldShadedRelief",
+                       "OpenStreetMap.DE"))
 ```
 
 
 
 ## Detectors covariates
-```{r, detectors covariates}
-par(mfrow = c(1,1))
-myCol <- terrain.colors(nrow(COUNTIES))
-plot( st_geometry(GLOBALMAP),
-      col = "gray80", main = " Counties")
-plot( st_geometry(studyArea),
-      col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-plot(st_geometry(detectors$main.detector.sp),
-     col = myCol[detCounties], pch = 16, cex = 0.8, add = T)
-```  
+```{r, det covs1, echo = FALSE}
+##-- Identify number of detector covariates
+covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Habitat","id", "x","y","geometry")]
 
+##-- Plot layout
+L <- length(covNames)
+if(L < 6){ nrows <- 1 } else{
+  if(L < 13){ nrows <- 2 } else {
+    if(L < 22){ nrows <- 3 } else {
+      if(L < 33){ nrows <- 4 } else {
+        nrows <- 5
+      }}}}
+ncols <- ceiling(L/nrows)
+```
+
+In order to better capture the variation in detection probability throughout the landscape as a result of e.g. a variation in search effort, spatial covariates can be used in the detection sub-model of the OPSCR.
+In the case of the `r species` model, `r L` detector covariates were included in the OPSCR model.
+
+```{r, det covs2, echo = FALSE}
+par(mfrow = c(nrows,ncols))
+for(c in 1:L){     
+  plot( st_geometry(GLOBALMAP), 
+        col = "gray80",
+        main = covNames[c])
+  plot(detectors$grid[ ,covNames[c]], border = NA, add=T)
+}#c
+```
 
 ------------------------------------------------------------------------
 
 # Individual detection histories
+
+
+```{r, det data, echo = FALSE}
+##-- Load the most recent data from RovBase
+myFullData.sp <- readMostRecent( 
+  path = file.path(working_dir,"data"),
+  pattern = paste0("Data_",species),
+  extension = ".RData")
+
+##-- list directories containing input files
+dirNames <- list.dirs(file.path(working_dir, "nimbleInFiles"), full.names = F, recursive = F)
+
+##-- path to inupt files
+dirList <- paste0(working_dir, "/nimbleInFiles/",dirNames)
+
+##-- Load different input files in a list
+inputs <- lapply( dirList,
+                 function(x){
+                   load(list.files(x, full.names = T)[1])
+                 })
+names(inputs) <- dirNames
+```
+
+
 
 We can also add maps of the NGS samples collected year:
 
@@ -421,43 +311,6 @@ graphics.off()
 ```
 
 
-```{r, map quarto}
-#| label: GPS track plot 
-#| message: false 
-#| warning: false
-#| echo: false 
-#| fig-cap: "Transects parcourus chaque année à la recherche de crottes de lièvres variables sur le site de Réotier." 
-#| out-width: 120%  
-colYears <- as.list(met.brewer( name = "Isfahan1",
-                      n = length(searchTracks.inter), 
-                      type="continuous"))
-colOccasions <- hcl.colors(n = 5, palette = "Earth")
-
-myPlots <- list()
-for(t in 1:n.years){
-  myPlots[[t]] <- ggplot(searchTracks.inter[[t]]) + 
-    geom_sf(aes(col = as.factor(occasion)),
-            show.legend = FALSE) +
-    scale_color_manual(values = colOccasions) +
-    theme( axis.line = element_blank(), 
-           axis.text = element_blank(),
-           axis.ticks = element_blank(),
-           axis.title = element_blank()) +
-     labs(title = years[t])
-}#t
-
-grid.arrange(arrangeGrob(myPlots[[1]],
-                         myPlots[[2]],
-                         myPlots[[3]],
-                         myPlots[[4]],
-                         myPlots[[5]],
-                         myPlots[[6]],
-                         myPlots[[7]],
-                         myPlots[[8]],
-                         myPlots[[9]],
-                         myPlots[[10]],ncol = 2))
-
-```
 
 We can also look at some summary statistics based on individual detections, such as number of detections per individual (total), number of individual detections per individual (each year), pairwise distance between detections (in the same year ==> equivalent to sigma), distance between consecutive naive activity centers (equivalent to Tau.)
 
@@ -513,13 +366,16 @@ plot1 + plot2
 
 ```{r, echo = F}
 ##-- Number of NGS samples
-kable(samples, align = "lc",
-      caption = "Number of NGS samples per year and country") %>%
+kable( samples,
+       align = "lc",
+       caption = "Number of NGS samples per year and country") %>%
   kable_styling(full_width = F)
 
 ##-- Number of dead recoveries
-kable(deadSamples, align = "lc",
-      caption = "Number of DNA samples from dead animals per year and country") %>% kable_styling(full_width = F)
+kable( deadSamples,
+       align = "lc",
+       caption = "Number of DNA samples from dead animals per year and country") %>%
+  kable_styling(full_width = F)
 ```
 
 
