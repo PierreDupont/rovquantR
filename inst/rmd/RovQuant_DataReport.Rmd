@@ -198,7 +198,7 @@ NGS_map <- ggplot(data = data.alive$myData.sp) +
 NGS_map
 ```
 
-```{r, ngs data4, echo = FALSE, collapse = TRUE}
+```{r, ngs data4, echo = FALSE, collapse = TRUE,fig.height = 6, fig.width = 12}
 ##-- Histogram of number of samples per individual per year
 plot1 <- ggplot(df, aes(x = freq, fill = Sex)) +
   geom_histogram( position = "dodge", 
