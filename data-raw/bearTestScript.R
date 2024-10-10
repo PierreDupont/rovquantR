@@ -5,7 +5,7 @@
 ## Purpose of script: 
 ## This R script performs:
 ## 1. the initial cleaning of the large carnivore NGS data downloaded from RovBase.3.0
-## 2. the data preparation for analysis with the 'nimbleSCR' package
+## 2. the data preparation for the RovQuant OPSCR analysis with the 'nimbleSCR' package
 ## 3. the model fitting using 'nimble' and 'nimbleSCR'
 ## 4. the post-processing of the MCMC output
 ##
@@ -203,7 +203,6 @@ cleanRovbaseData( species = "bear",
 
 ##------------------------------------------------------------------------------
 ## ----- IV. PREPARE OPSCR DATA ------
-
 makeRovquantData(    
   ##-- paths
   species = "bear",
