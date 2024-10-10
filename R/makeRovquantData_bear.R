@@ -83,10 +83,6 @@ makeRovquantData_bear <- function(
   max.det.dist = 70000
   ,
   resize.factor = 1
-  ,
-  
-  ##-- miscellanious
-  print.report = TRUE
 ){
   ## ---------------------------------------------------------------------------
   
@@ -1178,22 +1174,5 @@ makeRovquantData_bear <- function(
   
   
   
-  ## ------   8. RENDER .html REPORT ------
-  
-  if(print.report){
-    message(paste0("Printing out report: 'Data_", SPECIES, "_", DATE,".html'."))
-    
-    ##-- Clean the data and print report
-    rmarkdown::render(
-      input = system.file("rmd", "RovBase_DataReport.Rmd", package = "rovquantR"),
-      params = list( species = SPECIES,
-                     years = years,
-                     samplingMonths = SP,
-                     dir.in = data_dir,
-                     dir.out = output_folder,
-                     modDate = DATE),
-      output_dir = output_folder,
-      output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
-  }
 }
 

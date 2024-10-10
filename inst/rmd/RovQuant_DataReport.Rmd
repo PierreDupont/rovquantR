@@ -1,10 +1,9 @@
 ---
 params:
   species: "bear"
-  years: 2012:2024
+  years: 2020:2023
   sex: c("Hann","Hunn")
-  working_dir: "./data"
-  data_dir: NULL
+  working_dir: "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test2"
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
 subtitle: "RovQuant - OPSCR Data Preparation"
 output:
@@ -19,8 +18,6 @@ output:
   word_document: default
 ---
 
-
-
 ```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
 years <- if(is.null(params$years)){ 
   2012:as.numeric(format(Sys.Date(), "%Y"))
@@ -28,9 +25,7 @@ years <- if(is.null(params$years)){
   params$years
 }
 n.years <- length(years)
-samplingMonths <- params$samplingMonths
 species <- params$species
-data_dir <- params$data_dir
 working_dir <- params$working_dir
 
 if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
@@ -58,7 +53,7 @@ library(ggmap)
 library(patchwork)
 library(mapview)
 mapviewOptions(fgb = FALSE)
-
+library(rovquantR)
 
 ##-- Load pre-processed habitat shapefiles
 data(COUNTRIESWaterHumans, envir = environment()) 
@@ -68,9 +63,7 @@ COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), 
   dplyr::summarise()
 ```
 
-
 ### `r Sys.Date()`
-
 
 # Introduction
 
@@ -78,17 +71,13 @@ This document summarizes the data preparation process of the **`r species`** DNA
 
 ------------------------------------------------------------------------
 
-
-
-# Rovbase data 
+# Rovbase data
 
 ```{r, data, echo = FALSE}
 load(file.path(working_dir, "data/Data.RData"))
 ```
 
-
-
-## NGS data 
+## NGS data
 
 ```{r, ngs data, echo = FALSE, collapse = TRUE}
 
@@ -147,19 +136,20 @@ for(i in IDs){
 detDist <- do.call(rbind,detDist)
 ```
 
-
 After filtering the available data to the area and period of interest (`r years[1]` to `r years[length(years)]`), we are left with the following number of non-invasive genetic samples:
+
 ```{r, ngs data1, echo = FALSE, collapse = TRUE}
 numDet_sexYear
 ```
 
-
 These samples led to the identification of `r numId_sexYear["total","total"]` individuals:
+
 ```{r, ngs data2, echo = FALSE, collapse = TRUE}
 numId_sexYear
 ```
 
-We can also look at the spatial distribution of these sapmles and individuals:
+We can also look at the spatial distribution of these samples and individuals:
+
 ```{r, ngs data3, echo = FALSE, collapse = TRUE}
 ##-- Number of individuals detected 
 ids <- apply(table(data.alive$myData.sp$Country_sample,
@@ -179,11 +169,7 @@ ids <- cbind(ids,
                                function(x)sum(x>0)),
                          length(unique(data.alive$myData.sp$Id))))
 ids
-
-
-
 ```
-
 
 ```{r NGS maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
 ##-- NGS map
@@ -212,7 +198,6 @@ NGS_map <- ggplot(data = data.alive$myData.sp) +
 NGS_map
 ```
 
-
 ```{r, ngs data4, echo = FALSE, collapse = TRUE}
 ##-- Histogram of number of samples per individual per year
 plot1 <- ggplot(df, aes(x = freq, fill = Sex)) +
@@ -235,7 +220,7 @@ meanDist <- summarize( detDist,
 
 plot2 <- ggplot(detDist, aes(x = dist, fill = sex)) +
   geom_histogram( position = "dodge", 
-                  alpha = 0.9, binwidth = 100) +
+                  alpha = 0.9, binwidth = 1000) +
   geom_vline( data = meanDist,
               aes( xintercept = grp.mean, color = sex),
               linetype = "dashed") +
@@ -248,14 +233,10 @@ plot2 <- ggplot(detDist, aes(x = dist, fill = sex)) +
 plot1 + plot2
 ```
 
-
-
-
-
-## Dead recovery data 
+## Dead recovery data
 
 ```{r, dead data1, echo = FALSE, collapse = TRUE}
-ngs <- data.alive$myData.sp
+ngs <- data.dead
 
 ##-- Number of samples collected per sex and per year 
 numDet_sexYear <- table(ngs$Sex,ngs$Year)
@@ -268,116 +249,7 @@ if(length(dim(numDet_sexYear)) > 1){
 numDet_sexYear
 ```
 
-
-```{r, dead data2, echo = FALSE, collapse = TRUE}
-##-- Number of individuals detected per sex and per year
-numId_sexYear <- apply(table(ngs$Id,ngs$Sex,ngs$Year) > 0, c(2,3), sum)
-if(length(dim(numId_sexYear)) > 1){
-  numId_sexYear <- cbind(numId_sexYear,colSums(table(ngs$Id,ngs$Sex) > 0))
-  colnames(numId_sexYear) <- c(years,"total")
-  numId_sexYear <- rbind(numId_sexYear,colSums(numId_sexYear))
-  rownames(numId_sexYear) <- c(sex,"total")
-}
-numId_sexYear
-```
-
-
-```{r, dead data3, echo = FALSE, collapse = TRUE}
-##-- Number of samples per individual and year
-numDet_idYear <- table(table(ngs$Id,ngs$Year))
-numDet_idYear
-```
-
-
-```{r, dead data3, echo = FALSE, collapse = TRUE}
-##-- Number of individuals detected 
-ids <- apply(table(data.alive$myData.sp$Country_sample,
-                   data.alive$myData.sp$Year,
-                   data.alive$myData.sp$Id),
-             c(1,2),
-             function(x)sum(x>0))
-ids <- rbind(ids,
-             "Total" = apply(table(data.alive$myData.sp$Year,
-                                   data.alive$myData.sp$Id),
-                             1,
-                             function(x)sum(x>0)))
-ids <- cbind(ids,
-             "Total" = c(apply(table(data.alive$myData.sp$Country_sample,
-                                     data.alive$myData.sp$Id),
-                               1,
-                               function(x)sum(x>0)),
-                         length(unique(data.alive$myData.sp$Id))))
-
-
-##-- Histogram of numbers of detections per individual per year
-df <- ngs %>%
-  st_drop_geometry() %>%
-  summarize(., 
-            freq = n(),
-            .by = c(id,sex,year))
-                 
-mu <- summarize( df, 
-                 grp.mean = mean(freq),
-                 .by = sex)
-
-plot1 <- ggplot(df, aes(x = freq, fill = sex)) +
-  geom_histogram( position = "dodge", 
-                  alpha = 0.5, binwidth = 1)+
-  geom_vline( data = mu,
-              aes( xintercept = grp.mean, color = sex),
-              linetype = "dashed") +
-  labs( tag = "A",
-        x = "Number of detections per year",
-        y = "Number of individuals") +
-  theme_classic( ) +
-  theme(legend.position = 'none')
-
-
-##-- Histogram of distances between detections in a year
-meanDist <- summarize( detDist, 
-                       grp.mean = mean(dist),
-                       .by = sex)
-
-plot2 <- ggplot(detDist, aes(x = dist, fill = sex)) +
-  geom_histogram( position = "dodge", 
-                  alpha = 0.5, binwidth = 100) +
-  geom_vline( data = meanDist,
-              aes( xintercept = grp.mean, color = sex),
-              linetype = "dashed") +
-  labs( tag = "B",
-        x = "Pairwise distance between detections (m)",
-        y = "Number of individuals") +
-  theme_classic()
-
-plot1 + plot2
-```
-
-
-```{r, dead data4, echo = FALSE, collapse = TRUE}
-##-- Calculate distance between detections per id and year 
-IDs <- unique(ngs$Id)
-detDist <- list()
-for(i in IDs){
-  tmp1 <- ngs[ngs$Id %in% i, ]
-  tmp.list <- list()
-  for(t in 1:n.years){
-    tmp <- tmp1[tmp1$Year %in% years[t], ]
-    if(nrow(tmp)>1){
-          tmp.list[[t]] <- as.numeric(st_distance(tmp))
-    }
-  }#t
-  thisDist <- unlist(tmp.list)
-  detDist[[i]] <- cbind.data.frame(
-    id = rep(i,length(thisDist)),
-    sex = rep(unique(tmp1$Sex),length(thisDist)),
-    dist = thisDist)
-}#i
-detDist <- do.call(rbind,detDist)
-
-```
-
-
-We can do the same for the number and distribution of dead recoveries each year:
+We can also plot the distribbution of those dead recoveries each year:
 
 ```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
 dead_map <- ggplot(data = data.dead) +
@@ -402,27 +274,17 @@ dead_map <- ggplot(data = data.dead) +
 dead_map
 ```
 
-
-
-
-
-
 ------------------------------------------------------------------------
 
-
-
 # Habitat definition
- 
+
 ```{r, load habitat, echo = FALSE}
 load(file.path(working_dir, "data/Habitat.RData"))
 ```
 
-
-
 ## Habitat characteristics
 
-The habitat, sometimes called state-space (add REFS), describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of 
-`r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^2$.
+The habitat, sometimes called state-space (add REFS), describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of `r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^2$.
 
 ```{r, hab grid, echo = FALSE, fig.align = "center"}
 mapview( x = habitat$grid,
@@ -433,9 +295,7 @@ mapview( x = habitat$grid,
                         "OpenStreetMap.DE"))
 ```
 
-
-
-## Habitat covariates 
+## Habitat covariates
 
 ```{r, hab covs1, echo = FALSE}
 ##-- Identify number of habitat covariates
@@ -452,8 +312,7 @@ if(L < 6){ nrows <- 1 } else{
 ncols <- ceiling(L/nrows)
 ```
 
-In order to better capture the distribution of individual activity centers throughout the landscape, i.e. population density, spatial covariates can be used in the movement sub-model of the OPSCR.
-In the case of the `r species` model, `r L` habitat covariates were included in the OPSCR model.
+In order to better capture the distribution of individual activity centers throughout the landscape, i.e. population density, spatial covariates can be used in the movement sub-model of the OPSCR. In the case of the `r species` model, `r L` habitat covariates were included in the OPSCR model.
 
 ```{r, hab covs2, echo = FALSE}
 par(mfrow = c(nrows,ncols))
@@ -465,12 +324,9 @@ for(c in 1:L){
 }#c
 ```
 
-The prepared habitat characteristics are available in :
-`r file.path(working_dir, "data/Habitat.RData")`
+The prepared habitat characteristics are available in : `r file.path(working_dir, "data/Habitat.RData")`
 
 ------------------------------------------------------------------------
-
-
 
 # Detectors definition
 
@@ -478,15 +334,13 @@ The prepared habitat characteristics are available in :
 load(file.path(working_dir, "data/Detectors.RData"))
 ```
 
-
-
 ## Detectors characteristics
 
-The surveyed area, also called detector-space (add REFS), describes the region that was searched for `r species` DNA samples. Although the area searched is continuous, it is discretized for practical reasons in the model. In the case of the `r species` OPSCR analysis, we used a grid with `r detectors$resolution/1000` km resolution. The area surveyed is determined by using a buffer around the DNA samples collected. 
+The surveyed area, also called detector-space (add REFS), describes the region that was searched for `r species` DNA samples. Although the area searched is continuous, it is discretized for practical reasons in the model. In the case of the `r species` OPSCR analysis, we used a grid with `r detectors$resolution/1000` km resolution. The area surveyed is determined by using a buffer around the DNA samples collected.
 
 It is composed of `r detectors$n.detectors` detector grid cells, each of size `r (detectors$resolution/1000)^2` $km^2$, leading to a total surveyed area of `r detectors$n.detectors*(detectors$resolution/1000)^2` $km^2$.
 
-```{r, det grid, echo = FALSE, fig.align = "center"}
+```{r, det grid2, echo = FALSE, fig.align = "center"}
 mapview(st_geometry(detectors$grid),
         hide = FALSE,
         legend = FALSE,
@@ -494,8 +348,6 @@ mapview(st_geometry(detectors$grid),
                        "Esri.WorldShadedRelief",
                        "OpenStreetMap.DE"))
 ```
-
-
 
 ## Detectors covariates
 
@@ -514,8 +366,7 @@ if(L < 6){ nrows <- 1 } else{
 ncols <- ceiling(L/nrows)
 ```
 
-In order to better capture the variation in detection probability throughout the landscape as a result of e.g. a variation in search effort, spatial covariates can be used in the detection sub-model of the OPSCR.
-In the case of the `r species` model, `r L` detector covariates were included in the OPSCR model.
+In order to better capture the variation in detection probability throughout the landscape as a result of e.g. a variation in search effort, spatial covariates can be used in the detection sub-model of the OPSCR. In the case of the `r species` model, `r L` detector covariates were included in the OPSCR model.
 
 ```{r, det covs2, echo = FALSE}
 par(mfrow = c(nrows,ncols))
@@ -529,10 +380,7 @@ for(c in 1:L){
 
 ------------------------------------------------------------------------
 
-
-
 # Individual detection histories
-
 
 ```{r, det data, echo = FALSE}
 ##-- list directories containing input files
@@ -549,56 +397,11 @@ inputs <- lapply( dirList,
 names(inputs) <- dirNames
 ```
 
-
-We can also look at some summary statistics based on individual detections, such as number of detections per individual (total), number of individual detections per individual (each year), pairwise distance between detections (in the same year ==> equivalent to sigma), distance between consecutive naive activity centers (equivalent to Tau.)
-
+ONce formatted into individual detection histories, we can look at some summary statistics such as the number of detectors at which an individual is detected  (total), number of individual detections per individual (each year), pairwise distance between detections (in the same year ==\> equivalent to sigma), distance between consecutive naive activity centers (equivalent to Tau.)
 
 
-```{r data summary, eval =  F, fig.cap= "A) Nombre de détections par lièvre variable, par an, et par sexe, et B) distribution des distances entre deux detections du même individu au cours de la même année sur le site de Réotier. Les lignes pointillées montrent les valeurs moyennes pour chaque sexe." }
-##-- Histogram of numbers of detections per individual per year
-df <- data.alive$myData.sp %>%
-  st_drop_geometry() %>%
-  summarize(., 
-            freq = n(),
-            .by = c(Id,Sex,Year))
-                 
-mu <- summarize( df, 
-                 grp.mean = mean(freq),
-                 .by = Sex)
 
-plot1 <- ggplot(df, aes(x = freq, fill = sex)) +
-  geom_histogram( position = "dodge", 
-                  alpha = 0.5, binwidth = 1)+
-  geom_vline( data = mu,
-              aes( xintercept = grp.mean, color = sex),
-              linetype = "dashed") +
-  labs( tag = "A",
-        x = "Number of detections per year",
-        y = "Number of individuals") +
-  theme_classic( ) +
-  theme(legend.position = 'none')
-
-
-##-- Histogram of distances between detections in a year
-meanDist <- summarize( detDist, 
-                       grp.mean = mean(dist),
-                       .by = sex)
-
-plot2 <- ggplot(detDist, aes(x = dist, fill = sex)) +
-  geom_histogram( position = "dodge", 
-                  alpha = 0.5, binwidth = 100) +
-  geom_vline( data = meanDist,
-              aes( xintercept = grp.mean, color = sex),
-              linetype = "dashed") +
-  labs( tag = "B",
-        x = "Pairwise distance between detections (m)",
-        y = "Number of individuals") +
-  theme_classic()
-
-plot1 + plot2
-
-
-```
+**[...more coming soon...]**
 
 
 
@@ -616,26 +419,12 @@ kable( deadSamples,
   kable_styling(full_width = F)
 ```
 
-
-
-
 ------------------------------------------------------------------------
 
 # Local evaluation
 
-```{r, save data, eval = F}
-fileName <-  paste0("Data_", engSpecies, "_",params$modDate,".RData")
 
-save(alive, 
-     dead.recovery,
-     IdDoubleSex,
-     file = file.path(dir.out, fileName))
-```
-
-Finally, we save the cleaned **alive** and **dead.recovery** sf objects as a .RData file with name **`r fileName`** located in the `r engSpecies`-specific folder (`r dir.out`).
-
-
-
+**[...more coming soon...]**
 
 ------------------------------------------------------------------------
 

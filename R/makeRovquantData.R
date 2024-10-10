@@ -58,7 +58,7 @@ makeRovquantData <- function(
   ##-- paths
   species = c("bear","wolf","wolverine"),
   data_dir = "./Data",
-  working_dir = NULL,
+  working_dir,
   
   ##-- data
   years = NULL,
@@ -79,11 +79,21 @@ makeRovquantData <- function(
   
   ##-- miscellanious
   print.report = TRUE, 
-  Rmd_template = NULL
+  Rmd_template = NULL,
+  output_dir = NULL
 ) {
   
   ##-- Check species and set corresponding sampling period
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
+    
+    SPECIES <- "bear"
+    
+    ##-- Extract the date from the last cleaned data file
+    DATE <- getMostRecent( 
+      path = file.path(working_dir,"data"),
+      pattern = "Data_bear")
+    
+    ##-- Prepare the data
     out <- makeRovquantData_bear(
       ##-- paths
       data_dir,
@@ -101,13 +111,13 @@ makeRovquantData <- function(
       detector.res = 5000,
       subdetector.res = 1000,
       max.det.dist = 70000,
-      resize.factor = 1,
-      ##-- miscellanious
-      print.report = FALSE)
+      resize.factor = 1)
   }
+  
   # if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
   #   out <- makeRovquantData_wolf(...)
   # }
+  
   # if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
   #   out <- makeRovquantData_wolverine(...)
   # }
@@ -122,13 +132,21 @@ makeRovquantData <- function(
       } 
     }
     
+    
+    ##-- Find the directory to print the report.
+    if(is.null(output_dir)){
+      output_dir <- working_dir
+    }
+    
+    
     ##-- Clean the data and print report
     rmarkdown::render(
       input = Rmd_template,
       params = list( species = SPECIES,
-                     working_dir = working_dir,
-                     data_dir = data_dir),
-      output_dir = output_folder,
+                     years = years,
+                     sex = sex,
+                     working_dir = working_dir),
+      output_dir = output_dir,
       output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
   }
   

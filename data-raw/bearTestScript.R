@@ -224,7 +224,7 @@ makeRovquantData(
   max.det.dist = 70000,
   resize.factor = 1,
   ##-- miscellanious
-  print.report = F)
+  print.report = T)
 
 
 
