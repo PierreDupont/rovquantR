@@ -1,6 +1,8 @@
 ---
 params:
   species: "bear"
+  years: 2012:2024
+  sex: c("Hann","Hunn")
   working_dir: "./data"
   data_dir: NULL
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
@@ -72,8 +74,9 @@ COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), 
 
 This document summarizes the data preparation process of the **`r species`** DNA data available from [RovBase 3.0](https://rovbase.no/), for analysis with an OPSCR model as done by the [AQEG team](https://www.nmbu.no/en/projects/rovquant). In this particular instance, we focus on the **`r species`** data collected during the period **`r years[1]`** to **`r years[length(years)]`**.
 
-
 ------------------------------------------------------------------------
+
+
 
 # Habitat definition
  
@@ -96,6 +99,8 @@ mapview( x = habitat$grid,
                         "Esri.WorldShadedRelief",
                         "OpenStreetMap.DE"))
 ```
+
+
 
 ## Habitat covariates 
 
@@ -130,9 +135,9 @@ for(c in 1:L){
 The prepared habitat characteristics are available in :
 `r file.path(working_dir, "data/Habitat.RData")`
 
-
-
 ------------------------------------------------------------------------
+
+
 
 # Detectors definition
 
@@ -160,6 +165,7 @@ mapview(st_geometry(detectors$grid),
 
 
 ## Detectors covariates
+
 ```{r, det covs1, echo = FALSE}
 ##-- Identify number of detector covariates
 covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Habitat","id", "x","y","geometry")]
@@ -190,15 +196,15 @@ for(c in 1:L){
 
 ------------------------------------------------------------------------
 
+
+
 # Individual detection histories
 
 
 ```{r, det data, echo = FALSE}
-##-- Load the most recent data from RovBase
-myFullData.sp <- readMostRecent( 
-  path = file.path(working_dir,"data"),
-  pattern = paste0("Data_",species),
-  extension = ".RData")
+
+##-- Load the filtered NGS and Dead Recovery data
+load(file.path(working_dir,"data/Data.RData"))
 
 ##-- list directories containing input files
 dirNames <- list.dirs(file.path(working_dir, "nimbleInFiles"), full.names = F, recursive = F)
@@ -216,27 +222,13 @@ names(inputs) <- dirNames
 
 
 
-We can also add maps of the NGS samples collected year:
+We start by looking at the distribution of the NGS samples used in the analysis in space each year:
 
 ```{r NGS maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
-# alive.sf <- st_as_sf(alive)
-# dead.sf <- st_as_sf(dead.recovery)
-# COUNTRIES.sf <- st_as_sf(COUNTRIES)
-  ##-- Plot NGS data
-  par(mfrow = c(3,5), mar = c(0,0,2,0))
-  for(t in 1:n.years){
-    plot(st_geometry(COUNTRIES), col = "gray80")
-    mtext(years[t], side = 1, line = -4)
-    if(t == 3){ mtext("NGS data", side = 3, cex = 3, line = -2)}
-    plot(st_geometry(myFullData.sp$alive[myFullData.sp$alive$Year %in% years[t], ]),
-         add = TRUE, pch = 3, cex = 0.2, col = "navyblue")
-  }#t
-
-
 ##-- NGS map
 numRows <- ceiling(length(years)/5)
 numCols <- 5
-NGS_map <- ggplot(data = alive) +
+NGS_map <- ggplot(data = data.alive$myData.sp) +
   geom_sf(data = COUNTRIES,
           aes(fill = ISO),
           alpha = 0.3,
@@ -257,31 +249,13 @@ NGS_map <- ggplot(data = alive) +
         panel.grid.minor = element_blank(),
         plot.background = element_blank())
 NGS_map
-
-##-- Save maps as .png
-grDevices::png(filename = file.path(dir.out, 
-                         paste0(species, "_NGS_", years[1]," to ", years[length(years)], ".png")),
-    width = 8, height = 6, units = "in", res = 300)
-NGS_map
-graphics.off()
 ```
 
-and a series of maps for the dead recoveries each year:
+
+We can do the same for the number and distriution of dead recoveries each year:
 
 ```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
-
-##-- Plot Dead Recoveries data
-par(mfrow = c(2,5), mar = c(0,0,2,0))
-for(t in 1:n.years){
-  plot(st_geometry(COUNTRIES), col = "gray80")
-  mtext(years[t], side = 1, line = -4)
-  if(t == 3){ mtext("Dead Recoveries", side = 3, cex = 3, line = -2)}
-  plot(st_geometry(myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Year %in% years[t], ]),
-       add = TRUE, pch = 3, cex = 0.2, col = "red")
-}#t
-
-
-dead_map <- ggplot(data = dead.recovery) +
+dead_map <- ggplot(data = data.dead) +
   geom_sf(data = COUNTRIES, 
           aes(fill = ISO),
           alpha = 0.3,
@@ -301,13 +275,6 @@ dead_map <- ggplot(data = dead.recovery) +
         panel.grid.minor = element_blank(),
         plot.background = element_blank())
 dead_map
-
-##-- Save maps as .png
-grDevices::png(filename = file.path(dir.out, 
-                         paste0(engSpecies, "_DEAD_", years[1]," to ", years[length(years)], ".png")),
-    width = 8, height = 6, units = "in", res = 300)
-dead_map
-graphics.off()
 ```
 
 
@@ -316,17 +283,17 @@ We can also look at some summary statistics based on individual detections, such
 
 
 
-```{r data summary, echo =  F, fig.cap= "A) Nombre de détections par lièvre variable, par an, et par sexe, et B) distribution des distances entre deux detections du même individu au cours de la même année sur le site de Réotier. Les lignes pointillées montrent les valeurs moyennes pour chaque sexe.", }
+```{r data summary, echo =  F, fig.cap= "A) Nombre de détections par lièvre variable, par an, et par sexe, et B) distribution des distances entre deux detections du même individu au cours de la même année sur le site de Réotier. Les lignes pointillées montrent les valeurs moyennes pour chaque sexe." }
 ##-- Histogram of numbers of detections per individual per year
-df <- ngs %>%
+df <- data.alive$myData.sp %>%
   st_drop_geometry() %>%
   summarize(., 
             freq = n(),
-            .by = c(id,sex,year))
+            .by = c(Id,Sex,Year))
                  
 mu <- summarize( df, 
                  grp.mean = mean(freq),
-                 .by = sex)
+                 .by = Sex)
 
 plot1 <- ggplot(df, aes(x = freq, fill = sex)) +
   geom_histogram( position = "dodge", 

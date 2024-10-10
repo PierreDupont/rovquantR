@@ -88,7 +88,6 @@ makeRovquantData_bear <- function(
   ##-- miscellanious
   print.report = TRUE
 ){
-  
   ## ---------------------------------------------------------------------------
   
   ## ------ 0. BASIC SET-UP ------
@@ -1008,7 +1007,7 @@ makeRovquantData_bear <- function(
     
     ##-- DISTINGUISH MORTALITY SOURCE IN z.data and z.init
     z.data[] <- ifelse(y.dead == 1, 3, z.data)
-    z.staggered[] <- ifelse(y.dead == 1, 3, z.staggered)
+    # z.staggered[] <- ifelse(y.dead == 1, 3, z.staggered)
     
     
     
@@ -1160,7 +1159,7 @@ makeRovquantData_bear <- function(
     
     ## ------   7. SAVE DETECTION DATA ----- 
     save( data.alive, data.dead,
-          file = file.path( working_dir, "data/Data.RData"))
+          file = file.path( working_dir, paste0("data/Data_",thisSex,".RData")))
     
     
   }#thisSex

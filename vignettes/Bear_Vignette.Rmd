@@ -232,7 +232,7 @@ DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
 Now, we clean the data. This step involves multiples actions, such as subsetting the data to the species and period of interest for the analysis,  checking individual sex assigments, etc...
 In order to evaluate the cleaning procedure, the cleaing function prints out a report in .html format summarizing the content of the cleaned dataset. This report can be found in the 'data' folder of the analysis directory, labbled with the date corresponding to the last modification date of the raw data.
 
-```{r clean}
+```{r clean, eval = FALSE}
 cleanRovbaseData( species = "bear",
                   years = 2020:2024,
                   data_dir = data_dir,
@@ -246,7 +246,7 @@ cleanRovbaseData( species = "bear",
 Now that we have cleaned out the data, it is time to format it for analysis using nimbleSCR.
 This process can be quite opaque and complex and this is why we have created the 'makeRovquantData' wrapper function, which encapsulates the latest data formatting scripts for the different species.
 
-```{r make}
+```{r make, eval = FALSE}
 makeRovquantData(    
   ##-- paths
   species = "bear",
