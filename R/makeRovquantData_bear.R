@@ -630,8 +630,8 @@ makeRovquantData_bear <- function(
   
   
   ## ------   5. SAVE STATE-SPACE CHARACTERISTICS -----
-  
-  save( habitat,
+
+    save( habitat,
         file = file.path( working_dir, "data/Habitat.RData"))
   
   save( detectors,
@@ -639,52 +639,71 @@ makeRovquantData_bear <- function(
   
   
   
-  ## ------   6. GENERATE DETECTION HISTORY ------
+  ## ------   6. FILTER DATA -----
+  ## ------     6.1. ALIVE DATA -----
+  
+  data.alive <- myFullData.sp$alive %>%
+    dplyr::filter(
+      ##-- Subset to years of interest
+      Year %in% years,
+      ##-- Subset to months of interest
+      Month %in% unlist(sampling.months),
+      ##-- Subset to sex of interest
+      Sex %in% sex,
+      ##-- Filter data for space
+      !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
+    ) %>%
+    AssignDetectors(
+      myData = .,                
+      myDetectors = detectors$main.detector.sp,
+      mysubDetectors = detectors$detector.sp,
+      radius = detectors$resolution)
+  
+  
+  
+  ## ------     6.2. DEAD RECOVERY DATA -----
+  
+  data.dead <- myFullData.sp$dead.recovery %>%
+    dplyr::filter(
+      ##-- Subset to years of interest
+      Year %in% years,
+      ##-- Subset to sex of interest
+      Sex %in% sex,
+      ##-- Filter data for space
+      !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
+    ) %>% 
+    AssignDetectors(
+      myData = .,
+      myDetectors = detectors$main.detector.sp,
+      radius = detectors$resolution)
+
+  
+  
+  ## ------     6.3. SAVE FILTERED DATA ----- 
+  save( data.alive, data.dead,
+        file = file.path( working_dir, paste0("data/Data.RData")))
+  
+  
+    
+  ## ------   7. GENERATE DETECTION HISTORY ------
   
   for(thisSex in sex){
     
     message(paste0("Preparing individual detection histories for sex: ", thisSex, "... "))
     
-    ## ------     6.1. ALIVE DATA -----
+    ## ------     7.1. FILTER DATA BY SEX -----
     
-    data.alive <- myFullData.sp$alive %>%
-      dplyr::filter(
-        ##-- Subset to years of interest
-        Year %in% years,
-        ##-- Subset to months of interest
-        Month %in% unlist(sampling.months),
-        ##-- Subset to sex of interest
-        Sex %in% thisSex,
-        ##-- Filter data for space
-        !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
-      ) %>%
-      AssignDetectors(
-        myData = .,                
-        myDetectors = detectors$main.detector.sp,
-        mysubDetectors = detectors$detector.sp,
-        radius = detectors$resolution)
+    load(file.path( working_dir, paste0("data/Data.RData")))
+    
+    data.alive$myData.sp <- data.alive$myData.sp %>%
+      dplyr::filter(Sex %in% thisSex)
+    
+    data.dead <-  data.dead %>%
+      dplyr::filter(Sex %in% thisSex)
     
     
     
-    ## ------     6.2. DEAD RECOVERY DATA -----
-    
-    data.dead <- myFullData.sp$dead.recovery %>%
-      dplyr::filter(
-        ##-- Subset to years of interest
-        Year %in% years,
-        ##-- Subset to sex of interest
-        Sex %in% thisSex,
-        ##-- Filter data for space
-        !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
-      ) %>% 
-      AssignDetectors(
-        myData = .,
-        myDetectors = detectors$main.detector.sp,
-        radius = detectors$resolution)
-    
-    
-    
-    ## ------     6.3. GENERATE DETECTION HISTORY ARRAYS -----
+    ## ------     7.2. GENERATE DETECTION HISTORY ARRAYS -----
     
     y.ar <- MakeY( myData = data.alive$myData.sp,
                    myDetectors = detectors$main.detector.sp,
@@ -713,7 +732,7 @@ makeRovquantData_bear <- function(
     
     
     
-    ## ------     6.4. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR -----
+    ## ------     7.3. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR -----
     
     distances <- list()
     for(t in 1:n.years){
@@ -764,7 +783,7 @@ makeRovquantData_bear <- function(
     
     
     
-    ## ------     6.5. AUGMENT DETECTION HISTORIES -----
+    ## ------     7.4. AUGMENT DETECTION HISTORIES -----
     
     y.alive <- MakeAugmentation( 
       y = y.ar.ALIVE,
@@ -778,7 +797,7 @@ makeRovquantData_bear <- function(
     
     
     
-    ## ------     6.6. TRANSFORM Y TO SPARSE MATRICES -----
+    ## ------     7.5. TRANSFORM Y TO SPARSE MATRICES -----
     
     y.sparse <- nimbleSCR::getSparseY(y.alive)
     
@@ -954,7 +973,7 @@ makeRovquantData_bear <- function(
     allDead <- apply(z.data, 1, function(x)all(x==4))
     z.data[allDead, ] <- 1
     
-
+    
     
     ## ------     3.2. GENERATE INITIAL z -----
     
@@ -1154,13 +1173,6 @@ makeRovquantData_bear <- function(
             file = file.path( working_dir, "nimbleInFiles", thisSex,
                               paste0("nimbleInput_",c,".RData")))
     }#c
-    
-    
-    
-    ## ------   7. SAVE DETECTION DATA ----- 
-    save( data.alive, data.dead,
-          file = file.path( working_dir, paste0("data/Data_",thisSex,".RData")))
-    
     
   }#thisSex
   

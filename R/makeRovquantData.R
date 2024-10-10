@@ -103,7 +103,7 @@ makeRovquantData <- function(
       max.det.dist = 70000,
       resize.factor = 1,
       ##-- miscellanious
-      plot.check = FALSE)
+      print.report = FALSE)
   }
   # if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
   #   out <- makeRovquantData_wolf(...)

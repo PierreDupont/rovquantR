@@ -210,7 +210,7 @@ makeRovquantData(
   data_dir = data_dir,
   working_dir = working_dir,
   ##-- data
-  years = 2020:2024,
+  #years = 2020:2023,
   sex = c("Hann","Hunn"),
   aug.factor = 2,
   sampling.months = list(4,5,6,7,8,9,10,11),
