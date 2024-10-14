@@ -10,8 +10,6 @@
 #' @param nburnin An \code{integer} denoting the number of iterations to be removed from each MCMC as burnin.
 #' @param niter An \code{integer} denoting the number of MCMC iterations to be used for density extraction.
 #' @param extraction.res A \code{integer} denoting the raster resolution for density extraction.
-#' @param plot.check An \code{integer} denoting the number of MCMC iterations to be used for density extraction.
-#' @param print.report A \code{integer} denoting the raster resolution for density extraction.
 #' 
 #' @return 
 #' A \code{.RData} file with the clean NGS and dead recovery data objects
@@ -40,9 +38,7 @@ processRovquantOutput_bear <- function(
   working_dir = NULL,
   nburnin = 0,
   niter = 100,
-  extraction.res = 5000,
-  plot.check = FALSE,
-  print.report = TRUE
+  extraction.res = 5000
 ){
   ## ------ 0. BASIC SET-UP ------
   if(is.null(working_dir)){working_dir <- getwd()}
@@ -2993,4 +2989,3 @@ processRovquantOutput_bear <- function(
   # }
   
 }
-

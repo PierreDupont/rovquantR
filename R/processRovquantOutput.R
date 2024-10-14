@@ -22,9 +22,9 @@
 #' @param nburnin An \code{integer} denoting the number of MCMC  dead recovery should be included (TRUE) or not (FALSE)
 #' @param niter A \code{logical} Whether dead recovery should be included (TRUE) or not (FALSE)
 #' @param extraction.res A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
-#' @param plot.check A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
 #' @param print.report A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
-#' 
+#' @param output_dir A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#'
 #' @return This function returns:
 #' \enumerate{
 #' \item A \code{.RData} file with the clean NGS and dead recovery data objects
@@ -51,12 +51,21 @@ processRovquantOutput <- function(
   extraction.res = 5000,
   
   ##-- miscellanious
-  plot.check = FALSE,
-  print.report = TRUE
+  print.report = TRUE,
+  output_dir = NULL
 ) {
   
   ##-- Check species and set corresponding sampling period
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
+    
+    SPECIES <- "Brown bear"
+    
+    ##-- Extract the date from the last cleaned data file
+    DATE <- getMostRecent( 
+      path = file.path(working_dir,"data"),
+      pattern = "Data_bear")
+    
+    ##-- Process the model output
     out <- processRovquantOutput_bear(
       ##-- paths
       data_dir = data_dir,
@@ -67,16 +76,11 @@ processRovquantOutput <- function(
       
       ##-- Density extraction
       niter = 100,
-      extraction.res = 5000,
-      
-      ##-- miscellanious
-      plot.check = FALSE,
-      print.report = TRUE)
+      extraction.res = 5000)
   } else {
     message("Come back some other time for wolves and wolverines...or any other species")
   }
-  
-  
+
   # if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
   #   out <- processRovquantOutput_wolf(...)
   # }
@@ -85,5 +89,32 @@ processRovquantOutput <- function(
   #   out <- processRovquantOutput_wolverine(...)
   # }
   
+  
+  if(print.report){
+    
+    ##-- Find the .rmd template for the report.
+    if(is.null(Rmd_template)){
+      Rmd_template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
+      Rmd_template <- "C:/My_documents/rovquantR/inst/rmd/RovQuant_OutputReport.Rmd"
+      
+      if(!file.exists(Rmd_template)) {
+        stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
+      } 
+    }
+    
+    ##-- Find the directory to print the report.
+    if(is.null(output_dir)){
+      output_dir <- working_dir
+    }
+
+    ##-- Clean the data and print report
+    rmarkdown::render(
+      input = Rmd_template,
+      params = list( species = SPECIES,
+                     years = years,
+                     working_dir = working_dir),
+      output_dir = output_dir,
+      output_file = paste0("Results_", SPECIES, "_", DATE,".html"))
+  }
   return(out)
 }

@@ -86,7 +86,7 @@ makeRovquantData <- function(
   ##-- Check species and set corresponding sampling period
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
     
-    SPECIES <- "bear"
+    SPECIES <- "Brown bear"
     
     ##-- Extract the date from the last cleaned data file
     DATE <- getMostRecent( 

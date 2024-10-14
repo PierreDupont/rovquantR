@@ -69,8 +69,13 @@ plotDensityMaps <- function(
           }}}}
     ncols <- ceiling(L/nrows)
     
-    grDevices::pdf(file = file.path(path, paste0(name,"_TimeSeries.pdf")),
-                   width = ncols*2, height = nrows*4)
+    # grDevices::pdf(file = file.path(path, paste0(name,"_TimeSeries.pdf")),
+    #                width = ncols*2, height = nrows*4)
+    
+    grDevices::png(filename = file.path(path, paste0(name,"_TimeSeries.png")),
+                   width = ncols*2, height = nrows*4,
+                   units = "in", pointsize = 12,
+                   bg = NA)
     
     ##-- Set color scale
     max <- max(unlist(lapply(density, function(x) max(x[], na.rm = T))))
@@ -146,8 +151,12 @@ plotDensityMaps <- function(
   ##-- Last year's density map
   if(type %in% c("last.year","all")){
     
-    grDevices::pdf(file = file.path(path, paste0(name,"_LastYear.pdf")),
-                   width = 8, height = 8)
+    # grDevices::pdf(file = file.path(path, paste0(name,"_LastYear.pdf")),
+    #                width = 8, height = 8)
+    
+    grDevices::png(filename = file.path(path, paste0(name,"_LastYear.png")),
+        width = 480, height = 480, units = "px", pointsize = 12,
+        bg = NA)
     
     t <- length(density)
     
