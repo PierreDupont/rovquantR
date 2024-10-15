@@ -98,7 +98,7 @@ processRovquantOutput <- function(
     if(is.null(Rmd_template)){
       Rmd_template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
       if(!file.exists(Rmd_template)) {
-        stop('Can not find a .rmd template called "RovQuant_DataReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
+        stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
       } 
     }
     
