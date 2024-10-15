@@ -24,6 +24,7 @@
 #' @param extraction.res A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
 #' @param print.report A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
 #' @param output_dir A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#' @param Rmd_template A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
 #'
 #' @return This function returns:
 #' \enumerate{
@@ -52,6 +53,7 @@ processRovquantOutput <- function(
   
   ##-- miscellanious
   print.report = TRUE,
+  Rmd_template = NULL,
   output_dir = NULL
 ) {
   
@@ -94,11 +96,9 @@ processRovquantOutput <- function(
     
     ##-- Find the .rmd template for the report.
     if(is.null(Rmd_template)){
-      Rmd_template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
-      Rmd_template <- "C:/My_documents/rovquantR/inst/rmd/RovQuant_OutputReport.Rmd"
-      
+      Rmd_template <- system.file("rmd", "RovQuant_DataReport.Rmd", package = "rovquantR")
       if(!file.exists(Rmd_template)) {
-        stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
+        stop('Can not find a .rmd template called "RovQuant_DataReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
       } 
     }
     
@@ -111,7 +111,7 @@ processRovquantOutput <- function(
     rmarkdown::render(
       input = Rmd_template,
       params = list( species = SPECIES,
-                     years = years,
+                     years = 2020:2023,
                      working_dir = working_dir),
       output_dir = output_dir,
       output_file = paste0("Results_", SPECIES, "_", DATE,".html"))

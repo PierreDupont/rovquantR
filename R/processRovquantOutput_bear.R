@@ -402,7 +402,7 @@ processRovquantOutput_bear <- function(
     background = COUNTRIES[1,],
     type = c("all"),# "last.year", "time.series"),
     path = file.path(working_dir, "figures"),
-    name = "UD_Density")
+    name = "AC_Density")
   
   ##-- UD-density maps
   plotDensityMaps( 
@@ -413,7 +413,7 @@ processRovquantOutput_bear <- function(
     background = COUNTRIES[1,],
     type = c("all"),
     path = file.path(working_dir, "figures"),
-    name = "AC_Density")
+    name = "UD_Density")
   
   
   
@@ -611,8 +611,12 @@ processRovquantOutput_bear <- function(
   colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
   
   ##-- Plot N  
-  pdf(file = file.path(working_dir, "figures/Abundance_TimeSeries.pdf"),
-      width = 12, height = 8.5)
+  # pdf(file = file.path(working_dir, "figures/Abundance_TimeSeries.pdf"),
+  #     width = 12, height = 8.5)
+  grDevices::png(filename = file.path(working_dir, "figures/Abundance_TimeSeries.png"),
+                 width = 12, height = 8.5, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  
   par(mar = c(5,5,1,1))
   plot(-1000,
        xlim = c(0.5, n.years + 0.5),

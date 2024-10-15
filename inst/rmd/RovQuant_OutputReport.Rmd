@@ -55,7 +55,7 @@ library(patchwork)
 library(mapview)
 mapviewOptions(fgb = FALSE)
 library(rovquantR)
-library(magick)
+#library(magick)
 
 ##-- Load pre-processed habitat shapefiles
 data(COUNTRIESWaterHumans, envir = environment()) 
@@ -90,22 +90,21 @@ The main results of interest is population size:
 
 \includepdf[pages={-}]{my_pdf.pdf}
 
-```{r, abundance, include=TRUE, fig.align="center", fig.cap=c("Figure 2: Total (black) and sex-specific (blue: males, red: females) annual bear population size estimates"), eval=FALSE}
-knitr::include_graphics(file.path(working_dir, "figures/Abundance_TimeSeries.pdf"))
+```{r, abundance, include=TRUE, fig.align="center", fig.cap=c("Figure 1: Total (black) and sex-specific (blue: males, red: females) annual bear population size estimates"), echo = FALSE}
+knitr::include_graphics(file.path(working_dir, "figures/Abundance_TimeSeries.png"))
 ```
 
 ```{r }
-panel.upr <-  image_read_pdf(file.path(working_dir, "figures/Abundance_TimeSeries.pdf"))
-plot(panel.upr)
+# panel.upr <-  image_read_pdf(file.path(working_dir, "figures/Abundance_TimeSeries.pdf"))
+# plot(panel.upr)
 ```
 
 
 
 ## Population density
 
-```{r, density, fig.align="center", fig.cap=c("Brown bear density in Norway in 2023. Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between 2020 and 2023"), echo=FALSE}
-panel.upr <-  image_read_pdf(file.path(working_dir, "figures/UD_DensityMaps_LastYear.pdf"))
-plot(panel.upr)
+```{r, density, fig.align="center", fig.cap=c("Figure 1: Brown bear density in Norway in 2023. Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between 2020 and 2023"), echo = FALSE}
+knitr::include_graphics(file.path(working_dir, "figures/UD_Density_LastYear.png"))
 ```
 
 

@@ -40,7 +40,7 @@
 #' @param resize.factor A \code{numeric}.
 #' @param print.report A \code{logical}.
 #' @param Rmd_template A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
-#'
+#' @param output_dir A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
 #' 
 #' @return This function returns:
 #' \enumerate{

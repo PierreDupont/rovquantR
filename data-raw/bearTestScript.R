@@ -34,6 +34,7 @@ library(devtools)
 library(dplyr)
 library(readxl)
 library(nimbleSCR)
+#devtools::install_github("PierreDupont/rovquantR")
 library(rovquantR)
 
 
@@ -48,7 +49,7 @@ data_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQ
 
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test2"
+working_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test.1"
 
 
 ##-- Create folder structure for the analysis
@@ -314,7 +315,6 @@ processRovquantOutput(
   niter = 100,
   extraction.res = 5000,
   ##-- miscellanious
-  plot.check = FALSE,
   print.report = TRUE)
 
 

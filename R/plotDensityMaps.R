@@ -75,7 +75,7 @@ plotDensityMaps <- function(
     grDevices::png(filename = file.path(path, paste0(name,"_TimeSeries.png")),
                    width = ncols*2, height = nrows*4,
                    units = "in", pointsize = 12,
-                   bg = NA)
+                   res = 300, bg = NA)
     
     ##-- Set color scale
     max <- max(unlist(lapply(density, function(x) max(x[], na.rm = T))))
@@ -155,8 +155,8 @@ plotDensityMaps <- function(
     #                width = 8, height = 8)
     
     grDevices::png(filename = file.path(path, paste0(name,"_LastYear.png")),
-        width = 480, height = 480, units = "px", pointsize = 12,
-        bg = NA)
+        width = 8, height = 8, units = "in", pointsize = 12,
+        res = 300, bg = NA)
     
     t <- length(density)
     
