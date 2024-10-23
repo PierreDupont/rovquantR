@@ -1,60 +1,16 @@
----
-params:
-  years  : NULL
-  species: "bear"
-  samplingMonths: 4:11
-  sex    : c("Hunn","Hann")  
-  dir.in: NULL
-  dir.out: NULL   
-  modDate: Sys.Date()   
-title    : "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
-subtitle : "RovQuant - OPSCR Data Cleaning"
-output:
-  html_document: 
-    theme: "cerulean" 
-    toc_depth: 2
-    toc: yes
-    toc_float: yes
-    df_print: kable
-    #css: bootstrap.css
-    highlight: zenburn
-  pdf_document: default
-  word_document: default
----
 
+cleanRovbaseData_bear <- function( years = NULL, 
+                              data_dir = "./Data",
+                              output_dir = "./Data",
+                              Rmd_template = NULL,
+                              overwrite = FALSE)
+{
 
-```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
-years <- if(is.null(params$years)){ 
-  2012:as.numeric(format(Sys.Date(), "%Y"))
-} else { 
-  params$years
-}
-samplingMonths <- params$samplingMonths
-sex <- params$sex
-species <- params$species
-dir.in <- params$dir.in
-dir.out <- params$dir.out
-
-if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
-  engSpecies <- "bear"
-  norSpecies <- "Bjørn"
-}
-if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
-  engSpecies <- "wolf"
-  norSpecies <- "Ulv"
-}
-if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
-  engSpecies <- "wolverine"
-  norSpecies <- "Jerv"
-}
+engSpecies <- "bear"
+norSpecies <- "Bjørn"
 
 months = c("January","February","March","April","May","June",
            "July","August","September","October","November","December")
-
-
-##-- load libraries
-library(kableExtra)
-library(ggplot2)
 
 ##-- Load pre-processed habitat shapefiles
 data(COUNTRIESWaterHumans, envir = environment()) 
@@ -62,28 +18,8 @@ data(COUNTRIESWaterHumans, envir = environment())
 COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
   dplyr::group_by(ISO) %>%
   dplyr::summarise()
-```
 
 
-### `r Sys.Date()`
-
-
-# Introduction
-
-This document presents the data cleaning and checking process of the **`r species`** DNA data available from [RovBase 3.0](https://rovbase.no/), as done by the [AQEG team](https://www.nmbu.no/en/projects/rovquant) as part of the data preparation steps for SCR or OPSCR analyses of the large carnivore populations of Scandinavia. In this particular instance, we focus on the **`r species`** data collected during the period **`r years[1]`** to **`r years[length(years)]`**.
-
-For the **`r species`**, we consider a sampling period each year that extends from **`r months[unlist(samplingMonths)[1]]`** to **`r months[last(unlist(samplingMonths))]`** (inclusive).
-
-
-
-
-------------------------------------------------------------------------
-
-# Rovbase data files
-
-We start by loading the most recent data for the focal species available from RovBase. This includes two '.csv' spreadsheets containing the species-specific **NGS** data and the large carnivores' **dead recoveries** data. We could also load a file with *problematic samples* or *individuals* flagged to be removed from the analysis, but this would require using standardized names for these files as well (not impossible).
-
-```{r, data, echo = F, collapse = TRUE}
 ##-- Load the most recent .csv file with the focal species name
 DNA <- readMostRecent( 
   path = dir.in,
@@ -103,10 +39,6 @@ DR <- readMostRecent(
   
 
 ##-- Merge DNA and dead recoveries files using all shared names columns
-# sharedColumns <- names(DNA)[names(DNA) %in% names(DR)]
-# DATA <- merge( DR, DNA,
-#                by = sharedColumns,
-#                all = TRUE)
 DATA <- merge( DR, DNA, 
                by = c("Id","RovbaseID","DNAID","Species", "Sex","Date","East_UTM33","North_UTM33", "County"),
                all = TRUE) %>%
@@ -143,8 +75,6 @@ DATA$Birth <- DATA$Death - DATA$Age
 noID <- sum(is.na(DATA$Id))              ## number of samples without ID
 noDate <- sum(is.na(DATA$Year))          ## number of samples without Date
 noCoords <- sum(is.na(DATA$East_UTM33))  ## number of samples without Coords  
-# notInDR <- sum(as.numeric(substr(DATA$RovbaseID,1,1) %in% "M")
-#                * as.numeric(!(DATA$DNAID %in% DR$DNAID)))
 
 ##-- Filter out unusable samples
 DATA <- DATA %>%
@@ -158,11 +88,8 @@ DATA <- DATA %>%
          ##-- Filter out samples with 
          Year %in% years) %>%
   droplevels(.)
-```
 
 
-
-```{r, sex assignment, echo = F}
 ID <- unique(as.character(DATA$Id))
 DATA$Sex <- as.character(DATA$Sex)
 doubleSexID <- IdDoubleSex <- NULL
@@ -196,9 +123,8 @@ for(i in 1:length(ID)){
   
   doubleSexID[i] <- length(tab)
 }#i
-```
 
-```{r, split DATA, echo = F}
+
 ##-- Split DATA into alive and dead.recovery datasets
 alive <- DATA[is.na(DATA$Death), ]
 dead.recovery <- DATA[!is.na(DATA$Death), ]
@@ -219,119 +145,26 @@ dead.recovery$detected.earlier <-
                   this.date <- dead.recovery[i,"Date"]
                   any(alive$Id %in% this.id & alive$Date < this.date)
                 }))
-```
 
-```{r, wolverine, echo = F, collapse = TRUE}
-if(engSpecies == "wolverine"){
-  ##-- Remove un-verified dead recoveries [HB] 
-  ##-- ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
-  dead.recovery <- dead.recovery[!grepl(pattern = "belastet kvote",
-                                        x = as.character(dead.recovery$DeathCause)), ]
-  
-  ##-- Load wolverine-specific additional data
-  SUSPECT_NGS_SAMPLES <- readMostRecent.csv(
-    path = dir.in,
-    pattern = "Remove ngs samples list wolverine.csv",
-    fileEncoding = "latin1")
-  
-  SUSPECT_DeadRecoSAMPLES <- readMostRecent.csv(
-    path = dir.in,
-    pattern = "Remove dead recoveries list wolverine.csv",
-    fileEncoding = "latin1")
-  
-  ##-- Remove suspect samples according to Henrik
-  alive$DNAID <- as.character(alive$DNAID)
-  alive <- alive[!(alive$DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB)), ]
-  
-  ##-- Remove suspect dead recoveries according to Henrik
-  dead.recovery$DNAID <- as.character(dead.recovery$DNAID)
-  dead.recovery <- dead.recovery[!(dead.recovery$RovBaseId %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID)), ]
-  
-  ##-- Remove pups killed before recruitment based on weight (cf. Henrik)
-  ##-- 1) remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
-  youngDeads <- which(dead.recovery$Doedt.individ..Unge %in% "Ja" &
-                        dead.recovery$Month > 2 &
-                        dead.recovery$Month < 12)
-  if(length(youngDeads) > 0){
-    dead.recovery <- dead.recovery[-youngDeads, ]
-  }
-  
-  ##-- 2) remove individuals with 0 < weight < 4kg between March and November 
-  ##-- Format the weight correctly 
-  dead.recovery$Helvekt <- as.character(dead.recovery$Helvekt)
-  dead.recovery$Slaktevekt <- as.character(dead.recovery$Slaktevekt)
-  ##-- Convert to decimals
-  dead.recovery$Helvekt <- as.numeric(gsub(",", ".", dead.recovery$Helvekt))
-  dead.recovery$Slaktevekt <- as.numeric(gsub(",", ".", dead.recovery$Slaktevekt))
-  ##-- Get the two weight columns together. 
-  dead.recovery$weight <- ifelse(!is.na(dead.recovery$Helvekt),
-                                 dead.recovery$Helvekt,
-                                 dead.recovery$Slaktevekt)
-  ##-- Assign negative values to NAs to avoid issues 
-  dead.recovery$weight[is.na(dead.recovery$weight)] <- -999
-  ##-- Check with Henrik (this step does not remove dead recoveries on id with weight==0 should it?)
-  ##-- Check how many dead reco we remove and remove if more than 0
-  lowWeightDeads <- which(dead.recovery$weight > 0 & dead.recovery$weight < 4 &
-                            dead.recovery$Month > 2 & dead.recovery$Month < 12)
-  if(length(lowWeightDeads) > 0){
-    dead.recovery <- dead.recovery[-lowWeightDeads, ]
-  }
-  
-  ##-- Check how many dead reco with a weight of 0 kg and recovered between march and november
-  zeroWeightDeads <- which(dead.recovery$Age %in% 0 &
-                             dead.recovery$Month > 2 &
-                             dead.recovery$Month < 12)
-}
-```
 
-```{r, wolf, echo = F, collapse = TRUE}
-if(engSpecies == "wolf"){
-  ##-- Load most recent Micke's file
-  INDIVIDUAL_ID <- readMostRecent.csv(
-    path = dir.in,
-    pattern = "_ID Grouping ",
-    fileEncoding = "latin1")  
-  
-  ##-- Translate Scandinavian characters
-  colnames(INDIVIDUAL_ID) <- translateForeignCharacters( data = colnames(INDIVIDUAL_ID))
-  
-  ##-- Overwrite gender from Micke's data when available
-  micke.sex <- as.character(unlist(lapply(DATA$Id,
-                                          function(i){ 
-                                            INDIVIDUAL_ID[as.character(INDIVIDUAL_ID$Individ..Rovbase.) %in% i,"Sex"][1]
-                                          })))
-  micke.sex[micke.sex %in% "0"] <- NA
-  micke.sex[micke.sex %in% names(table(micke.sex))[3]] <- NA
-  micke.sex[micke.sex %in% "Hona"] <- "Hunn"
-  micke.sex[micke.sex %in% "Hane"] <- "Hann"
-  new.sex <- ifelse(!is.na(micke.sex), as.character(micke.sex), as.character(DATA$Sex))
-  DATA$Sex <- new.sex
-  
-  numOverwiteSex <- sum(unique(as.character(INDIVIDUAL_ID$Individ..Rovbase.)) %in% DATA$Id)
-}
-```
+##-- Load most recent "flagged" file from HB
+flagged <- readMostRecent( 
+  path = dir.in,
+  extension = ".csv",
+  pattern = "dna_bear_to_remove", 
+  fileEncoding = "Latin1") 
 
-```{r, bear, echo = F, collapse = TRUE}
-if(engSpecies == "bear"){
-  ##-- Load most recent "flagged" file from HB
-  flagged <- readMostRecent( 
-    path = dir.in,
-    extension = ".csv",
-    pattern = "dna_bear_to_remove", 
-    fileEncoding = "Latin1") 
+##-- Remove flagged samples 
+remove.alive <- !alive$Barcode_sample %in% flagged$Strekkode
+alive <- alive[remove.alive, ]
+remove.dead <- !dead.recovery$Barcode_sample %in% flagged$Strekkode
+dead.recovery <- dead.recovery[remove.dead, ]
 
-  ##-- Remove flagged samples 
-  remove.alive <- !alive$Barcode_sample %in% flagged$Strekkode
-  alive <- alive[remove.alive, ]
-  remove.dead <- !dead.recovery$Barcode_sample %in% flagged$Strekkode
-  dead.recovery <- dead.recovery[remove.dead, ]
-  
-  dead.recovery$Missing <- NA
-  dead.recovery$Individ <- NA
-}
-```
+dead.recovery$Missing <- NA
+dead.recovery$Individ <- NA
 
-```{r, turn into sf, echo = F, collapse = TRUE}
+
+
 ##-- Turn into sf points dataframe
 alive <- sf::st_as_sf( x = alive,
                        coords = c("East_UTM33","North_UTM33")) %>%
@@ -343,14 +176,14 @@ alive$Country_sf <- COUNTRIES$ISO[as.numeric(st_intersects(alive, COUNTRIES))]
 
 ##-- Turn into sf points dataframe
 dead.recovery <- sf::st_as_sf( x = dead.recovery,
-                         coords = c("East_UTM33","North_UTM33")) %>%
+                               coords = c("East_UTM33","North_UTM33")) %>%
   sf::st_set_crs(.,sf::st_crs(32633))
 
 ##-- Intersect and extract country name
 dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
-```
 
-```{r, rovbase data summary, echo = F, collapse = TRUE}
+
+
 ##-- Number of NGS samples
 samples <- table(alive$Country_sample, alive$Year)
 samples2 <- table(alive$Country_sf, alive$Year)
@@ -390,32 +223,34 @@ deadIds <- cbind(deadIds,
                  "Total" = c(apply(table(dead.recovery$Country_sample,dead.recovery$Id),
                                    1,
                                    function(x)sum(x>0)),length(unique(dead.recovery$Id))))
-```
 
-The first steps of the cleaning process consist in :
 
--   translating Scandinavian characters  
--   renaming columns to match the NGS and dead recovery files  
--   merging both files into one  
--   extracting year and month from POSIX dates  
--   filtering out unusable samples :  
+# The first steps of the cleaning process consist in :
+#   
+# -   translating Scandinavian characters  
+# -   renaming columns to match the NGS and dead recovery files  
+# -   merging both files into one  
+# -   extracting year and month from POSIX dates  
+# -   filtering out unusable samples :  
+  
+#-   samples without ID 
+noID
+#-   samples without spatial coordinates 
+noCoords
+#-   samples without dates 
+noDate
 
-    -   samples without ID (N = `r noID`)
-    -   samples without spatial coordinates (N = `r noCoords`)
-    -   samples without dates (N = `r noDate`)
 
-`r if(engSpecies == "wolverine"){paste0("-   removing ", length(youngDeads) + length(lowWeightDeads), " young wolverines recovered between March and November (Note that ", length(zeroWeightDeads), " wolverines with weight = 0kg were kept in the data)")}`
 
-`r if(engSpecies == "wolf"){paste0("-   overwriting sex assignment using info from Micke (N = ", numOverwiteSex," individuals)")}`
-
-`r if(engSpecies == "bear"){paste0("-   removing ", sum(!remove.alive), " bear DNA samples and ", sum(!remove.dead), " dead recoveries flagged by H.Brøseth")}`
+paste0("-   removing ", sum(!remove.alive), " bear DNA samples and ", sum(!remove.dead), " dead recoveries flagged by H.Brøseth")
 
 
 ## Number of samples
 
-After this initial clean-up, we are left with `r paste0(samples["Total","Total"],"(NOR = ",samples["(N)","Total"]," ; SWE = ",samples["(S)","Total"], ")")` NGS samples and `r paste0(deadSamples["Total","Total"], "(NOR = ",deadSamples["(N)","Total"]," ; SWE = ",deadSamples["(S)","Total"], ")")` dead recoveries.
+#After this initial clean-up, we are left with 
+paste0(samples["Total","Total"],"(NOR = ",samples["(N)","Total"]," ; SWE = ",samples["(S)","Total"], ")")
+#NGS samples and `r paste0(deadSamples["Total","Total"], "(NOR = ",deadSamples["(N)","Total"]," ; SWE = ",deadSamples["(S)","Total"], ")")` dead recoveries.
 
-```{r, num samples, echo = F, fig.align = "center"}
 ##-- Number of samples
 dat.alive <- alive %>%
   dplyr::group_by(Date) %>%
@@ -435,9 +270,7 @@ ggplot(dat) +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme(legend.title = element_blank(),
         legend.position.inside = c(0.1,0.9)) 
-```
 
-```{r, echo = F}
 ##-- Number of NGS samples
 kable(samples, align = "lc",
       caption = "Number of NGS samples per year and country") %>%
@@ -446,14 +279,16 @@ kable(samples, align = "lc",
 ##-- Number of dead recoveries
 kable(deadSamples, align = "lc",
       caption = "Number of DNA samples from dead animals per year and country") %>% kable_styling(full_width = F)
-```
 
 
 ## Number of individuals
 
-In terms of individuals identified, these correspond to `r paste0(ids["Total","Total"], "(NOR = ",ids["(N)","Total"]," ; SWE = ",ids["(S)","Total"], ")")` individuals detected alive and `r paste0(deadIds["Total","Total"], "(NOR = ",deadIds["(N)","Total"]," ; SWE = ",deadIds["(S)","Total"], ")")` individuals recovered.
+#In terms of individuals identified, these correspond to  
+paste0(ids["Total","Total"], "(NOR = ",ids["(N)","Total"]," ; SWE = ",ids["(S)","Total"], ")")
+#individuals detected alive and 
+paste0(deadIds["Total","Total"], "(NOR = ",deadIds["(N)","Total"]," ; SWE = ",deadIds["(S)","Total"], ")")` 
+#individuals recovered.
 
-```{r, num ids, echo = F, fig.align = "center", warning = FALSE, message = FALSE}
 ##-- Number of IDs
 dat.alive <- alive %>% 
   dplyr::group_by(Year) %>% 
@@ -474,9 +309,8 @@ ggplot(dat) +
   theme(legend.title = element_blank(),
         legend.position = c(0.1,0.9)) +
   scale_x_continuous(breaks = years, labels = years)
-```
 
-```{r, echo = F, warning = FALSE, message = FALSE}
+
 ##-- Number of ID detected alive
 kable(ids, align = "lc",
       caption = "Number of individuals detected through NGS per year and country") %>%
@@ -486,9 +320,7 @@ kable(ids, align = "lc",
 kable(deadIds, align = "lc",
       caption = "Number of identified dead animals per year and country") %>% 
   kable_styling(full_width = F)
-```
 
-```{r, previous det, echo = F, fig.align = "center", warning = FALSE, message = FALSE}
 dat.alive <- alive %>%
   dplyr::group_by(Year, detected.earlier) %>%
   dplyr::summarise(n = length(unique(Id)))
@@ -512,33 +344,28 @@ ggplot() +
   ylab("Number of dead individuals") +
   theme(legend.position = c(0.1,0.9)) +
   scale_x_continuous(breaks = years, labels = years)
-```
 
 
 
 
 ------------------------------------------------------------------------
-
+  
 # Issues
-
-We can now start digging in the data, looking for potential issues.
+#We can now start digging in the data, looking for potential issues.
 
 
 ## Sex assignment
 
-```{r, multiple sex, echo = F}
 sexTab <- cbind.data.frame(
   "problems" = c("Unknown sex", "both 'Hunn' and 'Hann'"),
   "number of individuals" = as.numeric(table(doubleSexID)[c(1,3)]))
 
 kable(sexTab, align = "lc") %>%
   kable_styling(full_width = F)
-```
 
 
 ## Multiple deaths
 
-```{r, multiple deaths, echo = F}
 ##-- Identify and count individuals dead "more than once"
 ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1]
 multiDeathDate <- multiDeathYear <- multiDeathLocs <-  NULL
@@ -573,15 +400,19 @@ if(length(IdDoubleDead) > 0){
   }#i
 }#if
 # dead.recovery <- droplevels(dead.recovery)
-```
 
-There are `r length(multiDeathDate)` individuals with multiple death dates, of which `r length(multiDeathYear)` are recorded dead in different years.
+#There are 
+length(multiDeathDate)
+#individuals with multiple death dates, of which 
+length(multiDeathYear)
+#are recorded dead in different years.
 
-There are also `r length(multiDeathLocs)` recorded with different death locations.
+#There are also 
+length(multiDeathLocs)
+#recorded with different death locations.
 
 ## Detections after death
 
-```{r, ghost individuals, echo = F}
 id.list <- unique(c(as.character(dead.recovery$Id), as.character(alive$Id)))
 ghosts <- unlist(lapply(id.list, function(id){
   out <- NULL
@@ -603,24 +434,20 @@ samples.to.remove <- unlist(ghosts)
 
 ##-- Remove flagged NGS detections after dead recovery
 alive <- alive[!rownames(alive) %in% samples.to.remove, ]
-```
-
-There are `r length(ghosts)` individuals identified with NGS samples detected after their supposed death
 
 
+#There are 
+length(ghosts)
+#individuals identified with NGS samples detected after their supposed death
 
 
-------------------------------------------------------------------------
 
+
+##------------------------------------------------------------------------
+  
 # Maps
-
-We can also add maps of the NGS samples collected year:
-
-```{r, NGS maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
-# alive.sf <- st_as_sf(alive)
-# dead.sf <- st_as_sf(dead.recovery)
-# COUNTRIES.sf <- st_as_sf(COUNTRIES)
-
+# We can also add maps of the NGS samples collected year:
+  
 ##-- NGS map
 numRows <- ceiling(length(years)/5)
 numCols <- 5
@@ -648,15 +475,13 @@ NGS_map
 
 ##-- Save maps as .png
 grDevices::png(filename = file.path(dir.out, 
-                         paste0(species, "_NGS_", years[1]," to ", years[length(years)], ".png")),
-    width = 8, height = 6, units = "in", res = 300)
+                                    paste0(species, "_NGS_", years[1]," to ", years[length(years)], ".png")),
+               width = 8, height = 6, units = "in", res = 300)
 NGS_map
 graphics.off()
-```
 
-and a series of maps for the dead recoveries each year:
-
-```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
+#and a series of maps for the dead recoveries each year:
+  
 dead_map <- ggplot(data = dead.recovery) +
   geom_sf(data = COUNTRIES, 
           aes(fill = ISO),
@@ -680,37 +505,27 @@ dead_map
 
 ##-- Save maps as .png
 grDevices::png(filename = file.path(dir.out, 
-                         paste0(engSpecies, "_DEAD_", years[1]," to ", years[length(years)], ".png")),
-    width = 8, height = 6, units = "in", res = 300)
+                                    paste0(engSpecies, "_DEAD_", years[1]," to ", years[length(years)], ".png")),
+               width = 8, height = 6, units = "in", res = 300)
 dead_map
 graphics.off()
-```
 
 
 
 
-------------------------------------------------------------------------
-
-# Save clean data
-
-```{r, save data, echo = F}
+##------------------------------------------------------------------------
+  
+  # Save clean data
+  
 fileName <-  paste0("Data_", engSpecies, "_",params$modDate,".RData")
 
 save(alive, 
      dead.recovery,
      IdDoubleSex,
      file = file.path(dir.out, fileName))
-```
 
-Finally, we save the cleaned **alive** and **dead.recovery** sf objects as a .RData file with name **`r fileName`** located in the `r engSpecies`-specific folder (`r dir.out`).
+# Finally, we save the cleaned **alive** and **dead.recovery** sf objects as a .RData file with name **`r fileName`** located in the `r engSpecies`-specific folder (`r dir.out`).
+
+}
 
 
-
-
-------------------------------------------------------------------------
-
-# Metadata
-
-```{r, metadata, echo = F}
-utils::sessionInfo()
-```

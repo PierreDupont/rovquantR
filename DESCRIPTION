@@ -9,7 +9,7 @@ Maintainer: Pierre Dupont <pierre.dup@live.fr>
 Description: This R package provides a set of user-friendly wrapper
     functions and vignettes to replicate the Open-Population Spatial
     Capture-Recapture (OPSCR) analyses of the Scandinavian large carnivore
-    data performed by the AQEG group under project RovQuant.
+    data performed by project RovQuant.
 License: GPL (>= 2)
 Depends: 
     nimble,
@@ -20,8 +20,10 @@ Imports:
     coda,
     dplyr,
     fasterize,
+    ggplot2,
     graphics,
     grDevices,
+    kableExtra,
     magrittr,
     methods,
     nimbleSCR,

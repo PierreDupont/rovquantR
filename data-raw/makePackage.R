@@ -69,7 +69,7 @@ system(paste0('R CMD INSTALL --build ', lastTarFile))
 
 
 ## ------ (ALTERNATIVE) INSTALL PACKAGE FROM GITHUB ------
-#devtools::install_github("PierreDupont/rovquantR")
+devtools::install_github("PierreDupont/rovquantR")
 
 
 ## ------ NOW QUIT R -----
