@@ -43,6 +43,7 @@ NULL
 #' @export
 cleanRovbaseData <- function( species,
                               years = NULL, 
+                              samplingMonths = NULL,
                               data_dir = "./Data",
                               output_dir = "./Data",
                               Rmd_template = NULL,
@@ -56,16 +57,19 @@ cleanRovbaseData <- function( species,
   
   ##-- Check species and set corresponding sampling period
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
-    SPECIES <- "bear"
-    SP <- list(4:11)
-  }
+    if(is.null(samplingMonths)){ samplingMonths <- list(4:11) }
+    cleanRovbaseData_bear()
+    }
   if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
-    SPECIES <- "wolf"
-    SP <- list(10:12,1:4)
+    if(is.null(samplingMonths)){ samplingMonths <- list(10:12,1:4) }
+    cleanRovbaseData_bear()
+    
   }
   if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
-    SPECIES <- "wolverine"
-    SP <- list(12,1:5)
+    if(is.null(samplingMonths)){ samplingMonths <- list(12,1:5) }
+    
+    cleanRovbaseData_bear()
+    
   }
   
   ##-- Extract the date from the last .csv data file

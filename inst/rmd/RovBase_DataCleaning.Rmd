@@ -51,14 +51,12 @@ if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, 
 months = c("January","February","March","April","May","June",
            "July","August","September","October","November","December")
 
-
 ##-- load libraries
 library(kableExtra)
 library(ggplot2)
 
 ##-- Load pre-processed habitat shapefiles
 data(COUNTRIESWaterHumans, envir = environment()) 
-
 COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
   dplyr::group_by(ISO) %>%
   dplyr::summarise()
