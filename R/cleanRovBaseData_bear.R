@@ -110,27 +110,9 @@ cleanRovbaseData_bear <- function(
                         County_number = "Fylkenummer",
                         County = "Fylke"))) %>%
     ##-- Filter to the focal species
-    filter(., Species == "Bjørn") %>%
-    ##-- Save as.csv 
-    writeMostRecent.csv( ., file = file.path(data_dir, "dna_bear.csv"))
-
-  
-  ##-- Load the most recent .csv file with the focal species name
-  DNA <- readMostRecent( 
-    path = dir.in,
-    extension = ".csv",
-    pattern = "dna_bear.csv") %>%
-    ##-- Filter out samples from other species
-    dplyr::filter(., Species == "Bjørn")
+    filter(., Species == "Bjørn")
   
   
-  
-  
-  
-  
-  
-  
-  ## -----    2. DEAD RECOVERY DATA ------
   
   ##-- Load raw excel file imported from rovbase 
   DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
@@ -185,16 +167,8 @@ cleanRovbaseData_bear <- function(
                         County_number = "Fylkenummer",
                         County = "Fylke"))) %>%
     ##-- Filter to the focal species
-    filter(., Species == "Bjørn") %>%
-    ##-- Save as.csv 
-    writeMostRecent.csv( ., file = file.path(data_dir, "dead_bear.csv"))
-  ##-- Load the most recent .csv dead recovery file
-  DR <- readMostRecent(
-    path = dir.in,
-    extension = ".csv",
-    pattern = "dna_bear.csv") %>%
-    ##-- Filter out dead recoveries of other species
-    dplyr::filter(., Species == "Bjørn")
+    filter(., Species == "Bjørn") 
+  
   
   ##-- Merge DNA and dead recoveries files using all shared names columns
   DATA <- merge( DR, DNA, 
