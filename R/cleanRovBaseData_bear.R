@@ -41,11 +41,18 @@ NULL
 #' @export
 cleanRovbaseData_bear <- function(
     years = NULL, 
+    samplingMonths = NULL,
     data_dir = "./Data",
     output_dir = "./Data",
     Rmd_template = NULL,
-    overwrite = FALSE)
-{
+    overwrite = FALSE){
+  
+  ##----- 1. LOAD AND MERGE RAW DATA -----
+  
+  ##-- Extract the date from the last .xlsx data file
+  DATE <- getMostRecent( path = data_dir,
+                         pattern = "DNA.xlsx")
+  
   
   ##-- Load raw excel file imported from rovbase 
   DNA <- readxl::read_xlsx(file.path(data_dir,"DNA.xlsx")) %>%
@@ -113,7 +120,6 @@ cleanRovbaseData_bear <- function(
     filter(., Species == "Bjørn")
   
   
-  
   ##-- Load raw excel file imported from rovbase 
   DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
     ##-- Remove any duplicates
@@ -167,7 +173,7 @@ cleanRovbaseData_bear <- function(
                         County_number = "Fylkenummer",
                         County = "Fylke"))) %>%
     ##-- Filter to the focal species
-    filter(., Species == "Bjørn") 
+    filter(., Species %In% "Bjørn") 
   
   
   ##-- Merge DNA and dead recoveries files using all shared names columns
@@ -186,15 +192,31 @@ cleanRovbaseData_bear <- function(
       ##-- Extract month
       Month = as.numeric(format(Date,"%m")))
   
-  ##-- Process dates :
+  ##############################################################################
+  numDetDNA <- nrow(DNA)                ## Number of NGS samples in Rovbase
+  numIdDNA <- length(unique(DATA$Id))   ## Number of NGS individuals in Rovbase 
+  numDetDR <- nrow(DR)
+  numIdDR <- length(unique(DR$Id))      ## Number of samples without ID
+  ##############################################################################
+  
+  
+  
+  ##----- 2. CLEAN UP DATA -----
+  
+  ##-- Set monitoring season for the bear
+  if(is.null(samplingMonths)){ samplingMonths <- list(4:11) }
+  
+  
   ##-- For sampling periods spanning over two calendar years (wolf & wolverine)
   ##-- Set all months in given sampling period to the same year
   index <- DATA$Month < unlist(samplingMonths)[1]
   index[is.na(index)] <- FALSE
   DATA$Year[index] <- DATA$Year[index] - 1
   
+  
   ##-- Fix unknown "Id"
   DATA$Id[DATA$Id == ""] <- NA
+  
   
   ##-- Determine Death and Birth Years
   DATA$Age <- suppressWarnings(as.numeric(as.character(DATA$Age))) 
@@ -203,10 +225,13 @@ cleanRovbaseData_bear <- function(
   DATA$Death[substr(DATA$RovbaseID,1,1) %in% "M"] <- DATA$Year[substr(DATA$RovbaseID,1,1) %in% "M"]
   DATA$Birth <- DATA$Death - DATA$Age
   
-  ##-- Extract useful numbers
+  
+  ##############################################################################
   noID <- sum(is.na(DATA$Id))              ## Number of samples without ID
   noDate <- sum(is.na(DATA$Year))          ## Number of samples without Date
   noCoords <- sum(is.na(DATA$East_UTM33))  ## Number of samples without Coords  
+  ##############################################################################
+  
   
   ##-- Filter out unusable samples
   DATA <- DATA %>%
@@ -220,6 +245,13 @@ cleanRovbaseData_bear <- function(
                   ##-- Filter out samples with 
                   Year %in% years) %>%
     droplevels(.)
+  
+  ##############################################################################
+  noID <- sum(is.na(DATA$Id))              ## Number of samples without ID
+  noDate <- sum(is.na(DATA$Year))          ## Number of samples without Date
+  noCoords <- sum(is.na(DATA$East_UTM33))  ## Number of samples without Coords  
+  ##############################################################################
+  
   
   ##-- Check sex assignments
   ID <- unique(as.character(DATA$Id))
@@ -255,9 +287,11 @@ cleanRovbaseData_bear <- function(
     doubleSexID[i] <- length(tab)
   }#i
   
+  
   ##-- Split DATA into alive and dead.recovery datasets
   alive <- DATA[is.na(DATA$Death), ]
   dead.recovery <- DATA[!is.na(DATA$Death), ]
+  
   
   ##-- Add earlier detection index
   alive$detected.earlier <-
@@ -276,12 +310,14 @@ cleanRovbaseData_bear <- function(
                     any(alive$Id %in% this.id & alive$Date < this.date)
                   }))
   
+  
   ##-- Load most recent "flagged" file from HB
   flagged <- readMostRecent( 
     path = dir.in,
     extension = ".csv",
     pattern = "dna_bear_to_remove", 
     fileEncoding = "Latin1") 
+  
   
   ##-- Remove flagged samples 
   remove.alive <- !alive$Barcode_sample %in% flagged$Strekkode
@@ -291,21 +327,26 @@ cleanRovbaseData_bear <- function(
   dead.recovery$Missing <- NA
   dead.recovery$Individ <- NA
   
+  
   ##-- Turn into sf points dataframe
   alive <- sf::st_as_sf( x = alive,
                          coords = c("East_UTM33","North_UTM33")) %>%
     sf::st_set_crs(.,sf::st_crs(32633)) 
   
+  
   ##-- Intersect and extract country name
   alive$Country_sf <- COUNTRIES$ISO[as.numeric(st_intersects(alive, COUNTRIES))]
+  
   
   ##-- Turn into sf points dataframe
   dead.recovery <- sf::st_as_sf( x = dead.recovery,
                                  coords = c("East_UTM33","North_UTM33")) %>%
     sf::st_set_crs(.,sf::st_crs(32633))
   
+  
   ##-- Intersect and extract country name
   dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
+  
   
   ##-- Issues
   ##-- Multiple deaths
@@ -368,8 +409,8 @@ cleanRovbaseData_bear <- function(
   
   ##-- Save clean data
   fileName <-  paste0("Data_bear_",params$modDate,".RData")
-  save(alive, 
-       dead.recovery,
-       IdDoubleSex,
-       file = file.path(dir.out, fileName))
+  save( alive, 
+        dead.recovery,
+        IdDoubleSex,
+        file = file.path(dir.out, fileName))
 }

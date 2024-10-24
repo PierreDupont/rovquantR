@@ -49,44 +49,68 @@ cleanRovbaseData <- function( species,
                               Rmd_template = NULL,
                               overwrite = FALSE)
   {
-  ##-- Check if years are provided -----
-  ##-- (if not, uses the period 1990 until now)
-  if(is.null(years)){
-    years <- 1990:as.numeric(format(Sys.Date(), "%Y"))
-  }
+  ##-- Check if years are provided (if not, uses the period 1990 until now)
+  if(is.null(years)){ years <- 1990:as.numeric(format(Sys.Date(), "%Y")) }
   
-  ##-- Check species and set corresponding sampling period
+  
+  ##-- BROWN BEARS 
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
-    if(is.null(samplingMonths)){ samplingMonths <- list(4:11) }
-    cleanRovbaseData_bear()
-    }
-  if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
-    if(is.null(samplingMonths)){ samplingMonths <- list(10:12,1:4) }
-    cleanRovbaseData_bear()
     
+    ##-- Call bear-specific data cleaning function 
+    cleanRovbaseData_bear( years,
+                           samplingMonths,
+                           data_dir,
+                           output_dir,
+                           Rmd_template,
+                           overwrite = FALSE)
   }
-  if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
-    if(is.null(samplingMonths)){ samplingMonths <- list(12,1:5) }
-    
-    cleanRovbaseData_bear()
-    
-  }
-  
-  ##-- Extract the date from the last .csv data file
-  DATE <- getMostRecent( path = data_dir,
-                         pattern = paste0("_",SPECIES,".csv"))
 
+  
+  # ##-- WOLVES 
+  # if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
+  #   
+  #   ##-- Set monitoring season for the bear
+  #   if(is.null(samplingMonths)){ samplingMonths <- list(10:12,1:4) }
+  #   
+  #   ##-- Call bear-specific data cleaning function 
+  #   cleanRovbaseData_wolf( years,
+  #                          samplingMonths,
+  #                          data_dir,
+  #                          output_dir,
+  #                          Rmd_template,
+  #                          overwrite = FALSE)  
+  # }
+
+  
+  # ##-- WOLVERINES 
+  # if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
+  #   
+  #   ##-- Set monitoring season for the bear
+  #   if(is.null(samplingMonths)){ samplingMonths <- list(12,1:5) }
+  #   
+  #   ##-- Call bear-specific data cleaning function 
+  #   cleanRovbaseData_wolverine( years,
+  #                               samplingMonths,
+  #                               data_dir,
+  #                               output_dir,
+  #                               Rmd_template,
+  #                               overwrite = FALSE) 
+  # }
+  
+ 
   ##-- Find the .rmd template used to clean the data and print out the report.
   if(is.null(Rmd_template)){
-    Rmd_template <- system.file("rmd", "RovBase_DataCleaning.Rmd", package = "rovquantR")
+    Rmd_template <- system.file("rmd", "RovQuant_CleaningReport.Rmd", package = "rovquantR")
     if(!file.exists(Rmd_template)) {
       stop('Can not find the Rmarkdown document to use for cleaning Rovbase.3.0 data.\n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
     } 
   }
   
+  
   ##-- Check output directory 
   output_folder <- file.path(output_dir, SPECIES, DATE)
 
+  
   ##-- Check that the "report" does not already exist to avoid overwriting
   if(file.exists(file.path(output_folder, paste0("Data_", SPECIES, "_", DATE,".html")))){
     message(paste0("A file named 'Data_", SPECIES, "_", DATE,
