@@ -34,7 +34,8 @@
 #'
 #' @author Pierre Dupont
 #' 
-#' @importFrom rmarkdown render
+#' @importFrom dplyr distinct rename filter
+
 #' 
 NULL
 #' @rdname cleanRovbaseData_bear
@@ -55,7 +56,9 @@ cleanRovbaseData_bear <- function(
   
   
   ##-- Load raw excel file imported from rovbase 
-  DNA <- readxl::read_xlsx(file.path(data_dir,"DNA.xlsx")) %>%
+  DNA <- suppressWarnings(readMostRecent( path = data_dir,
+                         extension = ".xls",
+                         pattern = "DNA")) %>%
     ##-- Remove any duplicates
     distinct(., .keep_all = TRUE) %>%
     ##-- Rename columns to facilitate manipulation
@@ -117,11 +120,13 @@ cleanRovbaseData_bear <- function(
                         County_number = "Fylkenummer",
                         County = "Fylke"))) %>%
     ##-- Filter to the focal species
-    filter(., Species == "Bjørn")
+    filter(., Species %in% "Bjørn")
   
   
   ##-- Load raw excel file imported from rovbase 
-  DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
+  DR <- suppressWarnings(readMostRecent( path = data_dir,
+                                         extension = ".xls",
+                                         pattern = "dead")) %>%
     ##-- Remove any duplicates
     distinct(., .keep_all = TRUE) %>%
     ##-- Rename columns to facilitate manipulation
@@ -173,14 +178,19 @@ cleanRovbaseData_bear <- function(
                         County_number = "Fylkenummer",
                         County = "Fylke"))) %>%
     ##-- Filter to the focal species
-    filter(., Species %In% "Bjørn") 
+    filter(., Species %in% "Bjørn") 
   
+  
+  
+  DATA <- full_join(DNA,DR) 
   
   ##-- Merge DNA and dead recoveries files using all shared names columns
   DATA <- merge( DR, DNA, 
                  by = c("Id","RovbaseID","DNAID","Species", "Sex","Date",
                         "East_UTM33","North_UTM33", "County"),
-                 all = TRUE) %>%
+                 all = TRUE)
+  
+  %>%
     ##-- Add some columns
     dplyr::mutate( 
       ##-- Add "Country" column
@@ -193,10 +203,12 @@ cleanRovbaseData_bear <- function(
       Month = as.numeric(format(Date,"%m")))
   
   ##############################################################################
-  numDetDNA <- nrow(DNA)                ## Number of NGS samples in Rovbase
-  numIdDNA <- length(unique(DATA$Id))   ## Number of NGS individuals in Rovbase 
-  numDetDR <- nrow(DR)
-  numIdDR <- length(unique(DR$Id))      ## Number of samples without ID
+  numDetDNA <- nrow(DNA)               ## Number of NGS samples in Rovbase
+  numIdDNA <- length(unique(DATA$Id))  ## Number of NGS individuals in Rovbase 
+  numDetDR <- nrow(DR)                 ## NUmber of DEAD RECOVERIES in Rovbase
+  numIdDR <- length(unique(DR$Id))     ## Number of DEAD RECOVERIES ID in Rovbase
+  
+  tabDetDNA_sexyear <- table(DNA)
   ##############################################################################
   
   

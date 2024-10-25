@@ -14,6 +14,9 @@
 #'  ("bear", "wolf", or "wolverine").
 #' @param years A \code{numeric} vector containing the years of interest. 
 #' Only data for those years will be cleaned and returned.
+#' @param samplingMonths A \code{list} containing the sampling period months.
+#' If the sampling period overlaps two calendar years, the list should contain one element per year
+#' (e.g. samplingMonths <- list(c(11,12), c(1,2,3,4))) for a sampling period extending from November to April of the following year.
 #' @param data_dir the \code{path} pointing to the directory containing the raw 
 #' data from Rovbase.
 #' @param output_dir the \code{path} pointing to the directory where the cleaned 
