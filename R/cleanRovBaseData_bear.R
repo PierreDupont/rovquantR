@@ -35,8 +35,8 @@
 #' @author Pierre Dupont
 #' 
 #' @importFrom dplyr distinct rename filter
+#' @importFrom sf st_as_sf st_crs st_set_crs st_intersects
 
-#' 
 NULL
 #' @rdname cleanRovbaseData_bear
 #' @export
@@ -48,17 +48,32 @@ cleanRovbaseData_bear <- function(
     Rmd_template = NULL,
     overwrite = FALSE){
   
-  ##----- 1. LOAD AND MERGE RAW DATA -----
-  
+  ##----- 0. INITIAL CHECKS -----
   ##-- Extract the date from the last .xlsx data file
-  DATE <- getMostRecent( path = data_dir,
-                         pattern = "DNA.xlsx")
+  DATE <- getMostRecent( path = data_dir, pattern = "DNA.xlsx")
   
+  ##-- Get file name for clean data
+  fileName <- paste0("Data_Bear_", DATE,".RData")
   
+  ##-- Check that a file with that name does not already exist to avoid overwriting
+  if(file.exists(file.path(output_dir, fileName))){
+    message(paste0("A file named '",fileName,"' already exists in the specified directory."))
+    message("Are you sure you want to proceed and overwrite existing clean data? (y/n) ")
+    question1 <- readLines(n = 1)
+    if(regexpr(question1, 'y', ignore.case = TRUE) != 1){
+      message("Not overwriting existing files...")
+      overwrite <- FALSE
+      return(overwrite)
+    } else {
+      message(paste0("Now overwriting 'Data_", SPECIES, "_", DATE,".html'."))
+    }
+  }
+  
+  ##----- 1. LOAD RAW NGS DATA -----
   ##-- Load raw excel file imported from rovbase 
   DNA <- suppressWarnings(readMostRecent( path = data_dir,
-                         extension = ".xls",
-                         pattern = "DNA")) %>%
+                                          extension = ".xls",
+                                          pattern = "DNA")) %>%
     ##-- Remove any duplicates
     distinct(., .keep_all = TRUE) %>%
     ##-- Rename columns to facilitate manipulation
@@ -119,9 +134,32 @@ cleanRovbaseData_bear <- function(
                         Municipality = "Kommune", 
                         County_number = "Fylkenummer",
                         County = "Fylke"))) %>%
-    ##-- Filter to the focal species
-    filter(., Species %in% "Bjørn")
+    ##-- Add some columns
+    dplyr::mutate( 
+      ##-- Add "Country" column
+      Country_sample = substrRight(County, 3),
+      ##-- Change date format
+      Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
+      ##-- Extract year
+      Year = as.numeric(format(Date,"%Y")),
+      ##-- Extract month
+      Month = as.numeric(format(Date,"%m"))) %>%
+  ##-- Filter data
+  filter(.,
+         ##-- Filter to the focal species
+         Species %in% "Bjørn",
+         ##-- Filter out samples with 
+         Year %in% years) 
   
+  ##############################################################################
+  numDetDNA <- nrow(DNA)              ## Number of NGS samples in Rovbase
+  numIdDNA <- length(unique(DATA$Id)) ## Number of NGS individuals in Rovbase 
+  tabDetDNA_sexyear <- table(DNA$Year, DNA$Sex)
+  ##############################################################################
+  
+  
+  
+  ##----- 2. LOAD RAW DEAD RECOVERY DATA -----
   
   ##-- Load raw excel file imported from rovbase 
   DR <- suppressWarnings(readMostRecent( path = data_dir,
@@ -177,43 +215,48 @@ cleanRovbaseData_bear <- function(
                         Municipality = "Kommune", 
                         County_number = "Fylkenummer",
                         County = "Fylke"))) %>%
-    ##-- Filter to the focal species
-    filter(., Species %in% "Bjørn") 
+  ##-- Add some columns
+  dplyr::mutate( 
+    ##-- Add "Country" column
+    Country_sample = substrRight(County, 3),
+    ##-- Change date format
+    Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
+    ##-- Extract year
+    Year = as.numeric(format(Date,"%Y")),
+    ##-- Extract month
+    Month = as.numeric(format(Date,"%m"))) %>%
+  ##-- Filter data
+  filter(.,
+         ##-- Filter to the focal species
+         Species %in% "Bjørn",
+         ##-- Filter out samples with 
+         Year %in% years) 
+  
+  ##############################################################################
+  numDetDR <- nrow(DR)                ## NUmber of DEAD RECOVERIES in Rovbase
+  numIdDR <- length(unique(DR$Id))    ## Number of DEAD RECOVERIES ID in Rovbase
+  tabDetDR_sexyear <- table(DR$Year, DR$Sex)
+  ##############################################################################
   
   
   
-  DATA <- full_join(DNA,DR) 
+  ##----- 3. MERGE BOTH DATA -----
   
   ##-- Merge DNA and dead recoveries files using all shared names columns
   DATA <- merge( DR, DNA, 
-                 by = c("Id","RovbaseID","DNAID","Species", "Sex","Date",
-                        "East_UTM33","North_UTM33", "County"),
-                 all = TRUE)
-  
-  %>%
-    ##-- Add some columns
-    dplyr::mutate( 
-      ##-- Add "Country" column
-      Country_sample = substrRight(County, 3),
-      ##-- Change date format
-      Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
-      ##-- Extract year
-      Year = as.numeric(format(Date,"%Y")),
-      ##-- Extract month
-      Month = as.numeric(format(Date,"%m")))
+                 by = c("Id","RovbaseID","DNAID","Species","Sex","Date","Year",
+                        "East_UTM33","North_UTM33","County","Country_sample","Month"),
+                 all = TRUE) 
   
   ##############################################################################
-  numDetDNA <- nrow(DNA)               ## Number of NGS samples in Rovbase
-  numIdDNA <- length(unique(DATA$Id))  ## Number of NGS individuals in Rovbase 
-  numDetDR <- nrow(DR)                 ## NUmber of DEAD RECOVERIES in Rovbase
-  numIdDR <- length(unique(DR$Id))     ## Number of DEAD RECOVERIES ID in Rovbase
-  
-  tabDetDNA_sexyear <- table(DNA)
+  numDetDATA <- nrow(DATA)                ## NUmber of DEAD RECOVERIES in Rovbase
+  numIdDATA <- length(unique(DATA$Id))    ## Number of DEAD RECOVERIES ID in Rovbase
+  tabDetDATA_sexyear <- table(DATA$Year, DATA$Sex)
   ##############################################################################
   
   
   
-  ##----- 2. CLEAN UP DATA -----
+  ##----- 4. CLEAN UP DATA -----
   
   ##-- Set monitoring season for the bear
   if(is.null(samplingMonths)){ samplingMonths <- list(4:11) }
@@ -225,10 +268,8 @@ cleanRovbaseData_bear <- function(
   index[is.na(index)] <- FALSE
   DATA$Year[index] <- DATA$Year[index] - 1
   
-  
   ##-- Fix unknown "Id"
   DATA$Id[DATA$Id == ""] <- NA
-  
   
   ##-- Determine Death and Birth Years
   DATA$Age <- suppressWarnings(as.numeric(as.character(DATA$Age))) 
@@ -244,7 +285,6 @@ cleanRovbaseData_bear <- function(
   noCoords <- sum(is.na(DATA$East_UTM33))  ## Number of samples without Coords  
   ##############################################################################
   
-  
   ##-- Filter out unusable samples
   DATA <- DATA %>%
     dplyr::filter(., 
@@ -253,18 +293,11 @@ cleanRovbaseData_bear <- function(
                   ##-- Filter out samples with no Coordinates
                   !is.na(East_UTM33),
                   ##-- Filter out samples with no dates  
-                  !is.na(Year),
-                  ##-- Filter out samples with 
-                  Year %in% years) %>%
+                  !is.na(Year)) %>%
     droplevels(.)
   
-  ##############################################################################
-  noID <- sum(is.na(DATA$Id))              ## Number of samples without ID
-  noDate <- sum(is.na(DATA$Year))          ## Number of samples without Date
-  noCoords <- sum(is.na(DATA$East_UTM33))  ## Number of samples without Coords  
-  ##############################################################################
   
-  
+
   ##-- Check sex assignments
   ID <- unique(as.character(DATA$Id))
   DATA$Sex <- as.character(DATA$Sex)
@@ -325,17 +358,17 @@ cleanRovbaseData_bear <- function(
   
   ##-- Load most recent "flagged" file from HB
   flagged <- readMostRecent( 
-    path = dir.in,
+    path = data_dir,
     extension = ".csv",
     pattern = "dna_bear_to_remove", 
     fileEncoding = "Latin1") 
   
   
   ##-- Remove flagged samples 
-  remove.alive <- !alive$Barcode_sample %in% flagged$Strekkode
-  alive <- alive[remove.alive, ]
-  remove.dead <- !dead.recovery$Barcode_sample %in% flagged$Strekkode
-  dead.recovery <- dead.recovery[remove.dead, ]
+  keep.alive <- !alive$Barcode_sample %in% flagged$Strekkode
+  alive <- alive[keep.alive, ]
+  keep.dead <- !dead.recovery$Barcode_sample %in% flagged$Strekkode
+  dead.recovery <- dead.recovery[keep.dead, ]
   dead.recovery$Missing <- NA
   dead.recovery$Individ <- NA
   
@@ -347,7 +380,7 @@ cleanRovbaseData_bear <- function(
   
   
   ##-- Intersect and extract country name
-  alive$Country_sf <- COUNTRIES$ISO[as.numeric(st_intersects(alive, COUNTRIES))]
+  alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
   
   
   ##-- Turn into sf points dataframe
@@ -420,9 +453,15 @@ cleanRovbaseData_bear <- function(
   alive <- alive[!rownames(alive) %in% samples.to.remove, ]
   
   ##-- Save clean data
-  fileName <-  paste0("Data_bear_",params$modDate,".RData")
+  fileName <-  paste0("Data_bear_",DATE,".RData")
   save( alive, 
         dead.recovery,
         IdDoubleSex,
-        file = file.path(dir.out, fileName))
+        file = file.path(output_dir, paste0("Data_bear_",DATE,".RData")))
+  
+  ##-- Return list of metrics for the .rmd report
+  params <- list()
+  return(params)
+  
+  
 }

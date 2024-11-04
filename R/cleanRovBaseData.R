@@ -56,11 +56,23 @@ cleanRovbaseData <- function( species,
   if(is.null(years)){ years <- 1990:as.numeric(format(Sys.Date(), "%Y")) }
   
   
+  ##-- Check that the "report" does not already exist to avoid overwriting
+  if(file.exists(file.path(output_dir, paste0("Data_", species, "_", DATE,".html")))){
+    message(paste0("A file named 'Data_", SPECIES, "_", DATE,
+                   ".html' already exists in the specified directory."))
+    message("Are you sure you want to proceed and overwrite existing clean data? (y/n) ")
+    question1 <- readLines(n = 1)
+    if(regexpr(question1, 'y', ignore.case = TRUE) != 1){
+      message("Not overwriting existing files...")
+    } else {
+  
+  
+  
   ##-- BROWN BEARS 
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
     
     ##-- Call bear-specific data cleaning function 
-    cleanRovbaseData_bear( years,
+    params <- cleanRovbaseData_bear( years,
                            samplingMonths,
                            data_dir,
                            output_dir,
@@ -115,7 +127,7 @@ cleanRovbaseData <- function( species,
 
   
   ##-- Check that the "report" does not already exist to avoid overwriting
-  if(file.exists(file.path(output_folder, paste0("Data_", SPECIES, "_", DATE,".html")))){
+  if(overwrite){
     message(paste0("A file named 'Data_", SPECIES, "_", DATE,
                    ".html' already exists in the specified directory."))
     message("Are you sure you want to proceed and overwrite existing clean data? (y/n) ")
@@ -128,12 +140,7 @@ cleanRovbaseData <- function( species,
       ##-- Clean the data and print report
       rmarkdown::render(
         input = Rmd_template,
-        params = list( species = SPECIES,
-                       years = years,
-                       samplingMonths = SP,
-                       dir.in = data_dir,
-                       dir.out = output_folder,
-                       modDate = DATE),
+        params = params,
         output_dir = output_folder,
         output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
     }
@@ -141,12 +148,7 @@ cleanRovbaseData <- function( species,
     ##-- Clean the data and print report
     rmarkdown::render(
       input = Rmd_template,
-      params = list( species = SPECIES,
-                     years = years,
-                     samplingMonths = SP,
-                     dir.in = data_dir,
-                     dir.out = output_folder,
-                     modDate = DATE),
+      params = params,
       output_dir = output_folder,
       output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
   }
