@@ -10,8 +10,13 @@
 #'
 #' @name cleanRovbaseData_bear
 #' 
+#' @param species A \code{character} string with the name of the focal species
+#'  ("bear", "wolf", or "wolverine").
 #' @param years A \code{numeric} vector containing the years of interest. 
 #' Only data for those years will be cleaned and returned.
+#' @param samplingMonths A \code{list} containing the months of interest, e.g. 
+#' list(c(10:12),c(1:3)) for a sampling period extending from October to March. 
+#' @param renamingList (Optional) A named \code{character} vector used to rename raw Rovbase files (.
 #' @param data_dir the \code{path} pointing to the directory containing the raw 
 #' data from Rovbase.
 #' @param output_dir the \code{path} pointing to the directory where the cleaned 
@@ -139,14 +144,14 @@ cleanRovbaseData <- function(
       Weight_slaughter = "Slaktevekt",
       Weight_total =  "Helvekt"),
     data_dir = "./Data",
-    output_dir = "./Data",
+    working_dir = "./Data",
     Rmd_template = NULL,
     overwrite = FALSE){
   
   ##----- 0. INITIAL CHECKS -----
   
   ##-- Species
-  if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
+  if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjørn", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
     engSpecies <- "bear"
     norSpecies <- "Bjørn"
   }
@@ -161,18 +166,18 @@ cleanRovbaseData <- function(
   
   
   ##-- Years
-  years <- if(is.null(years)){ years <- 2012:as.numeric(format(Sys.Date(), "%Y")) }
+  if(is.null(years)){ years <- 2012:as.numeric(format(Sys.Date(), "%Y")) }
   
   
   ##-- Sampling months
   if(is.null(samplingMonths)){
-    if(engSpecies <- "bear"){
+    if(engSpecies == "bear"){
       samplingMonths <- list(4:11)
     }
-    if(engSpecies <- "wolf"){
+    if(engSpecies == "wolf"){
       samplingMonths <- list(c(10:12),c(1:4))
     }
-    if(engSpecies <- "wolverine"){
+    if(engSpecies == "wolverine"){
       samplingMonths <- list(c(10:12),c(1:4))
     } else {
       stop("No default setting available for the monitoring period of this species. \n You must specify the monitoring season months through the 'samplingMonths' argument.")
@@ -183,27 +188,32 @@ cleanRovbaseData <- function(
   ##-- Extract the date from the last .xlsx data file
   DATE <- getMostRecent( path = data_dir, pattern = "DNA.xlsx")
   
-  ##-- Get file name for clean data
+  
+  ##-- Set file name for clean data
   fileName <- paste0("Data_",engSpecies,"_", DATE,".RData")
   
+  
   ##-- Check that a file with that name does not already exist to avoid overwriting
-  if(any(file.exists(file.path(output_dir, fileName)))){
-    message(paste0("A file named '",fileName,"' already exists in the specified directory."))
-    message("Are you sure you want to proceed and overwrite existing clean data? (y/n) ")
-    question1 <- readLines(n = 1)
-    if(regexpr(question1, 'y', ignore.case = TRUE) != 1){
-      message("Not overwriting existing files...")
-      overwrite <- FALSE
-      return(overwrite)
-    } else {
-      message(paste0("Now overwriting '", fileName,"'."))
+  if(!overwrite){
+    if(any(file.exists(file.path(working_dir, "data", fileName)))){
+      message(paste0("A file named '", fileName, "' already exists in: \n\n",
+                     file.path(working_dir, "data")))
+      message("\nAre you sure you want to proceed and overwrite existing clean data? (y/n) ")
+      question1 <- readLines(n = 1)
+      if(regexpr(question1, 'y', ignore.case = TRUE) != 1){
+        stop("\r Not overwriting existing files...")
+      } else {
+        message(paste0("Now overwriting '", fileName,"'."))
+      }
     }
   }
   
   
+  ##-- Set-up list of parameters for the .Rmd report
+  params <- list()
+  
   
   ##----- 1. LOAD RAW NGS DATA -----
-  ##-- Load raw excel file imported from rovbase 
   DNA <- suppressWarnings(readMostRecent( path = data_dir,
                                           extension = ".xls",
                                           pattern = "DNA")) %>%
@@ -222,16 +232,16 @@ cleanRovbaseData <- function(
       ##-- Extract month
       Month = as.numeric(format(Date,"%m"))) %>%
   ##-- Filter data
-  filter(.,
+  filter(., 
          ##-- Filter to the focal species
-         Species %in% c(norSpecies),
+         Species %in% norSpecies,
          ##-- Filter out samples with 
-         Year %in% c(years)) 
+         Year %in% years) 
   
   ##############################################################################
-  numDetDNA <- nrow(DNA)              ## Number of NGS samples in Rovbase
-  numIdDNA <- length(unique(DATA$Id)) ## Number of NGS individuals in Rovbase 
-  tabDetDNA_sexyear <- table(DNA$Year, DNA$Sex)
+  params$numDetDNA <- nrow(DNA)                     ## Number of NGS samples in Rovbase
+  params$numIdDNA <- length(unique(DATA$Id))        ## Number of NGS individuals in Rovbase 
+  params$tabDetDNA_sexyear <- table(DNA$Year, DNA$Sex)
   ##############################################################################
   
   
@@ -259,31 +269,49 @@ cleanRovbaseData <- function(
     ##-- Filter data
     filter(.,
            ##-- Filter to the focal species
-           Species %in% "Bjørn",
+           Species %in% norSpecies,
            ##-- Filter out samples with 
            Year %in% years) 
   
   ##############################################################################
-  numDetDR <- nrow(DR)                ## NUmber of DEAD RECOVERIES in Rovbase
-  numIdDR <- length(unique(DR$Id))    ## Number of DEAD RECOVERIES ID in Rovbase
-  tabDetDR_sexyear <- table(DR$Year, DR$Sex)
+  params$numDetDR <- nrow(DR)                ## NUmber of DEAD RECOVERIES in Rovbase
+  params$numIdDR <- length(unique(DR$Id))    ## Number of DEAD RECOVERIES ID in Rovbase
+  params$tabDetDR_sexyear <- table(DR$Year, DR$Sex)
   ##############################################################################
   
   
   
   ##----- 3. MERGE BOTH DATA -----
   
-  ##-- Merge DNA and dead recoveries files using all shared names columns
-  DATA <- merge( DR, DNA, 
-                 by = c("Id","RovbaseID","DNAID","Species","Sex","Date","Year",
-                        "East_UTM33","North_UTM33","County","Country_sample","Month"),
-                 all = TRUE) 
   
+  ##-- Make sure all dead recoveries in DNA are in DR
+  sum((substr(DNA$RovbaseID,1,1) %in% "M") & (DNA$DNAID %in% DR$DNAID))
+  
+  
+  ##-- "Dead recoveries" in DNA 
+  DR_in_DNA <- DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"]
+  all(DR_in_DNA %in% DR$DNAID)
+  
+  ##-- Merge DNA and dead recoveries files using all shared names columns
+  # DATA <- merge( DR, DNA, 
+  #                by = c("Id","RovbaseID","DNAID","Species"),#"Sex"),#"East_UTM33","North_UTM33"),
+  #                #,"Date",,
+  #                # "Year",
+  #                #        "County","Country_sample","Month"),
+  #                all = TRUE) 
+  # dim(DATA)
+  DATA2 <- full_join(DNA,DR)
+  
+  tmp <- DATA2 %>% select(c())
   ##############################################################################
-  numDetDATA <- nrow(DATA)                ## NUmber of DEAD RECOVERIES in Rovbase
-  numIdDATA <- length(unique(DATA$Id))    ## Number of DEAD RECOVERIES ID in Rovbase
-  tabDetDATA_sexyear <- table(DATA$Year, DATA$Sex)
+  params$numDetDATA <- nrow(DATA)                ## Number of DEAD RECOVERIES in Rovbase
+  params$numIdDATA <- length(unique(DATA$Id))    ## Number of DEAD RECOVERIES ID in Rovbase
+  params$tabDetDATA_sexyear <- table(DATA$Year, DATA$Sex)
   ##############################################################################
+  
+  table(table(DATA$DNAID))
+  RBID <- names(table(DNA$RovbaseID))[which(table(DNA$RovbaseID) > 10)]
+  DNA[DNA$RovbaseID %in% RBID, ]
   
   
   
@@ -311,9 +339,9 @@ cleanRovbaseData <- function(
   
   
   ##############################################################################
-  noID <- sum(is.na(DATA$Id))              ## Number of samples without ID
-  noDate <- sum(is.na(DATA$Year))          ## Number of samples without Date
-  noCoords <- sum(is.na(DATA$East_UTM33))  ## Number of samples without Coords  
+  params$noID <- sum(is.na(DATA$Id))              ## Number of samples without ID
+  params$noDate <- sum(is.na(DATA$Year))          ## Number of samples without Date
+  params$noCoords <- sum(is.na(DATA$East_UTM33))  ## Number of samples without Coords  
   ##############################################################################
   
   ##-- Filter out unusable samples
