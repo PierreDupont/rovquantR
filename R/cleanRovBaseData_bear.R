@@ -19,10 +19,10 @@
 #' @param renamingList (Optional) A named \code{character} vector used to rename raw Rovbase files (.
 #' @param data_dir the \code{path} pointing to the directory containing the raw 
 #' data from Rovbase.
-#' @param output_dir the \code{path} pointing to the directory where the cleaned 
-#' data will be stored. The clean data, as well as a \code{.html} report describing 
-#' the content of the clean data, will be placed in a folder with the species name,
-#' inside a subfolder with the date of extraction of the raw Rovbase data.
+#' @param working_dir the \code{path} pointing to the working directory. 
+#' The cleaned data will be stored in the 'data' sub-folder. 
+#' The associated \code{.html} report describing the content of the clean data will 
+#' be placed in the 'report' sub-folder.
 #' @param Rmd_template the \code{path} to the \code{.rmd} template to be used for
 #'  cleaning the data. By default, the \code{.rmd} template provided with the 
 #'  \code{rovquantR} package is used.  
@@ -143,25 +143,32 @@ cleanRovbaseData <- function(
       Uncertain_date = "Usikker dødsdato",
       Weight_slaughter = "Slaktevekt",
       Weight_total =  "Helvekt"),
-    data_dir = "./Data",
-    working_dir = "./Data",
+    data_dir,
+    working_dir,
     Rmd_template = NULL,
     overwrite = FALSE){
   
   ##----- 0. INITIAL CHECKS -----
+  ##-- Make sure subfolders exist
+  dir.create(file.path(working_dir, "data"), recursive = T, showWarnings = F)
+  dir.create(file.path(working_dir, "reports"), recursive = T, showWarnings = F)
   
   ##-- Species
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjørn", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
     engSpecies <- "bear"
     norSpecies <- "Bjørn"
-  }
-  if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
-    engSpecies <- "wolf"
-    norSpecies <- "Ulv"
-  }
-  if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
-    engSpecies <- "wolverine"
-    norSpecies <- "Jerv"
+  } else {
+    if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
+      engSpecies <- "wolf"
+      norSpecies <- "Ulv"
+    } else {
+      if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
+        engSpecies <- "wolverine"
+        norSpecies <- "Jerv"
+      } else {
+       engSpecies <- norSpecies <- species 
+      }
+    }
   }
   
   
@@ -173,14 +180,16 @@ cleanRovbaseData <- function(
   if(is.null(samplingMonths)){
     if(engSpecies == "bear"){
       samplingMonths <- list(4:11)
-    }
-    if(engSpecies == "wolf"){
-      samplingMonths <- list(c(10:12),c(1:4))
-    }
-    if(engSpecies == "wolverine"){
-      samplingMonths <- list(c(10:12),c(1:4))
     } else {
-      stop("No default setting available for the monitoring period of this species. \n You must specify the monitoring season months through the 'samplingMonths' argument.")
+      if(engSpecies == "wolf"){
+        samplingMonths <- list(c(10:12),c(1:4))
+      } else {
+        if(engSpecies == "wolverine"){
+          samplingMonths <- list(c(10:12),c(1:4))
+        } else {
+          stop("No default setting available for the monitoring period of this species. \n You must specify the monitoring season months through the 'samplingMonths' argument.")
+        }
+      }
     }
   }
   
@@ -196,14 +205,14 @@ cleanRovbaseData <- function(
   ##-- Check that a file with that name does not already exist to avoid overwriting
   if(!overwrite){
     if(any(file.exists(file.path(working_dir, "data", fileName)))){
-      message(paste0("A file named '", fileName, "' already exists in: \n\n",
+      message(paste0("A file named '", fileName, "' already exists in: \n",
                      file.path(working_dir, "data")))
       message("\nAre you sure you want to proceed and overwrite existing clean data? (y/n) ")
       question1 <- readLines(n = 1)
       if(regexpr(question1, 'y', ignore.case = TRUE) != 1){
         stop("\r Not overwriting existing files...")
       } else {
-        message(paste0("Now overwriting '", fileName,"'."))
+        message(paste0("Now overwriting '", fileName,"'.\n"))
       }
     }
   }
@@ -217,10 +226,12 @@ cleanRovbaseData <- function(
   DNA <- suppressWarnings(readMostRecent( path = data_dir,
                                           extension = ".xls",
                                           pattern = "DNA")) %>%
-    ##-- Remove any duplicates
-    distinct(., .keep_all = TRUE) %>%
     ##-- Rename columns to facilitate manipulation
     rename(., any_of(renamingList)) %>%
+    ##-- Filter to the focal species
+    filter(., Species %in% norSpecies) %>%
+    ##-- Remove any duplicates
+    distinct(., .keep_all = TRUE) %>%
     ##-- Add some columns
     dplyr::mutate( 
       ##-- Add "Country" column
@@ -230,18 +241,27 @@ cleanRovbaseData <- function(
       ##-- Extract year
       Year = as.numeric(format(Date,"%Y")),
       ##-- Extract month
-      Month = as.numeric(format(Date,"%m"))) %>%
-  ##-- Filter data
-  filter(., 
-         ##-- Filter to the focal species
-         Species %in% norSpecies,
-         ##-- Filter out samples with 
-         Year %in% years) 
+      Month = as.numeric(format(Date,"%m")),
+      ##-- Extract sampling season
+      ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
+      ##-- Set all months in given sampling period to the same year)
+      Season = ifelse( Month < unlist(samplingMonths)[1],
+                       Year,
+                       Year-1),
+      ##-- Fix unknown "Id"
+      Id = ifelse(Id %in% "", NA, Id),
+      ##-- Fix unknown "Sex"
+      Sex = ifelse(Sex %in% "Ukjent", NA, Sex)) %>%
+    ##-- Filter to the focal years
+    filter(., Year %in% years) 
   
   ##############################################################################
   params$numDetDNA <- nrow(DNA)                     ## Number of NGS samples in Rovbase
-  params$numIdDNA <- length(unique(DATA$Id))        ## Number of NGS individuals in Rovbase 
-  params$tabDetDNA_sexyear <- table(DNA$Year, DNA$Sex)
+  params$numIdDNA <- length(unique(DNA$Id))        ## Number of NGS individuals in Rovbase 
+  params$tabDetDNA_sexyear <- table(DNA$Year, DNA$Sex, useNA = "always")
+  params$numUnknownSexDNA <- sum(is.na(DNA$Sex))
+  params$numUnknownCoordsDNA <- sum(is.na(DNA$East_UTM33))
+  params$numUnknownIDDNA <- sum(is.na(DNA$Id))
   ##############################################################################
   
   
@@ -252,10 +272,12 @@ cleanRovbaseData <- function(
   DR <- suppressWarnings(readMostRecent( path = data_dir,
                                          extension = ".xls",
                                          pattern = "dead")) %>%
-    ##-- Remove any duplicates
-    distinct(., .keep_all = TRUE) %>%
     ##-- Rename columns to facilitate manipulation
     rename(., any_of(renamingList)) %>%
+    ##-- Filter to the focal species
+    filter(., Species %in% norSpecies) %>%
+    ##-- Remove any duplicates
+    distinct(., .keep_all = TRUE) %>%
     ##-- Add some columns
     dplyr::mutate( 
       ##-- Add "Country" column
@@ -265,70 +287,81 @@ cleanRovbaseData <- function(
       ##-- Extract year
       Year = as.numeric(format(Date,"%Y")),
       ##-- Extract month
-      Month = as.numeric(format(Date,"%m"))) %>%
-    ##-- Filter data
-    filter(.,
-           ##-- Filter to the focal species
-           Species %in% norSpecies,
-           ##-- Filter out samples with 
-           Year %in% years) 
+      Month = as.numeric(format(Date,"%m")),
+      ##-- Extract sampling season
+      ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
+      ##-- Set all months in given sampling period to the same year)
+      Season = ifelse( Month < unlist(samplingMonths)[1],
+                       Year,
+                       Year-1),
+      ##-- Fix unknown "Id"
+      Id = ifelse(Id %in% "", NA, Id),
+      ##-- Fix unknown "Sex"
+      Sex = ifelse(Sex %in% "Ukjent", NA, Sex)) %>%
+    ##-- Filter to the focal years
+    filter(., Year %in% years) 
   
   ##############################################################################
   params$numDetDR <- nrow(DR)                ## NUmber of DEAD RECOVERIES in Rovbase
   params$numIdDR <- length(unique(DR$Id))    ## Number of DEAD RECOVERIES ID in Rovbase
   params$tabDetDR_sexyear <- table(DR$Year, DR$Sex)
+  params$numUnknownSexDR <- sum(is.na(DR$Sex))
+  params$numUnknownCoordsDR <- sum(is.na(DR$East_UTM33))
+  params$numUnknownIDDR <- sum(is.na(DR$Id))
   ##############################################################################
   
   
   
-  ##----- 3. MERGE BOTH DATA -----
+  ##----- 3. CHECK DEAD RECOVERIES -----
+
+  ##-- Make sure all dead recoveries in DNA are in DR
+  check1 <- all(DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
+  params$probs_DR_in_DNA <- NULL
+  if(!check1){
+    tmp <- DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"]
+    params$probs_DR_in_DNA <- tmp[!tmp %in% DR$DNAID]
+  } 
   
+  tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
+  test <- anti_join(tmp,DR)
+  
+  
+  ##-- Make sure that only "Dead recoveries" are in DR 
+  check2 <- all(substr(DR$RovbaseID,1,1) %in% "M")
+  params$probs_DNA_in_DR <- NULL
+  if(!check2){
+    params$probs_DNA_in_DR <- DR$DNAID[!substr(DR$RovbaseID,1,1) %in% "M"]
+  }
+  
+
+  
+  ##----- 4. CHECK DEAD RECOVERIES -----
+  DATA <- union_all
+  DATA <- merge( DR, DNA, 
+                 by = c("Id","RovbaseID","DNAID","Species", "Sex","Date","East_UTM33","North_UTM33", "County"),
+                 all = TRUE)
   
   ##-- Make sure all dead recoveries in DNA are in DR
-  sum((substr(DNA$RovbaseID,1,1) %in% "M") & (DNA$DNAID %in% DR$DNAID))
+  check1 <- all(DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
+  params$probs_DR_in_DNA <- NULL
+  if(!check1){
+    tmp <- DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"]
+    params$probs_DR_in_DNA <- tmp[!tmp %in% DR$DNAID]
+  } 
   
+  ##-- Make sure that only "Dead recoveries" are in DR 
+  check2 <- all(substr(DR$RovbaseID,1,1) %in% "M")
+  params$probs_DNA_in_DR <- NULL
+  if(!check2){
+    params$probs_DNA_in_DR <- DR$DNAID[!substr(DR$RovbaseID,1,1) %in% "M"]
+  }
   
-  ##-- "Dead recoveries" in DNA 
-  DR_in_DNA <- DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"]
-  all(DR_in_DNA %in% DR$DNAID)
-  
-  ##-- Merge DNA and dead recoveries files using all shared names columns
-  # DATA <- merge( DR, DNA, 
-  #                by = c("Id","RovbaseID","DNAID","Species"),#"Sex"),#"East_UTM33","North_UTM33"),
-  #                #,"Date",,
-  #                # "Year",
-  #                #        "County","Country_sample","Month"),
-  #                all = TRUE) 
-  # dim(DATA)
-  DATA2 <- full_join(DNA,DR)
-  
-  tmp <- DATA2 %>% select(c())
-  ##############################################################################
-  params$numDetDATA <- nrow(DATA)                ## Number of DEAD RECOVERIES in Rovbase
-  params$numIdDATA <- length(unique(DATA$Id))    ## Number of DEAD RECOVERIES ID in Rovbase
-  params$tabDetDATA_sexyear <- table(DATA$Year, DATA$Sex)
-  ##############################################################################
-  
-  table(table(DATA$DNAID))
-  RBID <- names(table(DNA$RovbaseID))[which(table(DNA$RovbaseID) > 10)]
-  DNA[DNA$RovbaseID %in% RBID, ]
-  
-  
-  
+   
   ##----- 4. CLEAN UP DATA -----
-  
-  ##-- Set monitoring season for the bear
-  if(is.null(samplingMonths)){ samplingMonths <- list(4:11) }
-  
-  
-  ##-- For sampling periods spanning over two calendar years (wolf & wolverine)
-  ##-- Set all months in given sampling period to the same year
-  index <- DATA$Month < unlist(samplingMonths)[1]
-  index[is.na(index)] <- FALSE
-  DATA$Year[index] <- DATA$Year[index] - 1
-  
-  ##-- Fix unknown "Id"
-  DATA$Id[DATA$Id == ""] <- NA
+  # index <- DATA$Month < unlist(samplingMonths)[1]
+  # index[is.na(index)] <- FALSE
+  # DATA$Year[index] <- DATA$Year[index] - 1
+   
   
   ##-- Determine Death and Birth Years
   DATA$Age <- suppressWarnings(as.numeric(as.character(DATA$Age))) 
