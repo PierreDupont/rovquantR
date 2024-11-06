@@ -198,12 +198,14 @@ DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
 cleanRovbaseData( species = "bear",
                   years = 2020:2024,
                   data_dir = data_dir,
-                  working_dir = working_dir)
+                  working_dir = working_dir,
+                  print.report = F)
 
 
 
 ##------------------------------------------------------------------------------
 ## ----- IV. PREPARE OPSCR DATA ------
+
 makeRovquantData(    
   ##-- paths
   species = "bear",

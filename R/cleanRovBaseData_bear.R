@@ -145,10 +145,12 @@ cleanRovbaseData <- function(
       Weight_total =  "Helvekt"),
     data_dir,
     working_dir,
+    print.report = TRUE,
     Rmd_template = NULL,
     overwrite = FALSE){
   
   ##----- 0. INITIAL CHECKS -----
+  
   ##-- Make sure subfolders exist
   dir.create(file.path(working_dir, "data"), recursive = T, showWarnings = F)
   dir.create(file.path(working_dir, "reports"), recursive = T, showWarnings = F)
@@ -199,7 +201,7 @@ cleanRovbaseData <- function(
   
   
   ##-- Set file name for clean data
-  fileName <- paste0("Data_",engSpecies,"_", DATE,".RData")
+  fileName <- paste0("Data_", engSpecies, "_", DATE, ".RData")
   
   
   ##-- Check that a file with that name does not already exist to avoid overwriting
@@ -207,10 +209,11 @@ cleanRovbaseData <- function(
     if(any(file.exists(file.path(working_dir, "data", fileName)))){
       message(paste0("A file named '", fileName, "' already exists in: \n",
                      file.path(working_dir, "data")))
-      message("\nAre you sure you want to proceed and overwrite existing clean data? (y/n) ")
+      message("Are you sure you want to proceed and overwrite existing clean data? (y/n) ")
       question1 <- readLines(n = 1)
       if(regexpr(question1, 'y', ignore.case = TRUE) != 1){
-        stop("\r Not overwriting existing files...")
+        message("Not overwriting existing files...")
+        return(invisible(NULL))
       } else {
         message(paste0("Now overwriting '", fileName,"'.\n"))
       }
@@ -323,7 +326,7 @@ cleanRovbaseData <- function(
   } 
   
   tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
-  test <- anti_join(tmp,DR)
+  test <- anti_join(tmp,DR, by = names(tmp)[names(tmp) %in% names(DR)])
   
   
   ##-- Make sure that only "Dead recoveries" are in DR 
@@ -335,29 +338,15 @@ cleanRovbaseData <- function(
   
 
   
-  ##----- 4. CHECK DEAD RECOVERIES -----
-  DATA <- union_all
-  DATA <- merge( DR, DNA, 
-                 by = c("Id","RovbaseID","DNAID","Species", "Sex","Date","East_UTM33","North_UTM33", "County"),
-                 all = TRUE)
+  ##----- 4. MERGE DATASETS -----
+  DATA <- full_join(DNA, DR, by = names(DNA)[names(DNA) %in% names(DR)]) 
+  # DATA <- merge( DR, DNA, 
+  #                by = c("Id","RovbaseID","DNAID","Species", "Sex","Date","East_UTM33","North_UTM33", "County"),
+  #                all = TRUE)
   
-  ##-- Make sure all dead recoveries in DNA are in DR
-  check1 <- all(DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
-  params$probs_DR_in_DNA <- NULL
-  if(!check1){
-    tmp <- DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"]
-    params$probs_DR_in_DNA <- tmp[!tmp %in% DR$DNAID]
-  } 
-  
-  ##-- Make sure that only "Dead recoveries" are in DR 
-  check2 <- all(substr(DR$RovbaseID,1,1) %in% "M")
-  params$probs_DNA_in_DR <- NULL
-  if(!check2){
-    params$probs_DNA_in_DR <- DR$DNAID[!substr(DR$RovbaseID,1,1) %in% "M"]
-  }
   
    
-  ##----- 4. CLEAN UP DATA -----
+  ##----- 5. CLEAN UP DATA -----
   # index <- DATA$Month < unlist(samplingMonths)[1]
   # index[is.na(index)] <- FALSE
   # DATA$Year[index] <- DATA$Year[index] - 1
@@ -389,8 +378,9 @@ cleanRovbaseData <- function(
     droplevels(.)
   
   
-
-  ##-- Check sex assignments
+  
+  ##----- 6. CHECK SEX ASSIGNMENT -----
+  
   ID <- unique(as.character(DATA$Id))
   DATA$Sex <- as.character(DATA$Sex)
   doubleSexID <- IdDoubleSex <- NULL
@@ -425,6 +415,9 @@ cleanRovbaseData <- function(
   }#i
   
   
+  
+  ##----- 7. SPLIT DATA -----
+  
   ##-- Split DATA into alive and dead.recovery datasets
   alive <- DATA[is.na(DATA$Death), ]
   dead.recovery <- DATA[!is.na(DATA$Death), ]
@@ -448,6 +441,9 @@ cleanRovbaseData <- function(
                   }))
   
   
+  
+  ##----- 8. REMOVE FLAGGED SAMPLES -----
+  
   ##-- Load most recent "flagged" file from HB
   flagged <- readMostRecent( 
     path = data_dir,
@@ -464,6 +460,9 @@ cleanRovbaseData <- function(
   dead.recovery$Missing <- NA
   dead.recovery$Individ <- NA
   
+  
+  
+  ##----- 9. TURN INTO .sf OBJECTS -----
   
   ##-- Turn into sf points dataframe
   alive <- sf::st_as_sf( x = alive,
@@ -485,7 +484,9 @@ cleanRovbaseData <- function(
   dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
   
   
-  ##-- Issues
+  
+  ##----- 10. IDENTIFY ISSUES -----
+  
   ##-- Multiple deaths
   ##-- Identify and count individuals dead "more than once"
   ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1]
@@ -544,16 +545,54 @@ cleanRovbaseData <- function(
   ##-- Remove flagged NGS detections after dead recovery
   alive <- alive[!rownames(alive) %in% samples.to.remove, ]
   
-  ##-- Save clean data
-  fileName <-  paste0("Data_bear_",DATE,".RData")
+  
+  
+  ##----- 11. RENDER .html REPORT -----
+  
+  if(print.report){
+    
+    ##-- Find the .rmd template
+    if(is.null(Rmd_template)){
+      Rmd_template <- system.file("rmd", "RovQuant_CleaningReport.Rmd", package = "rovquantR")
+      if(!file.exists(Rmd_template)) {
+        stop('Can not find the Rmarkdown document to use for cleaning Rovbase.3.0 data.\n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
+      } 
+    }
+    
+    ##-- Render the .html report
+    reportName <- paste0("Data_", engSpecies, "_", DATE,".html")
+    
+    message(paste0("\nRendering report '", reportName, "' already exists in: \n",
+                   file.path(working_dir, "data")))
+    
+    rmarkdown::render(
+      input = Rmd_template,
+      params = params,
+      output_dir = file.path(working_dir, "reports"),
+      output_file = reportName)
+  }
+  
+  
+  
+  ##----- 12. SAVE CLEAN DATA -----
+  
+  ##-- Save .RData file
+  message(paste0("\nSaving file '", fileName, "' already exists in: \n",
+                 file.path(working_dir, "data")))
   save( alive, 
         dead.recovery,
         IdDoubleSex,
-        file = file.path(output_dir, paste0("Data_bear_",DATE,".RData")))
-  
-  ##-- Return list of metrics for the .rmd report
-  params <- list()
-  return(params)
+        file = file.path(working_dir, "data", fileName))
   
   
+  ##-- If explicit return also data as a list
+  # if(silent){
+  #   
+  #   dat.list <- list(
+  #     "alive" = alive, 
+  #     "dead.recovery" = dead.recovery,
+  #     "IdDoubleSex" = IdDoubleSex)
+  #   
+  #   return(dat.list)
+  # }
 }
