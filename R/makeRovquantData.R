@@ -23,9 +23,9 @@
 #' }
 #' 
 #' @param species A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.
-#' @param data_dir A \code{path} to the directory containing the clean Rovbase data,
+#' @param data.dir A \code{path} to the directory containing the clean Rovbase data,
 #'  as prepared by \code{cleanRovBaseData}.
-#' @param working_dir A \code{path} to the directory for this analysis containing
+#' @param working.dir A \code{path} to the directory for this analysis containing
 #'  the \code{nimbleInputFiles} folder to store the prepared data.  
 #' @param years A \code{list}  Whether dead recovery should be included (TRUE) or not(FALSE)
 #' @param sex A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.
@@ -39,8 +39,8 @@
 #' @param max.det.dist A \code{numeric} denoting the species; can be any of "bear", "wolf" or "wolverine.
 #' @param resize.factor A \code{numeric}.
 #' @param print.report A \code{logical}.
-#' @param Rmd_template A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
-#' @param output_dir A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#' @param Rmd.template A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
+#' @param output.dir A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
 #' 
 #' @return This function returns:
 #' \enumerate{
@@ -57,14 +57,14 @@
 makeRovquantData <- function(
   ##-- paths
   species = c("bear","wolf","wolverine"),
-  data_dir = "./Data",
-  working_dir,
+  data.dir = "./Data",
+  working.dir,
   
   ##-- data
   years = NULL,
   sex = c("Hann","Hunn"),
   aug.factor = 2,
-  sampling.months = list(4,5,6,7,8,9,10,11),
+  sampling.months = NULL,
   
   ##-- habitat
   habitat.res = 20000, 
@@ -79,8 +79,8 @@ makeRovquantData <- function(
   
   ##-- miscellanious
   print.report = TRUE, 
-  Rmd_template = NULL,
-  output_dir = NULL
+  Rmd.template = NULL,
+  output.dir = NULL
 ) {
   
   ##-- Check species and set corresponding sampling period
@@ -88,16 +88,18 @@ makeRovquantData <- function(
     
     SPECIES <- "Brown bear"
     
+    if(is.null(sampling.months)){sampling.months <- list(c(4,5,6,7,8,9,10,11))}
+    
     ##-- Extract the date from the last cleaned data file
     DATE <- getMostRecent( 
-      path = file.path(working_dir,"data"),
+      path = file.path(working.dir,"data"),
       pattern = "Data_bear")
     
     ##-- Prepare the data
     out <- makeRovquantData_bear(
       ##-- paths
-      data_dir,
-      working_dir,
+      data.dir,
+      working.dir,
       ##-- data
       years,
       sex,
@@ -108,10 +110,10 @@ makeRovquantData <- function(
       buffer.size,
       max.move.dist,
       ##-- detectors
-      detector.res = 5000,
-      subdetector.res = 1000,
-      max.det.dist = 70000,
-      resize.factor = 1)
+      detector.res,
+      subdetector.res,
+      max.det.dist,
+      resize.factor)
   }
   
   # if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
@@ -125,28 +127,28 @@ makeRovquantData <- function(
   if(print.report){
     
     ##-- Find the .rmd template for the report.
-    if(is.null(Rmd_template)){
-      Rmd_template <- system.file("rmd", "RovQuant_DataReport.Rmd", package = "rovquantR")
-      if(!file.exists(Rmd_template)) {
-        stop('Can not find a .rmd template called "RovQuant_DataReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
+    if(is.null(Rmd.template)){
+      Rmd.template <- system.file("rmd", "RovQuant_DataReport.Rmd", package = "rovquantR")
+      if(!file.exists(Rmd.template)) {
+        stop('Can not find a .rmd template called "RovQuant_DataReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
       } 
     }
     
     
     ##-- Find the directory to print the report.
-    if(is.null(output_dir)){
-      output_dir <- working_dir
+    if(is.null(output.dir)){
+      output.dir <- file.path(working.dir,"reports")
     }
     
     
     ##-- Clean the data and print report
     rmarkdown::render(
-      input = Rmd_template,
+      input = Rmd.template,
       params = list( species = SPECIES,
                      years = years,
                      sex = sex,
-                     working_dir = working_dir),
-      output_dir = output_dir,
+                     working.dir = working.dir),
+      output.dir = output.dir,
       output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
   }
   

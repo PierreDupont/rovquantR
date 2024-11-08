@@ -1,9 +1,10 @@
 ---
 params:
-  species: "bear"
-  years: 2020:2023
+  species: "Brown bear"
+  years: !r 2012:as.numeric(format(Sys.Date(), "%Y"))
   sex: c("Hann","Hunn")
-  working_dir: "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test2"
+  date: !r Sys.Date()   
+  working_dir: !r getwd()
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
 subtitle: "RovQuant - OPSCR Data Preparation"
 output:
@@ -75,7 +76,10 @@ This document summarizes the data preparation process of the **`r species`** DNA
 # Rovbase data
 
 ```{r, data, echo = FALSE}
-load(file.path(working_dir, "data/Data.RData"))
+load(file.path( working_dir, paste0("data/FilteredData_bear_", DATE, ".RData")))
+suppressWarnings(readMostRecent( path = file.path(working_dir,"data")
+                                        extension = "RData",
+                                        pattern = "FilteredData_")) 
 ```
 
 ## NGS data

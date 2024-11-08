@@ -627,11 +627,12 @@ makeRovquantData_bear <- function(
   
   ## ------   5. SAVE STATE-SPACE CHARACTERISTICS -----
 
-    save( habitat,
-        file = file.path( working_dir, "data/Habitat.RData"))
+  save( habitat,
+        file = file.path( working_dir, "data/Habitat_bear_", DATE, ".RData"))
   
   save( detectors,
-        file = file.path( working_dir, "data/Detectors.RData"))
+        file = file.path( working_dir, "data/Detectors_bear_", DATE, ".RData"))
+
   
   
   
@@ -676,8 +677,9 @@ makeRovquantData_bear <- function(
   
   
   ## ------     6.3. SAVE FILTERED DATA ----- 
+
   save( data.alive, data.dead,
-        file = file.path( working_dir, paste0("data/Data.RData")))
+        file = file.path( working_dir, paste0("data/FilteredData_bear_", DATE, ".RData")))
   
   
     
@@ -689,7 +691,7 @@ makeRovquantData_bear <- function(
     
     ## ------     7.1. FILTER DATA BY SEX -----
     
-    load(file.path( working_dir, paste0("data/Data.RData")))
+    load(file.path( working_dir, paste0("data/FilteredData_bear_", DATE, ".RData")))
     
     data.alive$myData.sp <- data.alive$myData.sp %>%
       dplyr::filter(Sex %in% thisSex)
@@ -1167,7 +1169,7 @@ makeRovquantData_bear <- function(
             nimInits,
             detCounties.original,
             file = file.path( working_dir, "nimbleInFiles", thisSex,
-                              paste0("nimbleInput_",c,".RData")))
+                              paste0("nimbleInput_", DATE, "_", c, ".RData")))
     }#c
     
   }#thisSex

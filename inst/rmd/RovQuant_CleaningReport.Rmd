@@ -1,13 +1,13 @@
 ---
 params:
-  species: "bear"
+  species: "Brown bear"
   years: !r 2012:as.numeric(format(Sys.Date(), "%Y"))
   sex: c("Hunn","Hann")  
   sampling.months: 4:11
   rename.list: NULL
-  dir.in: NULL
-  dir.out: NULL   
-  modDate: Sys.Date()   
+  dir.in: !r getwd()
+  dir.out: !r getwd() 
+  date: !r Sys.Date()   
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
 subtitle: "RovQuant - OPSCR Data Cleaning"
 output:

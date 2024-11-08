@@ -53,7 +53,6 @@ cleanRovbaseData_bear <- function(
     rename.list = NULL,
     data.dir,
     working.dir,
-    #print.report = TRUE,
     Rmd.template = NULL,
     overwrite = FALSE){
   
@@ -69,16 +68,19 @@ cleanRovbaseData_bear <- function(
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjørn", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
     engSpecies <- "bear"
     norSpecies <- "Bjørn"
+    SPECIES <- "Brown bear"
   } else {
     if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
       engSpecies <- "wolf"
       norSpecies <- "Ulv"
+      SPECIES <- "Wolf"
     } else {
       if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
         engSpecies <- "wolverine"
         norSpecies <- "Jerv"
+        SPECIES <- "Wolverine"
       } else {
-       engSpecies <- norSpecies <- species 
+       engSpecies <- norSpecies <- SPECIES <- species 
       }
     }
   }
@@ -140,7 +142,7 @@ cleanRovbaseData_bear <- function(
   }
   
   rmarkdown::render(input = Rmd.template,
-                    params = list( species = species, 
+                    params = list( species = SPECIES, 
                                    years = years,
                                    sampling.months = sampling.months,
                                    rename.list = rename.list,
