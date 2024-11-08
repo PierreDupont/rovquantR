@@ -203,9 +203,7 @@ cleanRovbaseData_bear(
   species = "bear",
   years = 2020:2024,
   data.dir = data.dir,
-  working.dir = working.dir,
-  Rmd.template = "C:/My_documents/rovquantR/inst/rmd/RovQuant_CleaningReport.Rmd")
-
+  working.dir = working.dir)
 
 
 

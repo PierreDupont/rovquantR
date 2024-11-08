@@ -44,6 +44,8 @@ makeDirectories <- function( path = NULL,
   
   ##-- Display contents of directories in a tree-like format
   if(show.dir){
+    message("\n The following directory was created for this analysis:")
+    
     fs::dir_tree(path)
   }
 }
