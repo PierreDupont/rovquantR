@@ -43,9 +43,9 @@
 #' @importFrom sf st_as_sf st_crs st_set_crs st_intersects
 
 NULL
-#' @rdname cleanRovbaseData
+#' @rdname cleanRovbaseData_bear
 #' @export
-cleanRovbaseData <- function(
+cleanRovbaseData_bear <- function(
     species = c("bear","wolf","wolverine"),
     years = NULL, 
     sex = c("Hunn","Hann"),
@@ -156,6 +156,8 @@ cleanRovbaseData <- function(
   makeDirectories( path = working.dir,
                    two.sex = length(sex)>1,
                    show.dir = TRUE)
+  
+  
   ##-- Species
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjørn", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
     engSpecies <- "bear"
@@ -221,14 +223,15 @@ cleanRovbaseData <- function(
     }
   }
   
+  
   ##-- Render .Rmd report
-  if (is.null(Rmd.template)) {
-    Rmd.template <- system.file("rmd", "RovBase_DataCleaning.Rmd", 
-                                package = "rovquantR")
+  if(is.null(Rmd.template)) {
+    Rmd.template <- system.file("rmd", "RovBase_DataCleaning.Rmd", package = "rovquantR")
     if (!file.exists(Rmd.template)) {
       stop("Can not find the Rmarkdown document to use for cleaning Rovbase.3.0 data.\n You must provide the path to the Rmarkdown template through the \"Rmd_template\" argument.")
     }
   }
+  
   rmarkdown::render(input = Rmd.template,
                     params = list( species = species, 
                                    years = years,
@@ -239,8 +242,7 @@ cleanRovbaseData <- function(
                                    modDate = DATE),
                     output_dir = file.path(working.dir, "reports"), 
                     output_file = paste0("Data_", species, "_", DATE,".html"))
-  
-# 
+}
 #   
 #   ##-- Set-up list of parameters for the .Rmd report
 #   params <- list()
@@ -616,4 +618,3 @@ cleanRovbaseData <- function(
 #   #   
 #   #   return(dat.list)
 #   # }
-}
