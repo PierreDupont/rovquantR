@@ -148,7 +148,7 @@ cleanRovbaseData_bear <- function(
                                    rename.list = rename.list,
                                    dir.in = data.dir,
                                    dir.out = working.dir,
-                                   modDate = DATE),
+                                   date = DATE),
                     output_dir = file.path(working.dir, "reports"), 
                     output_file = paste0("Data_", species, "_", DATE,".html"))
 }
