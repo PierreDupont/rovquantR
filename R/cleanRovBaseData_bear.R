@@ -113,7 +113,7 @@ cleanRovbaseData_bear <- function(
   
   
   ##-- Set file name for clean data
-  fileName <- paste0("Data_", engSpecies, "_", DATE, ".RData")
+  fileName <- paste0("CleanData_", engSpecies, "_", DATE, ".RData")
   
   
   ##-- Check that a file with that name does not already exist to avoid overwriting
@@ -150,7 +150,7 @@ cleanRovbaseData_bear <- function(
                                    dir.out = working.dir,
                                    date = DATE),
                     output_dir = file.path(working.dir, "reports"), 
-                    output_file = paste0("Data_", species, "_", DATE,".html"))
+                    output_file = paste0("CleanData_", engSpecies, "_", DATE,".html"))
 }
 #   
 #   ##-- Set-up list of parameters for the .Rmd report

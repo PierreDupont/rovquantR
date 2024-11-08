@@ -965,7 +965,7 @@ graphics.off()
 # Save clean data
 
 ```{r, save data, echo = F}
-fileName <-  paste0("Data_", engSpecies, "_",DATE,".RData")
+fileName <-  paste0("CleanData_", engSpecies, "_",DATE,".RData")
 
 save( alive, 
       dead.recovery,
