@@ -34,8 +34,10 @@ gc()
 
 devtools::install_github("PierreDupont/rovquantR")
 
+## Ctrl + Shift + F10 (to restart R session)
+
 library(rovquantR)
-#library(nimbleSCR)
+# library(nimbleSCR)
 # library(dplyr)
 # library(readxl)
 

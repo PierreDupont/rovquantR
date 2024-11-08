@@ -4,7 +4,7 @@ params:
   years: !r 2012:as.numeric(format(Sys.Date(), "%Y"))
   sex: c("Hunn","Hann")  
   sampling.months: 4:11
-  rename.list: !r rename.list
+  rename.list: NULL
   dir.in: NULL
   dir.out: NULL   
   modDate: Sys.Date()   
@@ -199,7 +199,7 @@ For the **`r species`**, we consider a sampling period each year that extends fr
 # Rovbase data files
 
 ```{r, data info, echo = F, collapse = TRUE}
-DATE <- getMostRecent(path = data_dir, pattern = paste0("DNA"))
+DATE <- getMostRecent(path = dir.in, pattern = paste0("DNA"))
 ```
 
 We start by loading the most recent data for the focal species available from RovBase. This data was downloaded from [rovbase.3.0](https://rovbase30.miljodirektoratet.no/) on `r DATE` and includes two '.xlsx' spreadsheets containing the species-specific **NGS** data and the large carnivores' **dead recoveries** data.
