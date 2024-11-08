@@ -30,14 +30,14 @@ gc()
 
 ## ------ IMPORT REQUIRED LIBRARIES ------
 
-# library(devtools)
+#library(devtools)
+
+devtools::install_github("PierreDupont/rovquantR")
+
+library(rovquantR)
+#library(nimbleSCR)
 # library(dplyr)
 # library(readxl)
-library(nimbleSCR)
-#devtools::install_github("PierreDupont/rovquantR")
-library(rovquantR)
-
-
 
 ##------------------------------------------------------------------------------
 ## ------ I. SET-UP WORKING ENVIRONMENT ------
@@ -49,13 +49,13 @@ data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQ
 
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test.1"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test.2"
 
 
-##-- Create folder structure for the analysis
-makeDirectories( path = working.dir,
-                 two.sex = TRUE,
-                 show.dir = TRUE)
+# ##-- Create folder structure for the analysis
+# makeDirectories( path = working.dir,
+#                  two.sex = TRUE,
+#                  show.dir = TRUE)
 
 
 
@@ -197,13 +197,13 @@ makeDirectories( path = working.dir,
 ##------------------------------------------------------------------------------
 ## ----- III. CLEAN NGS DATA -----
 
-cleanRovbaseData( species = "bear",
-                  years = 2020:2024,
-                  data.dir = data.dir,
-                  working.dir = working.dir,
-                  Rmd.template = "C:/My_documents/rovquantR/inst/rmd/RovQuant_CleaningReport.Rmd")
-                  
-                  print.report = F)
+cleanRovbaseData_bear( 
+  species = "bear",
+  years = 2020:2024,
+  data.dir = data.dir,
+  working.dir = working.dir,
+  Rmd.template = "C:/My_documents/rovquantR/inst/rmd/RovQuant_CleaningReport.Rmd")
+
 
 
 
