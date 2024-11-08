@@ -45,111 +45,64 @@ NULL
 #' @rdname cleanRovbaseData
 #' @export
 cleanRovbaseData <- function( species,
-                              years = NULL, 
-                              samplingMonths = NULL,
+                              years = NULL,
                               data_dir = "./Data",
-                              output_dir = "./Data",
+                              output_dir = "./Data", 
                               Rmd_template = NULL,
-                              overwrite = FALSE)
-  {
-  ##-- Check if years are provided (if not, uses the period 1990 until now)
-  if(is.null(years)){ years <- 1990:as.numeric(format(Sys.Date(), "%Y")) }
-  
-  
-  ##-- Check that the "report" does not already exist to avoid overwriting
-  if(file.exists(file.path(output_dir, paste0("Data_", species, "_", DATE,".html")))){
-    message(paste0("A file named 'Data_", SPECIES, "_", DATE,
-                   ".html' already exists in the specified directory."))
-    message("Are you sure you want to proceed and overwrite existing clean data? (y/n) ")
-    question1 <- readLines(n = 1)
-    if(regexpr(question1, 'y', ignore.case = TRUE) != 1){
-      message("Not overwriting existing files...")
-    } else {
-  
-  
-  
-  ##-- BROWN BEARS 
-  if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
-    
-    ##-- Call bear-specific data cleaning function 
-    params <- cleanRovbaseData_bear( years,
-                           samplingMonths,
-                           data_dir,
-                           output_dir,
-                           Rmd_template,
-                           overwrite = FALSE)
+                              overwrite = FALSE) 
+{
+  if (is.null(years)) {
+    years <- 1990:as.numeric(format(Sys.Date(), "%Y"))
   }
-
-  
-  # ##-- WOLVES 
-  # if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
-  #   
-  #   ##-- Set monitoring season for the bear
-  #   if(is.null(samplingMonths)){ samplingMonths <- list(10:12,1:4) }
-  #   
-  #   ##-- Call bear-specific data cleaning function 
-  #   cleanRovbaseData_wolf( years,
-  #                          samplingMonths,
-  #                          data_dir,
-  #                          output_dir,
-  #                          Rmd_template,
-  #                          overwrite = FALSE)  
-  # }
-
-  
-  # ##-- WOLVERINES 
-  # if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
-  #   
-  #   ##-- Set monitoring season for the bear
-  #   if(is.null(samplingMonths)){ samplingMonths <- list(12,1:5) }
-  #   
-  #   ##-- Call bear-specific data cleaning function 
-  #   cleanRovbaseData_wolverine( years,
-  #                               samplingMonths,
-  #                               data_dir,
-  #                               output_dir,
-  #                               Rmd_template,
-  #                               overwrite = FALSE) 
-  # }
-  
- 
-  ##-- Find the .rmd template used to clean the data and print out the report.
-  if(is.null(Rmd_template)){
-    Rmd_template <- system.file("rmd", "RovQuant_CleaningReport.Rmd", package = "rovquantR")
-    if(!file.exists(Rmd_template)) {
-      stop('Can not find the Rmarkdown document to use for cleaning Rovbase.3.0 data.\n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
-    } 
+  if (sum(grep("bear", species, ignore.case = T)) > 0 | sum(grep("bjorn", 
+                                                                 species, ignore.case = T)) > 0) {
+    SPECIES <- "bear"
+    SP <- list(4:11)
   }
-  
-  
-  ##-- Check output directory 
-  output_folder <- file.path(output_dir, SPECIES, DATE)
-
-  
-  ##-- Check that the "report" does not already exist to avoid overwriting
-  if(overwrite){
-    message(paste0("A file named 'Data_", SPECIES, "_", DATE,
-                   ".html' already exists in the specified directory."))
-    message("Are you sure you want to proceed and overwrite existing clean data? (y/n) ")
-    question1 <- readLines(n = 1)
-    if(regexpr(question1, 'y', ignore.case = TRUE) != 1){
-      message("Not overwriting existing files...")
-    } else {
-      message(paste0("Now overwriting 'Data_", SPECIES, "_", DATE,".html'."))
-      
-      ##-- Clean the data and print report
-      rmarkdown::render(
-        input = Rmd_template,
-        params = params,
-        output_dir = output_folder,
-        output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
+  if (sum(grep("wolf", species, ignore.case = T)) > 0 | sum(grep("ulv", 
+                                                                 species, ignore.case = T)) > 0) {
+    SPECIES <- "wolf"
+    SP <- list(10:12, 1:4)
+  }
+  if (sum(grep("wolverine", species, ignore.case = T)) > 0 | 
+      sum(grep("jerv", species, ignore.case = T)) > 0) {
+    SPECIES <- "wolverine"
+    SP <- list(12, 1:5)
+  }
+  DATE <- getMostRecent(path = data_dir, pattern = paste0("_", 
+                                                          SPECIES, ".csv"))
+  if (is.null(Rmd_template)) {
+    Rmd_template <- system.file("rmd", "RovBase_DataCleaning.Rmd", 
+                                package = "rovquantR")
+    if (!file.exists(Rmd_template)) {
+      stop("Can not find the Rmarkdown document to use for cleaning Rovbase.3.0 data.\n You must provide the path to the Rmarkdown template through the \"Rmd_template\" argument.")
     }
-  } else {
-    ##-- Clean the data and print report
-    rmarkdown::render(
-      input = Rmd_template,
-      params = params,
-      output_dir = output_folder,
-      output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
+  }
+  output_folder <- file.path(output_dir, SPECIES, DATE)
+  if (file.exists(file.path(output_folder, paste0("Data_", 
+                                                  SPECIES, "_", DATE, ".html")))) {
+    message(paste0("A file named 'Data_", SPECIES, "_", DATE, 
+                   ".html' already exists in the specified directory."))
+    message("Are you sure you want to proceed and overwrite existing clean data? (y/n) ")
+    question1 <- readLines(n = 1)
+    if (regexpr(question1, "y", ignore.case = TRUE) != 1) {
+      message("Not overwriting existing files...")
+    }
+    else {
+      message(paste0("Now overwriting 'Data_", SPECIES, 
+                     "_", DATE, ".html'."))
+      rmarkdown::render(input = Rmd_template, params = list(species = SPECIES, 
+                                                            years = years, samplingMonths = SP, dir.in = data_dir, 
+                                                            dir.out = output_folder, modDate = DATE), output_dir = output_folder, 
+                        output_file = paste0("Data_", SPECIES, "_", DATE, 
+                                             ".html"))
+    }
+  }
+  else {
+    rmarkdown::render(input = Rmd_template, params = list(species = SPECIES, 
+                                                          years = years, samplingMonths = SP, dir.in = data_dir, 
+                                                          dir.out = output_folder, modDate = DATE), output_dir = output_folder, 
+                      output_file = paste0("Data_", SPECIES, "_", DATE, 
+                                           ".html"))
   }
 }

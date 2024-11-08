@@ -20,6 +20,7 @@ Imports:
     coda,
     dplyr,
     fasterize,
+    fs,
     ggplot2,
     graphics,
     grDevices,

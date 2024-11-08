@@ -8,12 +8,15 @@
 #'  
 #' @return boolean invisible(FALSE) if nothing was created, invisible(TRUE) if folders were created in \emph{path}.
 #'
+#' @importFrom fs dir_tree
+#' 
 #' @examples \dontrun{makeDirectories()}
 #' 
 #' @rdname makeDirectories
 #' @export
 makeDirectories <- function( path = NULL,
-                             twoSex = T){
+                             two.sex = T,
+                             show.dir){
   ##-- Check if the directory already exists 
   if(is.null(path)){path <- getwd()}
   
@@ -24,7 +27,7 @@ makeDirectories <- function( path = NULL,
     } 
 
   ##-- Set-up directory structure
-  if(twoSex){
+  if(two.sex){
   dir.create( file.path(path, "nimbleInFiles/Hann"), showWarnings = F, recursive = T)
   dir.create( file.path(path, "nimbleInFiles/Hunn"), showWarnings = F, recursive = T)
   dir.create( file.path(path, "nimbleOutFiles/Hann"), showWarnings = F, recursive = T)
@@ -38,4 +41,9 @@ makeDirectories <- function( path = NULL,
   dir.create( file.path(path, "tables"), showWarnings = F)
   dir.create( file.path(path, "rasters"), showWarnings = F)
   dir.create( file.path(path, "reports"), showWarnings = F)
+  
+  ##-- Display contents of directories in a tree-like format
+  if(show.dir){
+    fs::dir_tree(path)
+  }
 }
