@@ -68,18 +68,19 @@ makeRovquantData(
   ##-- paths
   species = "bear",
   data.dir = data.dir,
-  working.dir = working.dir,
-  ##-- data
-  sex = c("Hann","Hunn"),
-  aug.factor = 2,
-  ##-- habitat
-  habitat.res = 20000, 
-  buffer.size = 50000,
-  max.move.dist = 250000,
-  ##-- detectors
-  detector.res = 5000,
-  subdetector.res = 1000,
-  max.det.dist = 70000)
+  working.dir = working.dir)
+# ,
+#   ##-- data
+#   sex = c("Hann","Hunn"),
+#   aug.factor = 2,
+#   ##-- habitat
+#   habitat.res = 20000, 
+#   buffer.size = 50000,
+#   max.move.dist = 250000,
+#   ##-- detectors
+#   detector.res = 5000,
+#   subdetector.res = 1000,
+#   max.det.dist = 70000)
 
 
 

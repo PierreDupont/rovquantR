@@ -57,8 +57,8 @@
 makeRovquantData <- function(
   ##-- paths
   species = c("bear","wolf","wolverine"),
-  data.dir = "./Data",
-  working.dir,
+  data.dir = getwd(),
+  working.dir = getwd(),
   
   ##-- data
   years = NULL,
@@ -67,14 +67,14 @@ makeRovquantData <- function(
   sampling.months = NULL,
   
   ##-- habitat
-  habitat.res = 20000, 
-  buffer.size = 50000,
-  max.move.dist = 250000,
+  habitat.res = NULL, 
+  buffer.size = NULL,
+  max.move.dist = NULL,
   
   ##-- detectors
-  detector.res = 5000,
-  subdetector.res = 1000,
-  max.det.dist = 70000,
+  detector.res = NULL,
+  subdetector.res = NULL,
+  max.det.dist = NULL,
   resize.factor = 1,
   
   ##-- miscellanious
@@ -83,17 +83,19 @@ makeRovquantData <- function(
   output.dir = NULL
 ) {
   
+  ##---- 1. BROWN BEAR DATA PREPARATION -----
   ##-- Check species and set corresponding sampling period
-  if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
+  if(sum(grep("bear", species, ignore.case = T))>0|
+     sum(grep("bjørn", species, ignore.case = T))>0|
+     sum(grep("bjorn", species, ignore.case = T))>0){
     
+    ##-- Get clean name for the report
     SPECIES <- "Brown bear"
     
-    if(is.null(sampling.months)){sampling.months <- list(c(4,5,6,7,8,9,10,11))}
-    
-    ##-- Extract the date from the last cleaned data file
+    ##-- Extract date from the last cleaned data file
     DATE <- getMostRecent( 
       path = file.path(working.dir,"data"),
-      pattern = "Data_bear")
+      pattern = "CleanData_bear")
     
     ##-- Prepare the data
     out <- makeRovquantData_bear(
@@ -116,14 +118,82 @@ makeRovquantData <- function(
       resize.factor)
   }
   
-  # if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
-  #   out <- makeRovquantData_wolf(...)
-  # }
   
-  # if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
-  #   out <- makeRovquantData_wolverine(...)
-  # }
   
+  ##---- 2. WOLF DATA PREPARATION -----
+  ##-- Check species and set corresponding sampling period
+  if(sum(grep("wolf", species, ignore.case = T))>0|
+     sum(grep("wolves", species, ignore.case = T))>0|
+     sum(grep("ulv", species, ignore.case = T))>0){
+    
+    ##-- Get clean name for the report
+    SPECIES <- "Gray wolf"
+    
+    ##-- Extract date from the last cleaned data file
+    DATE <- getMostRecent( 
+      path = file.path(working.dir,"data"),
+      pattern = "CleanData_wolf")
+    
+    ##-- Prepare the data
+    out <- makeRovquantData_wolf(
+      ##-- paths
+      data.dir,
+      working.dir,
+      ##-- data
+      years,
+      sex,
+      aug.factor,
+      sampling.months,
+      ##-- habitat
+      habitat.res, 
+      buffer.size,
+      max.move.dist,
+      ##-- detectors
+      detector.res,
+      subdetector.res,
+      max.det.dist,
+      resize.factor)
+  }
+  
+
+  
+  ##---- 3. WOLVERINE DATA PREPARATION -----
+  if(sum(grep("wolverine", species, ignore.case = T))>0|
+     sum(grep("jerv", species, ignore.case = T))>0|
+     sum(grep("järv", species, ignore.case = T))>0){
+    
+    ##-- Get clean name for the report
+    SPECIES <- "Wolverine"
+    
+    ##-- Extract date from the last cleaned data file
+    DATE <- getMostRecent( 
+      path = file.path(working.dir,"data"),
+      pattern = "CleanData_wolverine")
+
+    ##-- Prepare the data
+    out <- makeRovquantData_wolverine(
+      ##-- paths
+      data.dir,
+      working.dir,
+      ##-- data
+      years,
+      sex,
+      aug.factor,
+      sampling.months,
+      ##-- habitat
+      habitat.res, 
+      buffer.size,
+      max.move.dist,
+      ##-- detectors
+      detector.res,
+      subdetector.res,
+      max.det.dist,
+      resize.factor)
+  }
+  
+  
+  
+  ##---- 4. PRINT REPORT -----
   if(print.report){
     
     ##-- Find the .rmd template for the report.
@@ -136,9 +206,7 @@ makeRovquantData <- function(
     
     
     ##-- Find the directory to print the report.
-    if(is.null(output.dir)){
-      output.dir <- file.path(working.dir,"reports")
-    }
+    if(is.null(output.dir)){ output.dir <- file.path(working.dir,"reports") }
     
     
     ##-- Clean the data and print report
@@ -147,10 +215,11 @@ makeRovquantData <- function(
       params = list( species = SPECIES,
                      years = years,
                      sex = sex,
+                     date = DATE,
                      working.dir = working.dir),
       output.dir = output.dir,
       output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
   }
   
-  return(out)
+  #return(out)
 }

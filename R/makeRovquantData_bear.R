@@ -9,8 +9,8 @@
 #'
 #' @name makeRovquantData_bear
 #'
-#' @param data_dir A \code{path}.
-#' @param working_dir A \code{path}.
+#' @param data.dir A \code{path}.
+#' @param working.dir A \code{path}.
 #' @param years A \code{list}.  
 #' @param sex A \code{character}.
 #' @param aug.factor A \code{Numeric}.
@@ -50,54 +50,52 @@ NULL
 #' @rdname makeRovquantData_bear
 #' @export
 makeRovquantData_bear <- function(
-    
   ##-- paths
-  data_dir = "./Data"
-  ,
-  working_dir = NULL
-  ,
+  data.dir = getwd(),
+  working.dir = getwd(),
   
   ##-- data
-  years = NULL
-  ,
-  sex = c("Hann","Hunn")
-  ,
-  aug.factor = 2
-  ,
-  sampling.months = list(4,5,6,7,8,9,10,11)
-  ,
+  years = NULL,
+  sex = c("Hann","Hunn"),
+  aug.factor = 2,
+  sampling.months = list(4,5,6,7,8,9,10,11),
   
   ##-- habitat
-  habitat.res = 20000
-  , 
-  buffer.size = 50000
-  ,
-  max.move.dist = 250000
-  ,
+  habitat.res = 20000, 
+  buffer.size = 50000,
+  max.move.dist = 250000,
   
   ##-- detectors
-  detector.res = 5000
-  ,
-  subdetector.res = 1000
-  ,
-  max.det.dist = 70000
-  ,
-  resize.factor = 1
-){
+  detector.res = 5000,
+  subdetector.res = 1000,
+  max.det.dist = 70000,
+  resize.factor = 1 
+  ){
   ## ---------------------------------------------------------------------------
   
   ## ------ 0. BASIC SET-UP ------
   
-  if(is.null(working_dir)){working_dir <- getwd()}
+  ##-- Set default values for the brown bear model
+  if(is.null(sampling.months)){sampling.months <- list(c(4,5,6,7,8,9,10,11))}
+  if(is.null(sampling.months)){habitat.res <- 20000} 
+  if(is.null(buffer.size)){buffer.size <- 70000}
+  if(is.null(max.move.dist)){max.move.dist <- 250000}
+  if(is.null(detector.res)){detector.res <- 5000}
+  if(is.null(subdetector.res)){subdetector.res <- 1000}
+  if(is.null(max.det.dist)){max.det.dist <- 60000}
   
+  
+  ##-- Set up list of Habitat characteristics
   habitat <- list( resolution = habitat.res,
                    buffer = buffer.size,
                    maxDist = max.move.dist)
   
+  ##-- Set up list of Detectors characteristics
   detectors <- list( resolution = detector.res,
                      resolution.sub = subdetector.res,
                      maxDist = max.det.dist)
   
+  ##-- Set up list of Data characteristics
   data <- list( sex = sex,
                 aug.factor = aug.factor,
                 sampling.months = sampling.months)
@@ -154,7 +152,7 @@ makeRovquantData_bear <- function(
   ## ------     2.1. DISTANCE TO ROADS -----
   
   ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster::raster(file.path(data_dir,"GIS/Roads/MinDistAllRoads1km.tif"))
+  DistAllRoads <- raster::raster(file.path(data.dir,"GIS/Roads/MinDistAllRoads1km.tif"))
   
   ##-- Fasterize to remove values that fall in the sea
   r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)
@@ -167,7 +165,7 @@ makeRovquantData_bear <- function(
   
   ##-- Load the last SkandObs data file
   skandObs <- readMostRecent( 
-    path = file.path(data_dir, "Skandobs"),
+    path = file.path(data.dir, "Skandobs"),
     extension = ".xlsx",
     pattern = "Skandobs")
   
@@ -190,7 +188,7 @@ makeRovquantData_bear <- function(
   ## ------     2.3. ROVBASE OBS ------
   
   ##-- GET ALL SAMPLES COLLECTED (all species)
-  rovbaseObs <- readMostRecent( path = data_dir,
+  rovbaseObs <- readMostRecent( path = data.dir,
                                 extension = ".csv",
                                 pattern = "all_samples") %>%
     ##-- Deal with Scandinavian characters
@@ -213,11 +211,15 @@ makeRovquantData_bear <- function(
   
   
   ## ------   3. NGS DATA -----
+  ##-- Extract date from the last cleaned data file
+  DATE <- getMostRecent( 
+    path = file.path(working.dir,"data"),
+    pattern = "CleanData_bear")
   
   ##-- Load the most recent Bear data from RovBase
   myFullData.sp <- readMostRecent( 
-    path = file.path(working_dir,"data"),
-    pattern = "Data_bear",
+    path = file.path(working.dir,"data"),
+    pattern = "CleanData_bear",
     extension = ".RData")
   
   ##-- Define legal mortality causes
@@ -628,10 +630,10 @@ makeRovquantData_bear <- function(
   ## ------   5. SAVE STATE-SPACE CHARACTERISTICS -----
 
   save( habitat,
-        file = file.path( working_dir, "data/Habitat_bear_", DATE, ".RData"))
+        file = file.path( working.dir, "data/Habitat_bear_", DATE, ".RData"))
   
   save( detectors,
-        file = file.path( working_dir, "data/Detectors_bear_", DATE, ".RData"))
+        file = file.path( working.dir, "data/Detectors_bear_", DATE, ".RData"))
 
   
   
@@ -679,7 +681,7 @@ makeRovquantData_bear <- function(
   ## ------     6.3. SAVE FILTERED DATA ----- 
 
   save( data.alive, data.dead,
-        file = file.path( working_dir, paste0("data/FilteredData_bear_", DATE, ".RData")))
+        file = file.path( working.dir, paste0("data/FilteredData_bear_", DATE, ".RData")))
   
   
     
@@ -691,7 +693,7 @@ makeRovquantData_bear <- function(
     
     ## ------     7.1. FILTER DATA BY SEX -----
     
-    load(file.path( working_dir, paste0("data/FilteredData_bear_", DATE, ".RData")))
+    load(file.path( working.dir, paste0("data/FilteredData_bear_", DATE, ".RData")))
     
     data.alive$myData.sp <- data.alive$myData.sp %>%
       dplyr::filter(Sex %in% thisSex)
@@ -1168,7 +1170,7 @@ makeRovquantData_bear <- function(
             nimParams2,
             nimInits,
             detCounties.original,
-            file = file.path( working_dir, "nimbleInFiles", thisSex,
+            file = file.path( working.dir, "nimbleInFiles", thisSex,
                               paste0("nimbleInput_", DATE, "_", c, ".RData")))
     }#c
     
