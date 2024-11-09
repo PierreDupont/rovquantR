@@ -77,7 +77,7 @@ makeRovquantData_bear <- function(
   
   ##-- Set default values for the brown bear model
   if(is.null(sampling.months)){sampling.months <- list(c(4,5,6,7,8,9,10,11))}
-  if(is.null(sampling.months)){habitat.res <- 20000} 
+  if(is.null(habitat.res)){habitat.res <- 20000} 
   if(is.null(buffer.size)){buffer.size <- 70000}
   if(is.null(max.move.dist)){max.move.dist <- 250000}
   if(is.null(detector.res)){detector.res <- 5000}
@@ -192,7 +192,7 @@ makeRovquantData_bear <- function(
                                 extension = ".csv",
                                 pattern = "all_samples") %>%
     ##-- Deal with Scandinavian characters
-    mutate(Species = stringi::stri_trans_general(Species, "Latin-ASCII")) %>%
+    dplyr::mutate(Species = stringi::stri_trans_general(Species, "Latin-ASCII")) %>%
     ##-- Filter out samples without coordinates
     dplyr::filter( !is.na(East_UTM33),
                    Species %in% c("Bjorn","Fjellrev","Gaupe","Hund","Jerv","Rodrev","Ulv"),
