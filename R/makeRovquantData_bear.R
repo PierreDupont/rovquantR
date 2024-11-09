@@ -630,10 +630,12 @@ makeRovquantData_bear <- function(
   ## ------   5. SAVE STATE-SPACE CHARACTERISTICS -----
 
   save( habitat,
-        file = file.path( working.dir, "data/Habitat_bear_", DATE, ".RData"))
+        file = file.path( working.dir, "data",
+                          paste0("Habitat_bear_", DATE, ".RData")))
   
   save( detectors,
-        file = file.path( working.dir, "data/Detectors_bear_", DATE, ".RData"))
+        file = file.path( working.dir,"data",
+                          paste0("Detectors_bear_", DATE, ".RData")))
 
   
   
@@ -681,7 +683,8 @@ makeRovquantData_bear <- function(
   ## ------     6.3. SAVE FILTERED DATA ----- 
 
   save( data.alive, data.dead,
-        file = file.path( working.dir, paste0("data/FilteredData_bear_", DATE, ".RData")))
+        file = file.path( working.dir, "data",
+                          paste0("FilteredData_bear_", DATE, ".RData")))
   
   
     
@@ -693,7 +696,8 @@ makeRovquantData_bear <- function(
     
     ## ------     7.1. FILTER DATA BY SEX -----
     
-    load(file.path( working.dir, paste0("data/FilteredData_bear_", DATE, ".RData")))
+    load(file.path( working.dir, "data",
+                    paste0("FilteredData_bear_", DATE, ".RData")))
     
     data.alive$myData.sp <- data.alive$myData.sp %>%
       dplyr::filter(Sex %in% thisSex)

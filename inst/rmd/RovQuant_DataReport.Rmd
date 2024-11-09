@@ -77,7 +77,8 @@ This document summarizes the data preparation process of the **`r species`** DNA
 # Rovbase data
 
 ```{r, data, echo = FALSE}
-load(file.path( working_dir, paste0("data/FilteredData_", engSpecies, "_", date, ".RData")))
+load(file.path( working_dir, "data",
+                paste0("FilteredData_", engSpecies, "_", date, ".RData")))
 ```
 
 ## NGS data
@@ -282,7 +283,10 @@ dead_map
 # Habitat definition
 
 ```{r, load habitat, echo = FALSE}
-load(file.path(working_dir, "data/Habitat.RData"))
+#load(file.path(working_dir, "data/Habitat.RData"))
+load(file.path( working_dir, "data",
+                paste0("Habitat_", engSpecies, "_", date, ".RData")))
+
 ```
 
 ## Habitat characteristics
@@ -334,7 +338,9 @@ The prepared habitat characteristics are available in : `r file.path(working_dir
 # Detectors definition
 
 ```{r, det grid, echo = FALSE}
-load(file.path(working_dir, "data/Detectors.RData"))
+#load(file.path(working_dir, "data/Detectors.RData"))
+load(file.path( working_dir, "data",
+                paste0("Detectors_", engSpecies, "_", date, ".RData")))
 ```
 
 ## Detectors characteristics
