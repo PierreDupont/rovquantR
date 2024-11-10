@@ -217,7 +217,7 @@ makeRovquantData <- function(
                      sex = sex,
                      date = DATE,
                      working.dir = working.dir),
-      output.dir = output.dir,
+      output_dir = output.dir,
       output_file = paste0("Data_", SPECIES, "_", DATE,".html"))
   }
   

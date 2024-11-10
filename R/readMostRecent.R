@@ -65,7 +65,7 @@ readMostRecent <- function(
   
   ##-- Identify most recent file that matches the requested extension and pattern
   lastFile <- which.max(unlist(modTime))
-  message(paste('Loading file', infiles[lastFile], 'last modified on', as.character(modTime[[lastFile]]), '.\n'))
+  message(paste0('Loading file ', infiles[lastFile], ' last modified on ', as.character(modTime[[lastFile]]), '...\n'))
   date <- as.Date(modTime[[lastFile]])
   
   ##-- read the most recent .csv file
@@ -116,7 +116,7 @@ readMostRecent.csv <- function(
   infiles <- list.files(path = path, pattern = ".csv", recursive = TRUE)
   modTime <- lapply(file.path(path, infiles), file.mtime)
   lastFile <- which.max(unlist(modTime))
-  message(paste('Loading file', infiles[lastFile], 'last modified on', as.character(modTime[[lastFile]]),'.\n'))
+  message(paste0('Loading file ', infiles[lastFile], ' last modified on ', as.character(modTime[[lastFile]]),'...\n'))
   date <- as.Date(modTime[[lastFile]])
   
   if(!is.null(fileEncoding)){
@@ -147,7 +147,7 @@ readMostRecent.excel <- function(
   infiles <- list.files(path = path, pattern = ".xls", recursive = TRUE)
   modTime <- lapply(file.path(path, infiles), file.mtime)
   lastFile <- which.max(unlist(modTime))
-  message(paste('Loading file', infiles[lastFile], 'last modified on', as.character(modTime[[lastFile]]),'.\n'))
+  message(paste0('Loading file ', infiles[lastFile], ' last modified on ', as.character(modTime[[lastFile]]),'...\n'))
   date <- as.Date(modTime[[lastFile]])
   data <- readxl::read_excel(path = file.path(path,infiles[lastFile]), ...)
   if(returnDate) {
@@ -172,7 +172,7 @@ readMostRecent.RData <- function(
   infiles <- list.files(path = path, pattern = pattern, recursive = TRUE)
   modTime <- lapply(file.path(path, infiles), file.mtime)
   lastFile <- which.max(unlist(modTime))
-  message(paste('Loading file', infiles[lastFile], 'last modified on', as.character(modTime[[lastFile]]),'.\n'))
+  message(paste0('Loading file ', infiles[lastFile], ' last modified on ', as.character(modTime[[lastFile]]),'...\n'))
   date <- as.Date(modTime[[lastFile]])
   fileName <- file.path(path,infiles[lastFile])
   loadRData <- function(fileName,...){

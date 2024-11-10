@@ -4,7 +4,7 @@ params:
   years: !r 2012:as.numeric(format(Sys.Date(), "%Y"))
   sex: c("Hann","Hunn")
   date: !r Sys.Date()   
-  working_dir: !r getwd()
+  working.dir: !r getwd()
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
 subtitle: "RovQuant - OPSCR Data Preparation"
 output:
@@ -29,7 +29,7 @@ years <- if(is.null(params$years)){
 date <- params$date
 n.years <- length(years)
 species <- params$species
-working_dir <- params$working_dir
+working.dir <- params$working.dir
 
 if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
   engSpecies <- "bear"
@@ -77,7 +77,7 @@ This document summarizes the data preparation process of the **`r species`** DNA
 # Rovbase data
 
 ```{r, data, echo = FALSE}
-load(file.path( working_dir, "data",
+load(file.path( working.dir, "data",
                 paste0("FilteredData_", engSpecies, "_", date, ".RData")))
 ```
 
@@ -283,8 +283,8 @@ dead_map
 # Habitat definition
 
 ```{r, load habitat, echo = FALSE}
-#load(file.path(working_dir, "data/Habitat.RData"))
-load(file.path( working_dir, "data",
+#load(file.path(working.dir, "data/Habitat.RData"))
+load(file.path( working.dir, "data",
                 paste0("Habitat_", engSpecies, "_", date, ".RData")))
 
 ```
@@ -331,15 +331,15 @@ for(c in 1:L){
 }#c
 ```
 
-The prepared habitat characteristics are available in : `r file.path(working_dir, "data/Habitat.RData")`
+The prepared habitat characteristics are available in : `r file.path(working.dir, "data/Habitat.RData")`
 
 ------------------------------------------------------------------------
 
 # Detectors definition
 
 ```{r, det grid, echo = FALSE}
-#load(file.path(working_dir, "data/Detectors.RData"))
-load(file.path( working_dir, "data",
+#load(file.path(working.dir, "data/Detectors.RData"))
+load(file.path( working.dir, "data",
                 paste0("Detectors_", engSpecies, "_", date, ".RData")))
 ```
 
@@ -393,10 +393,10 @@ for(c in 1:L){
 
 ```{r, det data, echo = FALSE}
 ##-- list directories containing input files
-dirNames <- list.dirs(file.path(working_dir, "nimbleInFiles"), full.names = F, recursive = F)
+dirNames <- list.dirs(file.path(working.dir, "nimbleInFiles"), full.names = F, recursive = F)
 
 ##-- path to inupt files
-dirList <- paste0(working_dir, "/nimbleInFiles/",dirNames)
+dirList <- paste0(working.dir, "/nimbleInFiles/",dirNames)
 
 ##-- Load different input files in a list
 inputs <- lapply( dirList,
