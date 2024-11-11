@@ -53,68 +53,69 @@ processRovquantOutput <- function(
   
   ##-- miscellanious
   print.report = TRUE,
-  Rmd_template = NULL,
-  output_dir = NULL
+  Rmd.template = NULL,
+  output.dir = NULL
 ) {
+
   
-  ##-- Check species and set corresponding sampling period
-  if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
-    
-    SPECIES <- "Brown bear"
-    
-    ##-- Extract the date from the last cleaned data file
-    DATE <- getMostRecent( 
-      path = file.path(working.dir,"data"),
-      pattern = "CleanData_bear")
+  ##---- 1. BROWN BEAR RESULTS PROCESSING -----
+  
+  if(sum(grep("bear", species, ignore.case = T))>0|
+     sum(grep("bjørn", species, ignore.case = T))>0|
+     sum(grep("bjorn", species, ignore.case = T))>0){
     
     ##-- Process the model output
     out <- processRovquantOutput_bear(
-      ##-- paths
-      data.dir = data.dir,
-      working.dir = working.dir,
-      
-      ##-- MCMC processing
-      nburnin = 0,
-      
-      ##-- Density extraction
-      niter = 100,
-      extraction.res = 5000)
+      data.dir,
+      working.dir,
+      nburnin,
+      niter,
+      extraction.res)
   } else {
     message("Come back some other time for wolves and wolverines...or any other species")
   }
+  
+  
 
+  ##---- 2. WOLF RESULTS PROCESSING -----
+  
   # if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
   #   out <- processRovquantOutput_wolf(...)
   # }
+  
+  
+  
+  ##---- 3. WOLVERINE RESULTS PROCESSING -----
   
   # if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
   #   out <- processRovquantOutput_wolverine(...)
   # }
   
   
+  
+  
+  ##---- 4. PRINT REPORT -----
+  
   if(print.report){
     
     ##-- Find the .rmd template for the report.
-    if(is.null(Rmd_template)){
-      Rmd_template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
-      if(!file.exists(Rmd_template)) {
-        stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd_template" argument.')
+    if(is.null(Rmd.template)){
+      Rmd.template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
+      if(!file.exists(Rmd.template)) {
+        stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
       } 
     }
     
     ##-- Find the directory to print the report.
-    if(is.null(output_dir)){
-      output_dir <- working.dir
-    }
-
+    if(is.null(output.dir)){ output.dir <- file.path(working.dir, "reports") }
+    
     ##-- Clean the data and print report
     rmarkdown::render(
-      input = Rmd_template,
-      params = list( species = SPECIES,
-                     years = 2020:2023,
+      input = Rmd.template,
+      params = list( species = out$SPECIES,
+                     years = out$YEARS,
                      working.dir = working.dir),
-      output_dir = output_dir,
-      output_file = paste0("Results_", SPECIES, "_", DATE,".html"))
+      output_dir = output.dir,
+      output_file = paste0("Results_", out$SPECIES, "_", out$DATE,".html"))
   }
-  return(out)
 }

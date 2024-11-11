@@ -34,10 +34,13 @@
 #' @rdname processRovquantOutput_bear
 #' @export
 processRovquantOutput_bear <- function(
-  data.dir = "./Data",
-  working.dir = NULL,
+  ##-- paths
+  data.dir = getwd(),
+  working.dir = getwd(),
+  ##-- MCMC
   nburnin = 0,
   niter = 100,
+  ##-- Density 
   extraction.res = 5000
 ){
   ## ------ 0. BASIC SET-UP ------
@@ -96,7 +99,7 @@ processRovquantOutput_bear <- function(
           extraction.res <- 20000
         }}}}
   
-  years <- dimnames(detectors$covariates)[[3]]
+  years <- as.numeric(dimnames(detectors$covariates)[[3]])
   n.years <- length(years) 
   
   
@@ -172,13 +175,13 @@ processRovquantOutput_bear <- function(
                    dim(resultsSXYZ_M$sims.list$sxy)[1])
     
     ##-- sxy
-    resultsSXYZ_MF$sims.list$sxy <- abind(resultsSXYZ_M$sims.list$sxy[1:minIter, , , ],
+    resultsSXYZ_MF$sims.list$sxy <- abind::abind(resultsSXYZ_M$sims.list$sxy[1:minIter, , , ],
                                           resultsSXYZ_F$sims.list$sxy[1:minIter, , , ],
                                           along = 2)
     dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x","y")
     
     ##-- z
-    resultsSXYZ_MF$sims.list$z <- abind(resultsSXYZ_M$sims.list$z[1:minIter, , ],
+    resultsSXYZ_MF$sims.list$z <- abind::abind(resultsSXYZ_M$sims.list$z[1:minIter, , ],
                                         resultsSXYZ_F$sims.list$z[1:minIter, , ],
                                         along = 2)
     
@@ -246,7 +249,7 @@ processRovquantOutput_bear <- function(
   }
   
   ##-- Calculate density only if necessary
-  if(file.path( working.dir, "data", paste0("Density_bear_", DATE, ".RData"))){
+  if(file.exists(file.path(working.dir, "data", paste0("Density_bear_", DATE, ".RData")))){
     
     message("## Loading pre-processed population density...")
     load(file.path( working.dir, "data", paste0("Density_bear_", DATE, ".RData")))
@@ -2997,4 +3000,8 @@ processRovquantOutput_bear <- function(
   #         file = file.path(WDTables, "TableParametersOthers_classic.tex"))
   # }
   
+  
+  return(list( SPECIES = "bear", 
+               DATE = DATE,
+               YEARS = years))
 }

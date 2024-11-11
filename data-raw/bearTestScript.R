@@ -30,7 +30,7 @@ gc()
 
 ## ------ IMPORT REQUIRED LIBRARIES ------
 
-# devtools::install_github("PierreDupont/rovquantR")
+devtools::install_github("PierreDupont/rovquantR")
 ## Ctrl + Shift + F10 (to restart R session)
 library(rovquantR)
 library(nimbleSCR)
@@ -157,14 +157,7 @@ processRovquantOutput(
   ##-- paths
   species = "bear",
   data.dir = data.dir,
-  working.dir = working.dir,
-  ##-- MCMC processing
-  nburnin = 0,
-  ##-- Density extraction
-  niter = 100,
-  extraction.res = 5000,
-  ##-- miscellanious
-  print.report = TRUE)
+  working.dir = working.dir)
 
 
 ##------------------------------------------------------------------------------

@@ -2,7 +2,7 @@
 params:
   species: "bear"
   years: 2020:2023
-  working_dir: "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test2"
+  working.dir: !r getwd()
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
 subtitle : "RovQuant - OPSCR Results"
 output:

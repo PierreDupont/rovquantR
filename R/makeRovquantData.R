@@ -84,7 +84,8 @@ makeRovquantData <- function(
 ) {
   
   ##---- 1. BROWN BEAR DATA PREPARATION -----
-  ##-- Check species and set corresponding sampling period
+  
+  ##-- Check species and use corresponding function
   if(sum(grep("bear", species, ignore.case = T))>0|
      sum(grep("bjørn", species, ignore.case = T))>0|
      sum(grep("bjorn", species, ignore.case = T))>0){
@@ -120,8 +121,9 @@ makeRovquantData <- function(
   
   
   
-  # ##---- 2. WOLF DATA PREPARATION -----
-  # ##-- Check species and set corresponding sampling period
+  ##---- 2. WOLF DATA PREPARATION -----
+  #
+  # ##-- Check species and use corresponding function
   # if(sum(grep("wolf", species, ignore.case = T))>0|
   #    sum(grep("wolves", species, ignore.case = T))>0|
   #    sum(grep("ulv", species, ignore.case = T))>0){
@@ -154,10 +156,12 @@ makeRovquantData <- function(
   #     max.det.dist,
   #     resize.factor)
   # }
-  # 
-  # 
-  # 
-  # ##---- 3. WOLVERINE DATA PREPARATION -----
+
+  
+  
+  ##---- 3. WOLVERINE DATA PREPARATION -----
+  #
+  # ##-- Check species and use corresponding function
   # if(sum(grep("wolverine", species, ignore.case = T))>0|
   #    sum(grep("jerv", species, ignore.case = T))>0|
   #    sum(grep("järv", species, ignore.case = T))>0){
@@ -194,6 +198,7 @@ makeRovquantData <- function(
   
   
   ##---- 4. PRINT REPORT -----
+  
   if(print.report){
     
     ##-- Find the .rmd template for the report.
@@ -221,5 +226,4 @@ makeRovquantData <- function(
       output_file = paste0("Data_", out$SPECIES, "_", out$DATE,".html"))
   }
   
-  #return(out)
-}
+  }
