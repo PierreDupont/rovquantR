@@ -30,7 +30,7 @@ gc()
 
 ## ------ IMPORT REQUIRED LIBRARIES ------
 
-devtools::install_github("PierreDupont/rovquantR")
+# devtools::install_github("PierreDupont/rovquantR")
 ## Ctrl + Shift + F10 (to restart R session)
 library(rovquantR)
 library(nimbleSCR)
@@ -71,18 +71,6 @@ makeRovquantData(
   data.dir = data.dir,
   working.dir = working.dir)
 
-#   ##-- data
-#   sex = c("Hann","Hunn"),
-#   aug.factor = 2,
-#   ##-- habitat
-#   habitat.res = 20000, 
-#   buffer.size = 50000,
-#   max.move.dist = 250000,
-#   ##-- detectors
-#   detector.res = 5000,
-#   subdetector.res = 1000,
-#   max.det.dist = 70000)
-
 
 
 ##------------------------------------------------------------------------------
@@ -91,7 +79,7 @@ makeRovquantData(
 ## -----   1. Females ------
 
 ##-- List all prepared input files
-inputFiles <- list.files(file.path(working.dir, "nimbleInFiles/Hunn"),
+inputFiles <- list.files(file.path( working.dir, "nimbleInFiles/Hunn"),
                          full.names = T)
 
 ##-- Load the first one

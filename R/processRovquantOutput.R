@@ -15,9 +15,9 @@
 #' }
 #' 
 #' @param species A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.
-#' @param data_dir A \code{path} to the directory containing the clean Rovbase data,
+#' @param data.dir A \code{path} to the directory containing the clean Rovbase data,
 #'  as prepared by \code{cleanRovBaseData}.
-#' @param working_dir A \code{path} to the directory for this analysis containing
+#' @param working.dir A \code{path} to the directory for this analysis containing
 #'  the \code{nimbleInputFiles} folder to store the prepared data.  
 #' @param nburnin An \code{integer} denoting the number of MCMC  dead recovery should be included (TRUE) or not (FALSE)
 #' @param niter A \code{logical} Whether dead recovery should be included (TRUE) or not (FALSE)
@@ -41,8 +41,8 @@
 processRovquantOutput <- function(
   ##-- paths
   species = c("bear","wolf","wolverine"),
-  data_dir = "./Data",
-  working_dir = NULL,
+  data.dir = "./Data",
+  working.dir = NULL,
   
   ##-- MCMC processing
   nburnin = 0,
@@ -64,14 +64,14 @@ processRovquantOutput <- function(
     
     ##-- Extract the date from the last cleaned data file
     DATE <- getMostRecent( 
-      path = file.path(working_dir,"data"),
-      pattern = "Data_bear")
+      path = file.path(working.dir,"data"),
+      pattern = "CleanData_bear")
     
     ##-- Process the model output
     out <- processRovquantOutput_bear(
       ##-- paths
-      data_dir = data_dir,
-      working_dir = working_dir,
+      data.dir = data.dir,
+      working.dir = working.dir,
       
       ##-- MCMC processing
       nburnin = 0,
@@ -104,7 +104,7 @@ processRovquantOutput <- function(
     
     ##-- Find the directory to print the report.
     if(is.null(output_dir)){
-      output_dir <- working_dir
+      output_dir <- working.dir
     }
 
     ##-- Clean the data and print report
@@ -112,7 +112,7 @@ processRovquantOutput <- function(
       input = Rmd_template,
       params = list( species = SPECIES,
                      years = 2020:2023,
-                     working_dir = working_dir),
+                     working.dir = working.dir),
       output_dir = output_dir,
       output_file = paste0("Results_", SPECIES, "_", DATE,".html"))
   }

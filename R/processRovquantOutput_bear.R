@@ -5,8 +5,8 @@
 #' and processes MCMC outputs from NIMBLE models and produces figures,
 #' tables and rasters of interest (e.g. population density maps)
 #' 
-#' @param data_dir A \code{path}
-#' @param working_dir A \code{path}
+#' @param data.dir A \code{path}
+#' @param working.dir A \code{path}
 #' @param nburnin An \code{integer} denoting the number of iterations to be removed from each MCMC as burnin.
 #' @param niter An \code{integer} denoting the number of MCMC iterations to be used for density extraction.
 #' @param extraction.res A \code{integer} denoting the raster resolution for density extraction.
@@ -34,35 +34,41 @@
 #' @rdname processRovquantOutput_bear
 #' @export
 processRovquantOutput_bear <- function(
-  data_dir = "./Data",
-  working_dir = NULL,
+  data.dir = "./Data",
+  working.dir = NULL,
   nburnin = 0,
   niter = 100,
   extraction.res = 5000
 ){
   ## ------ 0. BASIC SET-UP ------
-  if(is.null(working_dir)){working_dir <- getwd()}
+  if(is.null(working.dir)){working.dir <- getwd()}
   
+  ##-- Extract date from the last cleaned data file
+  DATE <- getMostRecent( 
+    path = file.path(working.dir, "data"),
+    pattern = "CleanData_bear")
   
   
   ## ------ 1. LOAD NECESSARY INPUTS -----
   ##-- Females
-  load(list.files(file.path(working_dir, "NimbleInFiles/Hunn"), full.names = T)[1])
+  load(list.files(file.path(working.dir, "NimbleInFiles/Hunn"), full.names = T)[1])
   nimDataF <- nimData
   nimInitsF <- nimInits
   
   ##-- Males
-  load(list.files(file.path(working_dir, "NimbleInFiles/Hann"), full.names = T)[1])
+  load(list.files(file.path(working.dir, "NimbleInFiles/Hann"), full.names = T)[1])
   nimDataM <- nimData
   nimInitsM <- nimInits
   
   ##-- Habitat
   ##-- WE MAY WANT TO ADD WARNINGS HERE ???
-  load(file.path(working_dir, "data/Habitat.RData"))
+  load(file.path( working.dir, "data",
+                  paste0("Habitat_bear_", DATE, ".RData")))
   
   ##-- Detectors
   ##-- WE MAY WANT TO ADD WARNINGS HERE ???
-  load(file.path(working_dir, "data/Detectors.RData"))
+  load(file.path( working.dir, "data",
+                  paste0("Detectors_bear_", DATE, ".RData")))
   
   ##-- Habitat Rasters
   if(extraction.res <= 1000){
@@ -99,16 +105,16 @@ processRovquantOutput_bear <- function(
   ## ------ 2. PROCESS MCMC SAMPLES -----
   message("## Processing model MCMC outputs...")
   
-  if(file.exists(file.path(working_dir, "data/MCMC.RData"))){
-    load(file.path(working_dir, "data/MCMC.RData"))
+  if(file.exists(file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))){
+    load(file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
   } else {
     ## ------   2.1. FEMALES -----
     ##-- Compile MCMC bites
-    nimOutput_F <- collectMCMCbites( path = file.path(working_dir, "NimbleOutFiles/Hunn"),
+    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/Hunn"),
                                      burnin = nburnin)
     
     ##-- Traceplots
-    grDevices::pdf(file.path(working_dir, "figures/traceplots_F.pdf"))
+    grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
     plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
     grDevices::dev.off()
     
@@ -125,18 +131,18 @@ processRovquantOutput_bear <- function(
       scaleToGrid = FALSE)$coordsDataScaled
     
     ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
-    results_F$sims.list$sigma <- results_F$sims.list$sigma * res(habitat$habitat.r)[1]
-    results_F$sims.list$tau <- results_F$sims.list$tau * res(habitat$habitat.r)[1]
+    results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
+    results_F$sims.list$tau <- results_F$sims.list$tau * raster::res(habitat$habitat.r)[1]
     
     
     
     ## ------   2.2. MALES -----
     ##-- Compile MCMC bites
-    nimOutput_M <- collectMCMCbites( path = file.path(working_dir, "NimbleOutFiles/Hann"),
+    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/Hann"),
                                      burnin = nburnin)
     
     ##-- Traceplots
-    grDevices::pdf(file.path(working_dir, "figures/traceplots_M.pdf"))
+    grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
     plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
     dev.off()
     
@@ -153,8 +159,8 @@ processRovquantOutput_bear <- function(
       scaleToGrid = FALSE)$coordsDataScaled
     
     ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
-    results_M$sims.list$sigma <- results_M$sims.list$sigma * res(habitat$habitat.r)[1]
-    results_M$sims.list$tau <- results_M$sims.list$tau * res(habitat$habitat.r)[1]
+    results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
+    results_M$sims.list$tau <- results_M$sims.list$tau * raster::res(habitat$habitat.r)[1]
     
     
     
@@ -188,7 +194,7 @@ processRovquantOutput_bear <- function(
     
     ##-- SAVE AND LOAD DATA
     save( results_F, results_M, resultsSXYZ_MF,
-          file = file.path(working_dir, "data/MCMC.RData"))
+          file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
   }
   
   
@@ -240,11 +246,10 @@ processRovquantOutput_bear <- function(
   }
   
   ##-- Calculate density only if necessary
-  if(file.exists(file.path(working_dir, "data/Density.RData"))){
+  if(file.path( working.dir, "data", paste0("Density_bear_", DATE, ".RData"))){
     
     message("## Loading pre-processed population density...")
-    load(file.path(working_dir, "data/Density.RData"))
-    
+    load(file.path( working.dir, "data", paste0("Density_bear_", DATE, ".RData")))
   } else {
     
     message("## Extracting population density... \n## This might take a while...")
@@ -377,7 +382,7 @@ processRovquantOutput_bear <- function(
           spaceUSED,
           spaceUSEDF,
           spaceUSEDM,
-          file = file.path( working_dir, "data/Density.RData"))
+          file = file.path( working.dir, "data", paste0("Density_bear_", DATE, ".RData")))
   }
   
   
@@ -401,7 +406,7 @@ processRovquantOutput_bear <- function(
     mask = rrCombined,
     background = COUNTRIES[1,],
     type = c("all"),# "last.year", "time.series"),
-    path = file.path(working_dir, "figures"),
+    path = file.path(working.dir, "figures"),
     name = "AC_Density")
   
   ##-- UD-density maps
@@ -412,7 +417,7 @@ processRovquantOutput_bear <- function(
     mask = rrCombined,
     background = COUNTRIES[1,],
     type = c("all"),
-    path = file.path(working_dir, "figures"),
+    path = file.path(working.dir, "figures"),
     name = "UD_Density")
   
   
@@ -458,7 +463,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------       1.1.1. AC-Density ------
-  # pdf(file = file.path(working_dir, "figures/AC_DensityMaps.pdf"),
+  # pdf(file = file.path(working.dir, "figures/AC_DensityMaps.pdf"),
   #     width = 12, height = 8)
   # 
   # ##-- Set color scale
@@ -512,7 +517,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------       1.1.2. UD-Density ------
-  # pdf(file = file.path(working_dir, "figures/UD_DensityMaps.pdf"),
+  # pdf(file = file.path(working.dir, "figures/UD_DensityMaps.pdf"),
   #     width = 12, height = 8)
   # 
   # ##-- Set color scale
@@ -567,7 +572,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------       1.1.3. LAST YEAR SUMMARY ------
-  # pdf(file = file.path(working_dir, "figures/UD_DensityMaps_LastYear.pdf"),
+  # pdf(file = file.path(working.dir, "figures/UD_DensityMaps_LastYear.pdf"),
   #     width = 8, height = 8)
   # 
   # t <- length(years)
@@ -611,9 +616,9 @@ processRovquantOutput_bear <- function(
   colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
   
   ##-- Plot N  
-  # pdf(file = file.path(working_dir, "figures/Abundance_TimeSeries.pdf"),
+  # pdf(file = file.path(working.dir, "figures/Abundance_TimeSeries.pdf"),
   #     width = 12, height = 8.5)
-  grDevices::png(filename = file.path(working_dir, "figures/Abundance_TimeSeries.png"),
+  grDevices::png(filename = file.path(working.dir, "figures/Abundance_TimeSeries.png"),
                  width = 12, height = 8.5, units = "in", pointsize = 12,
                  res = 300, bg = NA)
   
@@ -696,7 +701,7 @@ processRovquantOutput_bear <- function(
   # message("## Plotting vital rates...")
   # 
   # ## ------       1.3.1. SURVIVAL ------
-  # pdf(file = file.path(working_dir, "figures/SurvivalBars_classic.pdf"),
+  # pdf(file = file.path(working.dir, "figures/SurvivalBars_classic.pdf"),
   #     width = 10, height = 6)
   # 
   # nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),
@@ -775,7 +780,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ##-- Plot bars
-  # pdf(file = file.path(working_dir, "figures", paste0("MortalityBars_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("MortalityBars_classic.pdf")),
   #     width = 10, height = 9)
   # 
   # nf <- layout(rbind(c(3,7,6),
@@ -831,7 +836,7 @@ processRovquantOutput_bear <- function(
   # 
   # ## ------       1.3.3. RECRUITMENT ------
   # ## ------         1.3.3.1. PLOT PER CAPITA RECRUITMENT -----
-  # pdf(file = file.path(working_dir, "figures", paste0("NbRecruitsPerCapita_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("NbRecruitsPerCapita_classic.pdf")),
   #     width = 10, height = 8)
   # 
   # ##-- PER CAPITA RECRUITMENT
@@ -873,7 +878,7 @@ processRovquantOutput_bear <- function(
   #   print(t)
   # }#t
   # 
-  # pdf(file = file.path(working_dir, "figures", paste0("NumRecruitTotal_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("NumRecruitTotal_classic.pdf")),
   #     width = 10, height = 6)
   # 
   # nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),
@@ -954,7 +959,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------       1.4.1. PLOT RECRUITS -----
-  # pdf(file = file.path(working_dir, "figures", paste0("NumRecruits_bars_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("NumRecruits_bars_classic.pdf")),
   #     width = 12, height = 8.5)
   # par(mar = c(5,5,1,1))
   # plot(-1000,
@@ -1009,7 +1014,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------       1.4.2. PLOT SURVIVORS -----
-  # pdf(file = file.path(working_dir, "figures", paste0("NumSurvival_bars_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("NumSurvival_bars_classic.pdf")),
   #     width = 12, height = 8.5)
   # par(mar = c(5,5,1,1))
   # plot(-1000,
@@ -1065,7 +1070,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------       1.4.3. PLOT IMMIGRANTS -----
-  # pdf(file = file.path(working_dir, "figures", paste0("NumImmigrants_bars_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("NumImmigrants_bars_classic.pdf")),
   #     width = 12, height = 8.5)
   # par(mar = c(5,5,1,1))
   # plot(-1000,
@@ -1117,7 +1122,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------       1.4.4. PLOT EMIGRANTS -----
-  # pdf(file = file.path(working_dir, "figures", paste0("NumEmigrants_bars_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("NumEmigrants_bars_classic.pdf")),
   #     width = 12, height = 8.5)
   # par(mar = c(5,5,1,1))
   # plot(-1000,
@@ -1173,7 +1178,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------       1.4.5. PLOT ALL -----
-  # pdf(file = file.path(working_dir, "figures", paste0("NumFluxes_bars_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("NumFluxes_bars_classic.pdf")),
   #     width = 12, height = 8.5)
   # par(mfrow = c(2,2))
   # par(mar = c(5,5,1,1))
@@ -1323,7 +1328,7 @@ processRovquantOutput_bear <- function(
   # print("## plotting p0...")
   # 
   # ## ------       1.5.1. p0 bars ------
-  # pdf(file = file.path(working_dir, "figures", paste0("p0_mod_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("p0_mod_classic.pdf")),
   #     width = 8, height = 12)
   # 
   # nf <- layout(rbind(c(1,2),
@@ -1378,7 +1383,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------       1.5.2. p0 maps ------
-  # pdf(file = file.path(working_dir, "figures", paste0("p0_map_mod_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("p0_map_mod_classic.pdf")),
   #     width = 10, height = 6)
   # for(t in 1:n.years){
   #   par(mfrow = c(1,2))
@@ -1418,7 +1423,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------       1.5.3. p0 betas ------
-  # pdf(file = file.path(working_dir, "figures", paste0("p0_beta_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("p0_beta_classic.pdf")),
   #     width = 8, height = 4)
   # 
   # nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),
@@ -1548,17 +1553,17 @@ processRovquantOutput_bear <- function(
   # ## ------       1.6.4. SAVE DETECTABILITY OBJECTS ------
   # save(DetectabilityRegionsF,
   #      DetectabilityRegionsM,
-  #      file = file.path( working_dir, "figures",
+  #      file = file.path( working.dir, "figures",
   #                        paste0("Detectability5km_classic.RData")))
   # 
-  # # load(file.path( working_dir, "figures",
+  # # load(file.path( working.dir, "figures",
   # #                 paste0("Density5km_classic.RData")))
   # 
   # 
   # 
   # 
   # ## ------       1.6.3. PLOT DETECTABILITY MAPS -----
-  # pdf(file = file.path(working_dir, "figures", paste0("Detectability_maps.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("Detectability_maps.pdf")),
   #     width = 10, height = 6)
   # 
   # ##-- Set color scale
@@ -1640,7 +1645,7 @@ processRovquantOutput_bear <- function(
   # 
   # ## ------     1.7. SEX-RATIO ------
   # ## ------       1.7.1. SEX-RATIO BARS ------
-  # pdf(file = file.path(working_dir, "figures", paste0("SexRatio_bars_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("SexRatio_bars_classic.pdf")),
   #     width = 12, height = 8.5)
   # par(mar = c(5,5,1,1))
   # plot(-1000,
@@ -1683,7 +1688,7 @@ processRovquantOutput_bear <- function(
   # }#t
   # 
   # 
-  # pdf(file = file.path(working_dir, "figures", paste0("SexRatio_Maps_classic.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("SexRatio_Maps_classic.pdf")),
   #     width = 12, height = 8)
   # 
   # ##-- Set color scale
@@ -1754,7 +1759,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # 
-  #   pdf(file = file.path(working_dir, "figures", paste0("SexRatio_Maps_smooth_",SF,".pdf")),
+  #   pdf(file = file.path(working.dir, "figures", paste0("SexRatio_Maps_smooth_",SF,".pdf")),
   #       width = 12, height = 8)
   # 
   #   ##-- Set color scale
@@ -1844,7 +1849,7 @@ processRovquantOutput_bear <- function(
   # }#b
   # 
   # 
-  # pdf(file = file.path(working_dir, "figures", paste0("SexRatio_Bands_1.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("SexRatio_Bands_1.pdf")),
   #     width = 12, height = 8)
   # 
   # ##-- layout
@@ -1935,7 +1940,7 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ##-- Calculate sex-ratio per band
-  # pdf(file = file.path(working_dir, "figures", paste0("SexRatio_Bands_2.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("SexRatio_Bands_2.pdf")),
   #     width = 12, height = 8)
   # 
   # ##-- layout
@@ -2009,7 +2014,7 @@ processRovquantOutput_bear <- function(
   # 
   # ## ------         1.7.4.3. SEX-RATIO Histograms WITH DISTANCE ------
   # ##-- Calculate sex-ratio per band
-  # # pdf(file = file.path(working_dir, "figures", paste0("SexRatio_Histograms.pdf")),
+  # # pdf(file = file.path(working.dir, "figures", paste0("SexRatio_Histograms.pdf")),
   # #     width = 12, height = 8)
   # 
   # 
@@ -2084,7 +2089,7 @@ processRovquantOutput_bear <- function(
   # max <- max(unlist(lapply(ACDiff, function(x) max(x[], na.rm = T))))
   # cuts <- seq(min, max, length.out = 100) ##-- set breaks
   # 
-  # pdf(file = file.path(working_dir, "figures", paste0("AC_DifferenceMaps.pdf")),
+  # pdf(file = file.path(working.dir, "figures", paste0("AC_DifferenceMaps.pdf")),
   #     width = 12, height = 8)
   # 
   # ##-- layout
@@ -2909,9 +2914,9 @@ processRovquantOutput_bear <- function(
   # 
   #   for(s in 1:2){
   #     if(s == 1){results <- results_F} else {results <- results_M}
-  #     TableOthers["tau",sex[s]] <- getCleanEstimates(results$sims.list$tau/res(habitat$habitat.r)[1], moment = "median")
+  #     TableOthers["tau",sex[s]] <- getCleanEstimates(results$sims.list$tau/raster::res(habitat$habitat.r)[1], moment = "median")
   #     TableOthers[which(parameters == "betaDead"),sex[s]] <- getCleanEstimates(results$sims.list$betaDens,moment = "median")
-  #     TableOthers["sigma",sex[s]] <- getCleanEstimates(results$sims.list$sigma/res(habitat$habitat.r)[1],moment = "median")
+  #     TableOthers["sigma",sex[s]] <- getCleanEstimates(results$sims.list$sigma/raster::res(habitat$habitat.r)[1],moment = "median")
   #     TableOthers[which(parameters == "betaDet"),sex[s]] <- apply(results$sims.list$betaDet, 2,function(x) getCleanEstimates(x,moment = "median"))
   #   }#s
   # 
