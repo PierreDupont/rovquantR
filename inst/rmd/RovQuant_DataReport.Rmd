@@ -21,15 +21,12 @@ output:
 ---
 
 ```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
-years <- if(is.null(params$years)){ 
-  2012:as.numeric(format(Sys.Date(), "%Y"))
-} else { 
-  params$years
-}
-date <- params$date
-n.years <- length(years)
 species <- params$species
+years <- params$years
+sex <- params$sex
+date <- params$date
 working.dir <- params$working.dir
+n.years <- length(years)
 
 if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
   engSpecies <- "bear"
