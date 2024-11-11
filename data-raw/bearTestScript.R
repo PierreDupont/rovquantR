@@ -67,9 +67,10 @@ cleanRovbaseData_bear(
 makeRovquantData(    
   ##-- paths
   species = "bear",
+  #years = 2020:2024,
   data.dir = data.dir,
   working.dir = working.dir)
-# ,
+
 #   ##-- data
 #   sex = c("Hann","Hunn"),
 #   aug.factor = 2,
