@@ -114,6 +114,7 @@ processRovquantOutput <- function(
       input = Rmd.template,
       params = list( species = out$SPECIES,
                      years = out$YEARS,
+                     date = out$DATE,
                      working.dir = working.dir),
       output_dir = output.dir,
       output_file = paste0("Results_", out$SPECIES, "_", out$DATE,".html"))

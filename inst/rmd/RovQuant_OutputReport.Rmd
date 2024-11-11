@@ -2,6 +2,7 @@
 params:
   species: "bear"
   years: 2020:2023
+  date: !r Sys.Date()   
   working.dir: !r getwd()
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
 subtitle : "RovQuant - OPSCR Results"
@@ -78,7 +79,8 @@ This document summarizes the output processing of the [RovQuant](https://www.nmb
 # Rovbase data
 
 ```{r, data, echo = FALSE}
-load(file.path(working_dir, "data/Data.RData"))
+load(file.path( working.dir, "data",
+                paste0("FilteredData_", engSpecies, "_", date, ".RData")))
 ```
 
 
