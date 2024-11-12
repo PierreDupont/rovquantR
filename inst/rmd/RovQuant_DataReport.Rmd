@@ -20,6 +20,8 @@ output:
   word_document: default
 ---
 
+### `r Sys.Date()`
+
 ```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
 species <- params$species
 years <- params$years
@@ -63,7 +65,6 @@ COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), 
   dplyr::summarise()
 ```
 
-### `r Sys.Date()`
 
 # Introduction
 

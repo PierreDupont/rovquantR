@@ -21,8 +21,8 @@
 ##------------------------------------------------------------------------------
 ##
 ## Notes: 
+## This is based on 'rovquantR' beta version 0.2
 ##   
-##
 ##------------------------------------------------------------------------------
 rm(list = ls())
 gc()
@@ -151,7 +151,7 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 
 
 ##------------------------------------------------------------------------------
-## ----- VI. PROCESS ROVQUANT OUTPUT ------
+## ----- V. PROCESS ROVQUANT OUTPUT ------
 
 processRovquantOutput(   
   ##-- paths

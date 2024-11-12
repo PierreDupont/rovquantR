@@ -7,8 +7,8 @@ params:
   dir.in: NULL
   dir.out: NULL   
   modDate: Sys.Date()   
-#title    : "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
-#subtitle : "RovQuant - OPSCR Data Cleaning"
+title    : "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
+subtitle : "RovQuant - OPSCR Data Cleaning"
 output:
   html_document: 
     theme: "cerulean" 
@@ -22,21 +22,7 @@ output:
   word_document: default
 ---
 
-
-# `r paste(params$species, params$years[1], 'to', params$years[length(params$years)])` <a href="https://www.nmbu.no/en/research/projects/rovquant"><img src="man/figures/RovQuant.png" align="right" height="160"/></a>
-
-
-<h4 align="center">
-
-## RovQuant - OPSCR Data Cleaning
-
-## `r Sys.Date()` 
-
-</h4>
-
-
-
-
+### `r Sys.Date()` 
 
 ```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
 years <- if(is.null(params$years)){ 
@@ -76,18 +62,6 @@ COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), 
   dplyr::group_by(ISO) %>%
   dplyr::summarise()
 ```
-
-
-```{r, include = FALSE}
-knitr::opts_chunk$set(
-  collapse = TRUE,
-  comment = "#>",
-  fig.path = "man/figures/README-",
-  out.width = "100%"
-)
-```
-
-
 
 
 # Introduction
