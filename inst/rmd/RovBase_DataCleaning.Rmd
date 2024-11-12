@@ -1,14 +1,14 @@
 ---
 params:
-  years  : NULL
+  years: 2020:2023
   species: "bear"
   samplingMonths: 4:11
-  sex    : c("Hunn","Hann")  
+  sex: c("Hunn","Hann")  
   dir.in: NULL
   dir.out: NULL   
   modDate: Sys.Date()   
-title    : "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
-subtitle : "RovQuant - OPSCR Data Cleaning"
+#title    : "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
+#subtitle : "RovQuant - OPSCR Data Cleaning"
 output:
   html_document: 
     theme: "cerulean" 
@@ -21,6 +21,21 @@ output:
   pdf_document: default
   word_document: default
 ---
+
+
+# `r paste(params$species, params$years[1], 'to', params$years[length(params$years)])` <a href="https://www.nmbu.no/en/research/projects/rovquant"><img src="man/figures/RovQuant.png" align="right" height="160"/></a>
+
+
+<h4 align="center">
+
+## RovQuant - OPSCR Data Cleaning
+
+## `r Sys.Date()` 
+
+</h4>
+
+
+
 
 
 ```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
@@ -63,12 +78,21 @@ COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), 
 ```
 
 
-### `r Sys.Date()`
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+
 
 
 # Introduction
 
-This document presents the data cleaning and checking process of the **`r species`** DNA data available from [RovBase 3.0](https://rovbase.no/), as done by the [AQEG team](https://www.nmbu.no/en/projects/rovquant) as part of the data preparation steps for SCR or OPSCR analyses of the large carnivore populations of Scandinavia. In this particular instance, we focus on the **`r species`** data collected during the period **`r years[1]`** to **`r years[length(years)]`**.
+This document presents the data cleaning and checking process of the **`r species`** DNA data available from [RovBase 3.0](https://rovbase.no/), as done by the [AQEG team](https://www.nmbu.no/en/research/groups/applied-quantitative-ecology-group-aqeg) as part of the data preparation steps for SCR or OPSCR analyses of the large carnivore populations of Scandinavia. In this particular instance, we focus on the **`r species`** data collected during the period **`r years[1]`** to **`r years[length(years)]`**.
 
 For the **`r species`**, we consider a sampling period each year that extends from **`r months[unlist(samplingMonths)[1]]`** to **`r months[last(unlist(samplingMonths))]`** (inclusive).
 
