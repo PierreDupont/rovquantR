@@ -90,14 +90,6 @@ makeRovquantData <- function(
      sum(grep("bjørn", species, ignore.case = T))>0|
      sum(grep("bjorn", species, ignore.case = T))>0){
     
-    # ##-- Get clean name for the report
-    # SPECIES <- "Brown bear"
-    # 
-    # ##-- Extract date from the last cleaned data file
-    # DATE <- getMostRecent( 
-    #   path = file.path(working.dir,"data"),
-    #   pattern = "CleanData_bear")
-    
     ##-- Prepare the data
     out <- makeRovquantData_bear(
       ##-- paths

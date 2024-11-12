@@ -71,7 +71,7 @@ COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), 
 
 # Introduction
 
-This document summarizes the output processing of the [RovQuant](https://www.nmbu.no/en/projects/rovquant) analysis of the **`r species`** DNA data available from [RovBase 3.0](https://rovbase.no/).
+This document summarizes the output processing of the [RovQuant](https://www.nmbu.no/en/research/projects/rovquant) analysis of the **`r species`** DNA data available from [RovBase 3.0](https://rovbase.no/).
 
 
 

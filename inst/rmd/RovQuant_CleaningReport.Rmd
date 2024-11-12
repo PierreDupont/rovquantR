@@ -8,8 +8,8 @@ params:
   dir.in: !r getwd()
   dir.out: !r getwd() 
   date: !r Sys.Date()   
-title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
-subtitle: "RovQuant - OPSCR Data Cleaning"
+#title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
+#subtitle: "RovQuant - OPSCR Data Cleaning"
 output:
   html_document: 
     theme: "cerulean" 
@@ -22,6 +22,22 @@ output:
   pdf_document: default
   word_document: default
 ---
+
+
+# `r paste(params$species, params$years[1], 'to', params$years[length(params$years)])` <a href="https://www.nmbu.no/en/research/projects/rovquant"><img src="man/figures/RovQuant.png" align="right" height="160"/></a>
+
+
+<h4 align="center">
+
+## RovQuant - OPSCR Data Cleaning
+
+## `r Sys.Date()` 
+
+</h4>
+
+
+
+
 
 ```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
 ##-- load libraries
@@ -186,7 +202,6 @@ months = c("January","February","March","April","May","June",
            "July","August","September","October","November","December")
 ```
 
-### `r Sys.Date()`
 
 # Introduction
 
