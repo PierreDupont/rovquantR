@@ -52,6 +52,8 @@
 #'
 #' @author Pierre Dupont
 #' 
+#' @importFrom rmarkdown render
+#' 
 #' @rdname makeRovquantData
 #' @export
 makeRovquantData <- function(
@@ -90,6 +92,10 @@ makeRovquantData <- function(
      sum(grep("bjørn", species, ignore.case = T))>0|
      sum(grep("bjorn", species, ignore.case = T))>0){
     
+    engSpecies <- "bear"
+    SPECIES <- "Brown bear"
+    
+  
     ##-- Prepare the data
     out <- makeRovquantData_bear(
       ##-- paths
@@ -209,13 +215,13 @@ makeRovquantData <- function(
     ##-- Clean the data and print report
     rmarkdown::render(
       input = Rmd.template,
-      params = list( species = out$SPECIES,
+      params = list( species = SPECIES,
                      years = out$YEARS,
                      sex = out$SEX,
                      date = out$DATE,
                      working.dir = working.dir),
       output_dir = output.dir,
-      output_file = paste0("Data_", out$SPECIES, "_", out$DATE,".html"))
+      output_file = paste0("Data_", engSpecies, "_", out$DATE,".html"))
   }
   
   }

@@ -191,7 +191,7 @@ months = c("January","February","March","April","May","June",
 
 # Introduction
 
-This document presents the data cleaning and checking process of the **`r species`** DNA data available from [RovBase 3.0](https://rovbase.no/), as done by the [AQEG team](https://www.nmbu.no/en/projects/rovquant) as part of the data preparation steps for SCR or OPSCR analyses of the large carnivore populations of Scandinavia. In this particular instance, we focus on the **`r species`** data collected during the period **`r years[1]`** to **`r years[length(years)]`**.
+This document presents the data cleaning and checking process of the **`r species`** DNA data available from [RovBase 3.0](https://rovbase.no/), as done by the [AQEG team](https://www.nmbu.no/en/research/groups/applied-quantitative-ecology-group-aqeg) as part of the data preparation steps for SCR or OPSCR analyses of the large carnivore populations of Scandinavia. In this particular instance, we focus on the **`r species`** data collected during the period **`r years[1]`** to **`r years[length(years)]`**.
 
 For the **`r species`**, we consider a sampling period each year that extends from **`r months[unlist(sampling.months)[1]]`** to **`r months[last(unlist(sampling.months))]`** (inclusive).
 

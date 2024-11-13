@@ -1,60 +1,73 @@
-#' @title Brown bear dataset clean-up 
+#' @title Data set clean-up.
 #'
 #' @description
-#' \code{cleanRovbaseData_bear} is an internal function called by the \code{cleanRovbaseData} function.
-#' It identifies and loads the most recent Brown bear data downloaded from Rovbase
-#' and conducts a set of cleaning steps that include:
+#' \code{cleanRovbaseData} calls a custom Rmarkdown template that identifies and loads
+#' the most recent RovBase data available for the specified species in the specified
+#'  \code{data.dir} location, and conducts a set of data cleaning steps that include:
 #'  - removing un-identified samples
 #'  - checking sex-assignment
-#'  - removing problematic samples flagged by RovData.
+#'  - removing samples flagged as unusable by RovData/Mike
 #'
-#' @name cleanRovbaseData_bear
+#' @name cleanRovbaseData
 #' 
+#' @param data.dir the \code{path} pointing to the directory containing the raw 
+#' data from Rovbase.
+#' @param working.dir the \code{path} pointing to the working directory. By default,
+#'  the cleaned data will be stored in a subfolder of this working directory called 'data'.
 #' @param species A \code{character} string with the name of the focal species
 #'  ("bear", "wolf", or "wolverine").
 #' @param years A \code{numeric} vector containing the years of interest. 
 #' Only data for those years will be cleaned and returned.
-#' @param sampling.months A \code{list} containing the months of interest, e.g. 
-#' list(c(10:12),c(1:3)) for a sampling period extending from October to March. 
-#' @param rename.list (Optional) A named \code{character} vector used to rename raw Rovbase files (.
-#' @param data.dir the \code{path} pointing to the directory containing the raw 
-#' data from Rovbase.
-#' @param working.dir the \code{path} pointing to the working directory. 
-#' The cleaned data will be stored in the 'data' sub-folder. 
-#' The associated \code{.html} report describing the content of the clean data will 
-#' be placed in the 'report' sub-folder.
-#' @param Rmd.template the \code{path} to the \code{.rmd} template to be used for
+#' @param sex A \code{character} vector containing the sex of interest. 
+#' Can be "Hunn" for females or "Hann" for males. Default is both sexes (c("Hunn","Hann")).
+#' @param sampling.months (Optional) A \code{list} containing the sampling period months.
+#' If the sampling period overlaps two calendar years, the list should contain one element per year.
+#' (e.g. samplingMonths <- list(c(11,12), c(1,2,3,4))) for a sampling period extending from November to April of the following year.
+#' @param rename.list (Optional) A named \code{character} vector used to rename columns in the raw Rovbase files.
+#' @param Rmd.template (Optional) The \code{path} to the \code{.rmd} template to be used for
 #'  cleaning the data. By default, the \code{.rmd} template provided with the 
 #'  \code{rovquantR} package is used.  
-#' @param overwrite A \code{logical} Whether previously existing clean data should
-#' be overwritten or not (default = FALSE).
-#' 
+#' @param overwrite A \code{logical} (default = FALSE) to force ovewriting of previously existing clean data.
+#'  If FALSE, the function checks for any pre-existing clean data files and ask whether to overwrite it or not.
+#' @param output.dir (Optional) the \code{path} pointing to the directory where the \code{.html} report will be printed.
+#' By default, the \code{.html} report describing the content of the clean data will 
+#' be placed in a subfolder of the working directory (\code{working.dir}) called 'reports'.
+
 #' @return This function returns:
 #' \enumerate{
-#' \item A \code{.RData} file with the clean NGS and dead recovery data objects
-#'  for the species and period specified.
+#' \item A \code{.RData} file with the clean NGS and dead recovery data objects 
+#' for the species and period specified. The clean data file is saved as an \code{.RData} 
+#' file named using the species name and the date of extraction of the raw Rovbase data 
+#' to facilitate replicability (e.g. 'CleanData_bear_2024-08-10.RData').
 #' \item A \code{.html} report summarizing the data cleaning process. 
+#' The \code{.RData} report is using the same naming convention as the clean \code{.RData} (e.g. 'CleanData_bear_2024-08-10.html').
 #' \item Additional \code{.png} images that can be reused somewhere else.
 #' }
 #'
 #' @author Pierre Dupont
 #' 
-#' @importFrom dplyr distinct rename filter
-#' @importFrom sf st_as_sf st_crs st_set_crs st_intersects
+#' @importFrom rmarkdown render
 
 NULL
-#' @rdname cleanRovbaseData_bear
+#' @rdname cleanRovbaseData
 #' @export
-cleanRovbaseData_bear <- function(
-    species = c("bear","wolf","wolverine"),
-    years = NULL, 
-    sex = c("Hunn","Hann"),
-    sampling.months = NULL,
-    rename.list = NULL,
-    data.dir,
-    working.dir,
-    Rmd.template = NULL,
-    overwrite = FALSE){
+cleanRovbaseData <- function(
+  ##-- paths
+  data.dir,
+  working.dir,
+  
+  ##-- data
+  species = c("bear","wolf","wolverine"),
+  years = NULL, 
+  sex = c("Hunn","Hann"),
+  sampling.months = NULL,
+  rename.list = NULL,
+  
+  ##-- miscellanious
+  Rmd.template = NULL,
+  overwrite = FALSE,
+  output.dir = NULL
+) {
   
   ##----- 0. INITIAL CHECKS -----
   
@@ -133,7 +146,9 @@ cleanRovbaseData_bear <- function(
   }
   
   
-  ##-- Render .Rmd report
+  ##---- 4. CLEAN THE DATA & PRINT REPORT -----
+  
+  ##-- Find the .rmd template for the report
   if(is.null(Rmd.template)) {
     Rmd.template <- system.file("rmd", "RovQuant_CleaningReport.Rmd", package = "rovquantR")
     if (!file.exists(Rmd.template)) {
@@ -141,18 +156,25 @@ cleanRovbaseData_bear <- function(
     }
   }
   
-  rmarkdown::render(input = Rmd.template,
-                    params = list( species = SPECIES, 
-                                   years = years,
-                                   sampling.months = sampling.months,
-                                   rename.list = rename.list,
-                                   dir.in = data.dir,
-                                   dir.out = working.dir,
-                                   date = DATE),
-                    output_dir = file.path(working.dir, "reports"), 
-                    output_file = paste0("CleanData_", engSpecies, "_", DATE,".html"))
+  ##-- Find the directory to print the report
+  if(is.null(output.dir)){ output.dir <- file.path(working.dir, "reports") }
+  
+  
+  ##-- Render .Rmd report
+  rmarkdown::render(
+    input = Rmd.template,
+    params = list( species = SPECIES, 
+                   years = years,
+                   sampling.months = sampling.months,
+                   rename.list = rename.list,
+                   dir.in = data.dir,
+                   dir.out = working.dir,
+                   date = DATE),
+    output_dir = output.dir,
+    output_file = paste0("CleanData_", engSpecies, "_", DATE,".html"))
+  
 }
-#   
+
 #   ##-- Set-up list of parameters for the .Rmd report
 #   params <- list()
 #   
