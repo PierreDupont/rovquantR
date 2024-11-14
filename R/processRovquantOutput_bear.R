@@ -3001,7 +3001,8 @@ processRovquantOutput_bear <- function(
   # }
   
   
-  return(list( SPECIES = "bear", 
+  return(list( SPECIES = "Brown bear", 
+               engSpecies = "bear",
                DATE = DATE,
                YEARS = years))
 }

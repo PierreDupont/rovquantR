@@ -1185,6 +1185,7 @@ makeRovquantData_bear <- function(
   
   ## ------   8. RETURN IMPORTANT INFOS FOR REPORT ------
   return(list( SPECIES = "Brown bear",
+               engSpecies = "bear",
                YEARS = years,
                SEX = sex,
                DATE = DATE))
