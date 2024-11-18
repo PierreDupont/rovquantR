@@ -34,14 +34,17 @@ date <- params$date
 if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
   engSpecies <- "bear"
   norSpecies <- "Bjørn"
+  SPECIES <- "Brown bear"
 }
 if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
   engSpecies <- "wolf"
   norSpecies <- "Ulv"
+  SPECIES <- "Gray wolf"
 }
 if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
   engSpecies <- "wolverine"
   norSpecies <- "Jerv"
+  SPECIES <- "Wolverine"
 }
 
 months = c("January","February","March","April","May","June",
@@ -61,7 +64,6 @@ library(rovquantR)
 
 ##-- Load pre-processed habitat shapefiles
 data(COUNTRIESWaterHumans, envir = environment()) 
-
 COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
   dplyr::group_by(ISO) %>%
   dplyr::summarise()
@@ -80,36 +82,58 @@ This document summarizes the output processing of the [RovQuant](https://www.nmb
 # Rovbase data
 
 ```{r, data, echo = FALSE}
-load(file.path( working.dir, "data",
-                paste0("FilteredData_", engSpecies, "_", date, ".RData")))
+# load(file.path( working.dir, "data",
+#                 paste0("FilteredData_", engSpecies, "_", date, ".RData")))
+
+# load(file.path( working.dir, "data",
+#                 paste0("MCMC", engSpecies, "_", date, ".RData")))
+
+# load(file.path( working.dir, "data",
+#                 paste0("Density", engSpecies, "_", date, ".RData")))
 ```
 
 
+
+
+
+------------------------------------------------------------------------
+
+# OPSCR results
 
 ## Population abundance
 
 The main results of interest is population size:
 
-
-\includepdf[pages={-}]{my_pdf.pdf}
-
-```{r, abundance, include=TRUE, fig.align="center", fig.cap=c("Figure 1: Total (black) and sex-specific (blue: males, red: females) annual bear population size estimates"), echo = FALSE}
+```{r, abundance, include = TRUE, fig.align = "center", fig.cap = c("Figure 1: Total (black) and sex-specific (blue: males, red: females) annual bear population size estimates"), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
 ```
 
-```{r }
+```{r, echo = FALSE, eval = FALSE}
+# panel.upr <-  image_read_pdf(file.path(working.dir, "figures/Abundance_TimeSeries.pdf"))
+# plot(panel.upr)
+```
+
+in a table format, itlooks likes this:
+
+```{r, echo = FALSE, eval = FALSE}
 # panel.upr <-  image_read_pdf(file.path(working.dir, "figures/Abundance_TimeSeries.pdf"))
 # plot(panel.upr)
 ```
 
 
-
 ## Population density
 
-```{r, density, fig.align="center", fig.cap=c("Figure 1: Brown bear density in Norway in 2023. Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between 2020 and 2023"), echo = FALSE}
+The OPSCR model also produces population density maps. In `r years[last(years)]`, the population density of `r species`
+
+```{r, density lastYear, fig.align = "center", fig.cap = c("Figure 2: `r SPECIES` density in Norway in `r years[last(years)]`. Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between `r years[1]` and `r years[last(years)]`"), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
 ```
 
+The OPSCR model also produces population density maps. In `r years[last(years)]`, the population density of `r species`
+
+```{r, density timeSeries, fig.align = "center", fig.cap = c("Figure 3: `r SPECIES` density in Norway between `r years[1]` and `r years[last(years)]`."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
+```
 
 ------------------------------------------------------------------------
 

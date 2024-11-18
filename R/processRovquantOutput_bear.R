@@ -51,6 +51,12 @@ processRovquantOutput_bear <- function(
     path = file.path(working.dir, "data"),
     pattern = "CleanData_bear")
   
+  ##-- Initialize output list
+  out <- list( SPECIES = "Brown bear",
+               engSpecies = "bear",
+               DATE = DATE)
+  
+  
   
   ## ------ 1. LOAD NECESSARY INPUTS -----
   ##-- Females
@@ -252,7 +258,9 @@ processRovquantOutput_bear <- function(
   if(file.exists(file.path(working.dir, "data", paste0("Density_bear_", DATE, ".RData")))){
     
     message("## Loading pre-processed population density...")
+    
     load(file.path( working.dir, "data", paste0("Density_bear_", DATE, ".RData")))
+    
   } else {
     
     message("## Extracting population density... \n## This might take a while...")
@@ -390,8 +398,9 @@ processRovquantOutput_bear <- function(
   
   
   
-  ##----------------------------------------------------------------------------
-  ## ------ 1. DENSITY MAPS -----
+  ## ------ 4. FIGURES -----
+  
+  ## ------   4.1. DENSITY MAPS -----
   message("## Plotting population density maps...") 
 
   ##-- Create 5km raster for plotting
@@ -425,188 +434,8 @@ processRovquantOutput_bear <- function(
   
   
   
-  # ## ------       1.1.0. DENSITY PLOT SET-UP ------
-  # ##-- Convert densities to 100km2
-  # conversionFactor <- 100/(extraction.res/1000)^2
-  # 
-  # UD100km2 <- lapply(spaceUSED, function(x) x$MeanCell * conversionFactor)
-  # UD_F100km2 <- lapply(spaceUSEDF, function(x) x$MeanCell * conversionFactor)
-  # UD_M100km2 <- lapply(spaceUSEDM, function(x) x$MeanCell * conversionFactor)
-  # 
-  # AC100km2 <- lapply(DensityCountriesRegions, function(x) x$MeanCell * conversionFactor)
-  # AC_F100km2 <- lapply(DensityCountriesRegionsF, function(x) x$MeanCell * conversionFactor)
-  # AC_M100km2 <- lapply(DensityCountriesRegionsM, function(x) x$MeanCell * conversionFactor)
-  # 
-  # 
-  # ##-- Crop density maps to Norway
-  # ACCropped <- UDCropped <- UDCropped_F <- UDCropped_M <- list()
-  # for(t in 1:length(years)){
-  #   ACCropped[[t]] <- densityInputRegions$regions.r
-  #   ACCropped[[t]][] <- NA
-  #   ACCropped[[t]][!is.na(densityInputRegions$regions.r[])] <- AC100km2[[t]]
-  #   ACCropped[[t]][is.na(rrCombined[])] <- NA
-  # 
-  #   UDCropped[[t]] <- densityInputRegions$regions.r
-  #   UDCropped[[t]][] <- NA
-  #   UDCropped[[t]][!is.na(densityInputRegions$regions.r[])] <- UD100km2[[t]]
-  #   UDCropped[[t]][is.na(rrCombined[])] <- NA
-  # 
-  #   UDCropped_F[[t]] <- densityInputRegions$regions.r
-  #   UDCropped_F[[t]][] <- NA
-  #   UDCropped_F[[t]][!is.na(densityInputRegions$regions.r[])] <- UD_F100km2[[t]]
-  #   UDCropped_F[[t]][is.na(rrCombined[])] <- NA
-  # 
-  #   UDCropped_M[[t]] <- densityInputRegions$regions.r
-  #   UDCropped_M[[t]][] <- NA
-  #   UDCropped_M[[t]][!is.na(densityInputRegions$regions.r[])] <- UD_M100km2[[t]]
-  #   UDCropped_M[[t]][is.na(rrCombined[])] <- NA
-  #   raster::proj4string(ACCropped[[t]]) <- raster::proj4string(ACCropped[[t]]) <- st_crs(habitat$habitat.poly)
-  # }#t
-  # 
-  # 
-  # 
-  # ## ------       1.1.1. AC-Density ------
-  # pdf(file = file.path(working.dir, "figures/AC_DensityMaps.pdf"),
-  #     width = 12, height = 8)
-  # 
-  # ##-- Set color scale
-  # max <- max(unlist(lapply(ACCropped, function(x) max(x[], na.rm = T))))
-  # cuts <- seq(0, max, length.out = 100) ##-- set breaks
-  # colfunc <- colorRampPalette(c("white", "slateblue", "yellow", "orange", "red", "red"))
-  # col <- colfunc(100)
-  # 
-  # ##-- layout
-  # mx <- rbind(c(1,rep(1:6, each = 2)),
-  #             c(rep(1:6, each = 2), 6))
-  # mx <- rbind(mx, mx + 6)
-  # nf <- layout(mx,
-  #              widths = c(rep(1,ncol(mx))),
-  #              heights = rep(1,2))
-  # # layout.show(nf)
-  # par(mar = c(0,0,0,0))
-  # 
-  # ##-- Plot AC maps
-  # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
-  #   image(ACCropped[[t]], add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = grey(0.4), col = NA, add = TRUE)
-  #   mtext(text = years[t], side = 1, -20, adj=0.2, cex=1.2)
-  # 
-  #   if(t == n.years){
-  #     segments(x0 = 830000, x1 = 830000,
-  #              y0 = 6730000, y1 = 6730000 + 500000,
-  #              col = grey(0.3), lwd = 4, lend = 2)
-  #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 1.4)
-  #     plot( UDCropped[[t]],
-  #           legend.only = T,
-  #           breaks = cuts,
-  #           col = col,
-  #           legend.width = 2,
-  #           axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                            labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                            cex.axis = 1.2),
-  #           smallplot = c(0.95, 1.00, 0.2, 0.6),
-  #           legend.args = list(text = expression(paste("Individuals/100 km"^ 2)),
-  #                              side = 2, font = 1, line = 1, cex = 1))
-  #   }#if
-  #   ##-- Export rasters
-  #   writeRaster(ACCropped[[t]],
-  #               file.path(WDRasters,
-  #                         paste0("AC5kmRaster100km2_classic", years[t],".tif")),
-  #               overwrite = TRUE)
-  # }#t
-  # dev.off()
-  # 
-  # 
-  # 
-  # ## ------       1.1.2. UD-Density ------
-  # pdf(file = file.path(working.dir, "figures/UD_DensityMaps.pdf"),
-  #     width = 12, height = 8)
-  # 
-  # ##-- Set color scale
-  # max <- max(unlist(lapply(UDCropped, function(x) max(x[], na.rm = T))))
-  # cuts <- seq(0, max, length.out = 100) ##-- set breaks
-  # colfunc <- colorRampPalette(c("white", "slateblue", "yellow", "orange", "red", "red"))
-  # col <- colfunc(100)
-  # 
-  # ##-- layout
-  # mx <- rbind(c(1,rep(1:6, each = 2)),
-  #             c(rep(1:6, each = 2), 6))
-  # mx <- rbind(mx, mx + 6)
-  # nf <- layout(mx,
-  #              widths = c(rep(1,ncol(mx))),
-  #              heights = rep(1,2))
-  # #layout.show(nf)
-  # par(mar = c(0,0,0,0))
-  # 
-  # ##-- Plot UD maps
-  # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = NA, col = "gray80")
-  #   image(UDCropped[[t]], add=TRUE, breaks=c(cuts, max(cuts)+1000), col = col, legend=FALSE,)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = grey(0.4), col = NA, add=TRUE)
-  #   mtext(text = years[t], side = 1, -17, adj = 0.2, cex = 1.2, font = 2)
-  # 
-  #   if(t == n.years){
-  #     segments(x0 = 830000, x1 = 830000,
-  #              y0 = 6730000, y1 = 6730000 + 500000,
-  #              col = grey(0.3), lwd = 4, lend = 2)
-  #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 1.4)
-  #     plot( UDCropped[[t]],
-  #           legend.only = T,
-  #           breaks = cuts,
-  #           col = col,
-  #           legend.width = 2,
-  #           axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                            labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                            cex.axis = 1.2),
-  #           smallplot = c(0.95, 1.00, 0.2, 0.6),
-  #           legend.args = list(text = expression(paste("Individuals/100 km"^ 2)),
-  #                              side = 2, font = 1, line = 1, cex = 1))
-  #   }#if
-  #   ##-- Export rasters
-  #   writeRaster(UDCropped[[t]],
-  #               file.path(WDRasters,
-  #                         paste0("UD5kmRaster100km2_classic", years[t],".tif")),
-  #               overwrite = TRUE)
-  # }#t
-  # dev.off()
-  # 
-  # 
-  # 
-  # 
-  # ## ------       1.1.3. LAST YEAR SUMMARY ------
-  # pdf(file = file.path(working.dir, "figures/UD_DensityMaps_LastYear.pdf"),
-  #     width = 8, height = 8)
-  # 
-  # t <- length(years)
-  # 
-  # par(mar = c(0,0,0,0))
-  # plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = NA, col = "gray80")
-  # image( UDCropped[[t]], add = T, breaks = c(cuts, max(cuts)+1000), col = col, legend = F)
-  # plot(COUNTRIESsimpFig[1, ], border = grey(0.4), col = NA, add = TRUE)
-  # mtext(text = years[t], side = 1, -25, adj = 0.25, cex = 3, font = 2)
-  # segments(x0 = 800000, x1 = 800000,
-  #          y0 = 6650000, y1 = 6650000 + 500000,
-  #          col = grey(0.3), lwd = 4, lend = 2)
-  # text(760000, 6650000+500000/2, labels = "500 km", srt = 90, cex = 1.2)
-  # plot( UDCropped[[t]],
-  #       legend.only = T,
-  #       breaks = cuts,
-  #       col = col,
-  #       legend.width = 2,
-  #       axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                        labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                        cex.axis = 1.2),
-  #       smallplot = c(0.75, 0.78, 0.2, 0.4),
-  #       legend.args = list(text = expression(paste("Individuals/100 km"^ 2)),
-  #                          side = 2, font = 1, line = 0, cex = 1.2))
-  # dev.off()
-  # 
-  # 
-  # 
   
-  ##----------------------------------------------------------------------------
-  ## ------ 2. ABUNDANCE ------
+  ## ------   4.2. ABUNDANCE TIME SERIES ------
   message("## Plotting abundance...")
   
   ##-- Extract number of individuals detected
@@ -683,26 +512,820 @@ processRovquantOutput_bear <- function(
   
   
   
-  ##----------------------------------------------------------------------------
-  # y.deadF <- nimDataF$y.dead
-  # y.deadM <- nimDataM$y.dead
-  # y.deadMF <- rbind(y.deadM, y.deadF)
-  # 
-  # ##-- Identify individual sex
-  # isFemale <- resultsSXYZ_MF$sims.list$sex == "F"
-  # isMale <- resultsSXYZ_MF$sims.list$sex == "M"
-  # 
-  # ##-- Identify individual status
-  # isAvail <- resultsSXYZ_MF$sims.list$z == 1
-  # isAlive <- resultsSXYZ_MF$sims.list$z == 2
-  # isDead <- resultsSXYZ_MF$sims.list$z >= 3
-  # 
-  # ##-- Get number of iterations
-  # n.iter <- dim(resultsSXYZ_MF$sims.list$z)[1]
+  ## ------ 5. TABLES -----
+  gc()
+  ## ------   5.1. ABUNDANCE -----
+  ## ------     5.1.1. ALL YEARS, BOTH SEX -----
+  idcounty <- row.names(DensityCountriesRegions[[1]]$summary)
   
+  ##-- Remove Finland, Norway, Russia, Sweden
+  idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
+  idcounty <- unique(idcounty)
+  
+  ##-- Get names of Norwegian carnivore regions
+  idcountyNOR <- idcounty[grep("Region",idcounty)]
+  idcountyTable <- c(idcountyNOR, "Total")
+  
+  ##-- Create table to store N estimates (and CI)
+  NCarRegionEstimates <- NCarRegionMean <- matrix("", ncol = n.years, nrow = length(idcountyTable))
+  row.names(NCarRegionEstimates) <- row.names(NCarRegionMean) <- c(idcountyTable)
+  colnames(NCarRegionEstimates) <- colnames(NCarRegionMean) <- years
+  
+  ##-- Fill-in the table
+  for(t in 1:n.years){
+    for(i in 1:length(idcountyTable)){
+      NCarRegionEstimates[idcountyTable[i],t] <-
+        paste0(round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"],digits = 1), " (",
+               round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+               round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      
+      NCarRegionMean[idcountyTable[i],t] <- round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"])
+    }#i
+  }#t
+  
+  ##-- Adjust names
+  idcounty1 <- idcountyTable
+  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  row.names(NCarRegionEstimates) <- idcounty1
+  
+  ##-- print .csv
+  write.csv(NCarRegionEstimates,
+            file = file.path(working.dir, "tables/Abundance_AllYears.csvv"))
+  
+  ##-- print .tex
+  row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
+  print(xtable( NCarRegionEstimates,
+                type = "latex",
+                align = paste(c("l",rep("c",ncol(NCarRegionEstimates))),collapse = "")),
+        floating = FALSE,
+        sanitize.text.function = function(x){x},
+        add.to.row = list(list(seq(1, nrow(NCarRegionEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
+        file = file.path(working.dir, "tables/Abundance_AllYears.tex"))
+
+  
+  
+  
+  ## ------     5.1.2. LAST YEAR N PER SEX PER COUNTY -----
+  NCountyEstimatesLastRegions <- matrix("", ncol = 3, nrow = length(idcountyTable))
+  row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
+  colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total")
+
+  for(i in 1:length(idcountyTable)){
+    ##-- FEMALES
+    NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <-
+      paste0(round(DensityCountriesRegionsF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(DensityCountriesRegionsF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(DensityCountriesRegionsF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+
+    ##-- MALES
+    NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <-
+      paste0(round(DensityCountriesRegionsM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(DensityCountriesRegionsM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(DensityCountriesRegionsM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+
+    ##-- BOTH SEXES
+    NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <-
+      paste0(round(DensityCountriesRegions[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(DensityCountriesRegions[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(DensityCountriesRegions[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  }#i
+
+  ##-- ADJUST NAMES
+  idcounty1 <- idcountyTable
+  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  row.names(NCarRegionEstimates) <- idcounty1
+
+  ##-- print .csv
+  write.csv( NCountyEstimatesLastRegions,
+             file = file.path(working.dir, "tables/Abundance_LastYearPerSex.csv"))
+
+  ##-- print .tex
+  row.names(NCountyEstimatesLastRegions) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
+  print(xtable(NCountyEstimatesLastRegions, type = "latex",
+               align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions))), collapse = "")),
+        sanitize.text.function=function(x){x},
+        floating = FALSE,
+        add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables/Abundance_LastYearPerSex.tex"))
+
+
+
+  ##-- UD-Density
+  NCountyEstimatesLastRegions_UD <- matrix("", ncol = 3, nrow = length(idcountyTable))
+  row.names(NCountyEstimatesLastRegions_UD) <- c(idcountyTable)
+  colnames(NCountyEstimatesLastRegions_UD) <- c("Females","Males","Total")
+
+  for(i in 1:length(idcountyTable)){
+    ##-- FEMALES
+    NCountyEstimatesLastRegions_UD[idcountyTable[i],"Females"] <-
+      paste0(round(spaceUSEDF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(spaceUSEDF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(spaceUSEDF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+
+    ##-- MALES
+    NCountyEstimatesLastRegions_UD[idcountyTable[i],"Males"] <-
+      paste0(round(spaceUSEDM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(spaceUSEDM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(spaceUSEDM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+
+    ##-- BOTH SEXES
+    NCountyEstimatesLastRegions_UD[idcountyTable[i],"Total"] <-
+      paste0(round(spaceUSED[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(spaceUSED[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(spaceUSED[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  }#i
+
+
+  ##-- ADJUST NAMES
+  idcounty1 <- idcountyTable
+  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  row.names(NCarRegionEstimates) <- idcounty1
+
+  ##-- print .csv
+  write.csv( NCountyEstimatesLastRegions_UD,
+             file = file.path(working.dir, "tables/Abundance_LastYearPerSex_UD.csv"))
+
+  ##-- print .tex
+  row.names(NCountyEstimatesLastRegions_UD) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
+  print(xtable(NCountyEstimatesLastRegions_UD, type = "latex",
+               align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions_UD))), collapse = "")),
+        sanitize.text.function=function(x){x},
+        floating = FALSE,
+        add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions_UD),by=2)),"\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables/Abundance_LastYearPerSex_UD.tex"))
+
+
+
+
+  ## ------     5.1.3. ALL YEARS N PER SEX PER COUNTY ------
+  NCountyEstimatesAllSexRegions <- matrix("", ncol = n.years*3, nrow = length(idcountyTable)+1)
+  row.names(NCountyEstimatesAllSexRegions) <- c("", idcountyTable)
+  colnames(NCountyEstimatesAllSexRegions) <- rep(years, each = 3)
+  NCountyEstimatesAllSexRegions[1, ] <- rep(c("Females","Males","Total"), n.years)
+
+  ##-- Fill-in table
+  for(t in 1:n.years){
+    cols <- which(colnames(NCountyEstimatesAllSexRegions) %in% years[t])
+    for( i in 1:length(idcountyTable)){
+      ##-- FEMALES
+      colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Females")
+      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
+        paste(round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+              round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+              round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+
+      ##-- MALES
+      colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Males")
+      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
+        paste(round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+              round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+              round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+
+      ##-- TOTAL
+      colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Total")
+      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
+        paste(round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+              round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+              round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+    }#i
+  }#t
+
+  ##-- ADJUST NAMES
+  idcounty1 <- idcountyTable
+  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  row.names(NCountyEstimatesAllSexRegions) <- c("", idcounty1)
+
+  ##-- print .csv
+  write.csv(NCountyEstimatesAllSexRegions,
+            file = file.path(working.dir, "tables/Abundance_AllYearsPerSex.csv"))
+  
+  
+  ##-- print .tex
+  row.names(NCountyEstimatesAllSexRegions) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
+
+  print(xtable(NCountyEstimatesAllSexRegions, type = "latex",
+               align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSexRegions))),collapse = "")),
+        sanitize.text.function = function(x){x},
+        floating = FALSE,
+        add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables/Abundance_AllYearsPerSex.tex"))
+
+
+
+
+  ## ------   5.2. NUMBER OF NGS SAMPLES, IDs & DEAD RECOVERIES ------
+  ##-- Load filtered datasets
+  load(file.path(myVars$WD, "MODELS", modelNameM, "DATA", paste0(modelNameM,"_NGSData.RData")))
+  myData.aliveM <- myData.alive$myData.sp
+  myData.deadM <- myData.dead
+
+  load(file.path(myVars$WD, "MODELS", modelNameF, "DATA", paste0(modelNameF,"_NGSData.RData")))
+  myData.aliveF <- myData.alive$myData.sp
+  myData.deadF <- myData.dead
+
+  ##-- SOME TALLIES TO CHECK THINGS
+  ##-- NGS
+  NGS <- rbind(myData.aliveM, myData.aliveF)
+  table(NGS$Year)
+  length(NGS)
+
+  ##-- FOR REPORT SUMMARY
+  length(NGS$Id)
+  length(NGS$Id[NGS$Sex=="Hunn"])
+  length(NGS$Id[NGS$Sex=="Hann"])
+  length(NGS$Id[NGS$Country=="(S)"])/nrow(NGS)
+  length(unique(NGS$Id))
+  length(unique(NGS$Id[NGS$Sex=="Hunn"]))
+  length(unique(NGS$Id[NGS$Sex=="Hann"]))
+
+  ##-- DEAD RECOVERY
+  dead <- rbind(myData.deadF, myData.deadM)
+  dead <- dead[dead$Sex %in% c("Hunn","Hann"), ]
+  table(dead$Year)
+  length(dead)
+  length(unique(dead$Id[dead$Sex=="Hunn"]))
+  length(unique(dead$Id[dead$Sex=="Hann"]))
+
+
+
+
+  # ## ------     5.2.1. NGS SAMPLES & IDs ------
+  # NGS_SEX <- matrix("", ncol = n.years*2, nrow = 3)
+  # row.names(NGS_SEX) <- c( "",
+  #                          "number of NGS samples",
+  #                          "number of NGS individuals")
+  # colnames(NGS_SEX) <- rep(years, each = 2)
+  # NGS_SEX[1, ] <- rep(c("F","M"), n.years)
+  # 
+  # sex <- c("Hunn","Hann")
+  # sex1 <- c(0,1)
+  # ye <- seq(1, n.years*2, by = 2)
+  # for(s in 1:2){
+  #   for(t in 1:n.years){
+  #     temp <- NGS[NGS$Year == years[t] & NGS$Sex == sex[s], ]
+  #     NGS_SEX["number of NGS samples", ye[t] + sex1[s]] <-  nrow(temp)
+  #     NGS_SEX["number of NGS individuals", ye[t] + sex1[s]] <- length(unique(temp$Id))
+  #   }#t
+  # }#s
+  # 
+  # ##-- print .csv
+  # write.csv(NGS_SEX,
+  #           file = file.path(WDTables, paste0("NGS_SEX_classic.csv")))
+  # 
+  # ##-- print .tex
+  # addtorow <- list()
+  # addtorow$pos <- list(c(0),0)
+  # addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGS_SEX))),
+  #                                     '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
+  # colnames(NGS_SEX) <- rep("", ncol(NGS_SEX))
+  # print(xtable(NGS_SEX, type = "latex",
+  #              align = paste(c("l",rep("c",ncol(NGS_SEX))), collapse = "")),
+  #       floating = FALSE, include.colnames = FALSE,
+  #       add.to.row = addtorow,
+  #       file = file.path(WDTables, paste0("NGS_SEX_classic.tex")))
+  # 
+  # 
+  # 
+  # 
+  # 
+  # ## ------     5.2.2. DEAD RECOVERIES by CAUSE ------
+  # Dead_SEX <- matrix(0, ncol = n.years*2+1, nrow = 6)
+  # row.names(Dead_SEX) <- c("","other","other","legal culling","legal culling","")
+  # colnames(Dead_SEX) <- c("",unlist(lapply(years, function(x) c(x,x))))
+  # Dead_SEX[1,] <- c("",rep(c("F","M"),n.years))
+  # Dead_SEX[,1] <- c("","Norway","Sweden","Norway","Sweden","Total")
+  # sex <- c("Hunn","Hann")
+  # sex1 <- c(0,1)
+  # ye <- seq(1,n.years*2,by=2)
+  # 
+  # ##-- Define legal mortality causes
+  # MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$DeathCause))
+  # legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
+  # legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
+  # MortalityNames[!MortalityNames %in% legalCauses]
+  # 
+  # ##-- SEPARATE MORTALITIES
+  # cause <- c("other","legal culling")
+  # for(t in 1:n.years){
+  #   for(s in 1:2){
+  #     for(d in 1:2){
+  #       if(d==1){
+  #         temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & !(dead$DeathCause %in% legalCauses), ]
+  #       } else {
+  #         temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & dead$DeathCause %in% legalCauses, ]
+  #       }
+  #       row <- which(rownames(Dead_SEX)==cause[d] & Dead_SEX[,1]=="Norway" )
+  #       Dead_SEX[row,ye[t] + sex1[s]+1 ] <- length(unique(temp$Id[temp$Country %in% "(N)" ]))
+  # 
+  #       row <- which(rownames(Dead_SEX)==cause[d] & Dead_SEX[,1]=="Sweden" )
+  #       Dead_SEX[row,ye[t] + sex1[s]+1] <- length(unique(temp$Id[temp$Country %in% "(S)"]))
+  #     }#t
+  #     Dead_SEX[6, ye[t] + sex1[s]+1] <-  sum(as.numeric(Dead_SEX[2:6,ye[t] + sex1[s]+1]))
+  #   }
+  # }
+  # 
+  # 
+  # ##-- summary
+  # ##-- Other causes
+  # sum(as.numeric(Dead_SEX[2:3,2:ncol(Dead_SEX)]))
+  # sum(as.numeric(Dead_SEX[2:3,which(Dead_SEX[1,]=="F")]))
+  # sum(as.numeric(Dead_SEX[2:3,which(Dead_SEX[1,]=="M")]))
+  # ##-- legal
+  # sum(as.numeric(Dead_SEX[4:5,2:ncol(Dead_SEX)]))
+  # sum(as.numeric(Dead_SEX[4:5,which(Dead_SEX[1,]=="F")]))
+  # sum(as.numeric(Dead_SEX[4:5,which(Dead_SEX[1,]=="M")]))
+  # 
+  # sum(as.numeric(Dead_SEX[c(2,3),2:ncol(Dead_SEX)]))/sum(as.numeric(Dead_SEX[c(2:5),2:ncol(Dead_SEX)]))
+  # 
+  # ##-- %of dead reco (legal) in norway
+  # sum(as.numeric(Dead_SEX[4,2:ncol(Dead_SEX)]))/sum(as.numeric(Dead_SEX[c(4,5),2:ncol(Dead_SEX)]))
+  # sum(as.numeric(Dead_SEX[6,which(Dead_SEX[1,]=="M")]))
+  # sum(as.numeric(Dead_SEX[6,which(Dead_SEX[1,]=="F")]))
+  # sum(as.numeric(Dead_SEX[6,which(Dead_SEX[1,] %in% c("F","M"))]))
+  # 
+  # ##-- print .tex
+  # addtorow <- list()
+  # addtorow$pos <- list(c(0),0)
+  # uniqueYEAR <- sort(unique(colnames(Dead_SEX)))
+  # uniqueYEAR <- uniqueYEAR[2:length(uniqueYEAR)]
+  # addtorow$command <- c(paste0("& \\multicolumn{1}{c}{Country}",
+  #                              paste0('& \\multicolumn{2}{c}{',
+  #                                     uniqueYEAR,
+  #                                     '}', collapse=''), '\\\\'),
+  #                       rep("\\rowcolor[gray]{.95}",1))
+  # multirow <- paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Other","Legal culling"), "}}")
+  # multirowadd <- matrix(c("",multirow[1],"",multirow[2],"","{\\textbf{TOTAL}}"), ncol = 1)
+  # Dead_SEX <- data.frame(cbind(multirowadd,Dead_SEX))
+  # 
+  # print(xtable(Dead_SEX, type = "latex",
+  #              align = rep("c", ncol(Dead_SEX)+1)),
+  #       floating = FALSE,
+  #       add.to.row = addtorow,
+  #       include.colnames = FALSE,
+  #       include.rownames = FALSE,
+  #       sanitize.text.function = function(x){x},
+  #       file = file.path(WDTables, paste0("DeadidCountrySEX_classic.tex")))
+  # 
+  # 
+  # 
+  # 
+  # ## ------     5.2.3. PROPORTION OF INDIVIDUALS DETECTED ------
+  # ##-- Get the number of individuals detected each year
+  # n.detected_F <- apply(nimDataF$y.alive[ ,1, ], 2, function(x)sum(x>0))
+  # colSums(nimDataF$y.alive[ ,1, ]>0)
+  # n.detected_F
+  # 
+  # n.detected_M <- apply(nimDataM$y.alive[ ,1, ], 2, function(x)sum(x>0))
+  # colSums(nimDataM$y.alive[ ,1, ]>0)
+  # n.detected_M
+  # 
+  # propDetected <- matrix("", ncol = n.years, nrow = 3)
+  # row.names(propDetected) <- c("F","M","Total")
+  # colnames(propDetected) <- years
+  # for(t in 1:n.years){
+  #   propDetected["F",t] <- getCleanEstimates(
+  #     n.detected_F[t]/colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions))
+  # 
+  #   propDetected["M",t] <- getCleanEstimates(
+  #     n.detected_M[t]/colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions))
+  # 
+  #   propDetected["Total",t] <- getCleanEstimates(
+  #     (n.detected_F[t]+n.detected_M[t])/
+  #       (colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions)+
+  #          colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions)))
+  # }#t
+  # 
+  # ##-- print .csv
+  # write.csv(propDetected,
+  #           file = file.path(WDTables, "PropDetectedIds_classic.csv"))
+  # 
+  # ##-- print .tex
+  # print(xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDetected))),collapse = "")),
+  #       floating = FALSE, sanitize.text.function=function(x){x},
+  #       add.to.row = list(list(seq(1,nrow(propDetected), by = 2)),"\\rowcolor[gray]{.96} "),
+  #       file = file.path(WDTables, "PropDetectedIds_classic.tex"))
+  # 
+  # 
+  # 
+  # 
+  # ## ------     5.2.4. NUMBER OF IDs w/ ACs OUTSIDE NORWAY ------
+  # ##-- Prepare raster of countries
+  # countryRaster <- habitatRasterResolution$`5km`[["Countries"]]
+  # 
+  # ##-- Calculate number of individuals alive with their AC in each country each year
+  # N_det_by_country <- matrix(NA,5,n.years)
+  # dimnames(N_det_by_country) <- list("Countries" = c("Norway","Sweden","Finland","Russia","Out"),
+  #                                    "Years" = c(years))
+  # for(t in 1:n.years){
+  #   N_fin_F <- N_fin_M <- N_fin <- rep(NA,n.iter)
+  #   N_nor_F <- N_nor_M <- N_nor <- rep(NA,n.iter)
+  #   N_rus_F <- N_rus_M <- N_rus <- rep(NA,n.iter)
+  #   N_swe_F <- N_swe_M <- N_swe <- rep(NA,n.iter)
+  #   N_out_F <- N_out_M <- N_out <- rep(NA,n.iter)
+  #   for(iter in 1:n.iter){
+  # 
+  #     country <- countryRaster[cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
+  #     isFin <- country %in% 1
+  #     isNor <- country %in% 2
+  #     isRus <- country %in% 3
+  #     isSwe <- country %in% 4
+  # 
+  #     ##-- Detected individuals
+  #     N_fin_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isFemale)
+  #     N_fin_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isMale)
+  #     N_fin[iter] <- N_fin_F[iter] + N_fin_M[iter]
+  # 
+  #     N_nor_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isFemale)
+  #     N_nor_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isMale)
+  #     N_nor[iter] <- N_nor_F[iter] + N_nor_M[iter]
+  # 
+  #     N_rus_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isFemale)
+  #     N_rus_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isMale)
+  #     N_rus[iter] <- N_rus_F[iter] + N_rus_M[iter]
+  # 
+  #     N_swe_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isFemale)
+  #     N_swe_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isMale)
+  #     N_swe[iter] <- N_swe_F[iter] + N_swe_M[iter]
+  # 
+  #     N_out_F[iter] <- N_fin_F[iter] + N_rus_F[iter] + N_swe_F[iter]
+  #     N_out_M[iter] <- N_fin_M[iter] + N_rus_M[iter] + N_swe_M[iter]
+  #     N_out[iter] <- N_out_F[iter] + N_out_M[iter]
+  #   }#iter
+  # 
+  #   N_det_by_country["Norway",t] <- getCleanEstimates(N_nor)
+  #   N_det_by_country["Sweden",t] <- getCleanEstimates(N_swe)
+  #   N_det_by_country["Finland",t] <- getCleanEstimates(N_fin)
+  #   N_det_by_country["Russia",t] <- getCleanEstimates(N_rus)
+  #   N_det_by_country["Out",t] <- getCleanEstimates(N_out)
+  # 
+  #   print(t)
+  # }#t
+  # ##-- Print number of individuals detected per country
+  # print(N_det_by_country)
+  # 
+  # 
+  # ##-- Calculate number of individuals detected/undetected in Norway
+  # N_NOR <- matrix(NA,3,n.years)
+  # dimnames(N_NOR) <- list("#individuals" = c("Detected","Undetected","Total"),
+  #                         "Years" = c(years))
+  # for(t in 1:n.years){
+  #   N_det <- N_undet <- N_tot <- rep(NA,n.iter)
+  #   for(iter in 1:n.iter){
+  #     country <- countryRaster[cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
+  #     isNor <- country %in% 2
+  # 
+  #     ##-- Detected individuals
+  #     N_det[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor)
+  # 
+  #     ##-- Undetected individuals
+  #     N_undet[iter] <- sum(!isDetected[ ,t] & isAlive[iter, ,t] & isNor)
+  # 
+  #     ##-- Total Norway
+  #     N_tot[iter] <- N_det[iter] + N_undet[iter]
+  #   }#iter
+  # 
+  #   N_NOR["Detected",t] <- getCleanEstimates(N_det)
+  #   N_NOR["Undetected",t] <- getCleanEstimates(N_det)
+  #   N_NOR["Total",t] <- getCleanEstimates(N_tot)
+  #   print(t)
+  # }#t
+  # ##-- Print number of individuals with AC in Norway
+  # print(N_NOR)
+  # 
+  # 
+  # 
+  # 
+  # 
+  # ## ------   5.3. VITAL RATES ------
+  # parameters <- c("rho","phi", "h", "w")
+  # sex <- c("F", "M")
+  # vitalRate <- matrix(NA, nrow = length(parameters)+1, ncol = (n.years)*2-2)
+  # rownames(vitalRate) <- c("", unlist(lapply(as.list(parameters), function(x)rep(x,1))))
+  # colnames(vitalRate) <- c(unlist(lapply(years[1:(length(years)-1)], function(x)rep(paste(x,x+1,sep=" to "),2))))
+  # vitalRate[1, ] <- c(rep(sex,(n.years-1)) )
+  # 
+  # for(s in 1:2){
+  #   if(s == 1){results <- results_F} else {results <- results_M}
+  # 
+  #   col <- which(vitalRate[1, ] == sex[s])
+  # 
+  #   ##-- Per capita recruitment
+  #   if(any(grep("rho",names(results$sims.list)))){
+  #     vitalRate["rho",col] <- getCleanEstimates(results$sims.list$rho, moment = "median")
+  #   } else {
+  #     if(s == 1){
+  #       for(t in 1:(n.years-1)){
+  #         n.recruits <- rowSums(isAvail[ ,isFemale,t] * isAlive[ ,isFemale,t+1])
+  #         alivetminus1 <- rowSums(isAlive[ ,isFemale,t])
+  #         vitalRate["rho",col[t]] <- getCleanEstimates(n.recruits/alivetminus1, moment = "median")
+  #       }#t
+  #     } else {
+  #       for(t in 1:(n.years-1)){
+  #         n.recruits <- rowSums(isAvail[ ,isMale,t] * isAlive[ ,isMale,t+1])
+  #         alivetminus1 <- rowSums(isAlive[ ,isMale,t])
+  #         vitalRate["rho",col[t]] <- getCleanEstimates(n.recruits/alivetminus1, moment = "median")
+  #       }#t
+  #     }
+  #   }
+  # 
+  # 
+  #   ##-- Mortality & Survival
+  #   if(any(grep("mhH",names(results$sims.list)))){
+  #     ##-- Calculate mortality from estimated hazard rates (mhH and mhW)
+  #     mhH1 <- exp(results$sims.list$mhH)
+  #     mhW1 <- exp(results$sims.list$mhW)
+  #     h <- (1-exp(-(mhH1+mhW1)))* (mhH1/(mhH1+mhW1))
+  #     w <- (1-exp(-(mhH1+mhW1)))* (mhW1/(mhH1+mhW1))
+  #     phi <- 1-h-w
+  #     vitalRate["phi",col] <- apply(phi, 2, function(x) getCleanEstimates(x, moment = "median"))
+  #     vitalRate["h",col] <- apply(h, 2, function(x) getCleanEstimates(x, moment = "median"))
+  #     vitalRate["w",col] <- apply(w, 2, function(x) getCleanEstimates(x, moment = "median"))
+  #   } else {
+  #     if(s == 1){
+  #       y.dead <- y.deadF
+  #       z <- resultsSXYZ_MF$sims.list$z[ ,isFemale, ]
+  #     } else {
+  #       y.dead <- y.deadM
+  #       z <- resultsSXYZ_MF$sims.list$z[ ,isMale, ]
+  #     }
+  # 
+  #     ##-- Extract survival from posteriors
+  #     vitalRate["phi",col] <- apply(results$sims.list$phi, 2, function(x) getCleanEstimates(x, moment = "median"))
+  # 
+  #     ##-- Derive mortality from posterior z and dead recoveries
+  #     isDead <- apply((z[ , ,1:(n.years-1)] == 2)*(z[ , ,2:n.years] == 3), c(1,3), sum)
+  #     wasAlive <- apply(z[ , ,1:(n.years-1)] == 2, c(1,3), sum)
+  #     mortality <- isDead / wasAlive
+  #     h <- sapply(1:(n.years-1), function(t)sum(y.dead[ ,t+1])/wasAlive[ ,t])
+  #     w <- mortality - h
+  #     vitalRate["h",col] <- apply(h, 2, function(x) getCleanEstimates(x, moment = "median"))
+  #     vitalRate["w",col] <- apply(w, 2, function(x) getCleanEstimates(x, moment = "median"))
+  #   }#else
+  # }#s
+  # 
+  # ##-- Print .csv
+  # write.csv( vitalRate,
+  #            file = file.path(WDTables, "VitalRates_classic.csv"))
+  # 
+  # ##-- Print .tex
+  # addtorow <- list()
+  # addtorow$pos <- list(c(0),0)
+  # addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(vitalRate))),
+  #                                     '}', collapse = ''), '\\\\'), rep("\\rowcolor[gray]{.95}",1))
+  # colnames(vitalRate) <- rep("", ncol(vitalRate))
+  # rownames(vitalRate)[2:5] <- c("$\\rho$","$\\phi$","h","w")
+  # 
+  # print(xtable(vitalRate, type = "latex",
+  #              align = paste(rep("c", ncol(vitalRate)+1),collapse = "")),
+  #       floating = FALSE,
+  #       add.to.row = addtorow,
+  #       include.colnames = F,
+  #       sanitize.text.function = function(x){x},
+  #       file = file.path(WDTables, "VitalRates_classic.tex"))
+  # 
+  # 
+  # 
+  # 
+  # ## ------   5.4. DERIVED PARAMETERS FROM ABUNDANCE ------
+  # ## ------     5.4.1. DERIVE SEX-RATIO ------
+  # 
+  # ##-- REGION-SPECIFIC PROPORTION OF FEMALES
+  # PropFemale_regions <- list()
+  # for(t in 1:n.years){
+  #   PropFemale_regions[[t]] <- DensityCountriesRegionsF[[t]]$PosteriorRegions/
+  #     (DensityCountriesRegionsM[[t]]$PosteriorRegions +
+  #        DensityCountriesRegionsF[[t]]$PosteriorRegions)
+  #   print(rowMeans(PropFemale_regions[[t]],na.rm = T))
+  # }#t
+  # 
+  # 
+  # ##-- OVERALL PROPORTION OF FEMALES
+  # dim(DensityCountriesRegionsF[[t]]$PosteriorAllRegions)
+  # PropFemale <- list()
+  # for(t in 1:n.years){
+  #   PropFemale[[t]] <- colSums(DensityCountriesRegionsF[[t]]$PosteriorAllRegions)/
+  #     (colSums(DensityCountriesRegionsM[[t]]$PosteriorAllRegions) +
+  #        colSums(DensityCountriesRegionsF[[t]]$PosteriorAllRegions))
+  # }#t
+  # 
+  # 
+  # ##-- Format table
+  # propFemale_tab <- matrix(0, ncol = n.years, nrow = 8)
+  # row.names(propFemale_tab) <- idcountyTable
+  # colnames(propFemale_tab) <- years
+  # for(t in 1:n.years){
+  #   for(c in 1:7){
+  #     propFemale_tab[c,t] <- getCleanEstimates(na.omit(PropFemale_regions[[t]][c, ]))
+  #   }#c
+  #   propFemale_tab[8,t] <- getCleanEstimates( PropFemale[[t]] )
+  # }#t
+  # 
+  # 
+  # ##-- print .tex
+  # row.names(propFemale_tab) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
+  # print(xtable( propFemale_tab,
+  #               type = "latex",
+  #               align = paste(c("l",rep("c",ncol(propFemale_tab))),collapse = "")),
+  #       floating = FALSE,
+  #       sanitize.text.function = function(x){x},
+  #       add.to.row = list(list(seq(1, nrow(propFemale_tab), by = 2)), "\\rowcolor[gray]{.96} "),
+  #       file = file.path(WDTables, "propFemale_classic.tex"))
+  # 
+  # 
+  # 
+  # 
+  # 
+  # ## ------     5.4.2. DERIVE DENSITY ------
+  # # habbRCarRegionsTRY <- rrRegions
+  # # habbRCarRegionsTRY[!is.na(habbRCarRegionsTRY[])] <-1
+  # # habbRCarRegionsTRY[] <- as.numeric(habbRCarRegionsTRY[])
+  # # areaSqKm <- gArea(rasterToPolygons(habbRCarRegionsTRY,function(x) x > 0, dissolve = T))*1e-6
+  # #
+  # # ##-- Multiplied by 100 to get per 100km2
+  # # DensityCountriesRegions[[t]]$summary["Total","mean"]/areaSqKm*100
+  # # DensityCountriesRegions[[t]]$summary["Total","95%CILow"]/areaSqKm*100
+  # # DensityCountriesRegions[[t]]$summary["Total","95%CIHigh"]/areaSqKm*100
+  # 
+  # 
+  # 
+  # ## ------     5.4.3. PROPORTION OF INDIVIDUALS DETECTED ------
+  # ##-- Get the number of individuals detected each year
+  # n.detected_F <-  apply(nimDataF$y.alive[ ,1, ], 2, function(x)sum(x>0))
+  # n.detected_M <-  apply(nimDataM$y.alive[ ,1, ], 2, function(x)sum(x>0))
+  # 
+  # propDetected <- matrix("", ncol = n.years, nrow = 3)
+  # row.names(propDetected) <- c("F","M","Total")
+  # colnames(propDetected) <- years
+  # for(t in 1:n.years){
+  #   propDetected["F",t] <- getCleanEstimates(n.detected_F[t]/colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions))
+  #   propDetected["M",t] <- getCleanEstimates(n.detected_M[t]/colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions))
+  #   propDetected["Total",t] <- getCleanEstimates((n.detected_F[t]+n.detected_M[t])/
+  #                                                  (colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions)+
+  #                                                     colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions)))
+  # }#t
+  # 
+  # ##-- print .csv
+  # write.csv(propDetected,
+  #           file = file.path(WDTables, "PropDetectedIds_classic.csv"))
+  # 
+  # ##-- print .tex
+  # print(xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDetected))),collapse = "")),
+  #       floating = FALSE, sanitize.text.function=function(x){x},
+  #       add.to.row = list(list(seq(1,nrow(propDetected), by = 2)),"\\rowcolor[gray]{.96} "),
+  #       file = file.path(WDTables, "PropDetectedIds_classic.tex"))
+  # 
+  # 
+  # 
+  # 
+  # ## ------     5.4.4. GROWTH RATE ------
+  # growthRate <- list()
+  # for(t in 1:(n.years-1)){
+  #   growthRate[[t]] <- colSums(DensityCountriesRegions[[t+1]]$PosteriorAllRegions)/
+  #     colSums(DensityCountriesRegions[[t]]$PosteriorAllRegions)
+  # }#t
+  # 
+  # ##-- Put in a table format
+  # growthRate_tab <- matrix(0, ncol = (n.years-1), nrow = 1)
+  # colnames(growthRate_tab) <- paste(years[-n.years], years[-1], sep = " to ")
+  # for(t in 1:(n.years-1)){
+  #   growthRate_tab[1,t] <- getCleanEstimates(growthRate[[t]])
+  # }#t
+  # 
+  # ##-- Print .tex
+  # addtorow <- list()
+  # addtorow$pos <- list(c(0),0)
+  # addtorow$command <- c(paste0(paste('& {', sort(unique(colnames(growthRate_tab))),
+  #                                    '}', collapse = ''), '\\\\'), rep("\\rowcolor[gray]{.95}",1))
+  # colnames(growthRate_tab) <- rep("", ncol(growthRate_tab))
+  # rownames(growthRate_tab) <- c("$\\lambda$")
+  # 
+  # print(xtable(growthRate_tab, type = "latex",
+  #              align = paste(c("l", rep("c",ncol(growthRate_tab))), collapse = "")),
+  #       floating = FALSE,
+  #       add.to.row = addtorow,
+  #       include.colnames = F,
+  #       sanitize.text.function = function(x){x},
+  #       file = file.path(WDTables, "GrowthRates_classic.tex"))
+  # 
+  # 
+  # 
+  # 
+  # ## ------   5.5. TABLE OTHERS ------
+  # if(is.null(dim(results$sims.list$betaDens))){
+  #   parameters <- c("tau","betaDead","sigma","betaDet","betaDet")
+  #   sex <- c("F","M")
+  #   TableOthers <- matrix(NA, nrow = length(parameters), ncol = 3)
+  #   rownames(TableOthers) <- parameters
+  #   colnames(TableOthers) <- c("", sex)
+  #   TableOthers[ ,1] <- c("$\\tau$","$\\beta_{dead}$","$\\sigma$","$\\beta_{roads}$","$\\beta_{obs}$")
+  # 
+  #   for(s in 1:2){
+  #     if(s == 1){results <- results_F} else {results <- results_M}
+  #     TableOthers["tau",sex[s]] <- getCleanEstimates(results$sims.list$tau/raster::res(habitat$habitat.r)[1], moment = "median")
+  #     TableOthers[which(parameters == "betaDead"),sex[s]] <- getCleanEstimates(results$sims.list$betaDens,moment = "median")
+  #     TableOthers["sigma",sex[s]] <- getCleanEstimates(results$sims.list$sigma/raster::res(habitat$habitat.r)[1],moment = "median")
+  #     TableOthers[which(parameters == "betaDet"),sex[s]] <- apply(results$sims.list$betaDet, 2,function(x) getCleanEstimates(x,moment = "median"))
+  #   }#s
+  # 
+  #   ##-- Deal with negative values
+  #   TableOthers <- gsub("--", "-(-)", TableOthers)
+  # 
+  #   ##-- Change row names
+  #   row.names(TableOthers) <- c("Spatial process","","Detection Process","","")
+  # 
+  # 
+  #   ##-- Print .tex
+  #   multirow <- c("\\multirow{2}{*}{\\textbf{Spatial process}}",
+  #                 "\\multirow{3}{*}{\\textbf{Detection process}}")
+  #   multirowadd <- matrix(c(multirow[1],"",multirow[2],"",""), ncol = 1)
+  #   TableOthers <- data.frame(cbind(multirowadd, TableOthers))
+  # 
+  #   addtorow <- list()
+  #   addtorow$pos <- list(0,0,3)
+  #   addtorow$command <- c(paste0("& {\\textbf{Parameters}} ",
+  #                                paste0('& {\\textbf{',  sex, '}}', collapse = ''), '\\\\'),
+  #                         rep("\\rowcolor[gray]{.95}",1),
+  #                         "\\hline")
+  # 
+  #   print(xtable(TableOthers, type = "latex",
+  #                align = paste(c("ll", rep("c",ncol(TableOthers)-1)), collapse = "")),
+  #         sanitize.text.function = function(x){x},
+  #         floating = FALSE,
+  #         include.rownames = FALSE,
+  #         include.colnames = FALSE,
+  #         add.to.row = addtorow,
+  #         file = file.path(WDTables, paste0("TableParametersOthers_classic.tex")))
+  # } else {
+  #   parameters <- c("tau","betaDens1","betaDens1",
+  #                   "betaDead2","betaDead2",
+  #                   "sigma","betaDet","betaDet")
+  #   sex <- c("F","M")
+  #   TableOthers <- matrix(NA, nrow = length(parameters), ncol = 3)
+  #   rownames(TableOthers) <- parameters
+  #   colnames(TableOthers) <- c("", sex)
+  #   TableOthers[ ,1] <- c("$\\tau$",
+  #                         "$\\beta_{dead}_{1}$","$\\beta_{obs}_{1}$",
+  #                         "$\\beta_{dead}_{2}$","$\\beta_{obs}_{2}$",
+  #                         "$\\sigma$","$\\beta_{roads}$","$\\beta_{skandobs}$")
+  # 
+  #   for(s in 1:2){
+  #     if(s == 1){results <- results_F} else {results <- results_M}
+  #     TableOthers["tau",sex[s]] <- getCleanEstimates(results$sims.list$tau/1000, moment = "median")
+  #     TableOthers[which(parameters == "betaDead1"),sex[s]] <- apply(results$sims.list$betaDens[,,1], 2,function(x) getCleanEstimates(x,moment = "median"))
+  #     TableOthers[which(parameters == "betaDead2"),sex[s]] <- apply(results$sims.list$betaDens[,,2], 2,function(x) getCleanEstimates(x,moment = "median"))
+  #     TableOthers["sigma",sex[s]] <- getCleanEstimates(results$sims.list$sigma/1000, moment = "median")
+  #     TableOthers[which(parameters == "betaDet"),sex[s]] <- apply(results$sims.list$betaDet, 2,function(x) getCleanEstimates(x,moment = "median"))
+  #   }#s
+  #   ##-- Deal with negative values
+  #   TableOthers <- gsub("--", "-(-)", TableOthers)
+  # 
+  #   ##-- Change row names
+  #   row.names(TableOthers) <- c("Spatial process","","","","",
+  #                               "Detection Process","","")
+  # 
+  #   ##-- Print .tex
+  #   multirow <- c("\\multirow{5}{*}{\\textbf{Spatial process}}","\\multirow{3}{*}{\\textbf{Detection process}}")
+  #   multirowadd <- matrix(c(multirow[1],"","","","",multirow[2],"",""), ncol = 1)
+  #   TableOthers <- data.frame(cbind(multirowadd, TableOthers))
+  # 
+  #   addtorow <- list()
+  #   addtorow$pos <- list(0,5)
+  #   addtorow$command <- c(paste0("& {\\textbf{Parameters}} ",
+  #                                paste0('& {\\textbf{',  sex, '}}', collapse = ''), '\\\\'),
+  #                         "\\hline")
+  # 
+  #   print(xtable(TableOthers, type = "latex",
+  #                align = paste(c("ll", rep("c",ncol(TableOthers)-1)), collapse = "")),
+  #         sanitize.text.function = function(x){x},
+  #         floating = FALSE,
+  #         include.rownames = FALSE,
+  #         include.colnames = FALSE,
+  #         add.to.row = addtorow,
+  #         file = file.path(WDTables, "TableParametersOthers_classic.tex"))
+  # }
+  # 
+  # 
+  # 
+
+  ## ------ 6. OUTPUT -----
+  out$YEARS <- years
+
+  return(out)
+}
+
+
+
+  
+
   # ## ------     1.3. VITAL RATES ------
   # message("## Plotting vital rates...")
-  # 
+  
+  
+  
   # ## ------       1.3.1. SURVIVAL ------
   # pdf(file = file.path(working.dir, "figures/SurvivalBars_classic.pdf"),
   #     width = 10, height = 6)
@@ -2132,7 +2755,6 @@ processRovquantOutput_bear <- function(
   # dev.off()
   # 
   # ## ------   2. TABLES -----
-  # gc()
   # ## ------     2.1. ABUNDANCE -----
   # ## ------       2.1.1. ALL YEARS, BOTH SEX -----
   # idcounty <- row.names(DensityCountriesRegions[[1]]$summary)
@@ -2188,41 +2810,41 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # 
-  # 
+  #
   # ## ------       2.1.2. LAST YEAR N PER SEX PER COUNTY -----
   # NCountyEstimatesLastRegions <- matrix("", ncol = 3, nrow = length(idcountyTable))
   # row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
   # colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total")
-  # 
+  #
   # for(i in 1:length(idcountyTable)){
   #   ##-- FEMALES
   #   NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <-
   #     paste0(round(DensityCountriesRegionsF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
   #            round(DensityCountriesRegionsF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
   #            round(DensityCountriesRegionsF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  # 
+  #
   #   ##-- MALES
   #   NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <-
   #     paste0(round(DensityCountriesRegionsM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
   #            round(DensityCountriesRegionsM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
   #            round(DensityCountriesRegionsM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  # 
+  #
   #   ##-- BOTH SEXES
   #   NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <-
   #     paste0(round(DensityCountriesRegions[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
   #            round(DensityCountriesRegions[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
   #            round(DensityCountriesRegions[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   # }#i
-  # 
+  #
   # ##-- ADJUST NAMES
   # idcounty1 <- idcountyTable
   # idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
   # row.names(NCarRegionEstimates) <- idcounty1
-  # 
+  #
   # ##-- print .csv
   # write.csv( NCountyEstimatesLastRegions,
   #            file = file.path(WDTables, paste0(myVars$modelName, "_classic","_NLastYearPerSex.csv")))
-  # 
+  #
   # ##-- print .tex
   # row.names(NCountyEstimatesLastRegions) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
   # print(xtable(NCountyEstimatesLastRegions, type = "latex",
@@ -2232,44 +2854,44 @@ processRovquantOutput_bear <- function(
   #       add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
   #       file = file.path( WDTables,
   #                         paste0(myVars$modelName, "_classic","_NLastYearPerSex.tex")))
-  # 
-  # 
-  # 
+  #
+  #
+  #
   # ##-- UD-Density
   # NCountyEstimatesLastRegions_UD <- matrix("", ncol = 3, nrow = length(idcountyTable))
   # row.names(NCountyEstimatesLastRegions_UD) <- c(idcountyTable)
   # colnames(NCountyEstimatesLastRegions_UD) <- c("Females","Males","Total")
-  # 
+  #
   # for(i in 1:length(idcountyTable)){
   #   ##-- FEMALES
   #   NCountyEstimatesLastRegions_UD[idcountyTable[i],"Females"] <-
   #     paste0(round(spaceUSEDF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
   #            round(spaceUSEDF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
   #            round(spaceUSEDF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  # 
+  #
   #   ##-- MALES
   #   NCountyEstimatesLastRegions_UD[idcountyTable[i],"Males"] <-
   #     paste0(round(spaceUSEDM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
   #            round(spaceUSEDM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
   #            round(spaceUSEDM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  # 
+  #
   #   ##-- BOTH SEXES
   #   NCountyEstimatesLastRegions_UD[idcountyTable[i],"Total"] <-
   #     paste0(round(spaceUSED[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
   #            round(spaceUSED[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
   #            round(spaceUSED[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   # }#i
-  # 
-  # 
+  #
+  #
   # ##-- ADJUST NAMES
   # idcounty1 <- idcountyTable
   # idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
   # row.names(NCarRegionEstimates) <- idcounty1
-  # 
+  #
   # ##-- print .csv
   # write.csv( NCountyEstimatesLastRegions_UD,
   #            file = file.path(WDTables, paste0(myVars$modelName, "_classic","_NLastYearPerSex_UD.csv")))
-  # 
+  #
   # ##-- print .tex
   # row.names(NCountyEstimatesLastRegions_UD) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
   # print(xtable(NCountyEstimatesLastRegions_UD, type = "latex",
@@ -2279,10 +2901,10 @@ processRovquantOutput_bear <- function(
   #       add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions_UD),by=2)),"\\rowcolor[gray]{.95} "),
   #       file = file.path( WDTables,
   #                         paste0(myVars$modelName, "_classic","_NLastYearPerSex_UD.tex")))
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
   # ## ------       2.1.3. MAKE A TABLE 2 last years -----
   # NCountyEstimatesLast2Regions <- matrix("", ncol = 6, nrow = length(idcountyTable))
   # row.names(NCountyEstimatesLast2Regions) <- c(idcountyTable)
@@ -2292,7 +2914,7 @@ processRovquantOutput_bear <- function(
   #                                             paste("Females", years[n.years]),
   #                                             paste("Males", years[n.years]),
   #                                             paste("Total", years[n.years]))
-  # 
+  #
   # ##-- Fill-in table
   # for(t in (n.years-1):n.years){
   #   for(i in 1:length(idcountyTable)){
@@ -2301,13 +2923,13 @@ processRovquantOutput_bear <- function(
   #       paste(round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
   #             round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
   #             round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
-  # 
+  #
   #     ##-- MALES
   #     NCountyEstimatesLast2Regions[idcountyTable[i],paste("Males",years[t])] <-
   #       paste(round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
   #             round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
   #             round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
-  # 
+  #
   #     ##-- TOTAL
   #     NCountyEstimatesLast2Regions[idcountyTable[i],paste("Total",years[t])] <-
   #       paste(round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
@@ -2315,28 +2937,28 @@ processRovquantOutput_bear <- function(
   #             round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
   #   }#i
   # }#t
-  # 
+  #
   # ##-- ADJUST NAMES
   # idcounty1 <- idcountyTable
   # idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
   # row.names(NCountyEstimatesLast2Regions) <- idcounty1
-  # 
+  #
   # ##-- print .csv
   # write.csv(NCountyEstimatesLast2Regions,
   #           file = file.path(WDTables, paste0(myVars$modelName, "_classic","_NLast2YearsPerSex.csv")))
-  # 
-  # 
+  #
+  #
   # ##-- print .tex
   # row.names(NCountyEstimatesLast2Regions) <- c(paste0("\\hspace{0.5cm} ", idcountyNOR), "TOTAL")
-  # 
+  #
   # NCountyEstimatesLast2Regions <- rbind(c("F","M","Total","F","M","Total"),
   #                                       NCountyEstimatesLast2Regions)
-  # 
+  #
   # addtorow <- list()
   # addtorow$pos <- list(c(0),0)
   # addtorow$command <- c(paste0(paste0('& \\multicolumn{3}{c}{', years[(n.years-1):n.years],
   #                                     '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
-  # 
+  #
   # print(xtable(NCountyEstimatesLast2Regions, type = "latex",
   #              align = paste(c("l",rep("c",3),"|",rep("c",3)), collapse = "")),
   #       sanitize.text.function=function(x){x},
@@ -2345,16 +2967,16 @@ processRovquantOutput_bear <- function(
   #       include.colnames = F,
   #       file = file.path(WDTables,
   #                        paste0(myVars$modelName, "_classic","_NLast2YearsPerSex.tex")))
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
   # ## ------       2.1.4. ALL YEARS N PER SEX PER COUNTY ------
   # NCountyEstimatesAllSexRegions <- matrix("", ncol = n.years*3, nrow = length(idcountyTable)+1)
   # row.names(NCountyEstimatesAllSexRegions) <- c("", idcountyTable)
   # colnames(NCountyEstimatesAllSexRegions) <- rep(years, each = 3)
   # NCountyEstimatesAllSexRegions[1, ] <- rep(c("Females","Males","Total"), n.years)
-  # 
+  #
   # ##-- Fill-in table
   # for(t in 1:n.years){
   #   cols <- which(colnames(NCountyEstimatesAllSexRegions) %in% years[t])
@@ -2365,14 +2987,14 @@ processRovquantOutput_bear <- function(
   #       paste(round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
   #             round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
   #             round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
-  # 
+  #
   #     ##-- MALES
   #     colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Males")
   #     NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
   #       paste(round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
   #             round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
   #             round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
-  # 
+  #
   #     ##-- TOTAL
   #     colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Total")
   #     NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
@@ -2381,46 +3003,46 @@ processRovquantOutput_bear <- function(
   #             round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
   #   }#i
   # }#t
-  # 
+  #
   # ##-- ADJUST NAMES
   # idcounty1 <- idcountyTable
   # idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
   # row.names(NCountyEstimatesAllSexRegions) <- c("", idcounty1)
-  # 
+  #
   # ##-- print .csv
   # write.csv(NCountyEstimatesAllSexRegions,
   #           file = file.path(WDTables, paste0(myVars$modelName, "_classic","_NAllYearsPerSex.csv")))
-  # 
-  # 
+  #
+  #
   # ##-- print .tex
   # row.names(NCountyEstimatesAllSexRegions) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
-  # 
+  #
   # print(xtable(NCountyEstimatesAllSexRegions, type = "latex",
   #              align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSexRegions))),collapse = "")),
   #       sanitize.text.function = function(x){x},
   #       floating = FALSE,
   #       add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
   #       file = file.path(WDTables, paste0(myVars$modelName, "_classic","_NAllYearsPerSex.tex")))
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
   # ## ------     2.2. NUMBER OF NGS SAMPLES, IDs & DEAD RECOVERIES ------
   # ##-- Load filtered datasets
   # load(file.path(myVars$WD, "MODELS", modelNameM, "DATA", paste0(modelNameM,"_NGSData.RData")))
   # myData.aliveM <- myData.alive$myData.sp
   # myData.deadM <- myData.dead
-  # 
+  #
   # load(file.path(myVars$WD, "MODELS", modelNameF, "DATA", paste0(modelNameF,"_NGSData.RData")))
   # myData.aliveF <- myData.alive$myData.sp
   # myData.deadF <- myData.dead
-  # 
+  #
   # ##-- SOME TALLIES TO CHECK THINGS
   # ##-- NGS
   # NGS <- rbind(myData.aliveM, myData.aliveF)
   # table(NGS$Year)
   # length(NGS)
-  # 
+  #
   # ##-- FOR REPORT SUMMARY
   # length(NGS$Id)
   # length(NGS$Id[NGS$Sex=="Hunn"])
@@ -2429,7 +3051,7 @@ processRovquantOutput_bear <- function(
   # length(unique(NGS$Id))
   # length(unique(NGS$Id[NGS$Sex=="Hunn"]))
   # length(unique(NGS$Id[NGS$Sex=="Hann"]))
-  # 
+  #
   # ##-- DEAD RECOVERY
   # dead <- rbind(myData.deadF, myData.deadM)
   # dead <- dead[dead$Sex %in% c("Hunn","Hann"), ]
@@ -2437,10 +3059,10 @@ processRovquantOutput_bear <- function(
   # length(dead)
   # length(unique(dead$Id[dead$Sex=="Hunn"]))
   # length(unique(dead$Id[dead$Sex=="Hann"]))
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
   # ## ------       2.2.1. NGS SAMPLES & IDs ------
   # NGS_SEX <- matrix("", ncol = n.years*2, nrow = 3)
   # row.names(NGS_SEX) <- c( "",
@@ -2448,7 +3070,7 @@ processRovquantOutput_bear <- function(
   #                          "number of NGS individuals")
   # colnames(NGS_SEX) <- rep(years, each = 2)
   # NGS_SEX[1, ] <- rep(c("F","M"), n.years)
-  # 
+  #
   # sex <- c("Hunn","Hann")
   # sex1 <- c(0,1)
   # ye <- seq(1, n.years*2, by = 2)
@@ -2459,11 +3081,11 @@ processRovquantOutput_bear <- function(
   #     NGS_SEX["number of NGS individuals", ye[t] + sex1[s]] <- length(unique(temp$Id))
   #   }#t
   # }#s
-  # 
+  #
   # ##-- print .csv
   # write.csv(NGS_SEX,
   #           file = file.path(WDTables, paste0("NGS_SEX_classic.csv")))
-  # 
+  #
   # ##-- print .tex
   # addtorow <- list()
   # addtorow$pos <- list(c(0),0)
@@ -2475,11 +3097,11 @@ processRovquantOutput_bear <- function(
   #       floating = FALSE, include.colnames = FALSE,
   #       add.to.row = addtorow,
   #       file = file.path(WDTables, paste0("NGS_SEX_classic.tex")))
-  # 
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
+  #
   # ## ------       2.2.2. DEAD RECOVERIES by CAUSE ------
   # Dead_SEX <- matrix(0, ncol = n.years*2+1, nrow = 6)
   # row.names(Dead_SEX) <- c("","other","other","legal culling","legal culling","")
@@ -2489,7 +3111,7 @@ processRovquantOutput_bear <- function(
   # sex <- c("Hunn","Hann")
   # sex1 <- c(0,1)
   # ye <- seq(1,n.years*2,by=2)
-  # 
+  #
   # ##-- Define legal mortality causes
   # MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$DeathCause))
   # legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
@@ -2499,7 +3121,7 @@ processRovquantOutput_bear <- function(
   # legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
   # legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
   # MortalityNames[!MortalityNames %in% legalCauses]
-  # 
+  #
   # ##-- SEPARATE MORTALITIES
   # cause <- c("other","legal culling")
   # for(t in 1:n.years){
@@ -2512,15 +3134,15 @@ processRovquantOutput_bear <- function(
   #       }
   #       row <- which(rownames(Dead_SEX)==cause[d] & Dead_SEX[,1]=="Norway" )
   #       Dead_SEX[row,ye[t] + sex1[s]+1 ] <- length(unique(temp$Id[temp$Country %in% "(N)" ]))
-  # 
+  #
   #       row <- which(rownames(Dead_SEX)==cause[d] & Dead_SEX[,1]=="Sweden" )
   #       Dead_SEX[row,ye[t] + sex1[s]+1] <- length(unique(temp$Id[temp$Country %in% "(S)"]))
   #     }#t
   #     Dead_SEX[6, ye[t] + sex1[s]+1] <-  sum(as.numeric(Dead_SEX[2:6,ye[t] + sex1[s]+1]))
   #   }
   # }
-  # 
-  # 
+  #
+  #
   # ##-- summary
   # ##-- Other causes
   # sum(as.numeric(Dead_SEX[2:3,2:ncol(Dead_SEX)]))
@@ -2530,15 +3152,15 @@ processRovquantOutput_bear <- function(
   # sum(as.numeric(Dead_SEX[4:5,2:ncol(Dead_SEX)]))
   # sum(as.numeric(Dead_SEX[4:5,which(Dead_SEX[1,]=="F")]))
   # sum(as.numeric(Dead_SEX[4:5,which(Dead_SEX[1,]=="M")]))
-  # 
+  #
   # sum(as.numeric(Dead_SEX[c(2,3),2:ncol(Dead_SEX)]))/sum(as.numeric(Dead_SEX[c(2:5),2:ncol(Dead_SEX)]))
-  # 
+  #
   # ##-- %of dead reco (legal) in norway
   # sum(as.numeric(Dead_SEX[4,2:ncol(Dead_SEX)]))/sum(as.numeric(Dead_SEX[c(4,5),2:ncol(Dead_SEX)]))
   # sum(as.numeric(Dead_SEX[6,which(Dead_SEX[1,]=="M")]))
   # sum(as.numeric(Dead_SEX[6,which(Dead_SEX[1,]=="F")]))
   # sum(as.numeric(Dead_SEX[6,which(Dead_SEX[1,] %in% c("F","M"))]))
-  # 
+  #
   # ##-- print .tex
   # addtorow <- list()
   # addtorow$pos <- list(c(0),0)
@@ -2552,7 +3174,7 @@ processRovquantOutput_bear <- function(
   # multirow <- paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Other","Legal culling"), "}}")
   # multirowadd <- matrix(c("",multirow[1],"",multirow[2],"","{\\textbf{TOTAL}}"), ncol = 1)
   # Dead_SEX <- data.frame(cbind(multirowadd,Dead_SEX))
-  # 
+  #
   # print(xtable(Dead_SEX, type = "latex",
   #              align = rep("c", ncol(Dead_SEX)+1)),
   #       floating = FALSE,
@@ -2561,53 +3183,53 @@ processRovquantOutput_bear <- function(
   #       include.rownames = FALSE,
   #       sanitize.text.function = function(x){x},
   #       file = file.path(WDTables, paste0("DeadidCountrySEX_classic.tex")))
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
   # ## ------       2.2.3. PROPORTION OF INDIVIDUALS DETECTED ------
   # ##-- Get the number of individuals detected each year
   # n.detected_F <- apply(nimDataF$y.alive[ ,1, ], 2, function(x)sum(x>0))
   # colSums(nimDataF$y.alive[ ,1, ]>0)
   # n.detected_F
-  # 
+  #
   # n.detected_M <- apply(nimDataM$y.alive[ ,1, ], 2, function(x)sum(x>0))
   # colSums(nimDataM$y.alive[ ,1, ]>0)
   # n.detected_M
-  # 
+  #
   # propDetected <- matrix("", ncol = n.years, nrow = 3)
   # row.names(propDetected) <- c("F","M","Total")
   # colnames(propDetected) <- years
   # for(t in 1:n.years){
   #   propDetected["F",t] <- getCleanEstimates(
   #     n.detected_F[t]/colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions))
-  # 
+  #
   #   propDetected["M",t] <- getCleanEstimates(
   #     n.detected_M[t]/colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions))
-  # 
+  #
   #   propDetected["Total",t] <- getCleanEstimates(
   #     (n.detected_F[t]+n.detected_M[t])/
   #       (colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions)+
   #          colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions)))
   # }#t
-  # 
+  #
   # ##-- print .csv
   # write.csv(propDetected,
   #           file = file.path(WDTables, "PropDetectedIds_classic.csv"))
-  # 
+  #
   # ##-- print .tex
   # print(xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDetected))),collapse = "")),
   #       floating = FALSE, sanitize.text.function=function(x){x},
   #       add.to.row = list(list(seq(1,nrow(propDetected), by = 2)),"\\rowcolor[gray]{.96} "),
   #       file = file.path(WDTables, "PropDetectedIds_classic.tex"))
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
   # ## ------       2.2.4. NUMBER OF IDs w/ ACs OUTSIDE NORWAY ------
   # ##-- Prepare raster of countries
   # countryRaster <- habitatRasterResolution$`5km`[["Countries"]]
-  # 
+  #
   # ##-- Calculate number of individuals alive with their AC in each country each year
   # N_det_by_country <- matrix(NA,5,n.years)
   # dimnames(N_det_by_country) <- list("Countries" = c("Norway","Sweden","Finland","Russia","Out"),
@@ -2619,47 +3241,47 @@ processRovquantOutput_bear <- function(
   #   N_swe_F <- N_swe_M <- N_swe <- rep(NA,n.iter)
   #   N_out_F <- N_out_M <- N_out <- rep(NA,n.iter)
   #   for(iter in 1:n.iter){
-  # 
+  #
   #     country <- countryRaster[cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
   #     isFin <- country %in% 1
   #     isNor <- country %in% 2
   #     isRus <- country %in% 3
   #     isSwe <- country %in% 4
-  # 
+  #
   #     ##-- Detected individuals
   #     N_fin_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isFemale)
   #     N_fin_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isMale)
   #     N_fin[iter] <- N_fin_F[iter] + N_fin_M[iter]
-  # 
+  #
   #     N_nor_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isFemale)
   #     N_nor_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isMale)
   #     N_nor[iter] <- N_nor_F[iter] + N_nor_M[iter]
-  # 
+  #
   #     N_rus_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isFemale)
   #     N_rus_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isMale)
   #     N_rus[iter] <- N_rus_F[iter] + N_rus_M[iter]
-  # 
+  #
   #     N_swe_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isFemale)
   #     N_swe_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isMale)
   #     N_swe[iter] <- N_swe_F[iter] + N_swe_M[iter]
-  # 
+  #
   #     N_out_F[iter] <- N_fin_F[iter] + N_rus_F[iter] + N_swe_F[iter]
   #     N_out_M[iter] <- N_fin_M[iter] + N_rus_M[iter] + N_swe_M[iter]
   #     N_out[iter] <- N_out_F[iter] + N_out_M[iter]
   #   }#iter
-  # 
+  #
   #   N_det_by_country["Norway",t] <- getCleanEstimates(N_nor)
   #   N_det_by_country["Sweden",t] <- getCleanEstimates(N_swe)
   #   N_det_by_country["Finland",t] <- getCleanEstimates(N_fin)
   #   N_det_by_country["Russia",t] <- getCleanEstimates(N_rus)
   #   N_det_by_country["Out",t] <- getCleanEstimates(N_out)
-  # 
+  #
   #   print(t)
   # }#t
   # ##-- Print number of individuals detected per country
   # print(N_det_by_country)
-  # 
-  # 
+  #
+  #
   # ##-- Calculate number of individuals detected/undetected in Norway
   # N_NOR <- matrix(NA,3,n.years)
   # dimnames(N_NOR) <- list("#individuals" = c("Detected","Undetected","Total"),
@@ -2669,17 +3291,17 @@ processRovquantOutput_bear <- function(
   #   for(iter in 1:n.iter){
   #     country <- countryRaster[cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
   #     isNor <- country %in% 2
-  # 
+  #
   #     ##-- Detected individuals
   #     N_det[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor)
-  # 
+  #
   #     ##-- Undetected individuals
   #     N_undet[iter] <- sum(!isDetected[ ,t] & isAlive[iter, ,t] & isNor)
-  # 
+  #
   #     ##-- Total Norway
   #     N_tot[iter] <- N_det[iter] + N_undet[iter]
   #   }#iter
-  # 
+  #
   #   N_NOR["Detected",t] <- getCleanEstimates(N_det)
   #   N_NOR["Undetected",t] <- getCleanEstimates(N_det)
   #   N_NOR["Total",t] <- getCleanEstimates(N_tot)
@@ -2687,11 +3309,11 @@ processRovquantOutput_bear <- function(
   # }#t
   # ##-- Print number of individuals with AC in Norway
   # print(N_NOR)
-  # 
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
+  #
   # ## ------     2.3. VITAL RATES ------
   # parameters <- c("rho","phi", "h", "w")
   # sex <- c("F", "M")
@@ -2699,12 +3321,12 @@ processRovquantOutput_bear <- function(
   # rownames(vitalRate) <- c("", unlist(lapply(as.list(parameters), function(x)rep(x,1))))
   # colnames(vitalRate) <- c(unlist(lapply(years[1:(length(years)-1)], function(x)rep(paste(x,x+1,sep=" to "),2))))
   # vitalRate[1, ] <- c(rep(sex,(n.years-1)) )
-  # 
+  #
   # for(s in 1:2){
   #   if(s == 1){results <- results_F} else {results <- results_M}
-  # 
+  #
   #   col <- which(vitalRate[1, ] == sex[s])
-  # 
+  #
   #   ##-- Per capita recruitment
   #   if(any(grep("rho",names(results$sims.list)))){
   #     vitalRate["rho",col] <- getCleanEstimates(results$sims.list$rho, moment = "median")
@@ -2723,8 +3345,8 @@ processRovquantOutput_bear <- function(
   #       }#t
   #     }
   #   }
-  # 
-  # 
+  #
+  #
   #   ##-- Mortality & Survival
   #   if(any(grep("mhH",names(results$sims.list)))){
   #     ##-- Calculate mortality from estimated hazard rates (mhH and mhW)
@@ -2744,10 +3366,10 @@ processRovquantOutput_bear <- function(
   #       y.dead <- y.deadM
   #       z <- resultsSXYZ_MF$sims.list$z[ ,isMale, ]
   #     }
-  # 
+  #
   #     ##-- Extract survival from posteriors
   #     vitalRate["phi",col] <- apply(results$sims.list$phi, 2, function(x) getCleanEstimates(x, moment = "median"))
-  # 
+  #
   #     ##-- Derive mortality from posterior z and dead recoveries
   #     isDead <- apply((z[ , ,1:(n.years-1)] == 2)*(z[ , ,2:n.years] == 3), c(1,3), sum)
   #     wasAlive <- apply(z[ , ,1:(n.years-1)] == 2, c(1,3), sum)
@@ -2758,11 +3380,11 @@ processRovquantOutput_bear <- function(
   #     vitalRate["w",col] <- apply(w, 2, function(x) getCleanEstimates(x, moment = "median"))
   #   }#else
   # }#s
-  # 
+  #
   # ##-- Print .csv
   # write.csv( vitalRate,
   #            file = file.path(WDTables, "VitalRates_classic.csv"))
-  # 
+  #
   # ##-- Print .tex
   # addtorow <- list()
   # addtorow$pos <- list(c(0),0)
@@ -2770,7 +3392,7 @@ processRovquantOutput_bear <- function(
   #                                     '}', collapse = ''), '\\\\'), rep("\\rowcolor[gray]{.95}",1))
   # colnames(vitalRate) <- rep("", ncol(vitalRate))
   # rownames(vitalRate)[2:5] <- c("$\\rho$","$\\phi$","h","w")
-  # 
+  #
   # print(xtable(vitalRate, type = "latex",
   #              align = paste(rep("c", ncol(vitalRate)+1),collapse = "")),
   #       floating = FALSE,
@@ -2778,13 +3400,13 @@ processRovquantOutput_bear <- function(
   #       include.colnames = F,
   #       sanitize.text.function = function(x){x},
   #       file = file.path(WDTables, "VitalRates_classic.tex"))
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
   # ## ------     2.4. DERIVED PARAMETERS FROM ABUNDANCE ------
   # ## ------       2.4.1. DERIVE SEX-RATIO ------
-  # 
+  #
   # ##-- REGION-SPECIFIC PROPORTION OF FEMALES
   # PropFemale_regions <- list()
   # for(t in 1:n.years){
@@ -2793,8 +3415,8 @@ processRovquantOutput_bear <- function(
   #        DensityCountriesRegionsF[[t]]$PosteriorRegions)
   #   print(rowMeans(PropFemale_regions[[t]],na.rm = T))
   # }#t
-  # 
-  # 
+  #
+  #
   # ##-- OVERALL PROPORTION OF FEMALES
   # dim(DensityCountriesRegionsF[[t]]$PosteriorAllRegions)
   # PropFemale <- list()
@@ -2803,8 +3425,8 @@ processRovquantOutput_bear <- function(
   #     (colSums(DensityCountriesRegionsM[[t]]$PosteriorAllRegions) +
   #        colSums(DensityCountriesRegionsF[[t]]$PosteriorAllRegions))
   # }#t
-  # 
-  # 
+  #
+  #
   # ##-- Format table
   # propFemale_tab <- matrix(0, ncol = n.years, nrow = 8)
   # row.names(propFemale_tab) <- idcountyTable
@@ -2815,8 +3437,8 @@ processRovquantOutput_bear <- function(
   #   }#c
   #   propFemale_tab[8,t] <- getCleanEstimates( PropFemale[[t]] )
   # }#t
-  # 
-  # 
+  #
+  #
   # ##-- print .tex
   # row.names(propFemale_tab) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
   # print(xtable( propFemale_tab,
@@ -2826,11 +3448,11 @@ processRovquantOutput_bear <- function(
   #       sanitize.text.function = function(x){x},
   #       add.to.row = list(list(seq(1, nrow(propFemale_tab), by = 2)), "\\rowcolor[gray]{.96} "),
   #       file = file.path(WDTables, "propFemale_classic.tex"))
-  # 
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
+  #
   # # ## ------       2.4.2. DERIVE DENSITY ------
   # # habbRCarRegionsTRY <- rrRegions
   # # habbRCarRegionsTRY[!is.na(habbRCarRegionsTRY[])] <-1
@@ -2841,14 +3463,14 @@ processRovquantOutput_bear <- function(
   # # DensityCountriesRegions[[t]]$summary["Total","mean"]/areaSqKm*100
   # # DensityCountriesRegions[[t]]$summary["Total","95%CILow"]/areaSqKm*100
   # # DensityCountriesRegions[[t]]$summary["Total","95%CIHigh"]/areaSqKm*100
-  # 
-  # 
-  # 
+  #
+  #
+  #
   # ## ------       2.4.3. PROPORTION OF INDIVIDUALS DETECTED ------
   # ##-- Get the number of individuals detected each year
   # n.detected_F <-  apply(nimDataF$y.alive[ ,1, ], 2, function(x)sum(x>0))
   # n.detected_M <-  apply(nimDataM$y.alive[ ,1, ], 2, function(x)sum(x>0))
-  # 
+  #
   # propDetected <- matrix("", ncol = n.years, nrow = 3)
   # row.names(propDetected) <- c("F","M","Total")
   # colnames(propDetected) <- years
@@ -2859,34 +3481,34 @@ processRovquantOutput_bear <- function(
   #                                                  (colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions)+
   #                                                     colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions)))
   # }#t
-  # 
+  #
   # ##-- print .csv
   # write.csv(propDetected,
   #           file = file.path(WDTables, "PropDetectedIds_classic.csv"))
-  # 
+  #
   # ##-- print .tex
   # print(xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDetected))),collapse = "")),
   #       floating = FALSE, sanitize.text.function=function(x){x},
   #       add.to.row = list(list(seq(1,nrow(propDetected), by = 2)),"\\rowcolor[gray]{.96} "),
   #       file = file.path(WDTables, "PropDetectedIds_classic.tex"))
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
   # ## ------       2.4.4. GROWTH RATE ------
   # growthRate <- list()
   # for(t in 1:(n.years-1)){
   #   growthRate[[t]] <- colSums(DensityCountriesRegions[[t+1]]$PosteriorAllRegions)/
   #     colSums(DensityCountriesRegions[[t]]$PosteriorAllRegions)
   # }#t
-  # 
+  #
   # ##-- Put in a table format
   # growthRate_tab <- matrix(0, ncol = (n.years-1), nrow = 1)
   # colnames(growthRate_tab) <- paste(years[-n.years], years[-1], sep = " to ")
   # for(t in 1:(n.years-1)){
   #   growthRate_tab[1,t] <- getCleanEstimates(growthRate[[t]])
   # }#t
-  # 
+  #
   # ##-- Print .tex
   # addtorow <- list()
   # addtorow$pos <- list(c(0),0)
@@ -2894,7 +3516,7 @@ processRovquantOutput_bear <- function(
   #                                    '}', collapse = ''), '\\\\'), rep("\\rowcolor[gray]{.95}",1))
   # colnames(growthRate_tab) <- rep("", ncol(growthRate_tab))
   # rownames(growthRate_tab) <- c("$\\lambda$")
-  # 
+  #
   # print(xtable(growthRate_tab, type = "latex",
   #              align = paste(c("l", rep("c",ncol(growthRate_tab))), collapse = "")),
   #       floating = FALSE,
@@ -2902,10 +3524,10 @@ processRovquantOutput_bear <- function(
   #       include.colnames = F,
   #       sanitize.text.function = function(x){x},
   #       file = file.path(WDTables, "GrowthRates_classic.tex"))
-  # 
-  # 
-  # 
-  # 
+  #
+  #
+  #
+  #
   # ## ------     2.5. TABLE OTHERS ------
   # if(is.null(dim(results$sims.list$betaDens))){
   #   parameters <- c("tau","betaDead","sigma","betaDet","betaDet")
@@ -2914,7 +3536,7 @@ processRovquantOutput_bear <- function(
   #   rownames(TableOthers) <- parameters
   #   colnames(TableOthers) <- c("", sex)
   #   TableOthers[ ,1] <- c("$\\tau$","$\\beta_{dead}$","$\\sigma$","$\\beta_{roads}$","$\\beta_{obs}$")
-  # 
+  #
   #   for(s in 1:2){
   #     if(s == 1){results <- results_F} else {results <- results_M}
   #     TableOthers["tau",sex[s]] <- getCleanEstimates(results$sims.list$tau/raster::res(habitat$habitat.r)[1], moment = "median")
@@ -2922,27 +3544,27 @@ processRovquantOutput_bear <- function(
   #     TableOthers["sigma",sex[s]] <- getCleanEstimates(results$sims.list$sigma/raster::res(habitat$habitat.r)[1],moment = "median")
   #     TableOthers[which(parameters == "betaDet"),sex[s]] <- apply(results$sims.list$betaDet, 2,function(x) getCleanEstimates(x,moment = "median"))
   #   }#s
-  # 
+  #
   #   ##-- Deal with negative values
   #   TableOthers <- gsub("--", "-(-)", TableOthers)
-  # 
+  #
   #   ##-- Change row names
   #   row.names(TableOthers) <- c("Spatial process","","Detection Process","","")
-  # 
-  # 
+  #
+  #
   #   ##-- Print .tex
   #   multirow <- c("\\multirow{2}{*}{\\textbf{Spatial process}}",
   #                 "\\multirow{3}{*}{\\textbf{Detection process}}")
   #   multirowadd <- matrix(c(multirow[1],"",multirow[2],"",""), ncol = 1)
   #   TableOthers <- data.frame(cbind(multirowadd, TableOthers))
-  # 
+  #
   #   addtorow <- list()
   #   addtorow$pos <- list(0,0,3)
   #   addtorow$command <- c(paste0("& {\\textbf{Parameters}} ",
   #                                paste0('& {\\textbf{',  sex, '}}', collapse = ''), '\\\\'),
   #                         rep("\\rowcolor[gray]{.95}",1),
   #                         "\\hline")
-  # 
+  #
   #   print(xtable(TableOthers, type = "latex",
   #                align = paste(c("ll", rep("c",ncol(TableOthers)-1)), collapse = "")),
   #         sanitize.text.function = function(x){x},
@@ -2963,7 +3585,7 @@ processRovquantOutput_bear <- function(
   #                         "$\\beta_{dead}_{1}$","$\\beta_{obs}_{1}$",
   #                         "$\\beta_{dead}_{2}$","$\\beta_{obs}_{2}$",
   #                         "$\\sigma$","$\\beta_{roads}$","$\\beta_{skandobs}$")
-  # 
+  #
   #   for(s in 1:2){
   #     if(s == 1){results <- results_F} else {results <- results_M}
   #     TableOthers["tau",sex[s]] <- getCleanEstimates(results$sims.list$tau/1000, moment = "median")
@@ -2974,22 +3596,22 @@ processRovquantOutput_bear <- function(
   #   }#s
   #   ##-- Deal with negative values
   #   TableOthers <- gsub("--", "-(-)", TableOthers)
-  # 
+  #
   #   ##-- Change row names
   #   row.names(TableOthers) <- c("Spatial process","","","","",
   #                               "Detection Process","","")
-  # 
+  #
   #   ##-- Print .tex
   #   multirow <- c("\\multirow{5}{*}{\\textbf{Spatial process}}","\\multirow{3}{*}{\\textbf{Detection process}}")
   #   multirowadd <- matrix(c(multirow[1],"","","","",multirow[2],"",""), ncol = 1)
   #   TableOthers <- data.frame(cbind(multirowadd, TableOthers))
-  # 
+  #
   #   addtorow <- list()
   #   addtorow$pos <- list(0,5)
   #   addtorow$command <- c(paste0("& {\\textbf{Parameters}} ",
   #                                paste0('& {\\textbf{',  sex, '}}', collapse = ''), '\\\\'),
   #                         "\\hline")
-  # 
+  #
   #   print(xtable(TableOthers, type = "latex",
   #                align = paste(c("ll", rep("c",ncol(TableOthers)-1)), collapse = "")),
   #         sanitize.text.function = function(x){x},
@@ -2999,10 +3621,3 @@ processRovquantOutput_bear <- function(
   #         add.to.row = addtorow,
   #         file = file.path(WDTables, "TableParametersOthers_classic.tex"))
   # }
-  
-  
-  return(list( SPECIES = "Brown bear", 
-               engSpecies = "bear",
-               DATE = DATE,
-               YEARS = years))
-}
