@@ -53,7 +53,7 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/R
 ##------------------------------------------------------------------------------
 ## ----- II. CLEAN NGS DATA -----
 
-cleanRovbaseData_bear( 
+cleanRovbaseData( 
   species = "bear",
   years = 2020:2024,
   data.dir = data.dir,

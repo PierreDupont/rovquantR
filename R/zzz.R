@@ -31,14 +31,38 @@
                               'dbinomLocal_normalCovs(detNums = -999, detIndices    , size, p0       , p0Traps = s, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor = 1 , habitatGrid, indicator, lengthYCombined = 0, allowNoLocal, trapCovs, trapCovsIntercept, trapBetas)',
                               'dbinomLocal_normalCovs(detNums       , detIndices    , size, p0       , p0Traps = s, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor = 1 , habitatGrid, indicator, lengthYCombined = 0, allowNoLocal, trapCovs, trapCovsIntercept, trapBetas)'
                     ),
-                    types = c('value = double(1)', 'detIndices = double(1)', 'size = double(1)', 'p0Traps = double(1)', 's = double(1)', 'trapCoords = double(2)', 'localTrapsIndices = double(2)', 'localTrapsNum = double(1)', 'habitatGrid = double(2)', 'trapCovs = double(2)', 'trapCovsIntercept =  double(1)', 'trapBetas = double(1)'),
+                    types = c('value = double(1)', 'detIndices = double(1)', 'size = double(1)', 'p0Traps = double(1)', 's = double(1)', 'trapCoords = double(2)',
+                              'localTrapsIndices = double(2)', 'localTrapsNum = double(1)', 'habitatGrid = double(2)', 'trapCovs = double(2)', 'trapCovsIntercept =  double(1)', 'trapBetas = double(1)'),
                     discrete = TRUE,
                     mixedSizes = TRUE,
                     pqAvail = FALSE
-                )
+                )), verbose = F)
+      
+      
+      # dbinomLocal_normalCovsResponse
+      registerDistributions(
+        list(
+          dbinomLocal_normalCovsResponse = list(
+            BUGSdist ='dbinomLocal_normalCovsResponse(detNums       , detIndices    , size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor     , habitatGrid, indicator, lengthYCombined    , trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+            Rdist = c('dbinomLocal_normalCovsResponse(detNums       , detIndices    , size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor     , habitatGrid, indicator, lengthYCombined    , trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+                      'dbinomLocal_normalCovsResponse(detNums       , detIndices    , size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor     , habitatGrid, indicator, lengthYCombined = 0, trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+                      'dbinomLocal_normalCovsResponse(detNums = -999, detIndices    , size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor     , habitatGrid, indicator, lengthYCombined    , trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+                      'dbinomLocal_normalCovsResponse(detNums = -999, detIndices = s, size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor     , habitatGrid, indicator, lengthYCombined    , trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+                      'dbinomLocal_normalCovsResponse(detNums = -999, detIndices = s, size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor = 1 , habitatGrid, indicator, lengthYCombined    , trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+                      'dbinomLocal_normalCovsResponse(detNums = -999, detIndices    , size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor     , habitatGrid, indicator, lengthYCombined = 0, trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+                      'dbinomLocal_normalCovsResponse(detNums = -999, detIndices = s, size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor = 1 , habitatGrid, indicator, lengthYCombined = 0, trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+                      'dbinomLocal_normalCovsResponse(detNums       , detIndices    , size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor = 1 , habitatGrid, indicator, lengthYCombined    , trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+                      'dbinomLocal_normalCovsResponse(detNums = -999, detIndices    , size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor = 1 , habitatGrid, indicator, lengthYCombined    , trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+                      'dbinomLocal_normalCovsResponse(detNums = -999, detIndices    , size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor = 1 , habitatGrid, indicator, lengthYCombined = 0, trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)',
+                      'dbinomLocal_normalCovsResponse(detNums       , detIndices    , size, p0State, sigma, s, trapCoords, localTrapsIndices, localTrapsNum, resizeFactor = 1 , habitatGrid, indicator, lengthYCombined = 0, trapCountries, trapCovs, trapBetas, trapResponse, betaResponse)'
             ),
-            verbose = F)
-        
+            types = c('value = double(1)', 'detIndices = double(1)', 'size = double(1)', 'p0State = double(1)', 's = double(1)', 'trapCoords = double(2)', 'localTrapsIndices = double(2)', 'localTrapsNum = double(1)', 'habitatGrid = double(2)', 'trapCovs = double(2)', 'trapCovsIntercept =  double(1)', 'trapBetas = double(1)'),
+            discrete = TRUE,
+            mixedSizes = TRUE,
+            pqAvail = FALSE
+          )), verbose = F)
+      
+      
         # dcatHR
         registerDistributions(list(
           dcatHR = list(
