@@ -1,4 +1,4 @@
-#' Local evaluation of a binomial SCR detection process 
+#' Local evaluation of a binomial SCR detection process with spatial covariates
 #'
 #' The \code{dbinomLocal_normalCovs} distribution is a NIMBLE custom distribution which can be used to model and simulate
 #' binomial observations (\emph{x}) of a single individual over a set of detectors defined by their 
@@ -23,7 +23,6 @@
 #' }
 #' 
 #' 
-#' 
 #' @name dbinomLocal_normalCovs
 #'
 #' @param x Vector of individual detection frequencies. This argument can be provided in two formats: (i) with the \emph{y} object as returned by the \code{\link{getSparseY}} function; (ii) with the \emph{yCombined} object as returned by \code{\link{getSparseY}}. 
@@ -45,16 +44,16 @@
 #' @param indicator Logical argument specifying whether the individual is available for detection.
 #' @param lengthYCombined The length of the  x argument when the (\emph{yCombined}) format of the detection data is provided (as returned by the \emph{lengthYCombined} object from \code{\link{getSparseY}}). 
 #' @param allowNoLocal To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE). 
-#' @param trapCovs To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE). 
-#' @param trapCovsIntercept To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE). 
-#' @param trapBetas To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE). 
+#' @param trapCovs Matrix of detector-specific covariate values. 
+#' @param trapCovsIntercept Vector of baseline detection probabilities for each trap used in the half-normal detection function. When \emph{p0Traps} is used, \emph{p0} should not be provided.  
+#' @param trapBetas Vector of covariate coefficients. 
 
 #' @param log Logical argument, specifying whether to return the log-probability of the distribution.
 #'
 #' @return The log-likelihood value associated with the vector of detections, given the location of the activity center (s),
 #'  and the half-normal detection function : \eqn{p = p0 * exp(-d^2 / \sigma^2)}.
 #'
-#' @author Cyril Milleret, Soumen Dey, Pierre Dupont
+#' @author Pierre Dupont
 #'
 #' @import nimble 
 #' @importFrom stats dbinom rbinom
@@ -82,7 +81,7 @@ dbinomLocal_normalCovs <- nimbleFunction(
                   lengthYCombined = double(0, default = 0),
                   allowNoLocal = double(0, default = 0),
                   trapCovs = double(2),
-                  trapCovsIntercept =  double(1),
+                  trapCovsIntercept = double(1),
                   trapBetas = double(1),
                   log = integer(0, default = 0)
   ){
@@ -147,7 +146,7 @@ dbinomLocal_normalCovs <- nimbleFunction(
     count <- 1 
     
     
-    if(p0==-999){# when p0 is provided through p0Traps
+    if(p0 == -999){# when p0 is provided through p0Traps
       for(r in 1:localTrapsNum[sID]){
         d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) +
           pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
@@ -159,20 +158,22 @@ dbinomLocal_normalCovs <- nimbleFunction(
          if(theseLocalTraps[r] == detIndices1[count]){ 
           logProb <-  logProb + dbinom(x1[count], prob = p, size = size[theseLocalTraps[r]], log = TRUE)
           count <- count + 1
-        }else{
+        } else {
           logProb <- logProb + dbinom(0, prob = p, size = size[theseLocalTraps[r]], log = TRUE)
         }
       }
-    }else{# when p0 is provide through p0
+    } else {# when p0 is provide through p0
       for(r in 1:localTrapsNum[sID]){
+        
+        d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) +
+          pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
+        
+        p <- p0 * exp(alpha * d2)
+        
         if(theseLocalTraps[r] == detIndices1[count]){ 
-          d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
-          p <- p0 * exp(alpha * d2)
           logProb <-  logProb + dbinom(x1[count], prob = p, size = size[theseLocalTraps[r]], log = TRUE)
           count <- count + 1
-        }else{
-          d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
-          p <- p0 * exp(alpha * d2)
+        } else {
           logProb <- logProb + dbinom(0, prob = p, size = size[theseLocalTraps[r]], log = TRUE)
         }
       }
@@ -207,25 +208,21 @@ rbinomLocal_normalCovs <- nimbleFunction(
                   lengthYCombined = double(0, default = 0),
                   allowNoLocal = double(0, default = 0),
                   trapCovs =  double(2),
-                  trapCovsIntercept =  double(1),
+                  trapCovsIntercept = double(1),
                   trapBetas = double(1)
   ) {
     ## Specify return type
     returnType(double(1))
-    if(detNums >= 0) stop("Random generation for the rbinomLocal_normal distribution is not currently supported without combining all individual detections information in one vector. See 'getSparseY()'")
+    if(detNums >= 0) stop("Random generation for the rbinomLocal_normalCovs distribution is not currently supported without combining all individual detections information in one vector. See 'getSparseY()'")
     
-    #========================================================
-    # RETURN TYPE DECLARATION
+    ## RETURN TYPE DECLARATION
     if(n!=1){print("rbinomLocal_normal only allows n = 1; using n = 1")}
-    # returnType(double(3))
-    # len <- 2*MAX + 1
+
     ## GET NECESSARY INFO
     alpha <- -1.0 / (2.0 * sigma * sigma)
-    # n.detectors <- dim(detector.xy)[1]
-    # nMAxDetections <- length(detIndices)
-    nMAxDetections <- (lengthYCombined-1)/2
+    nMAxDetections <- (lengthYCombined - 1)/2
+    
     ## SHORTCUT IF INDIVIDUAL IS NOT AVAILABLE FOR DETECTION
-    #if(indicator == 0){return(rep(0.0, 2*nMAxDetections + 1))}
     if(indicator == 0){return(rep(0.0, lengthYCombined))}
     
     ## RETRIEVE THE ID OF THE HABITAT WINDOW THE CURRENT sxy FALLS IN FROM THE HABITAT_ID MATRIX
@@ -241,7 +238,8 @@ rbinomLocal_normalCovs <- nimbleFunction(
     count <- 1
     
     ## SAMPLE THE DETECTION HISTORY (FOR RELEVANT DETECTORS ONLY)
-    if(p0==-999){## when p0 is provided through p0Traps
+    if(p0 == -999){
+      ## when p0 is provided through p0Traps
       for(r in 1:localTrapsNum[sID]){
         d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
         p0Trap <- ilogit(logit(p0Traps[trapCovsIntercept[theseLocalTraps[r]]]) +
@@ -258,12 +256,16 @@ rbinomLocal_normalCovs <- nimbleFunction(
           count <- count + 1
         }#if
       }#r 
-    }else{## when p0 is provided through p0
+    } else {
+      ## when p0 is provided through p0
       for(r in 1:localTrapsNum[sID]){
+        
         d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
         p <- p0 * exp(alpha * d2)
-        # Draw the observation at detector j from a binomial distribution with probability p
+        
+        ## Draw the observation at detector j from a binomial distribution with probability p
         detectOut[r] <- rbinom(1, size[theseLocalTraps[r]], p)
+        
         if(detectOut[r] >0){
           if(nMAxDetections<count){stop("Simulated individual detections occur at more traps than what can be stored within x.\n
                                           You may need to augment the size of the x object with the argument 'nMaxTraps' from the getSparseY() function")}
@@ -275,8 +277,6 @@ rbinomLocal_normalCovs <- nimbleFunction(
       
     }
     count <- count - 1
-    
-    # out <- rep(-1, 2*nMAxDetections + 1)
     out <- rep(-1, lengthYCombined)
     
     out[1] <- count
@@ -284,6 +284,7 @@ rbinomLocal_normalCovs <- nimbleFunction(
       out[2:(count+1)] <- ys[1:count]
       out[(nMAxDetections+2):(nMAxDetections+count+1)] <- dets[1:count]
     }
+    
     ## OUTPUT
     return(out)
   })

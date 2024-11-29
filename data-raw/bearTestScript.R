@@ -55,7 +55,7 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/R
 
 cleanRovbaseData( 
   species = "bear",
-  years = 2020:2024,
+  years = 2012:2024,
   data.dir = data.dir,
   working.dir = working.dir)
 
