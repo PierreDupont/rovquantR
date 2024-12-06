@@ -245,12 +245,15 @@ rbinomLocal_normalCovs <- nimbleFunction(
         p0Trap <- ilogit(logit(p0Traps[trapCovsIntercept[theseLocalTraps[r]]]) +
                           inprod(trapBetas,trapCovs[theseLocalTraps[r], ]))
         p <- p0Trap * exp(alpha * d2)
-        #p <- p0Traps[theseLocalTraps[r]] * exp(alpha * d2)
-        # Draw the observation at detector j from a binomial distribution with probability p
+
+        ## Draw the observation at detector j from a binomial distribution with probability p
         detectOut[r] <- rbinom(1, size[theseLocalTraps[r]], p)
+        
         if(detectOut[r] >0){
-          if(nMAxDetections<count){stop("Simulated individual detections occur at more traps than what can be stored within x.\n
-                                          You may need to augment the size of the x object with the argument 'nMaxTraps' from the getSparseY() function")}
+          if(nMAxDetections<count){
+            stop("Simulated individual detections occur at more traps than what can be stored within x.\n
+                  You may need to augment the size of the x object with the argument 'nMaxTraps' from the getSparseY() function")
+          }
           ys[count] <- detectOut[r]
           dets[count] <- theseLocalTraps[r]
           count <- count + 1
@@ -267,14 +270,15 @@ rbinomLocal_normalCovs <- nimbleFunction(
         detectOut[r] <- rbinom(1, size[theseLocalTraps[r]], p)
         
         if(detectOut[r] >0){
-          if(nMAxDetections<count){stop("Simulated individual detections occur at more traps than what can be stored within x.\n
-                                          You may need to augment the size of the x object with the argument 'nMaxTraps' from the getSparseY() function")}
+          if(nMAxDetections<count){
+            stop("Simulated individual detections occur at more traps than what can be stored within x.\n
+                  You may need to augment the size of the x object with the argument 'nMaxTraps' from the getSparseY() function")
+          }
           ys[count] <- detectOut[r]
           dets[count] <- theseLocalTraps[r]
           count <- count + 1
         }#if
       }#r 
-      
     }
     count <- count - 1
     out <- rep(-1, lengthYCombined)
