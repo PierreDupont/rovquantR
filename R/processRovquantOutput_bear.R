@@ -30,13 +30,14 @@
 #' @importFrom nimbleSCR scaleCoordsToHabitatGrid
 #' @importFrom abind abind
 #' @importFrom utils data
+#' @importFrom xtable xtable
 #' 
 #' @rdname processRovquantOutput_bear
 #' @export
 processRovquantOutput_bear <- function(
   ##-- paths
   data.dir = getwd(),
-  working.dir = getwd(),
+  working.dir = NULL,
   ##-- MCMC
   nburnin = 0,
   niter = 100,
@@ -152,7 +153,7 @@ processRovquantOutput_bear <- function(
     
     ##-- Traceplots
     grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
-    plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
+    plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
     dev.off()
     
     ##-- Process MCMC output
@@ -221,7 +222,8 @@ processRovquantOutput_bear <- function(
                                                function(x) x == 1)
   
   ##-- Habitat raster with extent used in the model
-  habitatPolygon5km <- raster::crop( extraction.raster$Habitat, habitat$habitat.r)
+  habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
+                                     habitat$habitat.r)
   
   ##-- Create 5km raster for extraction
   rrRegions <- extraction.raster$Regions
@@ -240,7 +242,7 @@ processRovquantOutput_bear <- function(
   row.names(regionID) <- row.names(densityInputRegions$regions.rgmx)
   regionID <- as.matrix(regionID[row.names(regionID) %in% regions.names, ])
   
-  ##-- Calculate area of extraction
+   ##-- Calculate area of extraction
   #sum(colSums(regionID)>0)
   
   ##-- Select n.iter iterations randomly
@@ -458,7 +460,8 @@ processRovquantOutput_bear <- function(
   plot(-1000,
        xlim = c(0.5, n.years + 0.5),
        ylim = c(0,180),
-       xlab = "", ylab = paste("Number of bears"), xaxt = "n", axes = F, cex.lab = 1.6)
+       xlab = "", ylab = paste("Number of bears"),
+       xaxt = "n", axes = F, cex.lab = 1.6)
   axis(1, at = c(1:n.years), labels = years, cex.axis = 1.6)
   axis(2, at = seq(0,170,20), labels = seq(0,170,20), cex.axis = 1.6)
   abline(v = (0:n.years)+0.5, lty = 2)
@@ -554,7 +557,7 @@ processRovquantOutput_bear <- function(
   
   ##-- print .tex
   row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
-  print(xtable( NCarRegionEstimates,
+  print(xtable::xtable( NCarRegionEstimates,
                 type = "latex",
                 align = paste(c("l",rep("c",ncol(NCarRegionEstimates))),collapse = "")),
         floating = FALSE,
@@ -601,7 +604,7 @@ processRovquantOutput_bear <- function(
 
   ##-- print .tex
   row.names(NCountyEstimatesLastRegions) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
-  print(xtable(NCountyEstimatesLastRegions, type = "latex",
+  print(xtable::xtable(NCountyEstimatesLastRegions, type = "latex",
                align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions))), collapse = "")),
         sanitize.text.function=function(x){x},
         floating = FALSE,
@@ -647,7 +650,7 @@ processRovquantOutput_bear <- function(
 
   ##-- print .tex
   row.names(NCountyEstimatesLastRegions_UD) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
-  print(xtable(NCountyEstimatesLastRegions_UD, type = "latex",
+  print(xtable::xtable(NCountyEstimatesLastRegions_UD, type = "latex",
                align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions_UD))), collapse = "")),
         sanitize.text.function=function(x){x},
         floating = FALSE,
@@ -703,7 +706,7 @@ processRovquantOutput_bear <- function(
   ##-- print .tex
   row.names(NCountyEstimatesAllSexRegions) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
 
-  print(xtable(NCountyEstimatesAllSexRegions, type = "latex",
+  print(xtable::xtable(NCountyEstimatesAllSexRegions, type = "latex",
                align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSexRegions))),collapse = "")),
         sanitize.text.function = function(x){x},
         floating = FALSE,
@@ -778,7 +781,7 @@ processRovquantOutput_bear <- function(
   # addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGS_SEX))),
   #                                     '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
   # colnames(NGS_SEX) <- rep("", ncol(NGS_SEX))
-  # print(xtable(NGS_SEX, type = "latex",
+  # print(xtable::xtable(NGS_SEX, type = "latex",
   #              align = paste(c("l",rep("c",ncol(NGS_SEX))), collapse = "")),
   #       floating = FALSE, include.colnames = FALSE,
   #       add.to.row = addtorow,

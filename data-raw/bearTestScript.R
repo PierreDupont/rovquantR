@@ -65,7 +65,6 @@ cleanRovbaseData(
 ## ----- III. PREPARE OPSCR DATA ------
 
 makeRovquantData(    
-  ##-- paths
   species = "bear",
   #years = 2020:2024,
   data.dir = data.dir,
@@ -79,7 +78,7 @@ makeRovquantData(
 ## -----   1. Females ------
 
 ##-- List all prepared input files
-inputFiles <- list.files(file.path( working.dir, "nimbleInFiles/Hunn"),
+inputFiles <- list.files(file.path(working.dir, "nimbleInFiles/Hunn"),
                          full.names = T)
 
 ##-- Load the first one
@@ -154,7 +153,6 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 ## ----- V. PROCESS ROVQUANT OUTPUT ------
 
 processRovquantOutput(   
-  ##-- paths
   species = "bear",
   data.dir = data.dir,
   working.dir = working.dir)
