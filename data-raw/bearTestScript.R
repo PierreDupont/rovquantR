@@ -43,10 +43,10 @@ library(nimbleSCR)
 ##-- DATA DIRECTORY
 ##-- Directory containing the raw data necessary for the analysis
 ##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
-data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/Data"
+data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/bear/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/test.2"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/bear/test"
 
 
 
@@ -65,7 +65,6 @@ cleanRovbaseData(
 ## ----- III. PREPARE OPSCR DATA ------
 
 makeRovquantData(    
-  ##-- paths
   species = "bear",
   #years = 2020:2024,
   data.dir = data.dir,
@@ -79,7 +78,7 @@ makeRovquantData(
 ## -----   1. Females ------
 
 ##-- List all prepared input files
-inputFiles <- list.files(file.path( working.dir, "nimbleInFiles/Hunn"),
+inputFiles <- list.files(file.path(working.dir, "nimbleInFiles/Hunn"),
                          full.names = T)
 
 ##-- Load the first one
@@ -154,7 +153,6 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 ## ----- V. PROCESS ROVQUANT OUTPUT ------
 
 processRovquantOutput(   
-  ##-- paths
   species = "bear",
   data.dir = data.dir,
   working.dir = working.dir)

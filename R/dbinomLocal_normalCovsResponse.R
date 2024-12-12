@@ -35,42 +35,6 @@
 #' }
 #' 
 #' 
-#' Local evaluation of a binomial SCR detection process 
-#'
-#' The \code{dbinomLocal_normalCovsResponse} distribution is a NIMBLE custom 
-#' distribution which can be used to model and simulate binomial observations (\emph{x}) 
-#' of a single individual over a set of detectors defined by their coordinates
-#' (\emph{detector.xy}). The distribution assumes that an individual’s detection
-#' probability at any detector follows a half-normal function of the distance 
-#' between the  individual's activity center (\emph{sxy}) and the detector location. 
-#' All coordinates (\emph{sxy} and \emph{detector.xy}) should be scaled to the habitat
-#' (see \code{\link{scaleCoordsToHabitatGrid}}).
-#'
-#' The \code{dbinomLocal_normalCovsResponse} distribution incorporates three
-#'  features to increase computation efficiency (see Turek et al., 2021 <doi.org/10.1002/ecs2.3385>  for more details):
-#' \enumerate{
-#' \item A local evaluation of the detection probability calculation 
-#' (see Milleret et al., 2019 <doi:10.1002/ece3.4751> for more details)
-#' \item A sparse matrix representation (\emph{x}, \emph{yDets} and 
-#' \emph{detNums}) of the observation data to reduce the size of objects to be 
-#' processed.
-#' \item An indicator (\emph{indicator}) to shortcut calculations for individuals 
-#' unavailable for detection.
-#' }
-#' 
-#' The \code{dbinomLocal_normalCovsResponse} distribution requires x- and y- detector 
-#' coordinates (\emph{trapCoords}) and activity centers coordinates (\emph{s}) 
-#' to be scaled to the habitat grid (\emph{habitatGrid}) using the 
-#' (\code{\link{scaleCoordsToHabitatGrid}} function.)
-#'
-#' When the aim is to simulate detection data: 
-#' \enumerate{
-#' \item \emph{x} should be provided using the \emph{yCombined} object as returned by \code{\link{getSparseY}}, 
-#' \item arguments \emph{detIndices} and \emph{detNums} should not be provided, 
-#' \item argument \emph{lengthYCombined} should be provided using the \emph{lengthYCombined} object as returned by  \code{\link{getSparseY}}.
-#' }
-#' 
-#' 
 #' 
 #' @name dbinomLocal_normalCovsResponse
 #'
@@ -132,8 +96,8 @@ dbinomLocal_normalCovsResponse <- nimbleFunction(
                   responseCovs = double(0),
                   responseBetas = double(0),
                   log = integer(0, default = 0)
-                  ){
-
+  ){
+    
     ## Return type declaration
     returnType(double(0))
     
@@ -162,48 +126,48 @@ dbinomLocal_normalCovsResponse <- nimbleFunction(
     ## Retrieve the index of the habitat cell where the current AC is
     sID <- habitatGrid[trunc(s[2]/resizeFactor)+1, trunc(s[1]/resizeFactor)+1]
     
-   ## Retrieve the indices of the local traps surrounding the selected habitat grid cell
-   theseLocalTraps <- localTrapsIndices[sID,1:localTrapsNum[sID]]
-   
-   ## Check if detections are within the list of local traps
-   if(detNums > 0){
-     for(r in 1:detNums){
-       if(sum(detIndices1[r] == theseLocalTraps) == 0){
-         if(log == 0) return(0.0)
-         else return(-Inf)
-       }
-     }#r
-   }
-   
-   ## Calculate the log-probability of the vector of detections
-   alpha <- -1.0 / (2.0 * sigma * sigma)
-   logitp0 <- logit(p0State)
-   logProb <- 0.0 
-   detIndices1 <- c(detIndices1, 0)
-   indCov <- trapResponse * betaResponse
-   count <- 1 
-   
-   for(r in 1:localTrapsNum[sID]){
-       ## Calculate distance to local traps
-       d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) +
-         pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
-       ## Calculate p0 
-       pZero <- ilogit(logitp0[trapCountries[theseLocalTraps[r]]] + 
-                         inprod(trapBetas,trapCovs[theseLocalTraps[r], ]) +
-                         indCov)
-       p <- pZero * exp(alpha * d2)
-       
-       if(theseLocalTraps[r] == detIndices1[count]){ 
-         logProb <- logProb + dbinom(x1[count], prob = p, size = size[theseLocalTraps[r]], log = TRUE)
-         count <- count + 1
-       } else {
-         logProb <- logProb + dbinom(0, prob = p, size = size[theseLocalTraps[r]], log = TRUE)
-       }
-     }#r
-
-   if(log)return(logProb)
-   return(exp(logProb))
-})
+    ## Retrieve the indices of the local traps surrounding the selected habitat grid cell
+    theseLocalTraps <- localTrapsIndices[sID,1:localTrapsNum[sID]]
+    
+    ## Check if detections are within the list of local traps
+    if(detNums > 0){
+      for(r in 1:detNums){
+        if(sum(detIndices1[r] == theseLocalTraps) == 0){
+          if(log == 0) return(0.0)
+          else return(-Inf)
+        }
+      }#r
+    }
+    
+    ## Calculate the log-probability of the vector of detections
+    alpha <- -1.0 / (2.0 * sigma * sigma)
+    logitp0 <- logit(p0State)
+    logProb <- 0.0 
+    detIndices1 <- c(detIndices1, 0)
+    indCov <- trapResponse * betaResponse
+    count <- 1 
+    
+    for(r in 1:localTrapsNum[sID]){
+      ## Calculate distance to local traps
+      d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) +
+        pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
+      ## Calculate p0 
+      pZero <- ilogit(logitp0[trapCountries[theseLocalTraps[r]]] + 
+                        inprod(trapBetas,trapCovs[theseLocalTraps[r], ]) +
+                        indCov)
+      p <- pZero * exp(alpha * d2)
+      
+      if(theseLocalTraps[r] == detIndices1[count]){ 
+        logProb <- logProb + dbinom(x1[count], prob = p, size = size[theseLocalTraps[r]], log = TRUE)
+        count <- count + 1
+      } else {
+        logProb <- logProb + dbinom(0, prob = p, size = size[theseLocalTraps[r]], log = TRUE)
+      }
+    }#r
+    
+    if(log)return(logProb)
+    return(exp(logProb))
+  })
 
 
 NULL
@@ -228,7 +192,7 @@ rbinomLocal_normalCovsResponse <- nimbleFunction(
                   trapCovs = double(2),
                   trapBetas = double(1),
                   responseCovs = double(0),
-                  responseBetas = double(0),
+                  responseBetas = double(0)
   ) {
     ## Specify return type
     returnType(double(1))
@@ -254,14 +218,22 @@ rbinomLocal_normalCovsResponse <- nimbleFunction(
     detectOut <- rep(0, localTrapsNum[sID])
     ys <- rep(-1, nMAxDetections)
     dets <- rep(-1, nMAxDetections)
+    logitp0 <- logit(p0State)
+    indCov <- trapResponse * betaResponse
     count <- 1
     
     ## SAMPLE THE DETECTION HISTORY (FOR RELEVANT DETECTORS ONLY)
     for(r in 1:localTrapsNum[sID]){
-      d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
-      p0Trap <- ilogit(logit(p0Traps[trapCovsIntercept[theseLocalTraps[r]]]) +
-                         inprod(trapBetas,trapCovs[theseLocalTraps[r], ]))
-      p <- p0Trap * exp(alpha * d2)
+      ## Calculate distance to local traps
+      d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) +
+        pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
+      
+      ## Calculate p0 
+      pZero <- ilogit(logitp0[trapCountries[theseLocalTraps[r]]] + 
+                        inprod(trapBetas,trapCovs[theseLocalTraps[r], ]) +
+                        indCov)
+      p <- pZero * exp(alpha * d2)
+      
       ## Draw the observation at detector j from a binomial distribution with probability p
       detectOut[r] <- rbinom(1, size[theseLocalTraps[r]], p)
       if(detectOut[r] > 0){
@@ -274,17 +246,16 @@ rbinomLocal_normalCovsResponse <- nimbleFunction(
         count <- count + 1
       }#if
     }#r 
-
+    
+    ## Format output vector
     count <- count - 1
-    
-    # out <- rep(-1, 2*nMAxDetections + 1)
     out <- rep(-1, lengthYCombined)
-    
     out[1] <- count
     if(count >= 1){
       out[2:(count+1)] <- ys[1:count]
       out[(nMAxDetections+2):(nMAxDetections+count+1)] <- dets[1:count]
     }
+    
     ## OUTPUT
     return(out)
   })
