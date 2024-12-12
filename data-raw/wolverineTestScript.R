@@ -30,7 +30,7 @@ gc()
 
 ## ------ IMPORT REQUIRED LIBRARIES ------
 
-devtools::install_github("PierreDupont/rovquantR")
+# devtools::install_github("PierreDupont/rovquantR")
 ## Ctrl + Shift + F10 (to restart R session)
 library(rovquantR)
 library(nimbleSCR)
@@ -46,7 +46,8 @@ library(nimbleSCR)
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/wolverine/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/wolverine/test"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/wolverine/2024"
+
 
 
 ##------------------------------------------------------------------------------
@@ -54,7 +55,7 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/w
 
 cleanRovbaseData( 
   species = "wolverine",
-  years = 2020:2024,
+  years = 2015:2024,
   data.dir = data.dir,
   working.dir = working.dir)
 

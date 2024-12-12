@@ -2,9 +2,9 @@
 params:
   species: "Brown bear"
   years: !r 2012:as.numeric(format(Sys.Date(), "%Y"))
-  sex: c("Hunn","Hann")  
-  sampling.months: 4:11
-  rename.list: NULL
+  sex: !r c("Hunn","Hann")  
+  sampling.months: !r 4:11
+  rename.list: !r NULL
   dir.in: !r getwd()
   dir.out: !r getwd() 
   date: !r Sys.Date()   
@@ -44,7 +44,7 @@ dir.out <- params$dir.out
 ##-- Species
 if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjørn", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
   engSpecies <- "bear"
-  norSpecies <- "Bjørn"
+  norSpecies <- c("Bjørn", "BjÃ¸rn")
 } else {
   if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
     engSpecies <- "wolf"
