@@ -76,11 +76,11 @@ load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNew
 ##-- between encodings.
 COUNTIES$NAME_1 <- stri_trans_general(COUNTIES$NAME_1, "Latin-ASCII")
 stri_enc_isutf8(COUNTIES$NAME_1)
+COUNTIES <- st_simplify(COUNTIES,dTolerance = 500)
 
-COUNTIES2 <- st_simplify(COUNTIES,dTolerance = 100)
 
 ##-- Save necessary data in the right folder (./data)
-use_data(COUNTIES2, overwrite = TRUE)
+use_data(COUNTIES, overwrite = TRUE)
 use_data(COUNTRIES, overwrite = TRUE)
 use_data(COUNTRIESWaterHumans, overwrite = TRUE)
 use_data(GLOBALMAP, overwrite = TRUE)
