@@ -30,7 +30,7 @@ gc()
 
 ## ------ IMPORT REQUIRED LIBRARIES ------
 
-# devtools::install_github("PierreDupont/rovquantR")
+devtools::install_github("PierreDupont/rovquantR")
 ## Ctrl + Shift + F10 (to restart R session)
 library(rovquantR)
 library(nimbleSCR)

@@ -529,20 +529,20 @@ if(engSpecies == "wolverine"){
                                         x = as.character(dead.recovery$Outcome)), ]
   
   ##-- Remove suspect NGS samples according to Henrik
-  SUSPECT_NGS_SAMPLES <- readMostRecent.csv(
+  SUSPECT_NGS_SAMPLES <- readMostRecent(
     path = dir.in,
-    pattern = "Remove ngs samples list wolverine.csv",
-    fileEncoding = "latin1")
+    extension = ".xls",
+    pattern = "Remove ngs samples list wolverine")
   alive$DNAID <- as.character(alive$DNAID)
   alive <- alive[!(alive$DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB)), ]
   
   ##-- Remove suspect dead recoveries according to Henrik
-  SUSPECT_DeadRecoSAMPLES <- readMostRecent.csv(
+  SUSPECT_DeadRecoSAMPLES <- readMostRecent(
     path = dir.in,
-    pattern = "Remove dead recoveries list wolverine.csv",
-    fileEncoding = "latin1")
+    extension = ".xls",
+    pattern = "Remove dead recoveries list wolverine")
   dead.recovery$DNAID <- as.character(dead.recovery$DNAID)
-  dead.recovery <- dead.recovery[!(dead.recovery$RovBaseId %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID)), ]
+  dead.recovery <- dead.recovery[!(dead.recovery$RovbaseID %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID)), ]
   
   
   ##-- Remove pups killed before recruitment based on weight (cf. Henrik)
