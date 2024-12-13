@@ -635,8 +635,8 @@ alive <- sf::st_as_sf( x = alive,
 
 ##-- Intersect and extract country name
 #alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
-alive$Country_sf[!is.na(as.numeric(st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "NOR"
-alive$Country_sf[!is.na(as.numeric(st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "SWE"
+alive$Country_sf[!is.na(as.numeric(st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
+alive$Country_sf[!is.na(as.numeric(st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(S)"
 
 
 ##-- Turn into sf points dataframe
@@ -646,8 +646,8 @@ dead.recovery <- sf::st_as_sf( x = dead.recovery,
 
 ##-- Intersect and extract country name
 #dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
-dead.recovery$Country_sf[!is.na(as.numeric(st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "NOR"
-dead.recovery$Country_sf[!is.na(as.numeric(st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "SWE"
+dead.recovery$Country_sf[!is.na(as.numeric(st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
+dead.recovery$Country_sf[!is.na(as.numeric(st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
 
 ```
 
