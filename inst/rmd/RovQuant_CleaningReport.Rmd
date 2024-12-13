@@ -200,7 +200,7 @@ For the **`r species`**, we consider a sampling period each year that extends fr
 # Rovbase data files
 
 ```{r, data info, echo = F, collapse = TRUE}
-DATE <- getMostRecent(path = dir.in, pattern = paste0("DNA"))
+DATE <- getMostRecent(path = dir.in, pattern = "DNA")
 ```
 
 We start by loading the most recent data for the focal species available from RovBase. This data was downloaded from [rovbase.3.0](https://rovbase30.miljodirektoratet.no/) on `r DATE` and includes two '.xlsx' spreadsheets containing the species-specific **NGS** data and the large carnivores' **dead recoveries** data.
@@ -626,6 +626,7 @@ if(engSpecies == "bear"){
 }
 ```
 
+
 ```{r, turn into sf, echo = F, collapse = TRUE}
 ##-- Turn into sf points dataframe
 alive <- sf::st_as_sf( x = alive,
@@ -633,7 +634,9 @@ alive <- sf::st_as_sf( x = alive,
   sf::st_set_crs(.,sf::st_crs(32633)) 
 
 ##-- Intersect and extract country name
-alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
+#alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
+alive$Country_sf[!is.na(as.numeric(st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "NOR"
+alive$Country_sf[!is.na(as.numeric(st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "SWE"
 
 
 ##-- Turn into sf points dataframe
@@ -642,7 +645,10 @@ dead.recovery <- sf::st_as_sf( x = dead.recovery,
   sf::st_set_crs(.,sf::st_crs(32633))
 
 ##-- Intersect and extract country name
-dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
+#dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
+dead.recovery$Country_sf[!is.na(as.numeric(st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "NOR"
+dead.recovery$Country_sf[!is.na(as.numeric(st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "SWE"
+
 ```
 
 ```{r, rovbase data summary, echo = F, collapse = TRUE}

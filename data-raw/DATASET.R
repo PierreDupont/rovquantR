@@ -70,6 +70,7 @@ load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20kmNewSweCountie
 load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
 
 
+
 ##-- Check for non-ASCII characters
 ##-- Use encoding() to learn the current encoding of the elements in a 
 ##-- character vector and functions such as enc2utf8() or iconv() to convert 

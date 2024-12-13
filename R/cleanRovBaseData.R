@@ -122,7 +122,7 @@ cleanRovbaseData <- function(
   
 
   ##-- Extract the date from the last .xlsx data file
-  DATE <- getMostRecent( path = data.dir, pattern = "DNA.xlsx")
+  DATE <- getMostRecent( path = data.dir, pattern = "DNA")
   
   
   ##-- Set file name for clean data
