@@ -65,7 +65,7 @@ makeRovquantData <- function(
   ##-- data
   years = NULL,
   sex = c("Hann","Hunn"),
-  aug.factor = 2,
+  aug.factor = NULL,
   sampling.months = NULL,
   
   ##-- habitat
@@ -77,7 +77,7 @@ makeRovquantData <- function(
   detector.res = NULL,
   subdetector.res = NULL,
   max.det.dist = NULL,
-  resize.factor = 1,
+  resize.factor = NULL,
   
   ##-- miscellanious
   print.report = TRUE, 
@@ -154,40 +154,40 @@ makeRovquantData <- function(
   
   
   ##---- 3. WOLVERINE DATA PREPARATION -----
-  #
-  # ##-- Check species and use corresponding function
-  # if(sum(grep("wolverine", species, ignore.case = T))>0|
-  #    sum(grep("jerv", species, ignore.case = T))>0|
-  #    sum(grep("järv", species, ignore.case = T))>0){
-  #   
-  #   ##-- Get clean name for the report
-  #   SPECIES <- "Wolverine"
-  #   
-  #   ##-- Extract date from the last cleaned data file
-  #   DATE <- getMostRecent( 
-  #     path = file.path(working.dir,"data"),
-  #     pattern = "CleanData_wolverine")
-  # 
-  #   ##-- Prepare the data
-  #   out <- makeRovquantData_wolverine(
-  #     ##-- paths
-  #     data.dir,
-  #     working.dir,
-  #     ##-- data
-  #     years,
-  #     sex,
-  #     aug.factor,
-  #     sampling.months,
-  #     ##-- habitat
-  #     habitat.res, 
-  #     buffer.size,
-  #     max.move.dist,
-  #     ##-- detectors
-  #     detector.res,
-  #     subdetector.res,
-  #     max.det.dist,
-  #     resize.factor)
-  # }
+
+  ##-- Check species and use corresponding function
+  if(sum(grep("wolverine", species, ignore.case = T))>0|
+     sum(grep("jerv", species, ignore.case = T))>0|
+     sum(grep("järv", species, ignore.case = T))>0){
+
+    ##-- Get clean name for the report
+    SPECIES <- "Wolverine"
+
+    ##-- Extract date from the last cleaned data file
+    DATE <- getMostRecent(
+      path = file.path(working.dir,"data"),
+      pattern = "CleanData_wolverine")
+
+    ##-- Prepare the data
+    out <- makeRovquantData_wolverine(
+      ##-- paths
+      data.dir,
+      working.dir,
+      ##-- data
+      years,
+      sex,
+      aug.factor,
+      sampling.months,
+      ##-- habitat
+      habitat.res,
+      buffer.size,
+      max.move.dist,
+      ##-- detectors
+      detector.res,
+      subdetector.res,
+      max.det.dist,
+      resize.factor)
+  }
   
   
   

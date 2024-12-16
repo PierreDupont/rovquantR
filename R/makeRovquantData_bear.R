@@ -58,7 +58,7 @@ makeRovquantData_bear <- function(
   years = NULL,
   sex = c("Hann","Hunn"),
   aug.factor = 2,
-  sampling.months = list(4,5,6,7,8,9,10,11),
+  sampling.months = list(c(4,5,6,7,8,9,10,11)),
   
   ##-- habitat
   habitat.res = 20000, 
@@ -68,7 +68,7 @@ makeRovquantData_bear <- function(
   ##-- detectors
   detector.res = 5000,
   subdetector.res = 1000,
-  max.det.dist = 70000,
+  max.det.dist = 60000,
   resize.factor = 1 
   ){
   ## ---------------------------------------------------------------------------
@@ -76,13 +76,15 @@ makeRovquantData_bear <- function(
   ## ------ 0. BASIC SET-UP ------
   
   ##-- Set default values for the brown bear model
+  if(is.null(aug.factor)){aug.factor <- 2}
   if(is.null(sampling.months)){sampling.months <- list(c(4,5,6,7,8,9,10,11))}
   if(is.null(habitat.res)){habitat.res <- 20000} 
-  if(is.null(buffer.size)){buffer.size <- 70000}
+  if(is.null(buffer.size)){buffer.size <- 50000}
   if(is.null(max.move.dist)){max.move.dist <- 250000}
   if(is.null(detector.res)){detector.res <- 5000}
   if(is.null(subdetector.res)){subdetector.res <- 1000}
   if(is.null(max.det.dist)){max.det.dist <- 60000}
+  if(is.null(resize.factor)){resize.factor <- 1}
   
   
   ##-- Set up list of Habitat characteristics

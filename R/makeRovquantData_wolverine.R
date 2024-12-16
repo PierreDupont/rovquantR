@@ -50,39 +50,41 @@ NULL
 #' @rdname makeRovquantData_wolverine
 #' @export
 makeRovquantData_wolverine <- function(
-    ##-- paths
+  ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
   
   ##-- data
   years = NULL,
   sex = c("Hann","Hunn"),
-  aug.factor = 2,
-  sampling.months = list(4,5,6,7,8,9,10,11),
+  aug.factor = 0.8,
+  samplingMonths = list(12,1:6),
   
   ##-- habitat
   habitat.res = 20000, 
-  buffer.size = 50000,
+  buffer.size = 60000,
   max.move.dist = 250000,
   
   ##-- detectors
-  detector.res = 5000,
-  subdetector.res = 1000,
-  max.det.dist = 70000,
-  resize.factor = 1 
+  detector.res = 10000,
+  subdetector.res = 2000,
+  max.det.dist = 84000,
+  resize.factor = 2 
 ){
   ## ---------------------------------------------------------------------------
   
   ## ------ 0. BASIC SET-UP ------
   
-  ##-- Set default values for the brown bear model
-  if(is.null(sampling.months)){sampling.months <- list(c(4,5,6,7,8,9,10,11))}
+  ##-- Set default values for the wolverine model
+  if(is.null(aug.factor)){aug.factor <- 0.8}
+  if(is.null(sampling.months)){sampling.months <- list(12,1:6)}
   if(is.null(habitat.res)){habitat.res <- 20000} 
-  if(is.null(buffer.size)){buffer.size <- 70000}
+  if(is.null(buffer.size)){buffer.size <- 60000}
   if(is.null(max.move.dist)){max.move.dist <- 250000}
-  if(is.null(detector.res)){detector.res <- 5000}
-  if(is.null(subdetector.res)){subdetector.res <- 1000}
-  if(is.null(max.det.dist)){max.det.dist <- 60000}
+  if(is.null(detector.res)){detector.res <- 10000}
+  if(is.null(subdetector.res)){subdetector.res <- 2000}
+  if(is.null(max.det.dist)){max.det.dist <- 84000}
+  if(is.null(resize.factor)){resize.factor <- 2}
   
   
   ##-- Set up list of Habitat characteristics
@@ -106,14 +108,50 @@ makeRovquantData_wolverine <- function(
   
   ## ------ I. LOAD AND SELECT DATA ------
   
-  ## ------   1. HABITAT DATA -----
+  ## ------   1. NGS DATA -----
+  ##-- Extract date from the last cleaned data file
+  DATE <- getMostRecent( 
+    path = file.path(working.dir,"data"),
+    pattern = "CleanData_wolverine")
+  
+  ##-- Load the most recent Bear data from RovBase
+  myFullData.sp <- readMostRecent( 
+    path = file.path(working.dir,"data"),
+    pattern = "CleanData_wolverine",
+    extension = ".RData")
+  
+  # ##-- Define legal mortality causes
+  # MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
+  # legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
+  # legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
+  # 
+  # myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
+  #   dplyr::mutate( legal = ifelse(Death_cause %in% legalCauses, "yes", "no"))
+  # 
+  # legal.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "yes")
+  # Other.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "no")
+  
+  
+  if(is.null(years)){
+    years <- sort(unique(c(myFullData.sp$alive$Year,
+                           myFullData.sp$dead.recovery$Year)))
+  }
+  data$years <- years
+  n.years <- length(years)
+  
+  
+  
+  ## ------   2. HABITAT DATA -----
   
   ##-- Load pre-defined habitat rasters and shapefiles
   data(COUNTRIES, envir = environment()) 
   data(COUNTIES, envir = environment()) 
   data(habitatRasters, envir = environment()) 
   data(GLOBALMAP, envir = environment()) 
-  
   
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
@@ -135,76 +173,66 @@ makeRovquantData_wolverine <- function(
     dplyr::summarise() 
   
   
-  
-  
-  
-  
-  ## ------     3.1.GPS SEARCH TRACKS ------
 
-  TRACKS_SINGLE <- st_read(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20231020/Aktivitetslogg_20231020/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20231020_date.shp"))
-  TRACKS_MULTI <- st_read(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20231020/Aktivitetslogg_20231020/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20231020_date.shp"))
+  ## ------     2.1. DEN COUNTS ------
 
-  ## COMBINE ALL TRACKS
+  ##-- Load the last DEN_COUNTS data file
+  DEN <- readMostRecent( 
+    path = data.dir,
+    extension = ".csv",
+    pattern = "DEN_COUNTS",
+    fileEncoding = "latin1")
+  
+  
+  
+  ## ------   3. DETECTORS DATA ----- 
+  
+  ## ------     3.1. GPS SEARCH TRACKS ------
+  
+  TRACKS_SINGLE <- sf::st_read(file.path(data.dir, "GIS/SearchTracks/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20231020_date.shp"))
+  TRACKS_MULTI <- sf::st_read(file.path(data.dir, "GIS/SearchTracks/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20231020_date.shp"))
+  
+  ##-- Combine all tracks
   ALL_TRACKS <- rbind(TRACKS_SINGLE, TRACKS_MULTI)
-  ## REMOVE HELICOPTER TRACKS
-  ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Helikopter=="0", ]
-  # KEEP ONLY WOLVERINE TRACKS
+  ##-- Remove helicopter tracks
+  ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Helikopter == "0", ]
+  ##-- Keep only wolverine tracks
   ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Jerv == "1", ]
-
-  ## SELECT TRACKS YEAR
-  TRACKS_YEAR <- TRACKS_YEAR.sp <- list()
-  for(t in 1:nYears){
-     ## SUBSET GPS TRACKS TO THE SAMPLING PERIOD
-     TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][1] & ALL_TRACKS$Mth%in%myVars$DATA$samplingMonths[[1]], ]
-     TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][2] & ALL_TRACKS$Mth%in%myVars$DATA$samplingMonths[[2]], ]
-     TRACKS <- rbind(TRACKS_1, TRACKS_2)
-     ## SIMPLIFY TRACKS SHAPES
-    # TRACKS <- st_simplify(TRACKS, T, 100)
-     TRACKS <- st_intersection(TRACKS, st_as_sf(myStudyArea))
-     ## NAME TRACKS
-     TRACKS$ID <- 1:nrow(TRACKS)
-     TRACKS_YEAR[[t]] <- TRACKS
+  
+  ##-- Split by year
+  TRACKS_YEAR <- list()
+  for(t in 1:n.years){
+    ##-- SUBSET GPS TRACKS TO THE SAMPLING PERIOD
+    TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][1] & ALL_TRACKS$Mth%in%myVars$DATA$samplingMonths[[1]], ]
+    TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][2] & ALL_TRACKS$Mth%in%myVars$DATA$samplingMonths[[2]], ]
+    TRACKS <- rbind(TRACKS_1, TRACKS_2)
+    ##-- SIMPLIFY TRACKS SHAPES
+    TRACKS <- st_intersection(TRACKS, st_as_sf(myStudyArea))
+    ##-- NAME TRACKS
+    TRACKS$ID <- 1:nrow(TRACKS)
+    TRACKS_YEAR[[t]] <- TRACKS
   }#t
-
-
-
-  ## ------     3.2.DISTANCE TO ROADS ------
-
-  ## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
-  DistAllRoads <- raster(paste(dir.dropbox,"/DATA/GISData/Roads/MinDistAllRoads1km.tif", sep=""))
-  r   <- fasterize(st_as_sf(myStudyArea), DistAllRoads)
-  r[!is.na(r)] <- DistAllRoads[!is.na(r)]
-  DistAllRoads <- r
-  DistAllRoads <- crop(DistAllRoads, myStudyArea)
-  ## PLOT CHECK
-  if(myVars$plot.check){
-     plot(DistAllRoads)
-     plot(myStudyArea,add=T)
-  }
-
-
-
-  ## ------     3.3.DAYS OF SNOW ------
-
-  ## SEASONAL MAPS (CREATED IN TEMP/CM/GIS/snowMODIS)
-  SNOW <- stack(paste(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2008_2023_09.tif", sep=""))
-  ## RENAME THE LAYERS
-  names(SNOW) <- paste(2008:2022,(2008:2022)+1, sep="_")
-  ## SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
-  SNOW <- SNOW[[paste("X", years, "_", years+1, sep="")]]
+  
+  
+  
+  ## ------     3.2. DAYS OF SNOW -----
+  
+  ##-- Load raster stack of yearly snow cover
+  SNOW <- stack(file.path(data.dir,"GIS/Snow/AverageSnowCoverModisSeason2008_2023_09.tif"))
+  
+  ##-- Rename layers
+  names(SNOW) <- paste(2008:2022, (2008:2022)+1, sep = "_")
+  
+  ##-- Select years corresponding to the monitoring period
+  SNOW <- SNOW[[paste("X", years, "_", years+1, sep = "")]]
+  
+  ##-- Crop raster stack
   SNOW <- raster::crop(SNOW, c(0,40,55,75))
-
-
-
-  ## ------     3.4.SAVE SEARCH EFFORT OBJECTS FOR FASTER RUNS ------
-
-  save(TRACKS_YEAR, SNOW, DistAllRoads, file = file.path(myVars$WD, "TRACKS0mSouthSweden20132023Cleaned.RData"))
-
   
   
-  ## ------   2. DETECTORS DATA ----- 
   
-  ## ------     2.1. DISTANCE TO ROADS -----
+  
+  ## ------     3.3. DISTANCE TO ROADS -----
   
   ##-- Load map of distance to roads (1km resolution)
   DistAllRoads <- raster::raster(file.path(data.dir,"GIS/Roads/MinDistAllRoads1km.tif"))
@@ -213,10 +241,10 @@ makeRovquantData_wolverine <- function(
   r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
-  
-  
-  
-  ## ------     2.2. SKANDOBS ------
+
+
+    
+  ## ------     3.2. SKANDOBS ------
   
   ##-- Load the last SkandObs data file
   skandObs <- readMostRecent( 
@@ -240,7 +268,7 @@ makeRovquantData_wolverine <- function(
   
   
   
-  ## ------     2.3. ROVBASE OBS ------
+  ## ------     3.3. ROVBASE OBS ------
   
   ##-- GET ALL SAMPLES COLLECTED (all species)
   rovbaseObs <- readMostRecent( path = data.dir,
@@ -265,43 +293,6 @@ makeRovquantData_wolverine <- function(
   
   
   
-  ## ------   3. NGS DATA -----
-  ##-- Extract date from the last cleaned data file
-  DATE <- getMostRecent( 
-    path = file.path(working.dir,"data"),
-    pattern = "CleanData_bear")
-  
-  ##-- Load the most recent Bear data from RovBase
-  myFullData.sp <- readMostRecent( 
-    path = file.path(working.dir,"data"),
-    pattern = "CleanData_bear",
-    extension = ".RData")
-  
-  ##-- Define legal mortality causes
-  MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
-  legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
-  legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
-  
-  myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
-    dplyr::mutate( legal = ifelse(Death_cause %in% legalCauses, "yes", "no"))
-  
-  legal.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "yes")
-  Other.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "no")
-  
-  
-  if(is.null(years)){
-    years <- sort(unique(c(myFullData.sp$alive$Year,
-                           myFullData.sp$dead.recovery$Year)))
-  }
-  data$years <- years
-  n.years <- length(years)
-  
-  
-  
   ## ---------------------------------------------------------------------------
   
   ## ------ II. CREATE OPSCR DATA ------
@@ -311,14 +302,14 @@ makeRovquantData_wolverine <- function(
   message("Preparing habitat characteristics... ")
   
   ## ------     1.1. GENERATE HABITAT CHARACTERISTICS ------
-  
+
   ##-- Determine study area based on NGS detections
   ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
-  studyArea <- myFullData.sp$alive %>%
-    sf::st_buffer(., dist = habitat$buffer) %>%
+  studyArea <- myFullData.sp$alive %>%  
+    sf::st_buffer(., dist = habitat$buffer * 1.4) %>%
     sf::st_union() %>%
-    sf::st_intersection(., COUNTIES) %>%
-    sf::st_as_sf()
+    sf::st_intersection(., COUNTRIES) %>%
+    sf::st_as_sf() 
   
   ##-- Make habitat from predefined scandinavian raster of suitable habitat
   habitat <- MakeHabitatFromRaster(
@@ -349,6 +340,28 @@ makeRovquantData_wolverine <- function(
   
   
   
+  
+  ## ------   
+  ##-- RESCALE HABITAT COORDINATES
+  scaledHabGridCenters <- scaleCoordsToHabitatGrid(
+    coordsData = habitat$habitat.xy,
+    coordsHabitatGridCenter = habitat$habitat.xy,
+    scaleToGrid = F)$coordsHabitatGridCenterScaled
+  scaledHabGridCenters <- scaledHabGridCenters[habitat$habitat.r[] == 1, ]
+  
+  ##-- CREATE HABITAT GRID 
+  habIDCells.mx <- habitat$IDCells.mx 
+  habIDCells.mx[] <- 0
+  for(i in 1:nrow(scaledHabGridCenters)){
+    habIDCells.mx[trunc(scaledHabGridCenters[i,2])+1,
+                  trunc(scaledHabGridCenters[i,1])+1] <- i
+  }#i
+  
+  
+  
+  
+  
+  
   ## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES -----
   
   ## ------       1.2.1. DEAD RECOVERIES (ALL YEARS) -----
@@ -373,7 +386,6 @@ makeRovquantData_wolverine <- function(
   
   ##-- Put into "nimble2SCR" format
   habitat$habitat.df <- cbind.data.frame( habitat$habitat.df,
-                                          #"dead.reco" = habDens1,
                                           "dead.reco.trunc" = habDens2)
   
   
@@ -422,6 +434,72 @@ makeRovquantData_wolverine <- function(
     x = habitat$grid,
     y = habitat$habitat.df,
     by = "id")
+  
+  
+
+  
+  
+  
+  ## ------     2.3. SUBSET DETECTIONS BASED ON HABITAT EXTENT ------ 
+  
+  ##-- Remove samples outside the STUDY AREA 
+  whichOut <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$alive, myStudyArea))))
+  if(length(whichOut)>0){
+    myFilteredData.sp$alive <- myFilteredData.sp$alive[whichOut, ]
+  }
+  myFilteredData.sp$alive$Id <- droplevels(myFilteredData.sp$alive$Id)
+  
+  ##-- REMOVE DEAD RECOVERIES OUTSIDE THE HABITAT 
+  whichOutBuff <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$dead.recovery, habitat$buffered.habitat.poly))))
+  if(length(whichOutBuff)>0){
+    myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[whichOutBuff, ]
+  }
+  
+  ##-- Check correlation number of detections ~ between monitoring season
+  myFilteredData.sp$dead.recovery$Id <- as.character(myFilteredData.sp$dead.recovery$Id)
+  myFilteredData.sp$alive$Id <- as.character(myFilteredData.sp$alive$Id)
+  deadID <- unique(myFilteredData.sp$dead.recovery$Id)
+  ndet <- NULL
+  timeDiff <- NULL
+  for(i in 1:length(deadID)){
+    tmpYear <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Id %in% deadID[i],]$Year
+    
+    timeDiff[i] <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Id %in% deadID[i],]$Date-
+      as.POSIXct(strptime(paste("01-12", tmpYear, sep = "-"), "%d-%m-%Y")) 
+    
+    ndet[i] <- length(myFilteredData.sp$alive[myFilteredData.sp$alive$Id %in% deadID[i] & 
+                                                myFilteredData.sp$alive$Year %in% tmpYear, ])
+  }#i
+  
+  
+  
+  ## ------     2.4. GENERATE HABITAT-LEVEL COVARIATES ------
+  
+  ## ------       2.4.1. DEN COUNTS ------
+  
+  DEN.sp <- st_as_sf(DEN, coords = c("UTM33_X", "UTM33_Y"))
+  st_crs(DEN.sp) <- st_crs(myFilteredData.sp$alive)
+  DEN.sp$id  <- rep(1,nrow(DEN.sp))
+  DEN.sp <- DEN.sp[ ,"id"]
+  
+  DEN.r <- raster(
+    estUDm2spixdf(
+      kernelUD(as(DEN.sp,"Spatial"), h = 30000,
+               grid = as(habitat$habitat.r, 'SpatialPixels'))))
+
+  
+  ##-- EXTRACT COVARIATES
+  denCounts <- DEN.r[habitat$habitat.r[ ] == 1]
+  denCounts <- round(scale(denCounts), digits = 2)
+  
+  
+  
+  ## ------     2.5. RESCALE HABITAT COORDINATES ------ 
+  
+  scaledLowerCoords <- scaledHabGridCenters - 0.5
+  scaledUpperCoords <- scaledHabGridCenters + 0.5
+  
+  
   
   
   
