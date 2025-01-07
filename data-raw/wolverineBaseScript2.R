@@ -552,3 +552,8 @@ for(c in 1:4){
 }#c
 
 
+## CHECK WHERE IS NORRBOTTEN. IT IS ON THE 5TH INDEX
+plot(st_geometry(GLOBALMAP), col = "gray80", main = "Aggregated Counties")
+plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
+plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
+plot(st_geometry(myDetectors$main.detector.sp[detCounties%in% c(1),]), col = myCol[5], pch = 16, cex = 0.8,add=T)
