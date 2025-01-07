@@ -4,7 +4,7 @@ library(raster)
 library(coda)
 library(nimble)
 library(spdep)
-library(maptools)
+#library(maptools)
 library(stringr)
 library(abind)
 library(R.utils)
@@ -18,40 +18,52 @@ library(spatstat)
 library(ggplot2)
 library(stars)
 
+library(rovquantR)
+library(dplyr)
+
+
 
 ## -----------------------------------------------------------------------------
 
 ## ------ 0. SET ANALYSIS CHARACTERISTICS ------
 
-## WORKING DIRECTORY & MODEL NAME
-WD = "C:/Users/cymi/Dropbox (Old)/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/CM/2024"
-modelName = "53.aJ_FaCleaned2024"
+# ## WORKING DIRECTORY & MODEL NAME
+# WD = "C:/Users/cymi/Dropbox (Old)/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/CM/2024"
+# modelName = "53.aJ_FaCleaned2024"
 
-## HABITAT SPECIFICATIONS
+##-- DATA DIRECTORY
+##-- Directory containing the raw data necessary for the analysis
+##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
+data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/wolverine/Data"
+
+##-- WORKING DIRECTORY (= main folder for the analysis)
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/wolverine/2024"
+
+##-- HABITAT SPECIFICATIONS
 HABITAT = list( countries = c("SWE","NOR"),
                 habResolution = 20000,
                 habBuffer = 60000)
 
-## NGS DATA SPECIFICATIONS
+##-- NGS DATA SPECIFICATIONS
 DATA = list( years = 2014:2023,
              species = c("Jerv"),           
              sex = c("Hunn"),                 
              samplingMonths = list(12,1:6))
 
-## DETECTORS SPECIFICATIONS
+##-- DETECTORS SPECIFICATIONS
 DETECTORS = list( detSubResolution = 2000,
                   detResolution = 10000,
                   detDeadResolution = 15000)
 
-## DATA GENERATION
+##-- DATA GENERATION
 DETECTIONS = list( maxDetDist = 40000,
                    resizeFactor = 3,
                    aug.factor = 0.8)
 
-## OUTPUT PLOTS
+##-- OUTPUT PLOTS
 OUTPUT = list(mapResolution = 10000)
 
-## MISCELLANEOUS
+##-- MISCELLANEOUS
 plot.check = TRUE
 
 years <- DATA$years
@@ -72,7 +84,8 @@ YEARS <- lapply(years, function(x)c(x,x+1))
 data(GLOBALMAP, envir = environment()) 
 
 ##-- Load polygons of Sweden and Norway
-COUNTRIES <- data(COUNTRIES, envir = environment()) %>% 
+data(COUNTRIES, envir = environment())
+COUNTRIES <- COUNTRIES %>% 
   filter(ISO %in% c("SWE","NOR")) %>%
   group_by(ISO) %>%
   summarize()
@@ -107,55 +120,75 @@ studyArea <- COUNTRIES %>%
 
 ## ------   2. NGS DATA ------
 
-## ------     2.1. LOAD ROVBASE FILES ------
-## NGS data from RovBase#[CM update to 20190627]
-DNA <- read.csv(file.path(dir.dropbox,
-                          "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/dna_wolverines.csv"),
-                fileEncoding = "latin1")
+## ------     2.1. LOAD CLEANED ROVBASE FILES ------
 
-## Dead Recoveries from RovBase#[CM update to 20190627]
-DEAD <- read.csv(file.path(dir.dropbox,
-                           "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/dead_carnivores.csv"),
-                 fileEncoding = "latin1")
+# ## NGS data from RovBase#[CM update to 20190627]
+# DNA <- read.csv(file.path(data.dir,
+#                           "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/dna_wolverines.csv"),
+#                 fileEncoding = "latin1")
+# 
+# ## Dead Recoveries from RovBase#[CM update to 20190627]
+# DEAD <- read.csv(file.path(data.dir,
+#                            "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/dead_carnivores.csv"),
+#                  fileEncoding = "latin1")
+
+##-- Extract date from the last cleaned data file
+DATE <- getMostRecent(
+  path = file.path(working.dir,"data"),
+  pattern = "CleanData_wolverine")
+
+##-- Load the most recent Bear data from RovBase
+myFullData.sp <- readMostRecent(
+  path = file.path(working.dir,"data"),
+  pattern = "CleanData_wolverine",
+  extension = ".RData")
+  
+
+
+## ------     2.2. LOAD OTHER FILES ------
 
 ## DNA samples to be removed from Henrik
-SUSPECT_NGS_SAMPLES <- read.csv(file.path(dir.dropbox,
-                                          "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/Remove ngs samples list wolverine 2024.csv"),
+SUSPECT_NGS_SAMPLES <- read.csv(file.path(data.dir,
+                                          "Remove ngs samples list wolverine 2024.csv"),
                                 fileEncoding = "latin1") 
 
 ## DNA samples to be removed from Henrik
-SUSPECT_DeadRecoSAMPLES <- read.csv(file.path(dir.dropbox,
-                                              "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/Remove dead recoveries list wolverine 2024.csv"),
+SUSPECT_DeadRecoSAMPLES <- read.csv(file.path(data.dir,
+                                              "Remove dead recoveries list wolverine 2024.csv"),
                                     fileEncoding = "latin1") 
 ## ??
-HairTrapSamples <- read_xlsx(file.path(dir.dropbox,
-                                       "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/hairtrapsNB2024.xlsx"))
+HairTrapSamples <- read_xlsx(file.path(data.dir,
+                                       "hairtrapsNB2024.xlsx"))
 
-DEN <- read.csv(file.path(dir.dropbox,
-                      "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/DEN_COUNTS_2009_2024_fromHB.csv"),
+## Wolverine den locations
+DEN <- read.csv(file.path(data.dir,
+                      "DEN_COUNTS_2009_2024_fromHB.csv"),
                 fileEncoding = "latin1")
 
-skandObs <- read_xlsx(file.path(dir.dropbox, "DATA/Skandobs/RB_Skandobs_2012_2024/Richard_Bischof_Skandobs_2012_2024dd.xlsx"))
-rovbaseObs1 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB2810202415264376.xlsx"))
-rovbaseObs2 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB28102024152348493.xlsx"))
-rovbaseObs3 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB28102024152447860.xlsx"))
-rovbaseObs4 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB28102024152538742.xlsx"))
+## Skandobs
+skandObs <- read_xlsx(file.path(data.dir, "Skandobs/Richard_Bischof_Skandobs_2012_2024dd.xlsx"))
+
+## RovBase detections
+rovbaseObs1 <- read_xlsx(file.path(data.dir, "ALL SPECIES IN SEPERATE YEARS/RIB2810202415264376.xlsx"))
+rovbaseObs2 <- read_xlsx(file.path(data.dir, "ALL SPECIES IN SEPERATE YEARS/RIB28102024152348493.xlsx"))
+rovbaseObs3 <- read_xlsx(file.path(data.dir, "ALL SPECIES IN SEPERATE YEARS/RIB28102024152447860.xlsx"))
+rovbaseObs4 <- read_xlsx(file.path(data.dir, "ALL SPECIES IN SEPERATE YEARS/RIB28102024152538742.xlsx"))
 rovbaseObs <- rbind(rovbaseObs1,rovbaseObs2,rovbaseObs3,rovbaseObs4)
 
 
 
-## ------     2.2. TRANSLATE SCANDINAVIAN CHARACTERS ------
+## ------     2.3. TRANSLATE SCANDINAVIAN CHARACTERS ------
 
-colnames(DNA) <- translateForeignCharacters(
-  dat = colnames(DNA),
-  dir.translation = dir.analysis)
-
-# drop a column that makes cleanDataNew to fail
-DNA <- DNA[ ,-which(colnames(DNA)%in% "Kjoenn..Individ.")]
-
-colnames(DEAD) <- translateForeignCharacters(
-  dat = colnames(DEAD),
-  dir.translation = dir.analysis)
+# colnames(DNA) <- translateForeignCharacters(
+#   dat = colnames(DNA),
+#   dir.translation = dir.analysis)
+# 
+# # drop a column that makes cleanDataNew to fail
+# DNA <- DNA[ ,-which(colnames(DNA)%in% "Kjoenn..Individ.")]
+# 
+# colnames(DEAD) <- translateForeignCharacters(
+#   dat = colnames(DEAD),
+#   dir.translation = dir.analysis)
 
 colnames(DEN) <- translateForeignCharacters(
   dat = colnames(DEN),
@@ -179,10 +212,13 @@ rovbaseObs$Proevetype <- translateForeignCharacters(
 
 ## ------     3.1. GPS SEARCH TRACKS ------
 
-TRACKS_SINGLE <- read_sf(file.path(dir.dropbox,
-                                   "DATA/RovbaseData/TRACK DATA FROM BOUVET 20240830/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp"))
-TRACKS_MULTI <- read_sf(paste(dir.dropbox,
-                              "DATA/RovbaseData/TRACK DATA FROM BOUVET 20240830/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))
+## LOAD TRACKS
+TRACKS_SINGLE <- read_sf(file.path(
+  data.dir,
+  "GIS/SearchTracks/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp"))
+TRACKS_MULTI <- read_sf(file.path(
+  data.dir,
+  "GIS/SearchTracks/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))
 
 ## COMBINE ALL TRACKS
 ALL_TRACKS <- rbind(TRACKS_SINGLE, TRACKS_MULTI) %>%
@@ -207,7 +243,7 @@ for(t in 1:nYears){
 ## ------     3.2. DISTANCE TO ROADS ------
 
 ## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
-DistAllRoads <- raster(file.path(dir.dropbox, "DATA/GISData/Roads/MinDistAllRoads1km.tif"))
+DistAllRoads <- raster(file.path(data.dir, "GIS/Roads/MinDistAllRoads1km.tif"))
 r <- fasterize(st_as_sf(studyArea), DistAllRoads)
 r[!is.na(r)] <- DistAllRoads[!is.na(r)]
 DistAllRoads <- r
@@ -218,7 +254,7 @@ DistAllRoads <- crop(DistAllRoads, studyArea)
 ## ------     3.3. DAYS OF SNOW ------
 
 ## SEASONAL MAPS (CREATED IN TEMP/CM/GIS/snowMODIS)
-SNOW <- stack(file.path(dir.dropbox,"DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
+SNOW <- stack(file.path(data.dir,"GIS/Snow/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
 
 ## RENAME THE LAYERS
 names(SNOW) <- paste(2008:2023,(2008:2023)+1, sep = "_")
