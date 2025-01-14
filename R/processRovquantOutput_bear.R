@@ -553,7 +553,7 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv(NCarRegionEstimates,
-            file = file.path(working.dir, "tables/Abundance_AllYears.csvv"))
+            file = file.path(working.dir, "tables/Abundance_AllYears.csv"))
   
   ##-- print .tex
   row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")

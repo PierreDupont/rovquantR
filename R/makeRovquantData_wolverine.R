@@ -1343,7 +1343,7 @@ makeRovquantData_wolverine <- function(
             nimInits,
             detCounties.original,
             file = file.path( working.dir, "nimbleInFiles", thisSex,
-                              paste0("nimbleInput_", DATE, "_", c, ".RData")))
+                              paste0("nimbleInput_", DATE, "_", thisSex, "_", c, ".RData")))
     }#c
     
   }#thisSex
