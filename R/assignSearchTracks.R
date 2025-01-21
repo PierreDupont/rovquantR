@@ -68,12 +68,6 @@ assignSearchtTracks <- function( data = myFilteredData.sp$alive,
   ##-- ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
   for(i in 1:nrow(data)){
     
-    # ##-- INTERSECT BUFFERED POINT WITH TRACKS
-    # t <- which(years %in% data$Year[i])
-    # whichSameDate <- which(as.character(tracks[[t]]$Dato) == as.character(data$Date[i]))
-    # tmpTRACKS <- st_intersection(tracks[[t]][whichSameDate, ],
-    #                              buffData[i, ])
-    
     ##-- INTERSECT BUFFERED POINT WITH TRACKS
     tmpTRACKS <- tracks %>%
       filter(., Dato == data$Date[i]) %>%
