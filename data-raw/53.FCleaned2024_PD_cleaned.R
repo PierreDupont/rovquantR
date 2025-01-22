@@ -74,6 +74,8 @@ if(is.null(myVars$modelName))stop("YOU SHOULD PROBABLY CHOOSE A NAME FOR THIS AN
 if(is.null(myVars$WD))stop("YOU SHOULD PROBABLY CHOOSE A WORKING DIRECTORY FOR THIS ANALYSIS/MODEL")
 if(!dir.exists(file.path(myVars$WD, myVars$modelName))){dir.create(file.path(myVars$WD, myVars$modelName))}
 
+## Set data directory
+data.dir <- file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023")
 
 
 ################################################################################
@@ -84,20 +86,17 @@ if(!dir.exists(file.path(myVars$WD, myVars$modelName))){dir.create(file.path(myV
 
 ## ------   1. HABITAT DATA ------
 
-## LOAD HABITAT RASTERS
-load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20km.RData"))
-load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
+# ## LOAD HABITAT RASTERS
+# load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20km.RData"))
+# load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
 
-## POLYGONS OF THE REGION
-## Map of Scandinavia (including Finland & parts of Russia)
-GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
-  filter(area > 80000000) %>%
-  st_crop(., st_bbox(extent(c(-70000,1200000,5100000,8080000))))
+##-- Load pre-processed habitat shapefiles
+data(GLOBALMAP, envir = environment()) 
+##-- Load pre-processed habitat shapefiles
+data(COUNTIES, envir = environment()) 
+##-- Load pre-processed habitat shapefiles
+data(COUNTRIES, envir = environment()) 
 
-## POLYGONS OF SWEDEN & NORWAY
-COUNTRIES <- GLOBALMAP[GLOBALMAP$ISO %in% c("SWE","NOR"), ] %>%
-  group_by(ISO) %>%
-  summarize()
 
 ## CREATE A POLYGON OF THE ACTUAL HABITAT POLYGON CONSIDERED (different from buffered.habitat.poly)
 ## [PD] ????
@@ -127,9 +126,6 @@ if(myVars$plot.check){
 
 ## ------   2. ROVBASE DATA ------
 
-## ------     2.1. LOAD ROVBASE FILES ------
-
-data.dir <- file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023")
 
 ## NGS data from RovBase #[CM update to 20190627]
 DNA <- read.csv( file.path(data.dir, "dna_wolverines.csv"),
@@ -153,16 +149,17 @@ colnames(DEAD) <- translateForeignCharacters(
   dir.translation = dir.analysis)
 
 
+
 ## DNA samples to be removed from Henrik
 SUSPECT_NGS_SAMPLES <- read.csv(file.path(data.dir, "Remove ngs samples list wolverine 2024.csv"),
                                 fileEncoding = "latin1") 
-## DNA samples to be removed from Henrik
+
+## DEAD RECOVERIES to be removed from Henrik
 SUSPECT_DeadRecoSAMPLES <- read.csv(file.path(data.dir, "Remove dead recoveries list wolverine 2024.csv"),
                                     fileEncoding = "latin1")
-## DNA samples to be removed from Henrik
-HairTrapSamples <- read_xlsx(file.path(data.dir, "hairtrapsNB2024.xlsx"))#, fileEncoding="latin1") 
 
-
+## HAIR TRAP SAMPLES from Henrik
+HairTrapSamples <- read_xlsx(file.path(data.dir, "hairtrapsNB2024.xlsx")) 
 
 
 
@@ -194,13 +191,13 @@ DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
 DEAD <- DEAD[!grepl(pattern = "Påskutt", x = as.character(DEAD$Utfall)), ]
 
 
-## ------     1.1.CLEAN NGS & DEAD RECOVERY DATA ------
+## ------     1.1. FILTER UNUSABLE SAMPLES & SET MONITORING YEAR ------
 
 myCleanedData.sp <- CleanDataNew2sf( 
   dna_samples = DNA,
   dead_recoveries = DEAD,
   species_id = myVars$DATA$species,
-  country_polygon = COUNTRIES,
+  #country_polygon = COUNTRIES,
   threshold_month = unlist(myVars$DATA$samplingMonths)[1],
   keep_dead = T,
   age.label.lookup = age.lookup.table)
@@ -216,7 +213,7 @@ if(myVars$plot.check){
 
 
 
-## ------     1.2.FILTER DATA ------
+## ------     1.2. CHECK SEX ASSIGNMENT ------
 
 myFullData.sp <- FilterDatasf( 
   myData = myCleanedData.sp,
@@ -230,12 +227,14 @@ if(myVars$plot.check){
        add = TRUE,pch=19,cex=0.2, col="lightblue")
 }
 
-## REMOVE SUSPECT SAMPLES ACCORDING TO HENRIK
+
+
+## ------     1.2. REMOVE SUSPECT SAMPLES ACCORDING TO HENRIK ------
+
 myFullData.sp$alive$DNAID <- as.character(myFullData.sp$alive$DNAID)
 myFullData.sp$dead.recovery$DNAID <- as.character(myFullData.sp$dead.recovery$DNAID)
 myFullData.sp$alive <- myFullData.sp$alive[!(myFullData.sp$alive$DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB)), ]
 myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[!(myFullData.sp$dead.recovery$RovBaseId %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID)), ]
-
 
 ## Remove individuals that died twice
 # [CM] TO BE CHECKED BECAUSE "length(IdDoubleDead) < 0" and so it was deactivated
@@ -331,99 +330,8 @@ if(sum(myFullData.sp$dead.recovery$Age %in% 0 &
 
 
 
-## ------     1.3. FILTER NGS & DEAD RECOVERY DATA FOR YEARS ------
-
-myFilteredData.sp <- myFullData.sp
-
-## Subset to years of interest
-myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years, ]
-myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year %in% years, ]
-
-
-
-## ------     1.4. FILTER NGS DATA FOR MONTHS ------
-
-## Subset to months of interest
-myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in% unlist(myVars$DATA$samplingMonths), ]
-
-
-
-## ------     1.5. FILTER DATA IN NORRBOTTEN IN ALL YEARS EXCEPT 2017, 2018 and 2019 ------ 
-
-## POLYGONS OF COMMUNES IN SWEDEN & NORWAY
-COUNTIES <- rbind( st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")),     ## Communal map of Norway
-                   st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))) %>% ## Communal map of Sweden
-  group_by(NAME_1) %>%
-  summarize()
-
-COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten", ]
-yearsSampledNorrb <- c(2016:2018,2023)
-
-is.Norr <- as.numeric(st_intersects(myFilteredData.sp$alive, COUNTIESNorrbotten))
-
-## Check how many detections are removed.
-table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
-                                      !is.na(is.Norr)), ]$Year)
-
-## subset
-myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
-                                                             !is.na(is.Norr)), ]
-
-## PLOT CHECK
-if(myVars$plot.check){
-  for(t in 1:nYears){
-    plot(st_geometry(myStudyArea))
-    plot(st_geometry(COUNTIESNorrbotten),add=T,col="blue")
-    plot(st_geometry(myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t],]), col="red",add=T,pch=16)
-  }#t
-}
-
-
-
-## ------     1.6. FILTER NGS & DEAD RECOVERY DATA FOR SEX ------
-
-## SELECT THE SEX
-# MYFULLDATA
-myFullData.sp <- myFullData.sp
-myFullData.sp$alive <- myFullData.sp$alive[myFullData.sp$alive$Sex %in% myVars$DATA$sex,]
-myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
-
-# myFilteredData
-myFilteredData.spAllSex <- myFilteredData.sp
-myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Sex %in% myVars$DATA$sex,]
-myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
-
-## PLOT CHECK
-if(myVars$plot.check){
-  par(mfrow = c(1,3))
-  for(t in 1:nYears){
-    ## DEAD RECOVERIES TOTAL
-    tempTotal <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t] &
-                                                   myFilteredData.sp$dead.recovery$Sex %in% myVars$DATA$sex, ]
-    NGS_TabTotal <- table(tempTotal$Country)
-    ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country), 2, function(x) sum(x>0))
-    ## DEAD RECOVERIES INSIDE STUDY AREA/SAMPLING PERIOD
-    ## PLOT NGS SAMPLES
-    plot(st_geometry(GLOBALMAP), col = "gray80")
-    plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-    plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-    plot(st_geometry(tempTotal), pch = 21, bg = "darkred", add = T)
-    # ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-    graphics::text(x = 100000, y = 7250000,
-                   labels = file.path(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"),
-                   cex = 1.1, col = "firebrick3", font = 2)
-    graphics::text(x = 820000, y = 6820000,
-                   labels = file.path(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"),
-                   cex = 1.1, col = "navyblue", font = 2)
-    ## ADD OVERALL NUMBERS
-    mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-  }#t
-}
-
-
-
 ## ------     1.4. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
-## ------       1.4.1. ASSIGN SAMPLES TO TRACKS  ------
+## ------       1.4.1. ASSIGN SAMPLES TO TRACKS ------
 
 # test <- assignSearchtTracks(
 #   data = myFilteredData.sp$alive,
@@ -485,7 +393,7 @@ save( myFilteredData.sp,
 
 
 
-## ------       1.4.2. SPLIT MYFILTERED DATA TO OPPORTUNISTIC & STRUCTURED ------
+## ------       1.4.2. SPLIT DATA TO OPPORTUNISTIC & STRUCTURED ------
 distanceThreshold <- 500
 
 #Proeveleverandoer columns was replaced by two columns, merging them now...
@@ -502,16 +410,12 @@ myFilteredData.spOthers <- myFilteredData.sp$alive[!whichStructured,]
 
 
 ## CHECK IF A SAMPLE IS NOT MISSING SOMEWHERE
-nrow(myFilteredData.spStructured) +
-  nrow(myFilteredData.spOthers)
+nrow(myFilteredData.spStructured) + nrow(myFilteredData.spOthers)
 nrow(myFilteredData.sp$alive)
 
 
-
-##PUSH ALL RESULTS FROM HAIR TRAPS TO OPPORTUNISTIC
+## Check if some hair samples are assigned to structured
 whichHair <- which(myFilteredData.sp$alive$DNAID %in% HairTrapSamples$DNAID)
-
-## Check if some haire samples are assigned to structured
 if(length(which(myFilteredData.spStructured$alive$DNAID %in% HairTrapSamples$DNAID))>0){
   print("WARNING SAMPLES FROM HAIR TRAPS ASSIGNED TO STRUCTURED")
 }
@@ -523,80 +427,6 @@ if(myVars$plot.check){
   plot(myFilteredData.sp$alive[whichHair,]$geometry, add=T, col="red",pch=16)
 }
 
-
-
-## ------       1.4.3. PLOT CHECKS ------
-
-## PLOT CHECK
-if(myVars$plot.check){
-  pdf(file = file.path(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"DetectionsStructuredOppBarplot",".pdf", sep="" ))
-  par(mfrow=c(2,1),mar=c(4,4,3,2))
-  barplot(rbind(table(myFilteredData.spStructured$Year),
-                table(myFilteredData.spOthers$Year)),beside=T,ylim=c(0,2000),col=c(grey(0.2),grey(0.8)),ylab="Number of samples")
-  abline(h=seq(0,2000,by=500),lty=2,col=grey(0.8))
-  title(main="500m threshold")
-  legend("topleft",fill=c(grey(0.2),grey(0.8)),legend=c("Structured","Other"))
-  
-  ###
-  distanceThreshold1 <- 2000
-  whichStructured2000 <- myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
-    !is.na(myFilteredData.sp$alive$TrackRovbsID) &
-    myFilteredData.sp$alive$TrackDist <= distanceThreshold1
-  myFilteredData.spStructured2000 <- myFilteredData.sp$alive[whichStructured2000,]
-  myFilteredData.spOthers2000 <- myFilteredData.sp$alive[!whichStructured2000,]
-  
-  barplot(rbind(table(myFilteredData.spStructured2000$Year),
-                table(myFilteredData.spOthers2000$Year)),beside=T,ylim=c(0,2000),col=c(grey(0.2),grey(0.8)),ylab="Number of samples")
-  abline(h=seq(0,2000,by=500),lty=2,col=grey(0.8))
-  title(main="2000m threshold")
-  legend("topleft",fill=c(grey(0.2),grey(0.8)),legend=c("Structured","Other"))
-  dev.off()
-  
-  ## CONSTRAIN TO SAMPLES COLLECTED "Fylkesmannen","SNO" 
-  tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Proeveleverandoer %in% 
-                                   c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),]
-  tab <- table(tmp$Year,tmp$TrackRovbsID,useNA ="always" )
-  
-  
-  ## plot check 
-  pdf(file = file.path(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"DetectionsStructuredOpp",".pdf", sep="" ))
-  for(t in 1:nYears){
-    par(mar=c(0,0,3,0),mfrow=c(1,3))
-    tmp1 <- tmp[tmp$Year%in% years[t],]
-    tmpNoTracks <-  tmp1[is.na(tmp1$TrackRovbsID), ]
-    tmpTracks <-  tmp1[!is.na(tmp1$TrackRovbsID), ]
-    
-    plot(myStudyArea, main="Structured with track")
-    plot(st_geometry(tmpTracks), pch=21, col="black", cex=1,bg="red",add=T)
-    
-    plot(myStudyArea, main="Structured without track")
-    plot(st_geometry(tmpNoTracks), pch=21, col="black", cex=1,bg="blue",add=T)
-    
-    tmpOpp <- myFilteredData.sp$alive[!myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),]
-    tmpOpp <- tmpOpp[tmpOpp$Year%in% years[t],]
-    
-    plot(myStudyArea, main="Other samples")
-    plot(st_geometry(tmpOpp), pch=21, col="black", cex=1,bg="green",add=T)
-    
-    mtext(years[t],adj = -0.8,padj = 1)
-    
-  }
-  barplot(tab[,which(is.na(colnames(tab)))]/rowSums(tab),main="% of samples from Statsforvalteren and \nSNO that cannot be assigned to a track") 
-  
-  dev.off()
-  
-  ### plot check 
-  pdf(file = file.path(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"OverallDetectionsDeadRecoveries",".pdf", sep="" ))
-  plot(st_geometry(GLOBALMAP))
-  plot(st_geometry(myStudyArea),add=T)
-  plot(st_geometry(myFullData.sp$alive),pch=16, col="red", cex=0.3,add=T)
-  plot(st_geometry(myFullData.sp$dead.recovery),pch=16, col="blue", cex=0.3,add=T)
-  mtext(file.path("Live detections", length(myFullData.sp$alive),
-                  "; ID:", length(unique(myFullData.sp$alive$Id))
-  ),line = +1)
-  mtext(file.path("Dead recovery:",length(myFullData.sp$dead.recovery)))
-  dev.off()
-}
 
 
 
@@ -695,8 +525,181 @@ if(myVars$plot.check){
 }
 
 
+## ------       1.4.3. PLOT CHECKS ------
+
+## PLOT CHECK
+if(myVars$plot.check){
+  pdf(file = file.path( myVars$WD, myVars$modelName,
+                        paste0(myVars$modelName, "_DetectionsStructuredOppBarplot.pdf")))
+  par(mfrow=c(2,1),mar=c(4,4,3,2))
+  barplot(rbind(table(myFilteredData.spStructured$Year),
+                table(myFilteredData.spOthers$Year)),beside=T,ylim=c(0,2000),col=c(grey(0.2),grey(0.8)),ylab="Number of samples")
+  abline(h=seq(0,2000,by=500),lty=2,col=grey(0.8))
+  title(main="500m threshold")
+  legend("topleft",fill=c(grey(0.2),grey(0.8)),legend=c("Structured","Other"))
+  
+  ###
+  distanceThreshold1 <- 2000
+  whichStructured2000 <- myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
+    !is.na(myFilteredData.sp$alive$TrackRovbsID) &
+    myFilteredData.sp$alive$TrackDist <= distanceThreshold1
+  myFilteredData.spStructured2000 <- myFilteredData.sp$alive[whichStructured2000,]
+  myFilteredData.spOthers2000 <- myFilteredData.sp$alive[!whichStructured2000,]
+  
+  barplot(rbind(table(myFilteredData.spStructured2000$Year),
+                table(myFilteredData.spOthers2000$Year)),beside=T,ylim=c(0,2000),col=c(grey(0.2),grey(0.8)),ylab="Number of samples")
+  abline(h=seq(0,2000,by=500),lty=2,col=grey(0.8))
+  title(main="2000m threshold")
+  legend("topleft",fill=c(grey(0.2),grey(0.8)),legend=c("Structured","Other"))
+  dev.off()
+  
+  ## CONSTRAIN TO SAMPLES COLLECTED "Fylkesmannen","SNO" 
+  tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Proeveleverandoer %in% 
+                                   c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),]
+  tab <- table(tmp$Year,tmp$TrackRovbsID,useNA ="always" )
+  
+  
+  ## plot check 
+  pdf(file = file.path(myVars$WD,myVars$modelName,
+                       paste0(myVars$modelName,"_DetectionsStructuredOpp.pdf")))
+  for(t in 1:nYears){
+    par(mar=c(0,0,3,0),mfrow=c(1,3))
+    tmp1 <- tmp[tmp$Year%in% years[t],]
+    tmpNoTracks <-  tmp1[is.na(tmp1$TrackRovbsID), ]
+    tmpTracks <-  tmp1[!is.na(tmp1$TrackRovbsID), ]
+    
+    plot(myStudyArea, main="Structured with track")
+    plot(st_geometry(tmpTracks), pch=21, col="black", cex=1,bg="red",add=T)
+    
+    plot(myStudyArea, main="Structured without track")
+    plot(st_geometry(tmpNoTracks), pch=21, col="black", cex=1,bg="blue",add=T)
+    
+    tmpOpp <- myFilteredData.sp$alive[!myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),]
+    tmpOpp <- tmpOpp[tmpOpp$Year%in% years[t],]
+    
+    plot(myStudyArea, main="Other samples")
+    plot(st_geometry(tmpOpp), pch=21, col="black", cex=1,bg="green",add=T)
+    
+    mtext(years[t],adj = -0.8,padj = 1)
+    
+  }
+  barplot(tab[,which(is.na(colnames(tab)))]/rowSums(tab),main="% of samples from Statsforvalteren and \nSNO that cannot be assigned to a track") 
+  
+  dev.off()
+  
+  ### plot check 
+  pdf(file = file.path(myVars$WD,myVars$modelName,
+                       paste0(myVars$modelName,"_OverallDetectionsDeadRecoveries.pdf")))
+  plot(st_geometry(GLOBALMAP))
+  plot(st_geometry(myStudyArea),add=T)
+  plot(st_geometry(myFullData.sp$alive),pch=16, col="red", cex=0.3,add=T)
+  plot(st_geometry(myFullData.sp$dead.recovery),pch=16, col="blue", cex=0.3,add=T)
+  mtext(paste("Live detections", length(myFullData.sp$alive),
+              "; ID:", length(unique(myFullData.sp$alive$Id))
+  ),line = +1)
+  mtext(paste("Dead recovery:",length(myFullData.sp$dead.recovery)))
+  dev.off()
+}
+
+
+
 ################################################################################
 #### makeRovQuantData() ####
+
+
+## ------     1.3. FILTER NGS & DEAD RECOVERY DATA FOR YEARS ------
+
+myFilteredData.sp <- myFullData.sp
+
+## Subset to years of interest
+myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years, ]
+myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year %in% years, ]
+
+
+
+## ------     1.4. FILTER NGS DATA FOR MONTHS ------
+
+## Subset to months of interest
+myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in%
+                                                     unlist(myVars$DATA$samplingMonths), ]
+
+
+
+## ------     1.5. FILTER DATA IN NORRBOTTEN IN ALL YEARS EXCEPT 2017, 2018 and 2019 ------ 
+
+## POLYGONS OF COMMUNES IN SWEDEN & NORWAY
+COUNTIES <- rbind( st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")),     ## Communal map of Norway
+                   st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))) %>% ## Communal map of Sweden
+  group_by(NAME_1) %>%
+  summarize()
+
+COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten", ]
+yearsSampledNorrb <- c(2016:2018,2023)
+
+is.Norr <- as.numeric(st_intersects(myFilteredData.sp$alive, COUNTIESNorrbotten))
+
+## Check how many detections are removed.
+table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
+                                      !is.na(is.Norr)), ]$Year)
+
+## subset
+myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
+                                                             !is.na(is.Norr)), ]
+
+## PLOT CHECK
+if(myVars$plot.check){
+  for(t in 1:nYears){
+    plot(st_geometry(myStudyArea))
+    plot(st_geometry(COUNTIESNorrbotten),add=T,col="blue")
+    plot(st_geometry(myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t],]), col="red",add=T,pch=16)
+  }#t
+}
+
+
+
+## ------     1.6. FILTER NGS & DEAD RECOVERY DATA FOR SEX ------
+
+## SELECT THE SEX
+# MYFULLDATA
+myFullData.sp <- myFullData.sp
+myFullData.sp$alive <- myFullData.sp$alive[myFullData.sp$alive$Sex %in% myVars$DATA$sex,]
+myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
+
+# myFilteredData
+myFilteredData.spAllSex <- myFilteredData.sp
+myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Sex %in% myVars$DATA$sex,]
+myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
+
+## PLOT CHECK
+if(myVars$plot.check){
+  par(mfrow = c(1,3))
+  for(t in 1:nYears){
+    ## DEAD RECOVERIES TOTAL
+    tempTotal <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t] &
+                                                   myFilteredData.sp$dead.recovery$Sex %in% myVars$DATA$sex, ]
+    NGS_TabTotal <- table(tempTotal$Country)
+    ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country), 2, function(x) sum(x>0))
+    ## DEAD RECOVERIES INSIDE STUDY AREA/SAMPLING PERIOD
+    ## PLOT NGS SAMPLES
+    plot(st_geometry(GLOBALMAP), col = "gray80")
+    plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
+    plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
+    plot(st_geometry(tempTotal), pch = 21, bg = "darkred", add = T)
+    # ## ADD NUMBER OF NGS samples and IDs per COUNTRY
+    graphics::text(x = 100000, y = 7250000,
+                   labels = file.path(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"),
+                   cex = 1.1, col = "firebrick3", font = 2)
+    graphics::text(x = 820000, y = 6820000,
+                   labels = file.path(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"),
+                   cex = 1.1, col = "navyblue", font = 2)
+    ## ADD OVERALL NUMBERS
+    mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
+  }#t
+}
+
+
+
+
 ## ------   2. GENERATE HABITAT ------
 ## ------     2.1 REDUCE THE AREA OF THE STATE-SPACE BASED ON DETECTIONS ------
 ## DELINEATE A BUFFER AROUND ALL DEAD RECOVERIES 

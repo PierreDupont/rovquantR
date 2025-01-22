@@ -13,7 +13,6 @@
 ## Faculty of Environmental Sciences and Natural Resource Management (MINA)
 ## Norwegian University of Life Sciences (NMBU), Ås, Norway 
 ##
-##
 ## -----------------------------------------------------------------------------
 ##
 ## Notes: this script is for internal use only!
@@ -21,7 +20,6 @@
 ## -----------------------------------------------------------------------------
 rm(list = ls())
 gc()
-
 
 
 ##-- Identify user and set corresponding DropBox directory
@@ -46,42 +44,71 @@ if(Sys.info()['user'] == 'seasunci') {
   dir.dropbox <- "C:/Users/seasunci/AQEG Dropbox/AQEG Team Folder/RovQuant"
 }
 
-
-
-##-- Create a folder to contain this script, as well as other R scripts used during package development
+##-- Libraries
 library(usethis)
 library(stringi)
-#usethis::use_data_raw()
+library(dplyr)
+library(sf)
 
+
+##-- Cresfheaders##-- Create a folder to contain this script, as well as other R scripts used 
+##-- during package development ; Only done once when creating the package
+#usethis::use_data_raw()
 
 
 ##-- Load and prepare translation data 
 ##-- This is saved in R/sysdata.rda as it is only used inside the 'translateForeignCharacters' function.
 load(file.path(dir.git, "Analyses/CharacterTranslation.RData"))
 head(fromto)
-usethis::use_data(fromto, internal = TRUE, overwrite = TRUE)
 
 
-
-##-- Load and prepare other necessary data (COUNTRIES and COUNTIES maps in our case)
+##-- Load and prepare spatial data (COUNTRIES and COUNTIES maps in our case)
 ##-- These are saved in ./data 
-load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat_shp.RData"))
+#load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat_shp.RData"))
+GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
+  filter(.,
+         area > 80000000,
+         ISO %in% c("SWE","NOR")) %>%
+  st_crop(., st_bbox(extent(c(-70000,1200000,5100000,8080000)))) 
+# GLOBALMAP <- GLOBALMAP[GLOBALMAP$area > 80000000, ]
+# GLOBALMAP <- st_crop(GLOBALMAP, st_bbox(extent(c(-70000,1200000,5100000,8080000))))
+
+
+##-- POLYGONS OF SWEDEN & NORWAY
+COUNTRIES <- GLOBALMAP %>%
+  filter(ISO %in% c("SWE","NOR")) %>%
+  group_by(ISO) %>%
+  summarize()
+
+
+##-- POLYGONS OF COUNTIES IN SWEDEN & NORWAY
+##-- Simplification at the end is needed because of large size otherwise
+COUNTIES <- rbind(
+  st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")),
+  st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))) %>%
+  group_by(NAME_1) %>%
+  summarize() %>%
+  ## Simplification because of large size otherwise (from 13.4 MB to 400 KB)
+  st_simplify(., dTolerance = 500) %>%
+  ##-- Check for non-ASCII characters
+  ##-- Use encoding() to learn the current encoding of the elements in a 
+  ##-- character vector and functions such as enc2utf8() or iconv() to convert 
+  ##-- between encodings.
+  mutate(.,NAME_1 = stri_trans_general(NAME_1, "Latin-ASCII"))
+## Check encoding of county names
+stri_enc_isutf8(COUNTIES$NAME_1)
+
+
+##-- HABITAT RASTERS AT DIFFERENT RESOLUTIONS (REFERENCE RASTERS)
 load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20kmNewSweCounties.RData"))
 load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
 
-##-- Check for non-ASCII characters
-##-- Use encoding() to learn the current encoding of the elements in a 
-##-- character vector and functions such as enc2utf8() or iconv() to convert 
-##-- between encodings.
-COUNTIES$NAME_1 <- stri_trans_general(COUNTIES$NAME_1, "Latin-ASCII")
-stri_enc_isutf8(COUNTIES$NAME_1)
-COUNTIES <- st_simplify(COUNTIES,dTolerance = 500)
-
 
 ##-- Save necessary data in the right folder (./data)
+use_data(fromto, internal = TRUE, overwrite = TRUE)
 use_data(COUNTIES, overwrite = TRUE)
 use_data(COUNTRIES, overwrite = TRUE)
-use_data(COUNTRIESWaterHumans, overwrite = TRUE)
+#use_data(COUNTRIESWaterHumans, overwrite = TRUE)
 use_data(GLOBALMAP, overwrite = TRUE)
 use_data(habitatRasterResolution, overwrite = TRUE)
 use_data(habitatRasters, overwrite = TRUE)
