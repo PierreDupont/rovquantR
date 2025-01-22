@@ -2164,7 +2164,7 @@ sxy.init <- getSInits( AllDetections = AllDetections,
                        intensity = NULL,
                        sd = 4,
                        movementMethod = "dbernppACmovement_normal")
-nimInits$sxy <- round(nimInits$sxy, 5)#---an extreme number of decimals may cause a number to appear as an integer to Nimble, and then coincide with habitat window boundaries
+sxy.init <- round(sxy.init, 5)#---an extreme number of decimals may cause a number to appear as an integer to Nimble, and then coincide with habitat window boundaries
 
 
 
