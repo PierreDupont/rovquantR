@@ -177,10 +177,7 @@ rename.list = c(
 
 
 ##-- Load pre-processed habitat shapefiles
-data(COUNTRIESWaterHumans, envir = environment()) 
-COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
-  dplyr::group_by(ISO) %>%
-  dplyr::summarise()
+data(COUNTRIES, envir = environment()) 
 
 
 ##-- List months
