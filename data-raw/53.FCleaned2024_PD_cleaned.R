@@ -92,9 +92,7 @@ data.dir <- file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023")
 
 ##-- Load pre-processed habitat shapefiles
 data(GLOBALMAP, envir = environment()) 
-##-- Load pre-processed habitat shapefiles
 data(COUNTIES, envir = environment()) 
-##-- Load pre-processed habitat shapefiles
 data(COUNTRIES, envir = environment()) 
 
 
@@ -126,7 +124,6 @@ if(myVars$plot.check){
 
 ## ------   2. ROVBASE DATA ------
 
-
 ## NGS data from RovBase #[CM update to 20190627]
 DNA <- read.csv( file.path(data.dir, "dna_wolverines.csv"),
                  fileEncoding = "latin1")
@@ -147,7 +144,6 @@ DEAD <- read.csv(file.path(data.dir, "dead_carnivores.csv"),
 colnames(DEAD) <- translateForeignCharacters(
   dat = colnames(DEAD),
   dir.translation = dir.analysis)
-
 
 
 ## DNA samples to be removed from Henrik
@@ -229,12 +225,23 @@ if(myVars$plot.check){
 
 
 
-## ------     1.2. REMOVE SUSPECT SAMPLES ACCORDING TO HENRIK ------
+## ------     1.3. REMOVE SUSPECT NGS ACCORDING TO HENRIK ------
 
-myFullData.sp$alive$DNAID <- as.character(myFullData.sp$alive$DNAID)
-myFullData.sp$dead.recovery$DNAID <- as.character(myFullData.sp$dead.recovery$DNAID)
-myFullData.sp$alive <- myFullData.sp$alive[!(myFullData.sp$alive$DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB)), ]
-myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[!(myFullData.sp$dead.recovery$RovBaseId %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID)), ]
+myFullData.sp$alive <- myFullData.sp$alive %>%
+  filter(.,!as.character(DNAID) %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB))
+
+
+
+## ------     1.4. REMOVE SUSPECT DEAD RECOVERIES ACCORDING TO HENRIK ------
+
+myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
+  ## Dead recoveris in suspect samples list from HB
+  filter(.,
+         !as.character(RovBaseId) %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID),
+         ## Dead recoveries flagged by Henrik that should always be removed (email from the 18/12/2024)
+        !RovBaseId %in% c("M495994","M524051","M524052","M524053"), ]
+         
+         )
 
 ## Remove individuals that died twice
 # [CM] TO BE CHECKED BECAUSE "length(IdDoubleDead) < 0" and so it was deactivated
@@ -250,8 +257,6 @@ if(length(IdDoubleDead) > 0){
   myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-duplicatedDeath, ]
 }#if
 
-## Dead recoveries flagged by Henrik that should always be removed (email from the 18/12/2024)
-myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[!myFullData.sp$dead.recovery$RovBaseId %in% c("M495994","M524051","M524052","M524053"), ]
 
 ## Remove pups killed before recruitment based on weight (cf. Henrik)
 ## 1) remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
@@ -304,7 +309,6 @@ if(myVars$plot.check){
          main=t,xlab="Age")
   }
 }
-
 
 
 ## check how many dead reco we remove and remove if more than 0
@@ -430,7 +434,7 @@ if(myVars$plot.check){
 
 
 
-## ------     1.5.SEPARATE MORTALITY CAUSES -----
+## ------     1.5. SEPARATE MORTALITY CAUSES -----
 
 ## MORTALITY CAUSES
 length(myFilteredData.sp$dead.recovery)
