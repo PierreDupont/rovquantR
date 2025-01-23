@@ -28,6 +28,9 @@ source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
 sourceDirectory(dir.function, modifiedOnly = FALSE)
 sourceDirectory(dir.function.nimble, modifiedOnly = FALSE)
 load(file.path(dir.dropbox,"DATA/MISC DATA/age.lookup.table.RData"))
+substrRight <- function(x, n){
+  substr(x, nchar(x)-n+1, nchar(x))
+}
 
 
 
@@ -79,8 +82,108 @@ data.dir <- file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023")
 
 
 ################################################################################
+##-- Renaming list
+if(is.null(rename.list)){
+  rename.list = c(
+    Age_estimated = "Alder, vurdert",
+    Age = "Alder, verifisert",
+    Age_verif_by = "Alder, verifisert av",
+    Age_class = "Alder på dødt individ",
+    Age_class_verif = "Aldersklasse verifisert SVA",
+    Analyzed_by = "AnalysertAv",
+    Analysis_priority = "Analyseprioritet",
+    Approved_by = "Godkjent av",
+    Approved_date = "Godkjentdato",
+    Assessment = "Vurdering",
+    Barcode_sample = "Strekkode (Prøve)",
+    Barcode = "Strekkode (Analyse)",
+    Birth_territory = "Født revir",
+    CITES = "CITES-nummer",
+    Collected_by = "Hvem samlet inn",
+    Collector_name = "Samlet selv - Navn",
+    Collector_phone = "Samlet selv - Telefon",
+    Collector_email = "Samlet selv - E-post",
+    Collector_role = "Samlet selv - Rolle",
+    Collector_other_name = "Annen innsamler - Navn" ,
+    Collector_other_phone = "Annen innsamler - Telefon",
+    Collector_other_email = "Annen innsamler - E-post",
+    Collector_other_role = "Annen innsamler - Rolle",
+    Comments_sample = "Merknad (Prøve)",
+    Comments = "Merknad (Analyse)",
+    Control_status = "Kontrollstatus",
+    Coordinate_system = "Koordinatsystem",
+    Counted_off_against_decision = "Regnes av mot vedtak",
+    County_number = "Fylkenummer",
+    County = "Fylke",
+    Date = "Funnetdato",
+    Date = "Dødsdato",
+    Death_cause = "Bakgrunn/årsak",
+    Death_method = "Bakgrunn/årsak metode",
+    Death_purpose = "Bakgrunn/årsak formål",
+    DNAID_sample = "DNAID (Prøve)",
+    DNAID = "DNAID (Analyse)",
+    EventID = "HendelseID",
+    East_Original = "Øst (opprinnelig)",
+    East_RT90 = "Øst (RT90)",
+    East_UTM33 = "Øst (UTM33/SWEREF99 TM)",
+    Felling_site_verif = "Kontroll av fellingsted",
+    Field_personnel ="Feltpersonell",
+    Hunting_date = "Observasjons/Jaktdato",
+    Id = "Individ",
+    Juvenile = "Yngling",
+    Mountain_area = "Fjellområde",
+    Method = "Metode",
+    Municipality_number = "Kommunenummer",
+    Municipality = "Kommune",
+    North_original = "Nord (opprinnelig)",
+    North_RT90 = "Nord (RT90)",
+    North_UTM33 = "Nord (UTM33/SWEREF99 TM)",
+    Origin = "Opprinnelse",
+    Outcome = "Utfall",
+    Last_saved_by_sample = "Sist lagret av (Prøve)",
+    Last_saved_sample = "Sist lagret dato (Prøve)",
+    Last_saved_by = "Sist lagret av (Analyse)",
+    Last_saved = "Sist lagret dato (Analyse)",
+    Last_saved_by = "Sist lagret av",
+    Last_saved =  "Sist lagret dato",
+    Locality = "Lokalitet",
+    Location = "Funnsted",
+    Lansstyrelsen_number = "Länsstyrelsens nr",
+    Quality_checked = "Kvalitetssikret av feltpersonell",
+    Quality_check_name = "Kvalitetssikrer - navn",
+    Quality_check_orga = "Kvalitetssikrer - Organisasjon",
+    Release_Date = "Frigivelsesdato",
+    Sample_type = "Prøvetype",
+    Sensitivity = "Følsomhet",
+    Species_sample = "Art (Prøve)",
+    Site_quality = "Stedkvalitet",
+    Time_of_death = "Dødstidspunkt",
+    Tips_name = "Tipser - Navn",
+    Tips_phone = "Tipser - Telefon",
+    Tips_email = "Tipser - E-post",
+    Tips_role = "Tipser - Rolle",
+    Tissue_sample = "Vevsprøve tatt",
+    Release_Date = "Frigivelsesdato",
+    RovbaseID = "RovbaseID (Analyse)",
+    RovbaseID_sample = "RovbaseID (Prøve)",
+    Species = "Art (Analyse)",
+    Species = "Art",
+    Sample_status = "Prøvestatus",
+    Sensitivity = "Følsomhet",
+    Sex_analysis = "Kjønn (Analyse)",
+    Sex = "Kjønn (Individ)",
+    Sex = "Kjønn",
+    Site_quality = "Stedkvalitet",
+    SVAID = "SVAID",
+    Uncertain_date = "Usikker dødsdato",
+    Weight_slaughter = "Slaktevekt",
+    Weight_total =  "Helvekt")
+}
 
-#### cleanRovBaseData() ####
+
+######################## ##
+##  cleanRovBaseData()   ##
+######################## ##
 
 ## ------ I. LOAD DATA ------
 
@@ -124,27 +227,92 @@ if(myVars$plot.check){
 
 ## ------   2. ROVBASE DATA ------
 
-## NGS data from RovBase #[CM update to 20190627]
+## ------     2.1. NGS ------
+
+## NGS data from RovBase 
 DNA <- read.csv( file.path(data.dir, "dna_wolverines.csv"),
                  fileEncoding = "latin1")
+dim(DNA)
+colnames(DNA)
+##-- Load .xlsx directly instead
+DNA2 <- suppressWarnings(readMostRecent( path = data.dir,
+                                         extension = ".xls",
+                                         pattern = "dna")) 
+dim(DNA2)
+colnames(DNA2)
+dim(DNA) == dim(DNA2)
+
+
 ## Translate scandinavian characters
 colnames(DNA) <- translateForeignCharacters( 
   dat = colnames(DNA),
   dir.translation = dir.analysis)
+dim(DNA)
+colnames(DNA)
+##-- Rename columns to facilitate manipulation
+DNA2 <- DNA2 %>% rename(., any_of(rename.list))
+dim(DNA2)
+colnames(DNA2)
+
+
 ## Drop a column that makes cleanDataNew() to fail
 DNA <- DNA[ ,-which(colnames(DNA) %in% "Kjoenn..Individ.")]
+dim(DNA)
+colnames(DNA)
 
-DNA2 <- DNA %>% select(-Kjoenn..Individ.)
+
+## Remove DEAD entries from the DNA data [HB]
+DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
+dim(DNA)
+colnames(DNA)
+## Use %in% instead  DEAD entries from the DNA data [HB]
+DNA2 <- DNA2 %>% filter(., !substr(DNA2$RovbaseID_sample,1,1) %in% "M")
+dim(DNA2)
+colnames(DNA2)
 
 
-## Dead Recoveries from RovBase #[CM update to 20190627]
+
+## ------     2.2. DEAD RECOVERIES ------
+
+## Dead Recoveries from RovBase 
 DEAD <- read.csv(file.path(data.dir, "dead_carnivores.csv"),
                  fileEncoding = "latin1") 
-## Translate scandinavian characters
+##-- Load .xlsx directly instead
+DEAD2 <- suppressWarnings(readMostRecent( path = data.dir,
+                                         extension = ".xls",
+                                         pattern = "dead")) 
+dim(DEAD)
+dim(DEAD2)
+colnames(DEAD)
+colnames(DEAD2)
+dim(DEAD) == dim(DEAD2)
+
+
+## Translate Scandinavian characters
 colnames(DEAD) <- translateForeignCharacters(
   dat = colnames(DEAD),
   dir.translation = dir.analysis)
+##-- Rename columns to facilitate manipulation
+DEAD2 <- DEAD2 %>% rename(., any_of(rename.list))
+dim(DEAD)
+dim(DEAD2)
+colnames(DEAD)
+colnames(DEAD2)
 
+
+
+## Remove un-verified dead recoveries [HB]
+## ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
+DEAD <- DEAD[!grepl(pattern = "Påskutt", x = as.character(DEAD$Utfall)), ]
+## Remove un-verified dead recoveries [HB]
+DEAD2 <- DEAD2 %>% filter(.,!grepl( pattern = "Påskutt",
+                                    x = as.character(Outcome)))
+dim(DEAD)
+dim(DEAD2)
+
+
+
+## ------     2.3. OTHER FILES ------
 
 ## DNA samples to be removed from Henrik
 SUSPECT_NGS_SAMPLES <- read.csv(file.path(data.dir, "Remove ngs samples list wolverine 2024.csv"),
@@ -177,29 +345,201 @@ TRACKS <- file.path(dir.dropbox, "DATA/RovbaseData/TRACK DATA FROM BOUVET 202408
   st_intersection(., st_as_sf(myStudyArea))
 
 
-## ------   4 .CLEAN DATA ------
- 
-## Remove DEAD entries from the DNA data [HB]
-DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
+## ------   4. CLEAN DATA ------
 
-## Remove un-verified dead recoveries [HB]
-## ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
-DEAD <- DEAD[!grepl(pattern = "Påskutt", x = as.character(DEAD$Utfall)), ]
+## ------     4.1. MERGE NGS AND DEAD RECOVERIES ------
+
+#myCleanedData.sp <- CleanDataNew2sf( 
+dna_samples = DNA
+dead_recoveries = DEAD
+species_id = myVars$DATA$species
+country_polygon = NULL
+threshold_month = unlist(myVars$DATA$samplingMonths)[1]
+keep_dead = TRUE
+reset_month = FALSE
+keep_unidentified_id = FALSE
+age.label.lookup = age.lookup.table
+#)
+
+##-- RENAME & MERGE
+names(dead_recoveries)[grep(pattern = "Individ",x = names(dead_recoveries))] <- "Id"
+names(dead_recoveries)[grep(pattern = "RovbaseID",x = names(dead_recoveries),fixed = TRUE)] <- "RovBaseId"
+names(dead_recoveries)[grep(pattern = "DNAID..Proeve",x = names(dead_recoveries),fixed = TRUE)] <- "DNAID"
+names(dead_recoveries)[grep(pattern = "Art",x = names(dead_recoveries))] <- "Species"
+names(dead_recoveries)[grep(pattern = "Kjoenn",x = names(dead_recoveries))] <- "Sex"
+names(dead_recoveries)[grep(pattern = "Doedsdato",x = names(dead_recoveries))] <- "Date"
+names(dead_recoveries)[grep(pattern = "Oest..UTM33",x = names(dead_recoveries))] <- "East"
+names(dead_recoveries)[grep(pattern = "Nord..UTM33",x = names(dead_recoveries))] <- "North"
+names(dead_recoveries)[grep(pattern = "^Alder..verifisert$",x = names(dead_recoveries))] <- "Age"
+names(dead_recoveries)[grep(pattern = "Bakgrunn.arsak.metode",x = names(dead_recoveries))] <- "DeathCause_2"
+names(dead_recoveries)[grep(pattern = "Bakgrunn.arsak.formal",x = names(dead_recoveries))] <- "DeathCause_3"
+names(dead_recoveries)[grep(pattern = "Bakgrunn.arsak",x = names(dead_recoveries))] <- "DeathCause"
+##-- Rename DNA Samples
+names(dna_samples)[grep(pattern = "Individ",x = names(dna_samples))] <- "Id"
+names(dna_samples)[grep(pattern = "RovbaseID..Proeve",x = names(dna_samples))] <- "RovBaseId"
+names(dna_samples)[grep(pattern = "DNAID..Proeve",x = names(dna_samples))] <- "DNAID"
+names(dna_samples)[grep(pattern = "Art..Analyse",x = names(dna_samples))] <- "Species"
+names(dna_samples)[grep(pattern = "Kjoenn",x = names(dna_samples))] <- "Sex"
+names(dna_samples)[grep(pattern = "Funnetdato",x = names(dna_samples))] <- "Date"
+names(dna_samples)[grep(pattern = "Oest..UTM33",x = names(dna_samples))] <- "East"
+names(dna_samples)[grep(pattern = "Nord..UTM33",x = names(dna_samples))] <- "North"
+names(dead_recoveries)[grep(pattern = "^Alder..verifisert$",x = names(dead_recoveries))] <- "Age"
+names(dna_samples)[grep(pattern = "DNA.proeveleverandoer",x = names(dna_samples))] <- "Origin"
+##-- MERGE
+myData <- merge( dead_recoveries,
+                 dna_samples,
+                 by = c("Id","RovBaseId","DNAID","Species","Sex","Date","East","North"),
+                 all = TRUE)
+
+##-- Merge
+myData2 <- merge( DEAD2,
+                  DNA2,
+                  by = c("Id","RovbaseID","DNAID","Species",
+                         "Sex","Date","East_UTM33","North_UTM33",
+                         "County"),
+                  all = TRUE)
+dim(myData)
+dim(myData2)
+colnames(myData)
+colnames(myData2)
 
 
-## ------     1.1. FILTER UNUSABLE SAMPLES & SET MONITORING YEAR ------
-
-myCleanedData.sp <- CleanDataNew2sf( 
-  dna_samples = DNA,
-  dead_recoveries = DEAD,
-  species_id = myVars$DATA$species,
-  #country_polygon = COUNTRIES,
-  threshold_month = unlist(myVars$DATA$samplingMonths)[1],
-  keep_dead = T,
-  age.label.lookup = age.lookup.table)
 
 
-## PLOT CHECK
+## ------     4.2. FILTER UNUSABLE SAMPLES ------
+
+myData <- myData[myData$Id!="",]                        ## Delete unknown individuals
+dim(myData)
+myData <- myData[!is.na(myData$Id), ]                   ## Delete NA individuals
+dim(myData)
+myData <- myData[!is.na(myData$East), ]                 ## Delete NA locations
+dim(myData)
+myData <- myData[!is.na(myData$Date), ]                 ## Delete NA dates
+dim(myData)
+myData <- myData[myData$Species %in% species_id, ]      ## Delete unwanted species
+dim(myData)
+
+## Convert dates to biological years
+myData$Date <- as.POSIXct(strptime(myData$Date, "%d.%m.%Y"))
+myData$Year <- as.numeric(format(myData$Date,"%Y"))
+myData$Month <- as.numeric(format(myData$Date,"%m"))
+myData <- myData[!is.na(myData$Year), ] 
+dim(myData)
+## Delete NA dates
+myData$Year[myData$Month<threshold_month] <- myData$Year[myData$Month<threshold_month] - 1
+dim(myData)
+
+
+##-- Filter out unusable samples
+myData2 <- myData2 %>%
+  ##-- Add some columns
+  dplyr::mutate( 
+    ##-- Add "Country" column
+    Country_sample = substrRight(County, 3),
+    ##-- Change date format
+    Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
+    ##-- Extract year
+    Year = as.numeric(format(Date,"%Y")),
+    ##-- Extract month
+    Month = as.numeric(format(Date,"%m")),
+    ##-- Extract sampling season
+    ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
+    ##-- Set all months in given sampling period to the same year)
+    Year = ifelse( Month < threshold_month,
+                     Year,
+                     Year-1),
+    ##-- Fix unknown "Id"
+    Id = ifelse(Id %in% "", NA, Id),
+    ##-- Fix unknown "Sex"
+    Sex = ifelse(Sex %in% "Ukjent", NA, Sex)) %>%
+  dplyr::filter(., 
+                ##-- Filter out samples with no ID
+                !is.na(Id),
+                ##-- Filter out samples with no Coordinates
+                !is.na(East_UTM33),
+                ##-- Filter out samples with no dates  
+                !is.na(Year)) %>%
+  droplevels(.)
+
+dim(myData)
+dim(myData2)
+colnames(myData)
+colnames(myData2)
+
+
+
+## ------     4.3. AGE ------
+
+## Determine Death and Birth Years
+myData$Age <- suppressWarnings(as.numeric(as.character(myData$Age))) 
+myData$RovBaseId <- as.character(myData$RovBaseId)
+myData$Death <- NA
+myData$Death[substr(myData$RovBaseId,1,1)=="M"] <- myData$Year[substr(myData$RovBaseId,1,1)=="M"]
+myData$Birth <- myData$Death-myData$Age
+
+## Reconstruct minimal & maximal ages
+myData$Age.orig <- myData$Age
+if(!is.null(age.label.lookup)){
+  temp <- temp1 <- as.character(levels(myData$Age.orig))  ## list age levels
+  temp <- toupper(temp)                                   ## Upper case all
+  temp <- gsub("\\s", "", temp)                           ## Remove blank spaces
+  myData$Age.orig2 <- myData$Age.orig
+  levels(myData$Age.orig2) <- temp
+  myData <- merge( myData, age.label.lookup[ ,-1],
+                   by.x = "Age.orig2",
+                   by.y = "age.label",
+                   all.x = TRUE)                          ## Merge with info from lookup table
+  
+  ## FILL IN THE REST OF THE AGES FROM FOR NUMERIC RECORDS
+  numeric.age.records <- which(!is.na(as.numeric(as.character(myData$Age.orig2))) & !is.na(myData$Age.orig2))
+  myData[numeric.age.records, c("min.age","max.age","age")] <- floor(as.numeric(as.character(myData$Age.orig2[numeric.age.records])))
+}
+
+
+##-- Determine Death and Birth Years
+myData2$Age <- suppressWarnings(as.numeric(as.character(myData2$Age))) 
+myData2$RovbaseID <- as.character(myData2$RovbaseID)
+myData2$Death <- NA
+myData2$Death[substr(myData2$RovbaseID,1,1) %in% "M"] <- myData2$Year[substr(myData2$RovbaseID,1,1) %in% "M"]
+myData2$Birth <- myData2$Death - myData2$Age
+
+dim(myData)
+dim(myData2)
+colnames(myData)
+colnames(myData2)
+
+
+## ------     4.4. EXTRACT COUNTRY ------
+
+## Convert samples coordinates to the correct spatial projection
+myData <- st_as_sf(myData, coords = c("East","North"))
+st_crs(myData) <- st_crs(COUNTRIES)
+
+## Overlay with SpatialPolygons to determine the countries 
+if(!is.null(country_polygon)){
+  myData$Country <- NA
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("FIN")),] )))] <- "F"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("RUS")),] )))] <- "R"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("GOT")),] )))] <- "G"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("NOR")),] )))] <- "N"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("SWE")),] )))] <- "S"
+}#if
+
+
+
+
+
+
+## ------     4.5. FACTOR TRICK ------
+
+## the "Factor" trick...needed to suppress unused factor levels in Id
+myData$Id <- factor( x = as.character(myData$Id),
+                     levels = unique(as.character(myData$Id)))
+
+
+
+## ------     4.6. PLOT CHECK ------
+
 if(myVars$plot.check){
   plot(st_geometry(COUNTRIES))
   plot(st_geometry(myStudyArea), add = T, col ="red")
@@ -209,7 +549,7 @@ if(myVars$plot.check){
 
 
 
-## ------     1.2. CHECK SEX ASSIGNMENT ------
+## ------     4.7. CHECK SEX ASSIGNMENT ------
 
 myFullData.sp <- FilterDatasf( 
   myData = myCleanedData.sp,
@@ -225,14 +565,14 @@ if(myVars$plot.check){
 
 
 
-## ------     1.3. REMOVE SUSPECT NGS ACCORDING TO HENRIK ------
+## ------     4.8. REMOVE SUSPECT NGS ACCORDING TO HENRIK ------
 
 myFullData.sp$alive <- myFullData.sp$alive %>%
   filter(.,!as.character(DNAID) %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB))
 
 
 
-## ------     1.4. REMOVE SUSPECT DEAD RECOVERIES ACCORDING TO HENRIK ------
+## ------     4.4. REMOVE SUSPECT DEAD RECOVERIES ACCORDING TO HENRIK ------
 
 myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
   ## Dead recoveris in suspect samples list from HB
@@ -334,8 +674,8 @@ if(sum(myFullData.sp$dead.recovery$Age %in% 0 &
 
 
 
-## ------     1.4. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
-## ------       1.4.1. ASSIGN SAMPLES TO TRACKS ------
+## ------     4.4. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
+## ------       4.4.1. ASSIGN SAMPLES TO TRACKS ------
 
 # test <- assignSearchtTracks(
 #   data = myFilteredData.sp$alive,
@@ -397,7 +737,7 @@ save( myFilteredData.sp,
 
 
 
-## ------       1.4.2. SPLIT DATA TO OPPORTUNISTIC & STRUCTURED ------
+## ------       4.4.2. SPLIT DATA TO OPPORTUNISTIC & STRUCTURED ------
 distanceThreshold <- 500
 
 #Proeveleverandoer columns was replaced by two columns, merging them now...
@@ -434,7 +774,7 @@ if(myVars$plot.check){
 
 
 
-## ------     1.5. SEPARATE MORTALITY CAUSES -----
+## ------     4.5. SEPARATE MORTALITY CAUSES -----
 
 ## MORTALITY CAUSES
 length(myFilteredData.sp$dead.recovery)
@@ -529,7 +869,7 @@ if(myVars$plot.check){
 }
 
 
-## ------       1.4.3. PLOT CHECKS ------
+## ------       4.5.3. PLOT CHECKS ------
 
 ## PLOT CHECK
 if(myVars$plot.check){
@@ -608,8 +948,10 @@ if(myVars$plot.check){
 
 
 ################################################################################
-#### makeRovQuantData() ####
 
+######################## ##
+##   makeRovQuantData()  ##
+######################## ##
 
 ## ------     1.3. FILTER NGS & DEAD RECOVERY DATA FOR YEARS ------
 
@@ -1756,7 +2098,6 @@ precapture <- MakeAugmentation(y = precapture, aug.factor = myVars$DETECTIONS$au
 
 
 
-## -----------------------------------------------------------------------------
 ## ------ III.MODEL SETTING AND RUNNING ------- 
 
 ## ------   1. NIMBLE MODEL DEFINITION ------
