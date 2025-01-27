@@ -20,8 +20,10 @@ library(ggplot2)
 library(stars)
 
 
+
 ## ------ SET REQUIRED WORKING DIRECTORIES ------
 source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
+
 
 
 ## ------ SOURCE THE REQUIRED FUNCTIONS ------
@@ -42,23 +44,23 @@ myVars <- list(
   
   modelName = "53.aJ_FaCleaned2024_cleaned",
   
-  # HABITAT SPECIFICATIONS
+  ## HABITAT SPECIFICATIONS
   HABITAT = list( countries =  c("SWE","NOR"),
                   habResolution = 20000,
                   habBuffer = 60000),
   
-  # NGS DATA SPECIFICATIONS
+  ## NGS DATA SPECIFICATIONS
   DATA = list( years = 2014:2023,
                species = c("Jerv"),               
                sex = c("Hunn"),                   
                samplingMonths = list(12,1:6)),  
   
-  # DETECTORS SPECIFICATIONS
+  ## DETECTORS SPECIFICATIONS
   DETECTORS = list( detSubResolution = 2000,
                     detResolution = 10000,
                     detDeadResolution = 15000),
   
-  # DATA GENERATION
+  ## DATA GENERATION
   DETECTIONS = list( maxDetDist = 40000,
                      resizeFactor = 3,
                      aug.factor = 0.8),
@@ -81,104 +83,104 @@ if(!dir.exists(file.path(myVars$WD, myVars$modelName))){dir.create(file.path(myV
 data.dir <- file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023")
 
 
+
 ################################################################################
 ##-- Renaming list
-if(is.null(rename.list)){
-  rename.list = c(
-    Age_estimated = "Alder, vurdert",
-    Age = "Alder, verifisert",
-    Age_verif_by = "Alder, verifisert av",
-    Age_class = "Alder på dødt individ",
-    Age_class_verif = "Aldersklasse verifisert SVA",
-    Analyzed_by = "AnalysertAv",
-    Analysis_priority = "Analyseprioritet",
-    Approved_by = "Godkjent av",
-    Approved_date = "Godkjentdato",
-    Assessment = "Vurdering",
-    Barcode_sample = "Strekkode (Prøve)",
-    Barcode = "Strekkode (Analyse)",
-    Birth_territory = "Født revir",
-    CITES = "CITES-nummer",
-    Collected_by = "Hvem samlet inn",
-    Collector_name = "Samlet selv - Navn",
-    Collector_phone = "Samlet selv - Telefon",
-    Collector_email = "Samlet selv - E-post",
-    Collector_role = "Samlet selv - Rolle",
-    Collector_other_name = "Annen innsamler - Navn" ,
-    Collector_other_phone = "Annen innsamler - Telefon",
-    Collector_other_email = "Annen innsamler - E-post",
-    Collector_other_role = "Annen innsamler - Rolle",
-    Comments_sample = "Merknad (Prøve)",
-    Comments = "Merknad (Analyse)",
-    Control_status = "Kontrollstatus",
-    Coordinate_system = "Koordinatsystem",
-    Counted_off_against_decision = "Regnes av mot vedtak",
-    County_number = "Fylkenummer",
-    County = "Fylke",
-    Date = "Funnetdato",
-    Date = "Dødsdato",
-    Death_cause = "Bakgrunn/årsak",
-    Death_method = "Bakgrunn/årsak metode",
-    Death_purpose = "Bakgrunn/årsak formål",
-    DNAID_sample = "DNAID (Prøve)",
-    DNAID = "DNAID (Analyse)",
-    EventID = "HendelseID",
-    East_Original = "Øst (opprinnelig)",
-    East_RT90 = "Øst (RT90)",
-    East_UTM33 = "Øst (UTM33/SWEREF99 TM)",
-    Felling_site_verif = "Kontroll av fellingsted",
-    Field_personnel ="Feltpersonell",
-    Hunting_date = "Observasjons/Jaktdato",
-    Id = "Individ",
-    Juvenile = "Yngling",
-    Mountain_area = "Fjellområde",
-    Method = "Metode",
-    Municipality_number = "Kommunenummer",
-    Municipality = "Kommune",
-    North_original = "Nord (opprinnelig)",
-    North_RT90 = "Nord (RT90)",
-    North_UTM33 = "Nord (UTM33/SWEREF99 TM)",
-    Origin = "Opprinnelse",
-    Outcome = "Utfall",
-    Last_saved_by_sample = "Sist lagret av (Prøve)",
-    Last_saved_sample = "Sist lagret dato (Prøve)",
-    Last_saved_by = "Sist lagret av (Analyse)",
-    Last_saved = "Sist lagret dato (Analyse)",
-    Last_saved_by = "Sist lagret av",
-    Last_saved =  "Sist lagret dato",
-    Locality = "Lokalitet",
-    Location = "Funnsted",
-    Lansstyrelsen_number = "Länsstyrelsens nr",
-    Quality_checked = "Kvalitetssikret av feltpersonell",
-    Quality_check_name = "Kvalitetssikrer - navn",
-    Quality_check_orga = "Kvalitetssikrer - Organisasjon",
-    Release_Date = "Frigivelsesdato",
-    Sample_type = "Prøvetype",
-    Sensitivity = "Følsomhet",
-    Species_sample = "Art (Prøve)",
-    Site_quality = "Stedkvalitet",
-    Time_of_death = "Dødstidspunkt",
-    Tips_name = "Tipser - Navn",
-    Tips_phone = "Tipser - Telefon",
-    Tips_email = "Tipser - E-post",
-    Tips_role = "Tipser - Rolle",
-    Tissue_sample = "Vevsprøve tatt",
-    Release_Date = "Frigivelsesdato",
-    RovbaseID = "RovbaseID (Analyse)",
-    RovbaseID_sample = "RovbaseID (Prøve)",
-    Species = "Art (Analyse)",
-    Species = "Art",
-    Sample_status = "Prøvestatus",
-    Sensitivity = "Følsomhet",
-    Sex_analysis = "Kjønn (Analyse)",
-    Sex = "Kjønn (Individ)",
-    Sex = "Kjønn",
-    Site_quality = "Stedkvalitet",
-    SVAID = "SVAID",
-    Uncertain_date = "Usikker dødsdato",
-    Weight_slaughter = "Slaktevekt",
-    Weight_total =  "Helvekt")
-}
+rename.list = c(
+  Age_estimated = "Alder, vurdert",
+  Age = "Alder, verifisert",
+  Age_verif_by = "Alder, verifisert av",
+  Age_class = "Alder på dødt individ",
+  Age_class_verif = "Aldersklasse verifisert SVA",
+  Analyzed_by = "AnalysertAv",
+  Analysis_priority = "Analyseprioritet",
+  Approved_by = "Godkjent av",
+  Approved_date = "Godkjentdato",
+  Assessment = "Vurdering",
+  Barcode_sample = "Strekkode (Prøve)",
+  Barcode = "Strekkode (Analyse)",
+  Birth_territory = "Født revir",
+  CITES = "CITES-nummer",
+  Collected_by = "Hvem samlet inn",
+  Collector_name = "Samlet selv - Navn",
+  Collector_phone = "Samlet selv - Telefon",
+  Collector_email = "Samlet selv - E-post",
+  Collector_role = "Samlet selv - Rolle",
+  Collector_other_name = "Annen innsamler - Navn" ,
+  Collector_other_phone = "Annen innsamler - Telefon",
+  Collector_other_email = "Annen innsamler - E-post",
+  Collector_other_role = "Annen innsamler - Rolle",
+  Comments_sample = "Merknad (Prøve)",
+  Comments = "Merknad (Analyse)",
+  Control_status = "Kontrollstatus",
+  Coordinate_system = "Koordinatsystem",
+  Counted_off_against_decision = "Regnes av mot vedtak",
+  County_number = "Fylkenummer",
+  County = "Fylke",
+  Date = "Funnetdato",
+  Date = "Dødsdato",
+  Death_cause = "Bakgrunn/årsak",
+  Death_method = "Bakgrunn/årsak metode",
+  Death_purpose = "Bakgrunn/årsak formål",
+  DNAID_sample = "DNAID (Prøve)",
+  DNAID = "DNAID (Analyse)",
+  EventID = "HendelseID",
+  East_Original = "Øst (opprinnelig)",
+  East_RT90 = "Øst (RT90)",
+  East_UTM33 = "Øst (UTM33/SWEREF99 TM)",
+  Felling_site_verif = "Kontroll av fellingsted",
+  Field_personnel ="Feltpersonell",
+  Hunting_date = "Observasjons/Jaktdato",
+  Id = "Individ",
+  Juvenile = "Yngling",
+  Mountain_area = "Fjellområde",
+  Method = "Metode",
+  Municipality_number = "Kommunenummer",
+  Municipality = "Kommune",
+  North_original = "Nord (opprinnelig)",
+  North_RT90 = "Nord (RT90)",
+  North_UTM33 = "Nord (UTM33/SWEREF99 TM)",
+  Origin = "Opprinnelse",
+  Outcome = "Utfall",
+  Last_saved_by_sample = "Sist lagret av (Prøve)",
+  Last_saved_sample = "Sist lagret dato (Prøve)",
+  Last_saved_by = "Sist lagret av (Analyse)",
+  Last_saved = "Sist lagret dato (Analyse)",
+  Last_saved_by = "Sist lagret av",
+  Last_saved =  "Sist lagret dato",
+  Locality = "Lokalitet",
+  Location = "Funnsted",
+  Lansstyrelsen_number = "Länsstyrelsens nr",
+  Quality_checked = "Kvalitetssikret av feltpersonell",
+  Quality_check_name = "Kvalitetssikrer - navn",
+  Quality_check_orga = "Kvalitetssikrer - Organisasjon",
+  Release_Date = "Frigivelsesdato",
+  Sample_type = "Prøvetype",
+  Sensitivity = "Følsomhet",
+  Species_sample = "Art (Prøve)",
+  Site_quality = "Stedkvalitet",
+  Time_of_death = "Dødstidspunkt",
+  Tips_name = "Tipser - Navn",
+  Tips_phone = "Tipser - Telefon",
+  Tips_email = "Tipser - E-post",
+  Tips_role = "Tipser - Rolle",
+  Tissue_sample = "Vevsprøve tatt",
+  Release_Date = "Frigivelsesdato",
+  RovbaseID = "RovbaseID (Analyse)",
+  RovbaseID_sample = "RovbaseID (Prøve)",
+  Species = "Art (Analyse)",
+  Species = "Art",
+  Sample_status = "Prøvestatus",
+  Sensitivity = "Følsomhet",
+  Sex_analysis = "Kjønn (Analyse)",
+  Sex = "Kjønn (Individ)",
+  Sex = "Kjønn",
+  Site_quality = "Stedkvalitet",
+  SVAID = "SVAID",
+  Uncertain_date = "Usikker dødsdato",
+  Weight_slaughter = "Slaktevekt",
+  Weight_total =  "Helvekt")
+
 
 
 ######################## ##
@@ -232,43 +234,31 @@ if(myVars$plot.check){
 ## NGS data from RovBase 
 DNA <- read.csv( file.path(data.dir, "dna_wolverines.csv"),
                  fileEncoding = "latin1")
-dim(DNA)
-colnames(DNA)
-##-- Load .xlsx directly instead
-DNA2 <- suppressWarnings(readMostRecent( path = data.dir,
-                                         extension = ".xls",
-                                         pattern = "dna")) 
-dim(DNA2)
-colnames(DNA2)
-dim(DNA) == dim(DNA2)
-
 
 ## Translate scandinavian characters
 colnames(DNA) <- translateForeignCharacters( 
   dat = colnames(DNA),
   dir.translation = dir.analysis)
-dim(DNA)
-colnames(DNA)
-##-- Rename columns to facilitate manipulation
-DNA2 <- DNA2 %>% rename(., any_of(rename.list))
-dim(DNA2)
-colnames(DNA2)
-
 
 ## Drop a column that makes cleanDataNew() to fail
 DNA <- DNA[ ,-which(colnames(DNA) %in% "Kjoenn..Individ.")]
-dim(DNA)
-colnames(DNA)
-
 
 ## Remove DEAD entries from the DNA data [HB]
 DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
-dim(DNA)
-colnames(DNA)
-## Use %in% instead  DEAD entries from the DNA data [HB]
-DNA2 <- DNA2 %>% filter(., !substr(DNA2$RovbaseID_sample,1,1) %in% "M")
-dim(DNA2)
-colnames(DNA2)
+
+
+
+##-- Load .xlsx directly instead
+DNA2 <- suppressWarnings(readMostRecent( path = data.dir,
+                                         extension = ".xls",
+                                         pattern = "dna")) %>% 
+  ##-- Rename columns to facilitate manipulation
+  rename(., any_of(rename.list)) %>%
+  ## Remove DEAD entries from the DNA data 
+  filter(., !substr(RovbaseID_sample,1,1) %in% "M")
+
+# ##-- Check if all the samples starting with "M" and removed are present in the Dead Recovery data
+# all(DNA2$RovbaseID_sample[substr(DNA2$RovbaseID_sample,1,1) %in% "M"] %in% DEAD$RovbaseID)
 
 
 
@@ -277,38 +267,27 @@ colnames(DNA2)
 ## Dead Recoveries from RovBase 
 DEAD <- read.csv(file.path(data.dir, "dead_carnivores.csv"),
                  fileEncoding = "latin1") 
-##-- Load .xlsx directly instead
-DEAD2 <- suppressWarnings(readMostRecent( path = data.dir,
-                                         extension = ".xls",
-                                         pattern = "dead")) 
-dim(DEAD)
-dim(DEAD2)
-colnames(DEAD)
-colnames(DEAD2)
-dim(DEAD) == dim(DEAD2)
-
 
 ## Translate Scandinavian characters
 colnames(DEAD) <- translateForeignCharacters(
   dat = colnames(DEAD),
   dir.translation = dir.analysis)
-##-- Rename columns to facilitate manipulation
-DEAD2 <- DEAD2 %>% rename(., any_of(rename.list))
-dim(DEAD)
-dim(DEAD2)
-colnames(DEAD)
-colnames(DEAD2)
-
-
 
 ## Remove un-verified dead recoveries [HB]
 ## ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
 DEAD <- DEAD[!grepl(pattern = "Påskutt", x = as.character(DEAD$Utfall)), ]
-## Remove un-verified dead recoveries [HB]
-DEAD2 <- DEAD2 %>% filter(.,!grepl( pattern = "Påskutt",
-                                    x = as.character(Outcome)))
-dim(DEAD)
-dim(DEAD2)
+
+
+
+##-- Load .xlsx directly instead
+DEAD2 <- suppressWarnings(readMostRecent( path = data.dir,
+                                          extension = ".xls",
+                                          pattern = "dead")) %>% 
+  ##-- Rename columns to facilitate manipulation
+  rename(., any_of(rename.list)) %>%
+  ## Remove un-verified dead recoveries [HB]
+  filter(.,!grepl( pattern = "Påskutt",
+                   x = as.character(Outcome)))
 
 
 
@@ -329,13 +308,17 @@ HairTrapSamples <- read_xlsx(file.path(data.dir, "hairtrapsNB2024.xlsx"))
 
 ## ------   3. GPS SEARCH TRACKS ------
 
+
+TRACKS1 <- read_sf(file.path( dir.dropbox, "DATA/RovbaseData/TRACK DATA FROM BOUVET 20240830",
+                       "XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp"))
+
+
+TRACKS2 <- read_sf(file.path(dir.dropbox, "DATA/RovbaseData/TRACK DATA FROM BOUVET 20240830",
+                             "XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))
+
+
 ## COMBINE ALL TRACKS
-TRACKS <- file.path(dir.dropbox, "DATA/RovbaseData/TRACK DATA FROM BOUVET 20240830") %>%
-  rbind(
-    read_sf(file.path( .,
-                       "XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
-    read_sf(file.path( .,
-                       "XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>% 
+TRACKS <- rbind(TRACKS1,TRACKS2) %>% 
   filter(.,
          ## REMOVE HELICOPTER TRACKS
          Helikopter == "0",
@@ -344,10 +327,14 @@ TRACKS <- file.path(dir.dropbox, "DATA/RovbaseData/TRACK DATA FROM BOUVET 202408
   ## KEEP TRACKS IN THE STUDY AREA ONLY
   st_intersection(., st_as_sf(myStudyArea))
 
+rm(TRACKS1)
+rm(TRACKS2)
+
+
 
 ## ------   4. CLEAN DATA ------
 
-## ------     4.1. MERGE NGS AND DEAD RECOVERIES ------
+## ------     4.1. MERGE NGS & DEAD RECOVERIES ------
 
 #myCleanedData.sp <- CleanDataNew2sf( 
 dna_samples = DNA
@@ -446,8 +433,8 @@ myData2 <- myData2 %>%
     ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
     ##-- Set all months in given sampling period to the same year)
     Year = ifelse( Month < threshold_month,
-                     Year,
-                     Year-1),
+                   Year,
+                   Year-1),
     ##-- Fix unknown "Id"
     Id = ifelse(Id %in% "", NA, Id),
     ##-- Fix unknown "Sex"
@@ -497,16 +484,20 @@ if(!is.null(age.label.lookup)){
 
 
 ##-- Determine Death and Birth Years
-myData2$Age <- suppressWarnings(as.numeric(as.character(myData2$Age))) 
-myData2$RovbaseID <- as.character(myData2$RovbaseID)
-myData2$Death <- NA
-myData2$Death[substr(myData2$RovbaseID,1,1) %in% "M"] <- myData2$Year[substr(myData2$RovbaseID,1,1) %in% "M"]
-myData2$Birth <- myData2$Death - myData2$Age
+myData2 <- myData2 %>% 
+  mutate(
+    Age = suppressWarnings(as.numeric(as.character(Age))),
+    RovbaseID = as.character(RovbaseID),
+    Death = ifelse(substr(myData2$RovbaseID,1,1) %in% "M", Year, NA),
+    Birth = Death - Age
+  )
+
 
 dim(myData)
 dim(myData2)
 colnames(myData)
 colnames(myData2)
+
 
 
 ## ------     4.4. EXTRACT COUNTRY ------
@@ -526,6 +517,25 @@ if(!is.null(country_polygon)){
 }#if
 
 
+
+## Convert samples coordinates to the correct spatial projection
+myData2 <- myData2 %>%
+  st_as_sf(., coords = c("East_UTM33","North_UTM33")) %>%
+  st_set_crs(.,st_crs(COUNTRIES)) %>%
+  mutate(Country = COUNTRIES$ISO[unlist(st_intersects(.,COUNTRIES))])
+
+
+st_intersects(myData2,COUNTRIES)
+
+## Overlay with SpatialPolygons to determine the countries 
+if(!is.null(country_polygon)){
+  myData$Country <- NA
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("FIN")),] )))] <- "F"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("RUS")),] )))] <- "R"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("GOT")),] )))] <- "G"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("NOR")),] )))] <- "N"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("SWE")),] )))] <- "S"
+}#if
 
 
 
@@ -579,9 +589,9 @@ myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
   filter(.,
          !as.character(RovBaseId) %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID),
          ## Dead recoveries flagged by Henrik that should always be removed (email from the 18/12/2024)
-        !RovBaseId %in% c("M495994","M524051","M524052","M524053"), ]
-         
-         )
+         !RovBaseId %in% c("M495994","M524051","M524052","M524053"), ]
+
+  )
 
 ## Remove individuals that died twice
 # [CM] TO BE CHECKED BECAUSE "length(IdDoubleDead) < 0" and so it was deactivated
