@@ -11,7 +11,6 @@ params <- list(
 library(kableExtra)
 library(ggplot2)
 
-
 ##-- Rendering parameters
 species <- params$species
 years <- params$years
@@ -20,7 +19,6 @@ sampling.months <- params$sampling.months
 rename.list <- params$rename.list
 dir.in <- params$dir.in
 dir.out <- params$dir.out
-
 
 ##-- Species
 if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjørn", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
@@ -56,7 +54,6 @@ if(is.null(sampling.months)){
     }
   }
 }
-
 
 ##-- Renaming list
 if(is.null(rename.list)){
@@ -157,10 +154,16 @@ rename.list = c(
 }
 
 
+## ------   1. LOAD HABITAT DATA ------
 ##-- Load pre-processed habitat shapefiles
 data(COUNTRIES, envir = environment()) 
 
 
+
+## ------   2. NGS DATA ------
+## ------     2.1. LOAD NGS ------
+## ------     2.2. RENAME ------
+## ------   7. FORMAT DATES -----
 DNA <- suppressWarnings(readMostRecent( path = dir.in,
                                         extension = ".xls",
                                         pattern = "DNA")) %>%
@@ -184,8 +187,8 @@ DNA <- suppressWarnings(readMostRecent( path = dir.in,
     ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
     ##-- Set all months in given sampling period to the same year)
     MonSeason = ifelse( Month < unlist(sampling.months)[1],
-                     Year,
-                     Year-1),
+                        Year,
+                        Year-1),
     ##-- Fix unknown "Id"
     Id = ifelse(Id %in% "", NA, Id),
     ##-- Fix unknown "Sex"
@@ -195,8 +198,10 @@ DNA <- suppressWarnings(readMostRecent( path = dir.in,
 
 
 
-
-
+## ------   3. DEAD RECOVERIES ------
+## ------     3.1. LOAD DEAD RECOVERIES ------
+## ------     3.2. RENAME ------
+## ------   7. FORMAT DATES -----
 ##-- Load raw excel file imported from rovbase 
 DR <- suppressWarnings(readMostRecent( path = dir.in,
                                        extension = ".xls",
@@ -231,6 +236,8 @@ DR <- suppressWarnings(readMostRecent( path = dir.in,
   filter(., Year %in% years) 
 
 
+
+## ------   6. MERGE NGS & DEAD RECOVERIES ------
 ##-- Merge DNA and dead recoveries files using all shared names columns
 #DATA <- full_join(DNA, DR, by = names(DNA)[names(DNA) %in% names(DR)]) 
 DATA <- merge( DR, DNA,
@@ -241,6 +248,8 @@ DATA <- merge( DR, DNA,
                all = TRUE)
 
 
+
+## ------     8.2. DETERMINE AGE ------
 ##-- Determine Death and Birth Years
 DATA$Age <- suppressWarnings(as.numeric(as.character(DATA$Age))) 
 DATA$RovbaseID <- as.character(DATA$RovbaseID)
@@ -250,6 +259,7 @@ DATA$Birth <- DATA$Death - DATA$Age
 
 
 
+## ------     8.1. REMOVE UNUSABLE SAMPLES ------
 ##-- Filter out unusable samples
 DATA <- DATA %>%
   dplyr::filter(., 
@@ -265,6 +275,7 @@ DATA <- DATA %>%
 
 
 
+## ------     8.4. CHECK SEX ASSIGNMENT ------
 ##-- Check sex assignment
 ID <- unique(as.character(DATA$Id))
 DATA$Sex <- as.character(DATA$Sex)
@@ -302,6 +313,7 @@ for(i in 1:length(ID)){
 
 
 
+## ------     8.3. EXTRACT COUNTRY ------
 ##-- Turn into sf points dataframe
 DATA <- sf::st_as_sf( x = DATA,
                        coords = c("East_UTM33","North_UTM33")) %>%
@@ -311,6 +323,8 @@ DATA <- sf::st_as_sf( x = DATA,
 #alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
 DATA$Country_sf[!is.na(as.numeric(st_intersects(DATA, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
 DATA$Country_sf[!is.na(as.numeric(st_intersects(DATA, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
+
+
 
 
 
@@ -337,11 +351,14 @@ dead.recovery$detected.earlier <-
                 }))
 
 if(engSpecies == "wolverine"){
+  ## ------     3.3. REMOVE UNIVERIFIED DR ------
   ##-- Remove un-verified dead recoveries [HB] 
   ##-- ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
   dead.recovery <- dead.recovery[!grepl(pattern = "Påskutt",
                                         x = as.character(dead.recovery$Outcome)), ]
   
+  
+  ## ------     8.6. REMOVE SUSPECT NGS ACCORDING TO HENRIK ------
   ##-- Remove suspect NGS samples according to Henrik
   SUSPECT_NGS_SAMPLES <- readMostRecent(
     path = dir.in,
@@ -350,6 +367,8 @@ if(engSpecies == "wolverine"){
   alive$DNAID <- as.character(alive$DNAID)
   alive <- alive[!(alive$DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB)), ]
   
+  
+  ## ------     8.7. REMOVE SUSPECT DEAD RECOVERIES ACCORDING TO HENRIK ------
   ##-- Remove suspect dead recoveries according to Henrik
   SUSPECT_DeadRecoSAMPLES <- readMostRecent(
     path = dir.in,
@@ -359,6 +378,7 @@ if(engSpecies == "wolverine"){
   dead.recovery <- dead.recovery[!(dead.recovery$RovbaseID %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID)), ]
   
   
+  ## ------     8.9. Remove pups killed before recruitment based on weight (cf. Henrik) ------
   ##-- Remove pups killed before recruitment based on weight (cf. Henrik)
   ##-- 1) remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
   youngDeads <- which(dead.recovery$Age_class %in% "Unge" &
@@ -399,31 +419,8 @@ if(engSpecies == "wolverine"){
 }
 
 
-##-- Turn into sf points dataframe
-alive <- sf::st_as_sf( x = alive,
-                       coords = c("East_UTM33","North_UTM33")) %>%
-  sf::st_set_crs(.,sf::st_crs(32633)) 
 
-##-- Intersect and extract country name
-#alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
-alive$Country_sf[!is.na(as.numeric(st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
-alive$Country_sf[!is.na(as.numeric(st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
-
-
-
-
-##-- Turn into sf points dataframe
-dead.recovery <- sf::st_as_sf( x = dead.recovery,
-                         coords = c("East_UTM33","North_UTM33")) %>%
-  sf::st_set_crs(.,sf::st_crs(32633))
-
-##-- Intersect and extract country name
-#dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
-dead.recovery$Country_sf[!is.na(as.numeric(st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
-dead.recovery$Country_sf[!is.na(as.numeric(st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
-
-
-
+## ------     8.8. Remove individuals that died twice ------
 
 ##-- Identify and count individuals dead "more than once"
 ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1]
