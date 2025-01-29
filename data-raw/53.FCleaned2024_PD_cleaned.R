@@ -85,7 +85,7 @@ data.dir <- file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023")
 
 
 ################################################################################
-##-- Renaming list
+##-- Renaming list ----
 rename.list = c(
   Age_estimated = "Alder, vurdert",
   Age = "Alder, verifisert",
@@ -503,39 +503,30 @@ colnames(myData2)
 ## ------     4.4. EXTRACT COUNTRY ------
 
 ## Convert samples coordinates to the correct spatial projection
-myData <- st_as_sf(myData, coords = c("East","North"))
-st_crs(myData) <- st_crs(COUNTRIES)
+myData <- st_as_sf(myData, coords = c("East","North")) %>%
+  sf::st_set_crs(.,sf::st_crs(32633)) 
 
 ## Overlay with SpatialPolygons to determine the countries 
-if(!is.null(country_polygon)){
-  myData$Country <- NA
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("FIN")),] )))] <- "F"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("RUS")),] )))] <- "R"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("GOT")),] )))] <- "G"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("NOR")),] )))] <- "N"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("SWE")),] )))] <- "S"
-}#if
+myData$Country <- NA
+myData$Country[!is.na(as.numeric(st_intersects(myData, COUNTRIES[which(COUNTRIES$ISO %in% c("FIN")),] )))] <- "F"
+myData$Country[!is.na(as.numeric(st_intersects(myData, COUNTRIES[which(COUNTRIES$ISO %in% c("RUS")),] )))] <- "R"
+myData$Country[!is.na(as.numeric(st_intersects(myData, COUNTRIES[which(COUNTRIES$ISO %in% c("GOT")),] )))] <- "G"
+myData$Country[!is.na(as.numeric(st_intersects(myData, COUNTRIES[which(COUNTRIES$ISO %in% c("NOR")),] )))] <- "N"
+myData$Country[!is.na(as.numeric(st_intersects(myData, COUNTRIES[which(COUNTRIES$ISO %in% c("SWE")),] )))] <- "S"
+
 
 
 
 ## Convert samples coordinates to the correct spatial projection
 myData2 <- myData2 %>%
-  st_as_sf(., coords = c("East_UTM33","North_UTM33")) %>%
-  st_set_crs(.,st_crs(COUNTRIES)) %>%
-  mutate(Country = COUNTRIES$ISO[unlist(st_intersects(.,COUNTRIES))])
+  sf::st_as_sf(., coords = c("East_UTM33","North_UTM33")) %>%
+  sf::st_set_crs(.,sf::st_crs(32633)) 
 
+myData2$Country_sf[!is.na(as.numeric(st_intersects(myData2, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
+myData2$Country_sf[!is.na(as.numeric(st_intersects(myData2, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
 
-st_intersects(myData2,COUNTRIES)
-
-## Overlay with SpatialPolygons to determine the countries 
-if(!is.null(country_polygon)){
-  myData$Country <- NA
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("FIN")),] )))] <- "F"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("RUS")),] )))] <- "R"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("GOT")),] )))] <- "G"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("NOR")),] )))] <- "N"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("SWE")),] )))] <- "S"
-}#if
+table(myData$Country,useNA = "always")
+table(myData2$Country_sf,useNA = "always")
 
 
 
@@ -546,32 +537,21 @@ if(!is.null(country_polygon)){
 myData$Id <- factor( x = as.character(myData$Id),
                      levels = unique(as.character(myData$Id)))
 
-
-
-## ------     4.6. PLOT CHECK ------
-
-if(myVars$plot.check){
-  plot(st_geometry(COUNTRIES))
-  plot(st_geometry(myStudyArea), add = T, col ="red")
-  plot(st_geometry(myCleanedData.sp),
-       add = TRUE, pch = 19, cex = 0.2, col = "white")
-}
+myData2$Id <- factor( x = as.character(myData2$Id),
+                     levels = unique(as.character(myData2$Id)))
 
 
 
 ## ------     4.7. CHECK SEX ASSIGNMENT ------
 
 myFullData.sp <- FilterDatasf( 
-  myData = myCleanedData.sp,
+  myData = .,
   poly = myStudyArea,
   dead.recovery = T,
   sex = c("Hann","Hunn"),
   setSex = T)
 
-if(myVars$plot.check){
-  plot(st_geometry(myFullData.sp$alive),
-       add = TRUE,pch=19,cex=0.2, col="lightblue")
-}
+
 
 
 
@@ -879,9 +859,10 @@ if(myVars$plot.check){
 }
 
 
+
 ## ------       4.5.3. PLOT CHECKS ------
 
-## PLOT CHECK
+##-- PLOT CHECK
 if(myVars$plot.check){
   pdf(file = file.path( myVars$WD, myVars$modelName,
                         paste0(myVars$modelName, "_DetectionsStructuredOppBarplot.pdf")))
