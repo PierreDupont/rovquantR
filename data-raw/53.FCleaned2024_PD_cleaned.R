@@ -244,13 +244,19 @@ DEAD <- suppressWarnings(readMostRecent( path = data.dir,
 ## ------   3. CLEAN DATA ------
 
 ## ------     3.1. MERGE NGS & DEAD RECOVERIES ------
+
 myData <- merge( DEAD,
                  DNA,
                  by = c("Id","RovbaseID","DNAID","Species",
                         "Sex","Date","East_UTM33","North_UTM33",
                         "County"),
-                 all = TRUE) %>%
+                 all = TRUE)
+
+  
+  
 ## ------     3.2. FILTER UNUSABLE SAMPLES ------
+
+myData <- myData %>%
   ##-- Add some columns
   dplyr::mutate( 
     ##-- Add "Country" column
@@ -289,32 +295,17 @@ myData <- merge( DEAD,
 
 ## ------     3.3. AGE ------
 
-# ##-- Determine Death and Birth Years
-# myData <- myData %>% 
-#   mutate(
-#     Age = suppressWarnings(as.numeric(as.character(Age))),
-#     RovbaseID = as.character(RovbaseID),
-#     Death = ifelse(substr(RovbaseID,1,1) %in% "M", Year, NA),
-#     Birth = Death - Age
-#   )
-
-### [PD] can be cleaned 
-
 ## Reconstruct minimal & maximal ages
-myData$Age.orig <- myData$Age
 if(!is.null(age.lookup.table)){
-  temp <- temp1 <- as.character(levels(myData$Age.orig))  ## list age levels
-  temp <- toupper(temp)                                   ## Upper case all
-  temp <- gsub("\\s", "", temp)                           ## Remove blank spaces
-  myData$Age.orig2 <- myData$Age.orig
-  levels(myData$Age.orig2) <- temp
+  myData$age.label <- myData$Age
+  
   myData <- merge( myData, age.lookup.table[ ,-1],
-                   by.x = "Age.orig2",
+                   by.x = "age.label",
                    by.y = "age.label",
                    all.x = TRUE)                          ## Merge with info from lookup table
   
   ## FILL IN THE REST OF THE AGES FROM FOR NUMERIC RECORDS
-  numeric.age.records <- which(!is.na(as.numeric(as.character(myData$Age.orig2))) & !is.na(myData$Age.orig2))
+  numeric.age.records <- which(!is.na(as.numeric(as.character(myData$age.label))) & !is.na(myData$age.label))
   myData[numeric.age.records, c("min.age","max.age","age")] <- floor(as.numeric(as.character(myData$Age.orig2[numeric.age.records])))
 }
 
@@ -650,10 +641,10 @@ myFilteredData.sp$dead.recovery <- mutate(
 
 
 ## ------   7. SAVE filtered data FOR FASTER LOADING -----
-
-save( myFilteredData.sp,
-      file = file.path(myVars$WD, myVars$modelName, "myFilteredData.RData"))
-# load(file.path(myVars$WD, myVars$modelName, "myFilteredData.RData"))
+ 
+# save( myFilteredData.sp,
+#       file = file.path(myVars$WD, myVars$modelName, "myFilteredData.RData"))
+load(file.path(myVars$WD, myVars$modelName, "myFilteredData.RData"))
 
 
 
@@ -663,161 +654,58 @@ save( myFilteredData.sp,
 ##   makeRovQuantData()  ##
 ######################## ##
 
+##-- Load pre-defined habitat rasters and shapefiles
+data(COUNTRIES, envir = environment()) 
+data(COUNTIES, envir = environment()) 
+data(habitatRasters, envir = environment()) 
+data(GLOBALMAP, envir = environment()) 
 
-## CREATE A POLYGON OF THE ACTUAL HABITAT POLYGON CONSIDERED (different from buffered.habitat.poly)
-## [PD] ????
-myBufferedArea <- COUNTRIES %>%
-  st_buffer(., dist = myVars$HABITAT$habBuffer) %>% 
-  mutate(id = 1) %>%
-  group_by(id) %>%
-  summarize() %>%
-  st_intersection(., GLOBALMAP)
+##-- Disaggregate habitat raster to the desired resolution
+habRaster <- raster::disaggregate(
+  x = habitatRasters[["Habitat"]],
+  fact = raster::res(habitatRasters[["Habitat"]])/myVars$HABITAT$habResolution)
 
-
-
-## ------     1.3. FILTER NGS & DEAD RECOVERY DATA FOR YEARS ------
-
-myFilteredData.sp <- myFullData.sp
-
-## Subset to years of interest
-myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years, ]
-myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year %in% years, ]
-
-
-
-## ------     1.4. FILTER NGS DATA FOR MONTHS ------
-
-## Subset to months of interest
-myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in%
-                                                     unlist(myVars$DATA$samplingMonths), ]
+##-- Merge Norwegian counties for practical reasons
+COUNTIES_AGGREGATED <- COUNTIES
+COUNTIES_AGGREGATED$id <- 1:nrow(COUNTIES_AGGREGATED)
+COUNTIES_AGGREGATED$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
+COUNTIES_AGGREGATED$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
+COUNTIES_AGGREGATED$id[c(19)] <- 1
+COUNTIES_AGGREGATED$id[c(35)] <- 2
+COUNTIES_AGGREGATED$id[c(17,28)] <- 5
+COUNTIES_AGGREGATED$id[c(18)] <- 7
+COUNTIES_AGGREGATED$id[c(30)] <- 8
+COUNTIES_AGGREGATED <- COUNTIES_AGGREGATED %>%
+  dplyr::group_by(id) %>%
+  dplyr::summarise() 
 
 
 
-## ------     1.5. FILTER DATA IN NORRBOTTEN IN ALL YEARS EXCEPT 2017, 2018 and 2019 ------ 
+## ------   1. GENERATE HABITAT ------
 
-## POLYGONS OF COMMUNES IN SWEDEN & NORWAY
-COUNTIES <- rbind( st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")),     ## Communal map of Norway
-                   st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))) %>% ## Communal map of Sweden
-  group_by(NAME_1) %>%
-  summarize()
-
-COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten", ]
-yearsSampledNorrb <- c(2016:2018,2023)
-
-is.Norr <- as.numeric(st_intersects(myFilteredData.sp$alive, COUNTIESNorrbotten))
-
-## Check how many detections are removed.
-table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
-                                      !is.na(is.Norr)), ]$Year)
-
-## subset
-myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
-                                                             !is.na(is.Norr)), ]
-
-## PLOT CHECK
-if(myVars$plot.check){
-  for(t in 1:nYears){
-    plot(st_geometry(myStudyArea))
-    plot(st_geometry(COUNTIESNorrbotten),add=T,col="blue")
-    plot(st_geometry(myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t],]), col="red",add=T,pch=16)
-  }#t
-}
-
-
-
-## ------     1.6. FILTER NGS & DEAD RECOVERY DATA FOR SEX ------
-
-## SELECT THE SEX
-# MYFULLDATA
-myFullData.sp <- myFullData.sp
-myFullData.sp$alive <- myFullData.sp$alive[myFullData.sp$alive$Sex %in% myVars$DATA$sex,]
-myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
-
-# myFilteredData
-myFilteredData.spAllSex <- myFilteredData.sp
-myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Sex %in% myVars$DATA$sex,]
-myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
-
-## PLOT CHECK
-if(myVars$plot.check){
-  par(mfrow = c(1,3))
-  for(t in 1:nYears){
-    ## DEAD RECOVERIES TOTAL
-    tempTotal <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t] &
-                                                   myFilteredData.sp$dead.recovery$Sex %in% myVars$DATA$sex, ]
-    NGS_TabTotal <- table(tempTotal$Country)
-    ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country), 2, function(x) sum(x>0))
-    ## DEAD RECOVERIES INSIDE STUDY AREA/SAMPLING PERIOD
-    ## PLOT NGS SAMPLES
-    plot(st_geometry(GLOBALMAP), col = "gray80")
-    plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-    plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-    plot(st_geometry(tempTotal), pch = 21, bg = "darkred", add = T)
-    # ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-    graphics::text(x = 100000, y = 7250000,
-                   labels = file.path(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"),
-                   cex = 1.1, col = "firebrick3", font = 2)
-    graphics::text(x = 820000, y = 6820000,
-                   labels = file.path(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"),
-                   cex = 1.1, col = "navyblue", font = 2)
-    ## ADD OVERALL NUMBERS
-    mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-  }#t
-}
-
-
-
-
-## ------   2. GENERATE HABITAT ------
-## ------     2.1 REDUCE THE AREA OF THE STATE-SPACE BASED ON DETECTIONS ------
-## DELINEATE A BUFFER AROUND ALL DEAD RECOVERIES 
-BuffDead <- st_buffer( myFilteredData.spAllSex$dead.recovery,
-                       dist = myVars$HABITAT$habBuffer)
-BuffDead$idd <- 1
-BuffDead <- BuffDead %>% group_by(idd) %>% summarize()
-
-## DELINEATE A BUFFER AROUND ALL NGS DETECTIONS 
-BuffAlive <- st_buffer( myFilteredData.spAllSex$alive,
-                        dist = myVars$HABITAT$habBuffer*1.4)
-BuffAlive$idd <- 1
-myBufferedArea <- BuffAlive %>% group_by(idd) %>% summarize()
-
-## CUT TO SWEDISH AND NORWEGIAN BORDERS
-myStudyArea <- st_intersection(myBufferedArea, myStudyArea)
-
-
-
-## ------     2.2. GENERATE HABITAT CHARACTERISTICS FROM THE NEW HABITAT DEFINITION ------
-myHabitat <- MakeHabitatFromRastersf(
-  poly = myStudyArea,
-  habitat.r = habitatRasters[["Habitat"]],
-  buffer = myVars$HABITAT$habBuffer,
-  plot.check = T)
+## ------     1.1. GENERATE HABITAT CHARACTERISTICS FROM THE NEW HABITAT DEFINITION ------
 
 ##-- Determine study area based on NGS detections
 ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
-studyArea <- myFullData.sp$alive %>%  
-  sf::st_buffer(., dist = habitat$buffer * 1.4) %>%
+myStudyArea <- myFilteredData.sp$alive %>%  
+  sf::st_buffer(., dist = myVars$HABITAT$habBuffer * 1.4) %>%
   sf::st_union() %>%
   sf::st_intersection(., COUNTRIES) %>%
   sf::st_as_sf() 
 
-##-- Make habitat from predefined scandinavian raster of suitable habitat
-habitat <- MakeHabitatFromRaster(
-  poly = studyArea,
+##-- Make habitat from predefined Scandinavian raster of suitable habitat
+myHabitat <- MakeHabitatFromRaster(
+  poly = myStudyArea,
   habitat.r = habRaster,
-  buffer = habitat$buffer,
-  plot.check = FALSE) %>%
-  append(habitat,.)
+  buffer = myVars$HABITAT$habBuffer,
+  plot.check = FALSE) 
 
-
-
-## RETRIEVE HABITAT WINDOWS BOUNDARIES
+##-- Retrieve habitat windows boundaries
 lowerHabCoords <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] - 0.5*myVars$HABITAT$habResolution
 upperHabCoords <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] + 0.5*myVars$HABITAT$habResolution
 nHabCells <- dim(lowerHabCoords)[1]
 
-## CREATE HABITAT GRID 
+##-- Create habitat grid
 habIDCells.mx <- myHabitat$IDCells.mx 
 habIDCells.mx[] <- 0
 scaledHabGridCenters <- scaleCoordsToHabitatGrid(
@@ -829,81 +717,19 @@ scaledHabGridCenters <- scaledHabGridCenters[myHabitat$habitat.r[]==1, ]
 for(i in 1:nrow(scaledHabGridCenters)){
   habIDCells.mx[trunc(scaledHabGridCenters[i,2])+1,
                 trunc(scaledHabGridCenters[i,1])+1] <- i
-}
-
-
-## ------       2.2.1 SUBSET DETECTIONS BASED ON HABITAT EXTENT ------ 
-## Remove samples outside the STUDY AREA 
-myStudyArea$idd <- 1
-myStudyAreaAggregated <- myStudyArea %>% group_by(idd) %>% summarize()
-
-whichOut <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$alive,
-                                                   myStudyAreaAggregated))))
-if(length(whichOut)>0){
-  myFilteredData.sp$alive <- myFilteredData.sp$alive[whichOut, ]
-  
-}
-myFilteredData.sp$alive$Id <- droplevels( myFilteredData.sp$alive$Id)
-
-## REMOVE DEAD RECOVERIES OUTSIDE THE HABITAT 
-whichOutBuff <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$dead.recovery,
-                                                       myHabitat$buffered.habitat.poly))))
-if(length(whichOutBuff)>0){
-  myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[whichOutBuff, ]
-}
-
-
-## PLOT CHECK
-if(myVars$plot.check){
-  plot(myHabitat$habitat.r)
-  plot(st_geometry(myStudyArea), add = T, col = rgb(150/250,150/250,150/250, alpha = 0.75))
-  plot(st_geometry(GLOBALMAP), add = T)
-  plot(st_geometry(myHabitat$buffered.habitat.poly), add=T)
-  plot(st_geometry(myFilteredData.sp$alive),pch=21, bg="red", cex=0.5,add=T)
-  plot(st_geometry(myFilteredData.sp$dead.recovery),pch=21, bg="blue", cex=0.5,add=T)
-  
-  ### check correlation number of detections ~ between monitoring season
-  myFilteredData.sp$dead.recovery$Id <- as.character(myFilteredData.sp$dead.recovery$Id)
-  myFilteredData.sp$alive$Id <- as.character(myFilteredData.sp$alive$Id)
-  deadID <- unique(myFilteredData.sp$dead.recovery$Id)
-  ndet <- NULL
-  timeDiff <- NULL
-  for(i in 1:length(deadID)){
-    tmpYear <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Id %in% deadID[i],]$Year
-    
-    timeDiff[i] <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Id %in% deadID[i],]$Date-
-      as.POSIXct(strptime(file.path("01-12",tmpYear,sep="-"), "%d-%m-%Y")) 
-    
-    ndet[i] <- length(myFilteredData.sp$alive[myFilteredData.sp$alive$Id %in% deadID[i] & 
-                                                myFilteredData.sp$alive$Year %in% tmpYear,])
-  }#i
-  
-  ## PLOT CHECK
-  pdf(file=file.path(myVars$WD, myVars$modelName, file.path(myVars$modelName,"Prop id deteced_Time available.pdf")))
-  plot(ndet ~timeDiff, ylab="Total number of detections", xlab="Number of days between dec 1 and dead recovery")
-  hh <- hist(timeDiff[ndet>0], breaks = seq(0,400,by=25))
-  hh1 <- hist(timeDiff[ndet==0], breaks = seq(0,400,by=25))
-  barplot(rbind(hh$counts/(hh$counts+hh1$counts),
-                hh1$counts/(hh$counts+hh1$counts)),names.arg=hh$breaks[1:(length(hh$breaks)-1)],
-          xlab="number of days between dead reco and start monitoring",
-          ylab="%"
-  )
-  legend("topright",fill=c(grey(0.2),grey(0.8)),legend = c("detected","notDetected"))
-  dev.off()
-  
-}
+}#i
 
 
 
-## ------     2.3. GENERATE HABITAT-LEVEL COVARIATES ------
+## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES ------
 
-## ------       2.3.1. DEN COUNTS ------
+## ------       1.2.1. DEN COUNTS ------
 
 DEN <- read.csv(file.path(dir.dropbox,
                           "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/DEN_COUNTS_2009_2024_fromHB.csv"),
                 fileEncoding = "latin1")
 
-DEN.sp <-  st_as_sf(DEN, coords = c("UTM33_X", "UTM33_Y"))
+DEN.sp <- st_as_sf(DEN, coords = c("UTM33_X", "UTM33_Y"))
 st_crs(DEN.sp) <- st_crs(myFilteredData.sp$alive)
 DEN.sp$id <- rep(1,nrow(DEN.sp))
 DEN.sp <- DEN.sp[ ,("id")]
@@ -914,29 +740,23 @@ DEN.r <- raster(
              h = 30000,
              grid = as(myHabitat$habitat.r, 'SpatialPixels'))))
 
-## EXTRACT COVARIATEs
+##-- EXTRACT COVARIATEs
 denCounts <- DEN.r[myHabitat$habitat.r[ ]==1] %>%
   scale() %>% 
   round(., digits = 2)
 
-## PLOT CHECK
-if(myVars$plot.check){
-  plot(DEN.r)
-  plot(st_geometry(myStudyArea), add = TRUE, border = "black")
-}
 
 
+## ------   2. GENERATE DETECTORS ------
 
-## ------   3. GENERATE DETECTORS ------
+## ------    2.1. GENERATE DETECTORS CHARACTERISTICS ------
 
-## ------    3.1. GENERATE DETECTORS CHARACTERISTICS ------
-
-## GENERATE NGS DETECTORS BASED ON THE STUDY AREA
+##-- GENERATE NGS DETECTORS BASED ON THE STUDY AREA
 habitat.subdetectors <- disaggregate(
   myHabitat$habitat.rWthBuffer,
-  fact=res(myHabitat$habitat.r)[1]/myVars$DETECTORS$detSubResolution)
+  fact = res(myHabitat$habitat.r)[1]/myVars$DETECTORS$detSubResolution)
 
-## GENERATE NGS DETECTORS BASED ON THE STUDY AREA
+##-- GENERATE NGS DETECTORS BASED ON THE STUDY AREA
 myDetectors <- myDetectors.dead <- MakeSearchGridsf(
   data = habitat.subdetectors,
   resolution = myVars$DETECTORS$detResolution,
@@ -965,33 +785,10 @@ distDestsCounties <- st_distance( myDetectors$main.detector.sp,
 detsNorrbotten <- which(apply(distDestsCounties, 1, which.min) == 3) 
 
 
-## PLOT CHECK
-if(myVars$plot.check){
-  ## PLOT DETECTORS IN NORRBOTTEN
-  plot(st_geometry(COUNTIESAroundNorrbotten))
-  plot(st_geometry(myDetectors$main.detector.sp),
-       col = "black", pch = 16, cex = 0.3, add = T)
-  plot(st_geometry(myDetectors$main.detector.sp[detsNorrbotten, ]), 
-       col = "red", pch = 16, cex = 0.3, add = T)
-  
-  par(mfrow = c(1,2))
-  ## PLOT NGS DETECTORS
-  plot(st_geometry(myHabitat$buffered.habitat.poly), main = file.path(n.detectors, "Detectors Alive"), col = rgb(0.16,0.67,0.16, alpha = 0.3))  
-  plot(st_geometry(myStudyArea), add = TRUE, col = rgb(0.16,0.67,0.16,alpha = 0.5))
-  plot(st_geometry(myDetectors$main.detector.sp), col = "red", pch = 16, cex = 0.1, add = TRUE)
-  plot(st_geometry(COUNTRIES), add = TRUE)
-  ## PLOT DEAD DETECTORS
-  plot(st_geometry(myHabitat$buffered.habitat.poly), main = file.path(n.detectors.dead, "Detectors Dead"), col = rgb(0.16,0.67,0.16, alpha = 0.3)) 
-  plot(st_geometry(myStudyArea), add = T, col = rgb(0.16,0.67,0.16,alpha = 0.5))
-  plot(st_geometry(myDetectors.dead$main.detector.sp), col = "red", pch = 16, cex = 0.1, add = TRUE)
-  plot(st_geometry(COUNTRIES), add = TRUE)
-}
 
+## ------    2.2. GENERATE DETECTOR-LEVEL COVARIATES ------
 
-
-## ------    3.2. GENERATE DETECTOR-LEVEL COVARIATES ------
-
-## ------       3.2.1. EXTRACT COUNTRIES ------
+## ------       2.2.1. EXTRACT COUNTRIES ------
 
 dist <- st_distance( myDetectors$main.detector.sp,
                      COUNTRIES,
@@ -999,20 +796,9 @@ dist <- st_distance( myDetectors$main.detector.sp,
 detCountries <- apply(dist, 1, function(x) which.min(x))
 detCountries <- as.numeric(as.factor(detCountries))
 
-## PLOT CHECK 
-if(myVars$plot.check){
-  par(mfrow = c(1,2))
-  myCol <- c("blue4", "yellow1")
-  plot(st_geometry(GLOBALMAP), col = "gray80", main = "Countries")
-  plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-  plot(st_geometry(myDetectors$main.detector.sp), col = myCol[detCountries], pch = 16, cex = 0.8, add=T)
-  plot(st_geometry(COUNTRIES), add = TRUE)
-}
 
 
-
-## ------       3.2.2. EXTRACT COUNTIES ------
+## ------       2.2.2. EXTRACT COUNTIES ------
 
 ## AGGREGATE COUNTIES (OPTIONAL)
 COUNTIES_AGGREGATE <- COUNTIES
@@ -1040,22 +826,9 @@ COUNTIES_AGGREGATEDSubset <- COUNTIES_AGGREGATED[unique(detCounties),]
 COUNTIES_AGGREGATEDSubset$idunique <- as.numeric(as.factor(unique(detCounties)))
 detCounties <- as.numeric(as.factor(detCounties))
 
-## PLOT CHECK 
-if(myVars$plot.check){
-  myCol <- terrain.colors(nrow(COUNTIES_AGGREGATED))
-  plot(st_geometry(GLOBALMAP), col = "gray80", main = "Aggregated Counties")
-  plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-  plot(st_geometry(myDetectors$main.detector.sp[detCounties%in% c(5),]), col = myCol[detCounties], pch = 16, cex = 0.8,add=T)
-  
-  plot(st_geometry(myDetectors$main.detector.sp), col = myCol[detCounties], pch = 16, cex = 0.8, add=T)
-  plot(st_geometry(COUNTIES_AGGREGATED), add = TRUE)
-  plot(st_geometry(myDetectors$main.detector.sp[detCounties %in%3 ,]), col = "red", pch = 16, cex = 0.8, add=T)
-}
 
 
-
-## ------       3.2.3. EXTRACT GPS TRACKS LENGTHS ------
+## ------       2.2.3. EXTRACT GPS TRACKS LENGTHS ------
 
 ## INITIALIZE MATRIX OF GPS TRACKS LENGTH FOR EACH DETECTOR & YEAR
 detectorGrid.r <- rasterFromXYZ(cbind(st_coordinates(myDetectors$main.detector.sp),
@@ -1070,12 +843,15 @@ detectorGrid$id <- 1:nrow(detectorGrid)
 detTracks <- matrix(0, nrow = n.detectors, ncol = nYears)
 TRACKS.r <- list()
 for(t in 1:nYears){
-  TRACKSst <- TRACKS_YEAR[[t]]
+  TRACKSst <- filter(TRACKS)
+    
+    TRACKS_YEAR[[t]]
   intersection <- st_intersection(detectorGrid, TRACKSst) %>%
     mutate(LEN = st_length(.)) %>%
     st_drop_geometry() %>%
     group_by(id) %>%
-    summarise(transect_L = sum(LEN))## Get total length searched in each detector grid cell
+    summarise(transect_L = sum(LEN))
+  ## Get total length searched in each detector grid cell
   # transect_N = length(unique(ID)))## Get total number of visits in each detector grid cell
   #transect_qi = mean(QI))          ## Get mean transects quality index for each detector grid cell
   detTracks[intersection$id,t] <- as.numeric(intersection$transect_L)
@@ -1083,51 +859,11 @@ for(t in 1:nYears){
   TRACKS.r[[t]][detectorGrid.r[] %in% 1] <- detTracks[ ,t]
 }
 
-## PLOT CHECK 
-if(myVars$plot.check){
-  max <- max(unlist(lapply(TRACKS.r, function(x) max(x[],na.rm=T))))
-  cuts <- seq(0,max,length.out = 100) # set breaks
-  col <- rev(terrain.colors(100))
-  CountriesDetRes <- disaggregate(habitatRasters$Countries,fact=2)
-  CountriesDetRes <- crop(CountriesDetRes,TRACKS.r[[1]])
-  rr <- TRACKS.r[[1]]
-  rr[CountriesDetRes[]%in% 2] <- 1
-  plot(rr)
-  
-  sum(st_length(TRACKS_YEAR[[t]]))/1000
-  sum(TRACKS.r[[t]][],na.rm=T)/1000
-  
-  ## PRINT .pdf
-  pdf(file=file.path(myVars$WD, myVars$modelName, file.path(myVars$modelName,"Tracks.pdf")))
-  NORTRACKS <- SWETRACKS <- 0
-  for(t in 1:nYears){
-    plot( TRACKS.r[[t]],main=years[t], breaks=cuts, col = col,legend=FALSE)#[CM]
-    plot(st_geometry(myHabitat$habitat.poly), main = years[t],add=T)
-    plot( TRACKS.r[[t]], legend.only=TRUE, breaks=cuts, col=col,
-          legend.width = 2,
-          axis.args=list(at=round(seq(0, max, length.out = 5), digits = 1),
-                         labels=round(seq(0, max, length.out = 5), digits = 1),
-                         cex.axis=0.6),
-          legend.args=list(text='', side=4, font=2, line=2.5, cex=0.8))
-    # points(myFilteredData.sp$alive[myFilteredData.sp$alive$Year==years[t], ], col="red", pch=16, cex=0.8)
-    ## summary tracks
-    NORTRACKS[t] <- sum(TRACKS.r[[t]][CountriesDetRes[]%in% 2],na.rm = T )/1000
-    SWETRACKS[t] <- sum(TRACKS.r[[t]][CountriesDetRes[]%in% 4],na.rm = T )/1000
-  }#t
-  years1 <- years+1
-  plot(SWETRACKS~(years1),  col=country.colors[2],
-       lwd=2, pch=16, type="b", ylim=c(0,300000), ylab="sum tracks km")
-  lines(NORTRACKS~(years1), col=country.colors[1], lwd=2, pch=16, type="b")
-  legend("topright",c("N","S"), fill=country.colors)
-  dev.off()
-  
-}
-
 
 
 ## ------       3.2.4. EXTRACT DISTANCES TO ROADS ------
 
-## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
+##-- LOAD MAP OF DISTANCES TO ROADS (1km resolution)
 DistAllRoads <- raster(file.path(dir.dropbox,
                                  "DATA/GISData/Roads/MinDistAllRoads1km.tif"))
 r <- fasterize(st_as_sf(myStudyArea), DistAllRoads)
@@ -1135,29 +871,18 @@ r[!is.na(r)] <- DistAllRoads[!is.na(r)]
 DistAllRoads <- r
 DistAllRoads <- crop(DistAllRoads, myStudyArea)
 
-## AGGREGATE TO MATCH THE DETECTORS RESOLUTION
+##-- AGGREGATE TO MATCH THE DETECTORS RESOLUTION
 DistAllRoads <- aggregate( DistAllRoads,
                            fact = myVars$DETECTORS$detResolution/res(DistAllRoads),
                            fun = mean)
 
-## EXTRACT DISTANCE TO ROAD FOR EACH DETECTOR
+##-- EXTRACT DISTANCE TO ROAD FOR EACH DETECTOR
 detRoads <- raster::extract(DistAllRoads, myDetectors$main.detector.sp)
 
-## if NA returns the average value of the cells within 15000m 
+##-- if NA returns the average value of the cells within 15000m 
 isna <- which(is.na(detRoads))
 tmp <- raster::extract(DistAllRoads, myDetectors$main.detector.sp[isna,], buffer = 15000, fun = mean, na.rm = T)
 detRoads[isna] <- tmp
-
-
-## PLOT CHECK 
-if(myVars$plot.check){
-  par(mfrow = c(1,1))
-  plot(st_geometry(GLOBALMAP), col = "gray80", main = "Distance to roads")
-  plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-  plot(DistAllRoads,add=T)
-  plot(st_geometry(myDetectors$main.detector.sp), cex=DoScale(detRoads), pch = 16, add = T)
-}
 
 
 
@@ -1185,20 +910,12 @@ tmp <- raster::extract(SNOW, det.sptransf[isna, ], buffer = 15000, fun = mean, n
 detSnow[isna,1:nYears] <- tmp
 
 
-## PLOT CHECK 
-if(myVars$plot.check){ 
-  plot( st_geometry(myDetectors$main.detector.sp),
-        cex = DoScale(detSnow[ ,6], l = 0, u = 0.5),
-        pch = 16)
-}
-
-
 
 ## ------       3.2.6. EXTRACT PRESENCE OF OTHER SAMPLES ------
 
 ## ------          3.2.6.1. SKANDOBS ------
 
-## SkandObs
+##-- SkandObs
 skandObs <- read_xlsx(file.path(dir.dropbox,
                                 "DATA/Skandobs/RB_Skandobs_2012_2024/Richard_Bischof_Skandobs_2012_2024dd.xlsx"))
 
@@ -1206,51 +923,30 @@ colnames(skandObs) <- translateForeignCharacters(
   dat = colnames(skandObs),
   dir.translation = dir.analysis)
 
-## GET TIME 
+##-- GET TIME 
 skandObs$date1 <- as.POSIXct(strptime(skandObs$date, "%Y-%m-%d"))
 skandObs$year <- as.numeric(format(skandObs$date1,"%Y"))
 skandObs$month <- as.numeric(format(skandObs$date1,"%m"))
 
-## MAKE IT SPATIAL 
+##-- MAKE IT SPATIAL 
 skandObs <- st_as_sf(skandObs, coords = c("longitude", "latitude"))
 st_crs(skandObs) <- st_crs("EPSG:4326")
 skandObs <- st_transform(skandObs, st_crs(myStudyArea))
 
-## SUBSET BASED ON SEASON 
+##-- SUBSET BASED ON SEASON 
 subset <- skandObs$month %in% c(unlist(myVars$DATA$samplingMonths))
 skandObs$monitoring.season <- ifelse(skandObs$month < 12, skandObs$year, skandObs$year+1) #--- need to change for other species
 skandObs <- skandObs[subset,] 
 
-## SUBSET BASED ON SPACE 
+##-- SUBSET BASED ON SPACE 
 habitat.rWthBufferPol <- sf::st_as_sf(stars::st_as_stars(myHabitat$habitat.rWthBuffer), 
                                       as_points = FALSE, merge = TRUE)
 habitat.rWthBufferPol <- habitat.rWthBufferPol[habitat.rWthBufferPol$Habitat %in%1,]
 
 subsetSpace <- !is.na(as.numeric(st_intersects(skandObs, habitat.rWthBufferPol)))
-skandObs <- skandObs[subsetSpace,] 
+skandObs <- skandObs[subsetSpace, ] 
 
-
-## PLOT CHECK 
-if(myVars$plot.check){ 
-  plot(st_geometry(habitat.rWthBufferPol))
-  plot(st_geometry(skandObs), col = "red", add = T)
-  ## SUMMARY SKANDOBS
-  pdf(file = file.path(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"skandObs",".pdf", sep="" ), width = 10)
-  barplot(table(skandObs$monitoring.season ))
-  barplot(table(skandObs$month ), xlab="Months")
-  barplot(table(skandObs$species))
-  ## MAPS 
-  par(mar=c(0,0,2,0))
-  for(t in 1:nYears){
-    plot(st_geometry(myStudyArea), main= years[t])
-    plot(st_geometry(skandObs[skandObs$monitoring.season %in% years[t], ]),
-         pch = 16, col = "red", cex = 0.1, add = T)
-  }#t
-  dev.off()
-}
-
-
-## RASTERIZE AT THE DETECTOR LEVEL
+##-- RASTERIZE AT THE DETECTOR LEVEL
 r.detector <- aggregate(habitat.subdetectors, fact=(myVars$DETECTORS$detResolution/myVars$DETECTORS$detSubResolution))
 r.list <- lapply(years, function(y){
   rl <- raster::rasterize(skandObs[skandObs$monitoring.season %in% y, 1], r.detector , fun="count")[[1]]
@@ -1267,18 +963,17 @@ r.skandObsSamplesContinuous <- brick(lapply(r.list,function(x) x[[2]]))
 
 ## ------          3.2.6.2. ROVBASE ------
 
-## RovBase Observations
+##-- RovBase Observations
 rovbaseObs1 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB2810202415264376.xlsx"))
 rovbaseObs2 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB28102024152348493.xlsx"))
 rovbaseObs3 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB28102024152447860.xlsx"))
 rovbaseObs4 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB28102024152538742.xlsx"))
 rovbaseObs <- rbind(rovbaseObs1,rovbaseObs2,rovbaseObs3,rovbaseObs4)
 
-## GET ALL SAMPLES COLLECTED
+##-- Get all samples collected
 rovbaseObs <- rovbaseObs[!is.na(rovbaseObs$`Nord (UTM33/SWEREF99 TM)`), ]
 rovbaseObs$year <- as.numeric(format(rovbaseObs$Funnetdato,"%Y"))
 rovbaseObs$month <- as.numeric(format(rovbaseObs$Funnetdato,"%m"))
-
 
 colnames(rovbaseObs) <- translateForeignCharacters(
   dat = colnames(rovbaseObs),
@@ -1289,18 +984,18 @@ rovbaseObs$Proevetype <- translateForeignCharacters(
   dir.translation = dir.analysis)
 
 
-##-- DEFINE PROJECTIONS
+##-- Define projections
 rovbaseObs.sp <- st_as_sf(rovbaseObs, coords = c("Oest (UTM33/SWEREF99 TM)","Nord (UTM33/SWEREF99 TM)"))
 st_crs(rovbaseObs.sp) <- st_crs(myStudyArea)
 
-## SUBSET THE DATA 
+##-- Subset data 
 filter <- list(
   species = "Jerv",
   type = c("Ekskrement","Har","Urin","Valpeekskrement (Ulv)",
            "Sekret (Jerv)","Saliv/Spytt"),
   month = unlist(myVars$DATA$samplingMonths))
 
-## SUBSET MONTH AND TYPE OF SAMPLE
+## SUBSET MONTH & TYPE OF SAMPLE
 subset <- rovbaseObs.sp$month %in% filter$month & rovbaseObs.sp$Proevetype %in% filter$type
 rovbaseObs.sp$monitoring.season <- ifelse(rovbaseObs.sp$month < 12, rovbaseObs.sp$year, rovbaseObs.sp$year+1) #--- need to change for other species
 rovbaseObs.sp <- rovbaseObs.sp[subset, ] 
@@ -1328,46 +1023,12 @@ r.OtherSamplesBinary <- brick(lapply(r.list,function(x) x[[1]]))
 r.OtherSamplesContinuous <- brick(lapply(r.list,function(x) x[[2]]))
 
 
-## PLOT CHECK 
-if(myVars$plot.check){ 
-  pdf(file = file.path(myVars$WD,myVars$modelName,
-                       paste0(myVars$modelName,"_mapStructuredOthers.pdf")))
-  for(t in 1:nYears){
-    year = years[t]
-    tmpOthers <- myFilteredData.spOthers[myFilteredData.spOthers$Year%in%year, ]
-    tmpStruct <- myFilteredData.spStructured[myFilteredData.spStructured$Year%in%year, ]
-    
-    par(mfrow=c(2,2),mar=c(0,0,5,0))
-    plot(r.OtherSamplesBinary[[t]], main=file.path(year,"\n Rovbase Samples Structured"), box=F, axes=F)
-    plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
-    plot(r.OtherSamplesBinary[[t]],main=file.path(year,"\n Rovbase Samples Opportunistic"), box=F, axes=F)
-    plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.6,add=T)
-    
-    plot(r.skandObsSamplesBinary[[t]], main=file.path(year,"\n SkandObs Structured"), box=F, axes=F)
-    plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
-    plot(r.skandObsSamplesBinary[[t]],main=file.path(year,"\n SkandObs Opportunistic"), box=F, axes=F)
-    plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.5,add=T)
-  }
-  dev.off()
-}
-
-
 
 ## ------          3.2.6.3. COMBINE ROVBASE & SKANDOBS ------
 
 r.SkandObsOtherSamplesBinary <- r.OtherSamplesBinary + r.skandObsSamplesBinary
 for(t in 1:nYears){
   r.SkandObsOtherSamplesBinary[[t]][r.SkandObsOtherSamplesBinary[[t]][]>1 ] <-    1
-}
-
-## PLOT CHECK 
-if(myVars$plot.check){ 
-  for(t in 1:nYears){
-    par(mfrow=c(1,3),mar=c(0,0,5,0))
-    plot(r.OtherSamplesBinary[[t]],main=years[t])
-    plot(r.skandObsSamplesBinary[[t]])
-    plot(r.SkandObsOtherSamplesBinary[[t]])
-  }  
 }
 
 
@@ -1402,30 +1063,22 @@ ds.brickCont <- brick(lapply(ds.list, function(x) x[[2]]))
 
 names(ds.brick) <- years
 
-## PLOT CHECK 
-if(myVars$plot.check){ 
-  par(mfrow=c(1,3))
-  plot(r.SkandObsOtherSamplesBinary[[t]], main="Raw Binary",axes=F,box=F)
-  plot(ds.brick[[t]], main="Smoothed",axes=F,box=F)
-  plot(ds.brickCont[[t]], main="Binary after smoothing",axes=F,box=F)
-}
 
 
-
-## ------          3.2.6.5. COLOR CELLS WHERE HAIR TRAPPING OCCURED ------
-
-#IDENTIFY HAIR SAMPLES
-tmpHair <- myFilteredData.spAllSex$alive[which(myFilteredData.spAllSex$alive$DNAID%in% HairTrapSamples$DNAID),]
-
-#MANNUALLY FIND THE HAIR SMAPLES AND COLOR THE CELL. 
-tmpyr <- unique(tmpHair$Year)
-for( i in 1:length(tmpyr)){
-  t <- which(years %in% tmpyr)
-  whereHair <-raster::extract(r.SkandObsOtherSamplesBinary[[t]],tmpHair,cellnumbers=T)
-  r.SkandObsOtherSamplesBinary[[t]][whereHair[,1]] <- 1
-  plot(r.SkandObsOtherSamplesBinary[[t]])
-  plot(tmpHair$geometry,add=T,col="red")
-}
+# ## ------          3.2.6.5. COLOR CELLS WHERE HAIR TRAPPING OCCURED ------
+# 
+# ##-- IDENTIFY HAIR SAMPLES
+# tmpHair <- myFilteredData.spAllSex$alive[which(myFilteredData.spAllSex$alive$DNAID%in% HairTrapSamples$DNAID),]
+# 
+# ##-- MANUALLY FIND HAIR SMAPLES AND COLOR THE CELL. 
+# tmpyr <- unique(tmpHair$Year)
+# for( i in 1:length(tmpyr)){
+#   t <- which(years %in% tmpyr)
+#   whereHair <-raster::extract(r.SkandObsOtherSamplesBinary[[t]],tmpHair,cellnumbers=T)
+#   r.SkandObsOtherSamplesBinary[[t]][whereHair[,1]] <- 1
+#   plot(r.SkandObsOtherSamplesBinary[[t]])
+#   plot(tmpHair$geometry,add=T,col="red")
+# }
 
 
 
@@ -1455,58 +1108,123 @@ detCovsOth[,,3] <- detOtherSamples
 ## CHECK IF CONTAINS NAs
 if(any(is.na(detCovs))){print("WARNINGS!!!!!!! ONE OF THE DETECTOR MATRIX CONTAINS NA")}
 
-## PLOT CHECK 
-if(myVars$plot.check){ 
-  tmp <- detectorGrid.r
-  par(mfrow=c(2,5),mar=c(0,0,0,0))
-  
-  max <- max(detCovsOth[,,2])
-  cuts <- seq(0,max,length.out = 100)   #set breaks
-  col <- rev(terrain.colors(100))
-  
-  for(t in 1:nYears){
-    plot(detectorGrid.r, col=c(grey(0.2),grey(0.8)),axes=F,legend=F,box=F,)
-    
-    tmp[!is.na( detectorGrid.r)] <- detCovsOth[,t,2]
-    plot(tmp,axes=F,legend=F,box=F,breaks = cuts, col=col,add=T)
-  }
-  
-  ## PRINT .pdf
-  dev.off()
-  
-  pdf(file=file.path(myVars$WD, myVars$modelName, file.path(myVars$modelName,"_detections over space and time.pdf")))
-  for(t in 1:nYears){
-    ## NGS DETECTIONS TOTAL
-    tempTotal <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]
-    NGS_TabTotal <- table(tempTotal$Country)
-    ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country), 2, function(x) sum(x>0))
-    ## ALIVE DETECTIONS INSIDE STUDY AREA/SAMPLING PERIOD
-    tempIn <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]
-    NGS_TabIn <- table(tempIn$Country)
-    ID_TabIn <- apply(table(tempIn$Id, tempIn$Country), 2, function(x) sum(x>0))
-    ## PLOT NGS SAMPLES
-    plot(st_geometry(GLOBALMAP), col="gray80")
-    plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-    plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
-    # points(tempTotal, pch = 21, bg = "darkred")
-    plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
-    ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-    graphics::text(x = 100000, y = 7200000, labels = file.path(NGS_TabTotal[names(NGS_TabTotal)=="N"],"NGS"), cex = 1.1, col = "firebrick3", font = 2)
-    graphics::text(x = 100000, y = 7270000, labels = file.path(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
-    graphics::text(x = 820000, y = 6780000, labels = file.path(NGS_TabTotal[names(NGS_TabTotal)=="S"],"NGS"), cex = 1.1, col = "navyblue", font = 2)
-    graphics::text(x = 820000, y = 6850000, labels = file.path(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
-    ## ADD OVERALL NUMBERS
-    mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-    mtext(text = file.path(sum(NGS_TabIn), "NGS/", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
-    mtext(text = file.path(sum(NGS_TabTotal)-sum(NGS_TabIn), "NGS/", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
-  }#t
-  dev.off()
-}
+
+
+## ------   3. RESCALE COORDINATES -----
+
+##-- Rescale coordinates
+scaledCoords <- nimbleSCR::scaleCoordsToHabitatGrid(
+  coordsData = detectors$detectors.df[ ,c("x","y")],
+  coordsHabitatGridCenter = habitat$habitat.df[ ,c("x","y")])
+
+##-- Scaled habitat window coordinates
+habitat$scaledCoords <- scaledCoords$coordsHabitatGridCenterScaled
+habitat$scaledLowerCoords <- habitat$scaledCoords - 0.5
+habitat$scaledUpperCoords <- habitat$scaledCoords + 0.5
+
+##-- Scaled detector coordinates
+detectors$scaledCoords <- scaledCoords$coordsDataScaled
+
+# ##-- Create habitat grid
+# habIDCells.mx <- habitat$IDCells.mx
+# habIDCells.mx[] <- 0
+# for(i in 1:nrow( habitat$scaledCoords)){
+#   habIDCells.mx[trunc( habitat$scaledCoords[i,2])+1,
+#                 trunc( habitat$scaledCoords[i,1])+1] <- i
+# }
+
+
+
+## ------   4. CREATE LOCAL OBJECTS -----
+
+##-- Get local habitat windows
+habitat$localObjects <- getLocalObjects(
+  habitatMask = habitat$habitat.mx,
+  coords = habitat$scaledCoords,
+  dmax = habitat$maxDist/habitat$resolution,
+  plot.check = F)
+
+##-- Get local detectors
+detectors$localObjects <- getLocalObjects(
+  habitatMask = habitat$habitat.mx,
+  coords = detectors$scaledCoords,
+  dmax = detectors$maxDist/detectors$resolution,
+  plot.check = F)
+
 
 
 
 ## ------   4. GENERATE y DETECTION ARRAYS ------
 
+## ------       2.2.1 SUBSET DETECTIONS BASED ON HABITAT EXTENT ------ 
+
+##-- Remove samples outside the STUDY AREA 
+myStudyArea$idd <- 1
+myStudyAreaAggregated <- myStudyArea %>% group_by(idd) %>% summarize()
+
+whichOut <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$alive,
+                                                   myStudyAreaAggregated))))
+if(length(whichOut)>0){
+  myFilteredData.sp$alive <- myFilteredData.sp$alive[whichOut, ]
+}
+myFilteredData.sp$alive$Id <- droplevels(myFilteredData.sp$alive$Id)
+
+##-- Remove dead recoveries outside the habitat 
+whichOutBuff <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$dead.recovery,
+                                                       myHabitat$buffered.habitat.poly))))
+if(length(whichOutBuff)>0){
+  myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[whichOutBuff, ]
+}
+
+
+## ------     1.3. FILTER NGS & DEAD RECOVERY DATA FOR YEARS ------
+
+myFilteredData.sp <- myFullData.sp
+
+## Subset to years of interest
+myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years, ]
+myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year %in% years, ]
+
+
+
+## ------     1.4. FILTER NGS DATA FOR MONTHS ------
+
+## Subset to months of interest
+myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in%
+                                                     unlist(myVars$DATA$samplingMonths), ]
+
+
+
+## ------     1.5. FILTER DATA IN NORRBOTTEN IN ALL YEARS EXCEPT 2017, 2018 and 2019 ------ 
+
+##-- Norrbotten county
+COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten", ]
+yearsSampledNorrb <- c(2016:2018,2023)
+
+is.Norr <- as.numeric(st_intersects(myFilteredData.sp$alive, COUNTIESNorrbotten))
+
+## Check how many detections are removed.
+table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
+                                      !is.na(is.Norr)), ]$Year)
+
+## subset 
+myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
+                                                             !is.na(is.Norr)), ]
+
+
+
+## ------     1.6. FILTER NGS & DEAD RECOVERY DATA FOR SEX ------
+
+##-- SELECT SEX
+##-- MYFULLDATA
+myFullData.sp <- myFullData.sp
+myFullData.sp$alive <- myFullData.sp$alive[myFullData.sp$alive$Sex %in% myVars$DATA$sex,]
+myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
+
+##-- myFilteredData
+myFilteredData.spAllSex <- myFilteredData.sp
+myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Sex %in% myVars$DATA$sex,]
+myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
 ## ------     4.1. GENERATE NGS DETECTIONS : y.alive[i,j,t] ------
 
 ## ALL SAMPLES
@@ -1770,38 +1488,41 @@ if(myVars$plot.check){
 
 
 
-## ------     4.6. AGE ------
-
-min.age <- age <- precapture <- matrix(NA, dim(y.ar.ALIVE)[1], dim(y.ar.ALIVE)[3], dimnames = list(y.ar$Id.vector,years))
-
-temp <- apply(y.ar.ALIVE, c(1,3), sum)
-year.first.capture <- apply(temp, 1, function(x)min(years[which(x>0)]))
-year.first.capture[is.infinite(year.first.capture)] <- NA
-names(year.first.capture) <- y.ar$Id.vector
-
-for(i in y.ar$Id.vector){
-  this.set <- myData.dead[myData.dead$Id == i, ]
-  year.dead <- myData.dead$Death[myData.dead$Id == i]
-  year.first.captured <- year.first.capture[i]
-  precapture[i,] <- as.numeric(years < year.first.captured)
-  if(all(is.na(precapture[i,])))precapture[i,] <- 1
-  latest.recruitment.year <- min(year.dead,year.first.captured, na.rm = TRUE) 
-  
-  try({
-    min.age[i,] <- years-latest.recruitment.year
-  },silent = TRUE)
-  
-  try({
-    birth.year <- this.set$Death-this.set$min.age
-    if(birth.year<latest.recruitment.year) min.age[i,] <- years-birth.year 
-  },silent = TRUE)
-  
-  try({
-    birth.year <- this.set$Death - this.set$age
-    age[i,] <- years-birth.year
-  }, silent = TRUE)
-}
-
+# ## ------     4.6. AGE ------
+# 
+# min.age <- age <- precapture <- matrix(NA,
+#                                        dim(y.ar.ALIVE)[1],
+#                                        dim(y.ar.ALIVE)[3],
+#                                        dimnames = list(y.ar$Id.vector,years))
+# 
+# temp <- apply(y.ar.ALIVE, c(1,3), sum)
+# year.first.capture <- apply(temp, 1, function(x)min(years[which(x>0)]))
+# year.first.capture[is.infinite(year.first.capture)] <- NA
+# names(year.first.capture) <- y.ar$Id.vector
+# 
+# for(i in y.ar$Id.vector){
+#   this.set <- myData.dead[myData.dead$Id == i, ]
+#   year.dead <- myData.dead$Death[myData.dead$Id == i]
+#   year.first.captured <- year.first.capture[i]
+#   precapture[i,] <- as.numeric(years < year.first.captured)
+#   if(all(is.na(precapture[i,])))precapture[i,] <- 1
+#   latest.recruitment.year <- min(year.dead,year.first.captured, na.rm = TRUE) 
+#   
+#   try({
+#     min.age[i,] <- years-latest.recruitment.year
+#   },silent = TRUE)
+#   
+#   try({
+#     birth.year <- this.set$Death-this.set$min.age
+#     if(birth.year<latest.recruitment.year) min.age[i,] <- years-birth.year 
+#   },silent = TRUE)
+#   
+#   try({
+#     birth.year <- this.set$Death - this.set$age
+#     age[i,] <- years-birth.year
+#   }, silent = TRUE)
+# }
+# 
 
 
 ## ------   5. MAKE AUGMENTATION ------
@@ -1814,15 +1535,15 @@ y.aliveStructured <- MakeAugmentation(y = y.ar.ALIVEStructured, aug.factor = myV
 
 ## INDIVIDUAL COVARIATES
 already.detected <- MakeAugmentation(y = already.detected, aug.factor = myVars$DETECTIONS$aug.factor, replace.value = 0)
-age <- MakeAugmentation(y = age, aug.factor = myVars$DETECTIONS$aug.factor, replace.value = NA)
-min.age <- MakeAugmentation(y = min.age, aug.factor = myVars$DETECTIONS$aug.factor, replace.value = NA)
-precapture <- MakeAugmentation(y = precapture, aug.factor = myVars$DETECTIONS$aug.factor, replace.value = 0)
+# age <- MakeAugmentation(y = age, aug.factor = myVars$DETECTIONS$aug.factor, replace.value = NA)
+# min.age <- MakeAugmentation(y = min.age, aug.factor = myVars$DETECTIONS$aug.factor, replace.value = NA)
+# precapture <- MakeAugmentation(y = precapture, aug.factor = myVars$DETECTIONS$aug.factor, replace.value = 0)
 
 
 
 ## ------ III.MODEL SETTING AND RUNNING ------- 
 
-## ------   1. NIMBLE MODEL DEFINITION ------
+## ------   1. NIMBLE MODEL ------
 
 modelCode <- nimbleCode({
   ##------ SPATIAL PROCESS ------
@@ -1997,9 +1718,9 @@ nimConstants <- list( n.individuals = dim(y.alive)[1],
 
 
 
-## ------   3. NIMBLE INITS ------
+## ------   3. NIMBLE DATA ------
 
-## ------     3.1.GENERATE INITIAL z ------
+## ------     3.1. RECONSTRUCT z ------
 
 z <- apply(y.alive, c(1,3), function(x) any(x>0))
 z <- ifelse(z, 2, NA)
@@ -2012,6 +1733,11 @@ z <- t(apply(z, 1, function(zz){
 }))
 
 
+
+## ------     3.2. DATA LIST z ------
+
+
+## ------   3. NIMBLE INITS ------
 
 ## ------   3. GENERATE z INITIAL values -----
 
@@ -2029,7 +1755,7 @@ z.init <- t(apply(z, 1, function(zz){
 
 z.init <- ifelse(!is.na(z), NA, z.init)
 
-## LATENT VARIABLE DET RESPONSE
+## ------   3. GENERATE z INITIAL values -----
 detResponse <- already.detected 
 detResponse[rownames(detResponse) %in% "Augmented" ,1]  <- NA
 InitsDetResponse <- detResponse
@@ -2044,11 +1770,11 @@ nimData <- list( z = z,
                  y.alive = y.alive,
                  lowerHabCoords = lowerHabCoords/1000, 
                  upperHabCoords = upperHabCoords/1000, 
-                 detCounties = detCounties,#detCountries,
-                 detCountries = detCountries,#detCountries,
+                 detCounties = detCounties,
+                 detCountries = detCountries,
                  detCovs = detCovs,
                  detCovsOth = detCovsOth,
-                 detResponse = detResponse,#already.detected ,#+ 1,
+                 detResponse = detResponse,
                  denCounts = denCounts,
                  trials = n.trials,
                  alpha = rep(1,2),
@@ -2066,86 +1792,6 @@ nimParams <- c("N",
                "betaCovsOth","betaResponseOth")
 
 nimParams2 <- c("z", "sxy")
-
-
-
-## ------   6. CONVERT TO CACHED DETECTORS AND SPARSE MATRIX ------
-
-## ------     6.1. RESCALE COORDINATES  ------
-
-# HABITAT
-ScaledLowerCoords <- scaleCoordsToHabitatGrid(
-  coordsData = lowerHabCoords,
-  coordsHabitatGridCenter = myHabitat$habitat.xy,
-  scaleToGrid =T )$coordsDataScaled
-
-ScaledUpperCoords <- scaleCoordsToHabitatGrid(
-  coordsData = upperHabCoords,
-  coordsHabitatGridCenter = myHabitat$habitat.xy,
-  scaleToGrid =T )$coordsDataScaled
-
-ScaledUpperCoords[ ,2] <- ScaledUpperCoords[ ,2]+1
-ScaledLowerCoords[ ,2] <- ScaledLowerCoords[ ,2]-1
-
-# DETECTORS
-colnames(detector.xy) <- c("x","y")
-ScaledDetectors <- scaleCoordsToHabitatGrid(
-  coordsData = detector.xy,
-  coordsHabitatGridCenter = myHabitat$habitat.xy,
-  scaleToGrid = T)$coordsDataScaled
-
-# ADD TO NIMDATA
-nimData$detector.xy <- as.matrix(ScaledDetectors)          
-nimData$lowerHabCoords <- as.matrix(ScaledLowerCoords)
-nimData$upperHabCoords <- as.matrix(ScaledUpperCoords)
-
-
-
-## ------     6.2. CREATE CACHED DETECTORS OBJECTS ------
-
-## reduce multiplicator to 3 
-maxDistReCalc <- 2.1*myVars$DETECTIONS$maxDetDist #+ sqrt(2*(myVars$DETECTIONS$resizeFactor*myVars$HABITAT$habResolution)^2)
-
-DetectorIndexLESS <- GetDetectorIndexLESS( 
-  habitat.mx = myHabitat$habitat.mx,
-  detectors.xy = nimData$detector.xy,
-  maxDist = maxDistReCalc/res(myHabitat$habitat.r)[1],
-  ResizeFactor = 1,
-  plot.check = TRUE)
-
-# ADD TO NIMCONSTANTS
-nimConstants$y.maxDet <- dim(DetectorIndexLESS$habitatID)[1]
-nimConstants$x.maxDet <- dim(DetectorIndexLESS$habitatID)[2]
-nimConstants$ResizeFactor <- DetectorIndexLESS$ResizeFactor
-nimConstants$n.cellsSparse <- dim(DetectorIndexLESS$detectorIndex)[1]
-nimConstants$maxNBDets <- DetectorIndexLESS$maxNBDets
-
-# ADD TO NIMDATA
-nimData$detectorIndex <- DetectorIndexLESS$detectorIndex
-nimData$nDetectorsLESS <- DetectorIndexLESS$nDetectorsLESS
-nimData$habitatIDDet <- DetectorIndexLESS$habitatID
-
-
-
-## ------     6.3. TRANSFORM Y TO SPARSE MATRICES  ------
-
-# STRUCTURED
-SparseY <- GetSparseY(y.aliveStructured)
-# ADD TO NIMCONSTANTS
-nimConstants$nMaxDetectors <- SparseY$nMaxDetectors
-# ADD TO NIMDATA
-nimData$y.alive <- SparseY$y 
-nimData$yDets <- SparseY$yDets
-nimData$nbDetections <- SparseY$nbDetections
-
-# OTHER
-SparseYOth <- GetSparseY(y.aliveOthers)
-# ADD TO NIMCONSTANTS
-nimConstants$nMaxDetectorsOth <- SparseYOth$nMaxDetectors
-# ADD TO NIMDATA
-nimData$y.aliveOth <- SparseYOth$y 
-nimData$yDetsOth <- SparseYOth$yDets
-nimData$nbDetectionsOth <- SparseYOth$nbDetections
 
 
 

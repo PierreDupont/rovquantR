@@ -111,30 +111,16 @@ makeRovquantData_wolverine <- function(
   ## ------   1. NGS DATA -----
   ##-- Extract date from the last cleaned data file
   DATE <- getMostRecent( 
-    path = file.path(working.dir,"data"),
+    path = file.path(working.dir, "data"),
     pattern = "CleanData_wolverine")
   
-  ##-- Load the most recent Bear data from RovBase
+  ##-- Load the most recent clean wolverine data from RovBase
   myFullData.sp <- readMostRecent( 
     path = file.path(working.dir,"data"),
     pattern = "CleanData_wolverine",
     extension = ".RData")
   
-  # ##-- Define legal mortality causes
-  # MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
-  # legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
-  # legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
-  # legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
-  # legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
-  # legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
-  # legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
-  # 
-  # myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
-  #   dplyr::mutate( legal = ifelse(Death_cause %in% legalCauses, "yes", "no"))
-  # 
-  # legal.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "yes")
-  # Other.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "no")
-  
+  ##-- List years
   if(is.null(years)){
     years <- sort(unique(c(myFullData.sp$alive$Year,
                              myFullData.sp$dead.recovery$Year)))
@@ -188,30 +174,7 @@ makeRovquantData_wolverine <- function(
   ## ------   3. DETECTORS DATA ----- 
   
   ## ------     3.1. GPS SEARCH TRACKS ------
-  
-  TRACKS_SINGLE <- sf::st_read(file.path(data.dir, "GIS/SearchTracks/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20231020_date.shp"))
-  TRACKS_MULTI <- sf::st_read(file.path(data.dir, "GIS/SearchTracks/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20231020_date.shp"))
-  
-  ##-- Combine all tracks
-  ALL_TRACKS <- rbind(TRACKS_SINGLE, TRACKS_MULTI)
-  ##-- Remove helicopter tracks
-  ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Helikopter == "0", ]
-  ##-- Keep only wolverine tracks
-  ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Jerv == "1", ]
-  
-  ##-- Split by year
-  TRACKS_YEAR <- list()
-  for(t in 1:n.years){
-    ##-- SUBSET GPS TRACKS TO THE SAMPLING PERIOD
-    TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][1] & ALL_TRACKS$Mth%in%myVars$DATA$samplingMonths[[1]], ]
-    TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][2] & ALL_TRACKS$Mth%in%myVars$DATA$samplingMonths[[2]], ]
-    TRACKS <- rbind(TRACKS_1, TRACKS_2)
-    ##-- SIMPLIFY TRACKS SHAPES
-    TRACKS <- st_intersection(TRACKS, st_as_sf(myStudyArea))
-    ##-- NAME TRACKS
-    TRACKS$ID <- 1:nrow(TRACKS)
-    TRACKS_YEAR[[t]] <- TRACKS
-  }#t
+  load(file.path(data.dir,"TRACKS.RData"))
   
   
   
@@ -228,7 +191,6 @@ makeRovquantData_wolverine <- function(
   
   ##-- Crop raster stack
   SNOW <- raster::crop(SNOW, c(0,40,55,75))
-  
   
   
   
@@ -1079,6 +1041,7 @@ makeRovquantData_wolverine <- function(
         }#i
       }#t
       
+      
       ##----- DERIVED PARAMETERS ------
       for(t in 1:n.years){
         for(i in 1:n.individuals){ 
@@ -1088,7 +1051,7 @@ makeRovquantData_wolverine <- function(
       }#t
       
     })
-    
+
     
     
     ## ------   2. NIMBLE CONSTANTS -----
