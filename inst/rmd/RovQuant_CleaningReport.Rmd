@@ -724,7 +724,7 @@ dat.dead <- dead.recovery %>%
 dat.dead$type = "dead.recovery"
 
 dat <- rbind(dat.alive, dat.dead)
-
+dat$Date <- as.Date(dat$Date)
 ggplot(dat) +
   geom_col(aes(x = Date, y = n, fill = type)) +
   scale_x_date(breaks="1 month")+
