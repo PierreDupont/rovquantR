@@ -714,11 +714,13 @@ After this initial clean-up, we are left with `r paste0(samples["Total","Total"]
 ```{r, num samples, echo = F, fig.align = "center"}
 ##-- Number of samples
 dat.alive <- alive %>%
+  mutate(Date = trunc(Date, "month")) %>%
   dplyr::group_by(Date) %>%
   dplyr::summarise(n = n())
 dat.alive$type = "NGS"
 
 dat.dead <- dead.recovery %>%
+  mutate(Date = trunc(Date, "month")) %>%
   dplyr::group_by(Date) %>%
   dplyr::summarise(n = -n())
 dat.dead$type = "dead.recovery"
@@ -726,15 +728,14 @@ dat.dead$type = "dead.recovery"
 dat <- rbind(dat.alive, dat.dead)
 dat$Date <- as.Date(dat$Date)
 
-by_month <- function(x, n = 1){
-  seq( trunc(min(x, na.rm = T), "month"),
-       max(x+30, na.rm = T),
-       by = paste0(n," months")) 
-}
+# by_month <- function(x, n = 1){
+#   seq( trunc(min(x, na.rm = T), "month"),
+#        max(x+30, na.rm = T),
+#        by = paste0(n," months")) 
+# }
 
 ggplot(dat) +
   geom_col(aes(x = Date, y = n, fill = type)) +
-  geom_histogram(breaks = by_month(dat$Date)) +
   ylab("Number of samples") +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme(legend.title = element_blank(),
