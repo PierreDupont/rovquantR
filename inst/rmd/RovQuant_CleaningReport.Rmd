@@ -727,6 +727,7 @@ dat <- rbind(dat.alive, dat.dead)
 
 ggplot(dat) +
   geom_col(aes(x = Date, y = n, fill = type)) +
+  scale_x_date(breaks="1 month")+
   ylab("Number of samples") +
   guides(fill = guide_legend(reverse = TRUE)) +
   theme(legend.title = element_blank(),
