@@ -308,7 +308,7 @@ covNames <- names(habitat$grid)[!names(habitat$grid) %in% c("Habitat","id", "x",
 ##-- Plot layout
 L <- length(covNames)
 ncols <- 3
-nrows <- ceiling(L/nrows)
+nrows <- ceiling(L/ncols)
 ```
 
 In order to better capture the distribution of individual activity centers throughout the landscape, i.e. population density, spatial covariates can be used in the movement sub-model of the OPSCR. In the case of the `r species` model, `r L` habitat covariates were included in the OPSCR model.
@@ -359,7 +359,7 @@ covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Habitat","id", 
 ##-- Plot layout
 L <- length(covNames)
 ncols <- 3
-nrows <- ceiling(L/nrows)
+nrows <- ceiling(L/ncols)
 ```
 
 In order to better capture the variation in detection probability throughout the landscape as a result of e.g. a variation in search effort, spatial covariates can be used in the detection sub-model of the OPSCR. In the case of the `r species` model, `r L` detector covariates were included in the OPSCR model.
