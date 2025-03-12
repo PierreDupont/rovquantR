@@ -287,7 +287,7 @@ kable(ids, align = "lc",
 
 
 
-```{r NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12, fig.cap = "Annual distributions of NGS”}
+```{r NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
 
 ##-- NGS map 
 numRows <- ceiling(length(years)/5)
@@ -441,7 +441,7 @@ kable( Dead_SEX,
 
 We can also plot the distribution of those dead recoveries each year:
 
-```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12, fig.cap = paste0(“Annual distributions of the ", species, " recovered dead between ", years[1], " and ", years[length(years)]," as used in the OPSCR analysis.”)}
+```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
 dead_map <- ggplot(data = data.dead) +
   geom_sf(data = COUNTRIES, 
           aes(fill = ISO),
