@@ -72,212 +72,6 @@ This document summarizes the data preparation process of the **`r species`** DNA
 
 ------------------------------------------------------------------------
 
-# Rovbase data
-
-```{r, data, echo = FALSE}
-load(file.path( working.dir, "data",
-                paste0("FilteredData_", engSpecies, "_", date, ".RData")))
-```
-
-## NGS data
-
-```{r, ngs data, echo = FALSE, collapse = TRUE}
-
-ngs <- data.alive$myData.sp
-
-##-- Number of NGS samples collected per sex and per year 
-numDet_sexYear <- table(ngs$Sex,ngs$Year)
-if(length(dim(numDet_sexYear)) > 1){
-  numDet_sexYear <- cbind(numDet_sexYear,rowSums(numDet_sexYear))
-  colnames(numDet_sexYear) <- c(years,"total")
-  numDet_sexYear <- rbind(numDet_sexYear,colSums(numDet_sexYear))
-  rownames(numDet_sexYear) <- c(sex,"total")
-}
-
-
-##-- Number of individuals detected per sex and per year
-numId_sexYear <- apply(table(ngs$Id,ngs$Sex,ngs$Year) > 0, c(2,3), sum)
-if(length(dim(numId_sexYear)) > 1){
-  numId_sexYear <- cbind(numId_sexYear,colSums(table(ngs$Id,ngs$Sex) > 0))
-  colnames(numId_sexYear) <- c(years,"total")
-  numId_sexYear <- rbind(numId_sexYear,colSums(numId_sexYear))
-  rownames(numId_sexYear) <- c(sex,"total")
-}
-
-
-##-- Number of NGS samples per individual per year
-df <- ngs %>%
-  st_drop_geometry() %>%
-  summarize(., 
-            freq = n(),
-            .by = c(Id,Sex,Year))
-                 
-mu <- summarize( df, 
-                 grp.mean = mean(freq),
-                 .by = Sex)
-
-
-##-- Distance between detections per id and year 
-IDs <- unique(ngs$Id)
-detDist <- list()
-for(i in IDs){
-  tmp1 <- ngs[ngs$Id %in% i, ]
-  tmp.list <- list()
-  for(t in 1:n.years){
-    tmp <- tmp1[tmp1$Year %in% years[t], ]
-    if(nrow(tmp)>1){
-          tmp.list[[t]] <- as.numeric(st_distance(tmp))
-    }
-  }#t
-  thisDist <- unlist(tmp.list)
-  detDist[[i]] <- cbind.data.frame(
-    id = rep(i,length(thisDist)),
-    sex = rep(unique(tmp1$Sex),length(thisDist)),
-    dist = thisDist)
-}#i
-detDist <- do.call(rbind,detDist)
-```
-
-After filtering the available data to the area and period of interest (`r years[1]` to `r years[length(years)]`), we are left with the following number of non-invasive genetic samples:
-
-```{r, ngs data1, echo = FALSE, collapse = TRUE}
-numDet_sexYear
-```
-
-These samples led to the identification of `r numId_sexYear["total","total"]` individuals:
-
-```{r, ngs data2, echo = FALSE, collapse = TRUE}
-numId_sexYear
-```
-
-We can also look at the spatial distribution of these samples and individuals:
-
-```{r, ngs data3, echo = FALSE, collapse = TRUE}
-##-- Number of individuals detected 
-ids <- apply(table(data.alive$myData.sp$Country_sample,
-                   data.alive$myData.sp$Year,
-                   data.alive$myData.sp$Id),
-             c(1,2),
-             function(x)sum(x>0))
-ids <- rbind(ids,
-             "Total" = apply(table(data.alive$myData.sp$Year,
-                                   data.alive$myData.sp$Id),
-                             1,
-                             function(x)sum(x>0)))
-ids <- cbind(ids,
-             "Total" = c(apply(table(data.alive$myData.sp$Country_sample,
-                                     data.alive$myData.sp$Id),
-                               1,
-                               function(x)sum(x>0)),
-                         length(unique(data.alive$myData.sp$Id))))
-ids
-```
-
-```{r NGS maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
-##-- NGS map
-numRows <- ceiling(length(years)/5)
-numCols <- 5
-NGS_map <- ggplot(data = data.alive$myData.sp) +
-  geom_sf( data = COUNTRIES,
-           aes(fill = ISO),
-           alpha = 0.3,
-           color = NA) +
-  geom_sf( color = "black",
-           alpha = 0.3, size = 0.8, pch = 3) +
-  facet_wrap(~Year, nrow = numRows, ncol = numCols) +
-  theme( axis.line = element_blank(),
-         axis.text.x = element_blank(),
-         axis.text.y = element_blank(),
-         axis.ticks = element_blank(),
-         axis.title.x = element_blank(),
-         axis.title.y = element_blank(),
-         legend.position = "none",
-         panel.background = element_blank(),
-         panel.border = element_blank(),
-         panel.grid.major = element_blank(),
-         panel.grid.minor = element_blank(),
-         plot.background = element_blank())
-NGS_map
-```
-
-```{r, ngs data4, echo = FALSE, collapse = TRUE,fig.height = 6, fig.width = 12}
-##-- Histogram of number of samples per individual per year
-plot1 <- ggplot(df, aes(x = freq, fill = Sex)) +
-  geom_histogram( position = "dodge", 
-                  alpha = 0.9, binwidth = 1)+
-  geom_vline( data = mu,
-              aes( xintercept = grp.mean, color = Sex),
-              linetype = "dashed") +
-  labs( tag = "A",
-        x = "Number of NGS samples, per individual, per year",
-        y = "Number of individuals") +
-  theme_classic( ) +
-  theme(legend.position = 'none')
-
-
-##-- Histogram of distances between detections in a year
-meanDist <- summarize( detDist, 
-                       grp.mean = mean(dist),
-                       .by = sex)
-
-plot2 <- ggplot(detDist, aes(x = dist, fill = sex)) +
-  geom_histogram( position = "dodge", 
-                  alpha = 0.9, binwidth = 1000) +
-  geom_vline( data = meanDist,
-              aes( xintercept = grp.mean, color = sex),
-              linetype = "dashed") +
-  labs( tag = "B",
-        x = "Pairwise distance between detections (m)",
-        y = "Number of individuals") +
-  theme_classic()
-
-##-- plots side by side
-plot1 + plot2
-```
-
-## Dead recovery data
-
-```{r, dead data1, echo = FALSE, collapse = TRUE}
-ngs <- data.dead
-
-##-- Number of samples collected per sex and per year 
-numDet_sexYear <- table(ngs$Sex,ngs$Year)
-if(length(dim(numDet_sexYear)) > 1){
-  numDet_sexYear <- cbind(numDet_sexYear,rowSums(numDet_sexYear))
-  colnames(numDet_sexYear) <- c(years,"total")
-  numDet_sexYear <- rbind(numDet_sexYear,colSums(numDet_sexYear))
-  rownames(numDet_sexYear) <- c(sex,"total")
-}
-numDet_sexYear
-```
-
-We can also plot the distribution of those dead recoveries each year:
-
-```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
-dead_map <- ggplot(data = data.dead) +
-  geom_sf(data = COUNTRIES, 
-          aes(fill = ISO),
-          alpha = 0.3,
-          color = NA) + 
-  geom_sf(color = "black", alpha = 0.5, size = 0.8, pch = 3) +
-  facet_wrap(~Year, nrow = numRows, ncol = numCols) +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
-        legend.position = "none",
-        panel.background = element_blank(),
-        panel.border = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.background = element_blank())
-dead_map
-```
-
-------------------------------------------------------------------------
-
 # Habitat definition
 
 ```{r, load habitat, echo = FALSE}
@@ -379,59 +173,319 @@ The prepared detector characteristics are available in : `r file.path(working.di
 
 ------------------------------------------------------------------------
 
-# Individual detection histories
 
-```{r, det data, echo = FALSE}
-##-- list directories containing input files
-dirNames <- list.dirs(file.path(working.dir, "nimbleInFiles"), full.names = F, recursive = F)
+# Rovbase data
 
-##-- path to inupt files
-dirList <- paste0(working.dir, "/nimbleInFiles/",dirNames)
-
-##-- Load different input files in a list
-inputs <- lapply( dirList,
-                 function(x){
-                   load(list.files(x, full.names = T)[1])
-                 })
-names(inputs) <- dirNames
+```{r, data, echo = FALSE}
+load(file.path( working.dir, "data",
+                paste0("FilteredData_", engSpecies, "_", date, ".RData")))
 ```
 
-Once formatted into individual detection histories, we can look at some summary statistics such as the number of detectors at which an individual is detected  (total), number of individual detections per individual (each year), pairwise distance between detections (in the same year ==\> equivalent to sigma), distance between consecutive naive activity centers (equivalent to Tau.)
+## Non-invasive genetic samples and dead recoveries
+
+```{r, ngs data, echo = FALSE, collapse = TRUE}
+
+ngs <- data.alive$myData.sp
+
+##-- Number of NGS samples collected per sex and per year 
+numDet_sexYear <- table(ngs$Sex,ngs$Year)
+if(length(dim(numDet_sexYear)) > 1){
+  numDet_sexYear <- cbind(numDet_sexYear,rowSums(numDet_sexYear))
+  colnames(numDet_sexYear) <- c(years,"Total")
+  numDet_sexYear <- rbind(numDet_sexYear,colSums(numDet_sexYear))
+  rownames(numDet_sexYear) <- c(sex,"Total")
+}
+
+
+##-- Number of individuals detected per sex and per year
+numId_sexYear <- apply(table(ngs$Id,ngs$Sex,ngs$Year) > 0, c(2,3), sum)
+if(length(dim(numId_sexYear)) > 1){
+  numId_sexYear <- cbind(numId_sexYear,colSums(table(ngs$Id,ngs$Sex) > 0))
+  colnames(numId_sexYear) <- c(years,"Total")
+  numId_sexYear <- rbind(numId_sexYear,colSums(numId_sexYear))
+  rownames(numId_sexYear) <- c(sex,"Total")
+}
+
+
+##-- Number of NGS samples per individual per year
+df <- ngs %>%
+  st_drop_geometry() %>%
+  summarize(., 
+            freq = n(),
+            .by = c(Id,Sex,Year))
+                 
+mu <- summarize( df, 
+                 grp.mean = mean(freq),
+                 .by = Sex)
+
+
+##-- Distance between detections per id and year 
+IDs <- unique(ngs$Id)
+detDist <- list()
+for(i in IDs){
+  tmp1 <- ngs[ngs$Id %in% i, ]
+  tmp.list <- list()
+  for(t in 1:n.years){
+    tmp <- tmp1[tmp1$Year %in% years[t], ]
+    if(nrow(tmp)>1){
+          tmp.list[[t]] <- as.numeric(st_distance(tmp))
+    }
+  }#t
+  thisDist <- unlist(tmp.list)
+  detDist[[i]] <- cbind.data.frame(
+    id = rep(i,length(thisDist)),
+    sex = rep(unique(tmp1$Sex),length(thisDist)),
+    dist = thisDist)
+}#i
+detDist <- do.call(rbind,detDist)
+```
+
+A total of `r numDet_sexYear["total","total"]` (`r numDet_sexYear["Hunn","Total"]` female; `r numDet_sexYear["Hann","Total"]` male) genotyped `r species` non-invasive genetic samples collected between `r years[1]` and `r years[length(years)]` were included in the analysis (\@ref(fig:NGS_maps). These samples were associated with `r numId_sexYear["Total","Total"]` (`r numId_sexYear["Hunn","Total"]` female; `r numId_sexYear["Hann","Total"]` male) individuals.
 
 
 
-**[...more coming soon...]**
+```{r, ngs data1, echo = FALSE, collapse = TRUE}
+kable(numDet_sexYear, align = "lc",
+      caption = "Number of non-invasive genetic samples per year and sex") %>%
+  kable_styling(full_width = F)
+```
 
 
+```{r, ngs data2, echo = FALSE, collapse = TRUE}
+kable(numId_sexYear, align = "lc",
+      caption = "Number of individuals detected through NGS per year and sex") %>%
+  kable_styling(full_width = F)
 
-```{r, eval = F}
+```
+
+We can also look at the spatial distribution of these samples and individuals:
+
+```{r, ngs data3, echo = FALSE, collapse = TRUE}
+##-- Number of individuals detected 
+ids <- apply(table(data.alive$myData.sp$Country_sample,
+                   data.alive$myData.sp$Year,
+                   data.alive$myData.sp$Id),
+             c(1,2),
+             function(x)sum(x>0))
+ids <- rbind(ids,
+             "Total" = apply(table(data.alive$myData.sp$Year,
+                                   data.alive$myData.sp$Id),
+                             1,
+                             function(x)sum(x>0)))
+ids <- cbind(ids,
+             "Total" = c(apply(table(data.alive$myData.sp$Country_sample,
+                                     data.alive$myData.sp$Id),
+                               1,
+                               function(x)sum(x>0)),
+                         length(unique(data.alive$myData.sp$Id))))
+
+kable(ids, align = "lc",
+      caption = "Number of individuals detected through NGS per country and sex") %>%
+  kable_styling(full_width = F)
+
+```
+
+```{r NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12, fig.cap = paste0(“Annual distributions of the ", species, "non-invasive genetic samples collected between ", years[1], " and ", years[length(years)]," as used in the OPSCR analysis.”}
+##-- NGS map 
+numRows <- ceiling(length(years)/5)
+numCols <- 5
+NGS_map <- ggplot(data = data.alive$myData.sp) +
+  geom_sf( data = COUNTRIES,
+           aes(fill = ISO),
+           alpha = 0.3,
+           color = NA) +
+  geom_sf( color = "black",
+           alpha = 0.3, size = 0.8, pch = 3) +
+  facet_wrap(~Year, nrow = numRows, ncol = numCols) +
+  theme( axis.line = element_blank(),
+         axis.text.x = element_blank(),
+         axis.text.y = element_blank(),
+         axis.ticks = element_blank(),
+         axis.title.x = element_blank(),
+         axis.title.y = element_blank(),
+         legend.position = "none",
+         panel.background = element_blank(),
+         panel.border = element_blank(),
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank(),
+         plot.background = element_blank())
+NGS_map
+```
+
+```{r, ngs data4, echo = FALSE, collapse = TRUE,fig.height = 6, fig.width = 12}
+##-- Histogram of number of samples per individual per year
+plot1 <- ggplot(df, aes(x = freq, fill = Sex)) +
+  geom_histogram( position = "dodge", 
+                  alpha = 0.9, binwidth = 1)+
+  geom_vline( data = mu,
+              aes( xintercept = grp.mean, color = Sex),
+              linetype = "dashed") +
+  labs( tag = "A",
+        x = "Number of NGS samples, per individual, per year",
+        y = "Number of individuals") +
+  theme_classic( ) +
+  theme(legend.position = 'none')
+
+
+##-- Histogram of distances between detections in a year
+meanDist <- summarize( detDist, 
+                       grp.mean = mean(dist),
+                       .by = sex)
+
+plot2 <- ggplot(detDist, aes(x = dist, fill = sex)) +
+  geom_histogram( position = "dodge", 
+                  alpha = 0.9, binwidth = 1000) +
+  geom_vline( data = meanDist,
+              aes( xintercept = grp.mean, color = sex),
+              linetype = "dashed") +
+  labs( tag = "B",
+        x = "Pairwise distance between detections (m)",
+        y = "Number of individuals") +
+  theme_classic()
+
+##-- plots side by side
+plot1 + plot2
+```
+
+
+## Dead recovery data
+
+```{r, dead data1, echo = FALSE, collapse = TRUE}
+Dead_SEX <- matrix(0, ncol = n.years*2+1, nrow = 6)
+row.names(Dead_SEX) <- c("","other","other","legal culling","legal culling","")
+colnames(Dead_SEX) <- c("",unlist(lapply(years, function(x) c(x,x))))
+Dead_SEX[1,] <- c("",rep(c("F","M"),n.years))
+Dead_SEX[,1] <- c("","Norway","Sweden","Norway","Sweden","Total")
+sex <- c("Hunn","Hann")
+sex1 <- c(0,1)
+ye <- seq(1,n.years*2, by = 2)
+
+##-- Separate mortalities
+cause <- c("other","legal culling")
+for(t in 1:n.years){
+  for(s in 1:2){
+    for(d in 1:2){
+      if(d==1){
+        temp <- data.dead[data.dead$Year == years[t] & data.dead$Sex==sex[s] & data.dead$legal == "yes", ]
+      } else {
+        temp <- data.dead[data.dead$Year == years[t] & data.dead$Sex==sex[s] & data.dead$legal != "yes", ]
+      }
+      row <- which(rownames(Dead_SEX) == cause[d] & Dead_SEX[,1]=="Norway")
+      Dead_SEX[row,ye[t] + sex1[s]+1 ] <- length(unique(temp$Id[temp$Country_sample %in% "(N)" ]))
+
+      row <- which(rownames(Dead_SEX) == cause[d] & Dead_SEX[,1]=="Sweden" )
+      Dead_SEX[row,ye[t] + sex1[s]+1] <- length(unique(temp$Id[temp$Country_sample %in% "(S)"]))
+    }#t
+    Dead_SEX[6, ye[t] + sex1[s] + 1] <- sum(as.numeric(Dead_SEX[2:6,ye[t] + sex1[s]+1]))
+  }
+}
+
+
+##-- summary
+##-- Other causes
+numOther <- sum(as.numeric(Dead_SEX[2:3,2:ncol(Dead_SEX)]))
+numOther_F <- sum(as.numeric(Dead_SEX[2:3,which(Dead_SEX[1,]=="F")]))
+numOther_M <- sum(as.numeric(Dead_SEX[2:3,which(Dead_SEX[1,]=="M")]))
+##-- legal
+numLegal <- sum(as.numeric(Dead_SEX[4:5,2:ncol(Dead_SEX)]))
+numLegal_F <- sum(as.numeric(Dead_SEX[4:5,which(Dead_SEX[1,]=="F")]))
+numLegal_M <- sum(as.numeric(Dead_SEX[4:5,which(Dead_SEX[1,]=="M")]))
+##-- Total
+numDead <- numLegal + numOther
+numDead_F <- numLegal_F + numOther_F
+numDead_M <- numLegal_M + numOther_M
+
+
+# ##-- print .tex
+# addtorow <- list()
+# addtorow$pos <- list(c(0),0)
+# uniqueYEAR <- sort(unique(colnames(Dead_SEX)))
+# uniqueYEAR <- uniqueYEAR[2:length(uniqueYEAR)]
+# addtorow$command <- c(paste0("& \\multicolumn{1}{c}{Country}",
+#                              paste0('& \\multicolumn{2}{c}{',
+#                                     uniqueYEAR,
+#                                     '}', collapse=''), '\\\\'),
+#                       rep("\\rowcolor[gray]{.95}",1))
+# multirow <- paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Other","Legal culling"), "}}")
+# multirowadd <- matrix(c("",multirow[1],"",multirow[2],"","{\\textbf{TOTAL}}"), ncol = 1)
+# Dead_SEX <- data.frame(cbind(multirowadd,Dead_SEX))
+# 
+# print(xtable(Dead_SEX, type = "latex",
+#              align = rep("c", ncol(Dead_SEX)+1)),
+#       floating = FALSE,
+#       add.to.row = addtorow,
+#       include.colnames = FALSE,
+#       include.rownames = FALSE,
+#       sanitize.text.function = function(x){x},
+#       file = file.path(WDTables, paste0("DeadidCountrySEX_classic.tex")))
+```
+
+We also included `r numDead` (`r numDead_F` female; `r numDead_M` male) `r species` recovered dead in the OPSCR model, of which `r numLegal` (`r numLegal_F` female; `r numLegal_M`  male) were due to legal culling and `r numOther`  (`r numOther_F`  female; `r numOther_M`  male) due to other causes of mortality. 
+
+<!-- Annual tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis for the period 2014-2023 are provided in the Appendices (NGS samples and individuals: \autoref{tab:NGSbear}, dead recoveries: \autoref{tab:Deadbear}). -->
+
+
+```{r, dead data2, echo = FALSE, collapse = TRUE}
 ##-- Number of NGS samples
-kable( samples,
+kable( Dead_SEX,
        align = "lc",
-       caption = "Number of NGS samples per year and country") %>%
-  kable_styling(full_width = F)
-
-##-- Number of dead recoveries
-kable( deadSamples,
-       align = "lc",
-       caption = "Number of DNA samples from dead animals per year and country") %>%
+       caption = paste0("Number of cause-specific dead recoveries of ", species,
+                       " included in the OPSCR analysis between ", years[1] ," and ", years[length(years)],
+                       ". Numbers are reported by country, for females (F) and males (M). Note that dead recovery data from the final season (", years[length(years)],
+                       ,") were not used in this analysis because survival is modeled as part of the transition from one season to the next.")) %>%
   kable_styling(full_width = F)
 ```
 
-------------------------------------------------------------------------
+We can also plot the distribution of those dead recoveries each year:
 
-# Local evaluation
+```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
+dead_map <- ggplot(data = data.dead) +
+  geom_sf(data = COUNTRIES, 
+          aes(fill = ISO),
+          alpha = 0.3,
+          color = NA) + 
+  geom_sf(color = "black", alpha = 0.5, size = 0.8, pch = 3) +
+  facet_wrap(~Year, nrow = numRows, ncol = numCols) +
+  theme(axis.line = element_blank(),
+        axis.text.x = element_blank(),
+        axis.text.y = element_blank(),
+        axis.ticks = element_blank(),
+        axis.title.x = element_blank(),
+        axis.title.y = element_blank(),
+        legend.position = "none",
+        panel.background = element_blank(),
+        panel.border = element_blank(),
+        panel.grid.major = element_blank(),
+        panel.grid.minor = element_blank(),
+        plot.background = element_blank())
+dead_map
+```
 
-\section{Results}
+<!-- ------------------------------------------------------------------------ -->
+<!-- # Individual detection histories -->
 
-\subsection{Non-invasive genetic samples and dead recoveries}
-\noindent
-A total of \numprint{5864} (\numprint{2423} female; \numprint{3441} male) genotyped bear genetic samples collected in Norway between 2014 and 2023 were included in the analysis (\autoref{fig:AnnualNGmaps}). These samples were associated with \numprint{592} (208 female; 384 male) individuals. We also included 134 bears recovered dead in Norway or at the border area with Sweden in the OPSCR model, of which 115 (28 female; 87 male) were due to legal culling and 19 (7 female; 12 male) due to other causes of mortality. Annual tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis for the period 2014-2023 are provided in the Appendices (NGS samples and individuals: \autoref{tab:NGSbear}, dead recoveries: \autoref{tab:Deadbear}).\\
+<!-- ```{r, det data, echo = FALSE} -->
+<!-- ##-- list directories containing input files -->
+<!-- dirNames <- list.dirs(file.path(working.dir, "nimbleInFiles"), full.names = F, recursive = F) -->
+
+<!-- ##-- path to inupt files -->
+<!-- dirList <- paste0(working.dir, "/nimbleInFiles/",dirNames) -->
+
+<!-- ##-- Load different input files in a list -->
+<!-- inputs <- lapply( dirList, -->
+<!--                  function(x){ -->
+<!--                    load(list.files(x, full.names = T)[1]) -->
+<!--                  }) -->
+<!-- names(inputs) <- dirNames -->
+<!-- ``` -->
+
+<!-- Once formatted into individual detection histories, we can look at some summary statistics such as the number of detectors at which an individual is detected  (total), number of individual detections per individual (each year), pairwise distance between detections (in the same year ==\> equivalent to sigma), distance between consecutive naive activity centers (equivalent to Tau.) -->
 
 
-**[...more coming soon...]**
 
-------------------------------------------------------------------------
+<!-- **[...more coming soon...]** -->
+
+<!-- ------------------------------------------------------------------------ -->
 
 # Metadata
 
