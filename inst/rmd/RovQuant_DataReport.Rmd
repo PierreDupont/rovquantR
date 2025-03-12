@@ -178,25 +178,25 @@ ids
 numRows <- ceiling(length(years)/5)
 numCols <- 5
 NGS_map <- ggplot(data = data.alive$myData.sp) +
-  geom_sf(data = COUNTRIES,
-          aes(fill = ISO),
-          alpha = 0.3,
-          color = NA) +
-  geom_sf(color = "black",
-          alpha = 0.3, size = 0.8, pch = 3) +
+  geom_sf( data = COUNTRIES,
+           aes(fill = ISO),
+           alpha = 0.3,
+           color = NA) +
+  geom_sf( color = "black",
+           alpha = 0.3, size = 0.8, pch = 3) +
   facet_wrap(~Year, nrow = numRows, ncol = numCols) +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
-        legend.position = "none",
-        panel.background = element_blank(),
-        panel.border = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.background = element_blank())
+  theme( axis.line = element_blank(),
+         axis.text.x = element_blank(),
+         axis.text.y = element_blank(),
+         axis.ticks = element_blank(),
+         axis.title.x = element_blank(),
+         axis.title.y = element_blank(),
+         legend.position = "none",
+         panel.background = element_blank(),
+         panel.border = element_blank(),
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank(),
+         plot.background = element_blank())
 NGS_map
 ```
 
@@ -251,7 +251,7 @@ if(length(dim(numDet_sexYear)) > 1){
 numDet_sexYear
 ```
 
-We can also plot the distribbution of those dead recoveries each year:
+We can also plot the distribution of those dead recoveries each year:
 
 ```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
 dead_map <- ggplot(data = data.dead) +
@@ -281,15 +281,13 @@ dead_map
 # Habitat definition
 
 ```{r, load habitat, echo = FALSE}
-#load(file.path(working.dir, "data/Habitat.RData"))
 load(file.path( working.dir, "data",
                 paste0("Habitat_", engSpecies, "_", date, ".RData")))
-
 ```
 
 ## Habitat characteristics
 
-The habitat, sometimes called state-space (add REFS), describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of `r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^2$.
+The habitat, sometimes called state-space, describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of `r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^2$.
 
 ```{r, hab grid, echo = FALSE, fig.align = "center"}
 mapview( x = habitat$grid,
@@ -307,14 +305,10 @@ mapview( x = habitat$grid,
 covNames <- names(habitat$grid)[!names(habitat$grid) %in% c("Habitat","id", "x","y","geometry")]
 
 ##-- Plot layout
+##-- Plot layout
 L <- length(covNames)
-if(L < 6){ nrows <- 1 } else{
-  if(L < 13){ nrows <- 2 } else {
-    if(L < 22){ nrows <- 3 } else {
-      if(L < 33){ nrows <- 4 } else {
-        nrows <- 5
-      }}}}
-ncols <- ceiling(L/nrows)
+ncols <- 3
+nrows <- ceiling(L/nrows)
 ```
 
 In order to better capture the distribution of individual activity centers throughout the landscape, i.e. population density, spatial covariates can be used in the movement sub-model of the OPSCR. In the case of the `r species` model, `r L` habitat covariates were included in the OPSCR model.
@@ -324,26 +318,26 @@ par(mfrow = c(nrows,ncols))
 for(c in 1:L){     
   plot( st_geometry(GLOBALMAP), 
         col = "gray80",
+        border = NA,
         main = covNames[c])
   plot(habitat$grid[ ,covNames[c]], add=T)
 }#c
 ```
 
-The prepared habitat characteristics are available in : `r file.path(working.dir, "data/Habitat.RData")`
+The prepared habitat characteristics are available in : `r file.path(working.dir, "data", paste0("Habitat_", engSpecies, "_", date, ".RData"))`
 
 ------------------------------------------------------------------------
 
 # Detectors definition
 
 ```{r, det grid, echo = FALSE}
-#load(file.path(working.dir, "data/Detectors.RData"))
 load(file.path( working.dir, "data",
                 paste0("Detectors_", engSpecies, "_", date, ".RData")))
 ```
 
 ## Detectors characteristics
 
-The surveyed area, also called detector-space (add REFS), describes the region that was searched for `r species` DNA samples. Although the area searched is continuous, it is discretized for practical reasons in the model. In the case of the `r species` OPSCR analysis, we used a grid with `r detectors$resolution/1000` km resolution. The area surveyed is determined by using a buffer around the DNA samples collected.
+The surveyed area, also called detector-space, describes the region that was searched for `r species` DNA samples. Although the area searched is continuous, it is discretized for practical reasons in the model. In the case of the `r species` OPSCR analysis, we used a grid with `r detectors$resolution/1000` km resolution. The area surveyed is determined by using a buffer around the DNA samples collected.
 
 It is composed of `r detectors$n.detectors` detector grid cells, each of size `r (detectors$resolution/1000)^2` $km^2$, leading to a total surveyed area of `r detectors$n.detectors*(detectors$resolution/1000)^2` $km^2$.
 
@@ -364,13 +358,8 @@ covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Habitat","id", 
 
 ##-- Plot layout
 L <- length(covNames)
-if(L < 6){ nrows <- 1 } else{
-  if(L < 13){ nrows <- 2 } else {
-    if(L < 22){ nrows <- 3 } else {
-      if(L < 33){ nrows <- 4 } else {
-        nrows <- 5
-      }}}}
-ncols <- ceiling(L/nrows)
+ncols <- 3
+nrows <- ceiling(L/nrows)
 ```
 
 In order to better capture the variation in detection probability throughout the landscape as a result of e.g. a variation in search effort, spatial covariates can be used in the detection sub-model of the OPSCR. In the case of the `r species` model, `r L` detector covariates were included in the OPSCR model.
@@ -384,6 +373,9 @@ for(c in 1:L){
   plot(detectors$grid[ ,covNames[c]], border = NA, add=T)
 }#c
 ```
+
+
+The prepared detector characteristics are available in : `r file.path(working.dir, "data", paste0("Detectors_", engSpecies, "_", date, ".RData"))`
 
 ------------------------------------------------------------------------
 
@@ -404,7 +396,7 @@ inputs <- lapply( dirList,
 names(inputs) <- dirNames
 ```
 
-ONce formatted into individual detection histories, we can look at some summary statistics such as the number of detectors at which an individual is detected  (total), number of individual detections per individual (each year), pairwise distance between detections (in the same year ==\> equivalent to sigma), distance between consecutive naive activity centers (equivalent to Tau.)
+Once formatted into individual detection histories, we can look at some summary statistics such as the number of detectors at which an individual is detected  (total), number of individual detections per individual (each year), pairwise distance between detections (in the same year ==\> equivalent to sigma), distance between consecutive naive activity centers (equivalent to Tau.)
 
 
 
