@@ -287,7 +287,7 @@ load(file.path( working.dir, "data",
 
 ## Habitat characteristics
 
-The habitat, sometimes called state-space, describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of `r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^2$.
+The habitat, sometimes called state-space, describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of `r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^{2}$.
 
 ```{r, hab grid, echo = FALSE, fig.align = "center"}
 mapview( x = habitat$grid,
@@ -339,7 +339,7 @@ load(file.path( working.dir, "data",
 
 The surveyed area, also called detector-space, describes the region that was searched for `r species` DNA samples. Although the area searched is continuous, it is discretized for practical reasons in the model. In the case of the `r species` OPSCR analysis, we used a grid with `r detectors$resolution/1000` km resolution. The area surveyed is determined by using a buffer around the DNA samples collected.
 
-It is composed of `r detectors$n.detectors` detector grid cells, each of size `r (detectors$resolution/1000)^2` $km^2$, leading to a total surveyed area of `r detectors$n.detectors*(detectors$resolution/1000)^2` $km^2$.
+It is composed of `r detectors$n.detectors` detector grid cells, each of size `r (detectors$resolution/1000)^2` $km^{2}$ , leading to a total surveyed area of `r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$.
 
 ```{r, det grid2, echo = FALSE, fig.align = "center"}
 mapview(st_geometry(detectors$grid),
@@ -421,6 +421,12 @@ kable( deadSamples,
 ------------------------------------------------------------------------
 
 # Local evaluation
+
+\section{Results}
+
+\subsection{Non-invasive genetic samples and dead recoveries}
+\noindent
+A total of \numprint{5864} (\numprint{2423} female; \numprint{3441} male) genotyped bear genetic samples collected in Norway between 2014 and 2023 were included in the analysis (\autoref{fig:AnnualNGmaps}). These samples were associated with \numprint{592} (208 female; 384 male) individuals. We also included 134 bears recovered dead in Norway or at the border area with Sweden in the OPSCR model, of which 115 (28 female; 87 male) were due to legal culling and 19 (7 female; 12 male) due to other causes of mortality. Annual tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis for the period 2014-2023 are provided in the Appendices (NGS samples and individuals: \autoref{tab:NGSbear}, dead recoveries: \autoref{tab:Deadbear}).\\
 
 
 **[...more coming soon...]**
