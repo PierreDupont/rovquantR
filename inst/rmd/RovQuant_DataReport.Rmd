@@ -429,11 +429,8 @@ We also included `r numDead` (`r numDead_F` female; `r numDead_M` male) `r speci
 
 
 ```{r, dead data2, echo = FALSE, collapse = TRUE}
-thisCap <- as.character(
-  paste("Number of cause-specific dead recoveries of", species,
-                       "included in the OPSCR analysis between", years[1] ,"and", years[length(years)],
-                       ". Numbers are reported by country, for females (F) and males (M). Note that dead recovery data from the final season (", years[length(years)],
-                       ,") were not used in this analysis because survival is modeled as part of the transition from one season to the next."))
+thisCap <- as.character("Number of cause-specific dead recoveries included in the OPSCR analysis. Numbers are reported by country, for females (F) and males (M). Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.")
+
 ##-- Number of NGS samples
 kable( Dead_SEX,
        align = "lc",
