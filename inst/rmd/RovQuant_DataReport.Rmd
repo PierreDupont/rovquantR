@@ -285,7 +285,7 @@ kable(ids, align = "lc",
 
 ```
 
-```{r NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12, fig.cap = paste0(“Annual distributions of the ", species, " non-invasive genetic samples collected between ", years[1], " and ", years[length(years)]," as used in the OPSCR analysis.”)}
+```{r, NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12, fig.cap = “Annual distributions of non-invasive genetic samples collected as used in the OPSCR analysis.”}
 ##-- NGS map 
 numRows <- ceiling(length(years)/5)
 numCols <- 5
