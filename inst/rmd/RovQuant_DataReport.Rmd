@@ -287,10 +287,7 @@ kable(ids, align = "lc",
 
 
 
-```{r}
-#| NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12,
-#| fig.cap = "Annual distributions of non-invasive genetic 
-#| samples as used in the OPSCR analysis.”
+```{r NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12, fig.cap = "Annual distributions of NGS”}
 
 ##-- NGS map 
 numRows <- ceiling(length(years)/5)
