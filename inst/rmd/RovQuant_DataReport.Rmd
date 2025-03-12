@@ -240,7 +240,7 @@ for(i in IDs){
 detDist <- do.call(rbind,detDist)
 ```
 
-A total of `r numDet_sexYear["total","total"]` (`r numDet_sexYear["Hunn","Total"]` female; `r numDet_sexYear["Hann","Total"]` male) genotyped `r species` non-invasive genetic samples collected between `r years[1]` and `r years[length(years)]` were included in the analysis (\@ref(fig:NGS_maps). These samples were associated with `r numId_sexYear["Total","Total"]` (`r numId_sexYear["Hunn","Total"]` female; `r numId_sexYear["Hann","Total"]` male) individuals.
+A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["Hunn","Total"]` female; `r numDet_sexYear["Hann","Total"]` male) genotyped `r species` non-invasive genetic samples collected between `r years[1]` and `r years[length(years)]` were included in the analysis (\@ref(fig:NGS_maps). These samples were associated with `r numId_sexYear["Total","Total"]` (`r numId_sexYear["Hunn","Total"]` female; `r numId_sexYear["Hann","Total"]` male) individuals.
 
 
 
