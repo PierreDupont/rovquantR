@@ -78,7 +78,7 @@ makeRovquantData(
 ## -----   1. Females ------
 
 ##-- List all prepared input files
-inputFiles <- list.files(file.path(working.dir, "nimbleInFiles/Hunn"),
+inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/Hunn"),
                          full.names = T)
 
 ##-- Load the first one
@@ -115,7 +115,7 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 ## -----   2. Males ------
 
 ##-- List all prepared input files
-inputFiles <- list.files(file.path(working.dir, "nimbleInFiles/Hann"),
+inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/Hann"),
                          full.names = T)
 
 ##-- Load the first one
