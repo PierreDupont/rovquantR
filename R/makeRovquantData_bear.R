@@ -191,7 +191,7 @@ makeRovquantData_bear <- function(
   
   ##-- GET ALL SAMPLES COLLECTED (all species)
   rovbaseObs <- readMostRecent( path = data.dir,
-                                extension = ".csv",
+                                extension = ".xls",
                                 pattern = "all_samples") %>%
     ##-- Deal with Scandinavian characters
     dplyr::mutate(Species = stringi::stri_trans_general(Species, "Latin-ASCII")) %>%

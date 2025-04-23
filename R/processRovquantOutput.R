@@ -92,14 +92,15 @@ processRovquantOutput <- function(
   # }
   
   
-  
-  
+
   ##---- 4. PRINT REPORT -----
   
   if(print.report){
     
     ##-- Find the .rmd template for the report.
     if(is.null(Rmd.template)){
+      Rmd.template <- "C:/My_documents/rovquantR/inst/rmd/RovQuant_OutputReport.Rmd"
+      
       Rmd.template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
       if(!file.exists(Rmd.template)) {
         stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')

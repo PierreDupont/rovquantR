@@ -15,6 +15,7 @@ output:
     df_print: kable
     #css: bootstrap.css
     highlight: zenburn
+    #fig_caption: true
   pdf_document: default
   word_document: default
 ---
@@ -104,7 +105,7 @@ This document summarizes the output processing of the [RovQuant](https://www.nmb
 
 The main results of interest is population size:
 
-```{r, abundance, include = TRUE, fig.align = "center", fig.cap = c("Figure 1: Total (black) and sex-specific (blue: males, red: females) annual bear population size estimates"), echo = FALSE}
+```{r, abundance, include = TRUE, fig.align = "center", fig.cap = "Figure 1: Total (black) and sex-specific (blue: males, red: females) annual bear population size estimates", echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
 ```
 
@@ -113,7 +114,7 @@ knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png
 # plot(panel.upr)
 ```
 
-in a table format, itlooks likes this:
+<!-- in a table format, it looks likes this: -->
 
 ```{r, echo = FALSE, eval = FALSE}
 # panel.upr <-  image_read_pdf(file.path(working.dir, "figures/Abundance_TimeSeries.pdf"))
@@ -123,15 +124,15 @@ in a table format, itlooks likes this:
 
 ## Population density
 
-The OPSCR model also produces population density maps. In `r years[last(years)]`, the population density of `r species`
+The OPSCR model also produces population density maps. In `r years[length(years)]`, the population density of `r species`
 
-```{r, density lastYear, fig.align = "center", fig.cap = c("Figure 2: `r SPECIES` density in Norway in `r years[last(years)]`. Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between `r years[1]` and `r years[last(years)]`"), echo = FALSE}
+```{r, density lastYear, fig.align = "center", fig.cap = paste0("Figure 2: ", SPECIES, " density in Norway in ", years[length(years)], ". Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between ", years[1], " and ", years[length(years)],"."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
 ```
 
-The OPSCR model also produces population density maps. In `r years[last(years)]`, the population density of `r species`
+The OPSCR model also produces population density maps. In `r years[length(years)]`, the population density of `r species`
 
-```{r, density timeSeries, fig.align = "center", fig.cap = c("Figure 3: `r SPECIES` density in Norway between `r years[1]` and `r years[last(years)]`."), echo = FALSE}
+```{r, density timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", SPECIES, " density in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
 ```
 
