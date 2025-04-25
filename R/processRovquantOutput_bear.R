@@ -494,17 +494,19 @@ processRovquantOutput_bear <- function(
   
   ##-- legend
   par(xpd = TRUE)
-  xx <- c(6.1,7.6,8.8,10)
+ 
+  
+  xx <- c(0.6*n.years,0.72*n.years,0.82*n.years,0.92*n.years)#c(6.1,7.6,8.8,10) 
   yy <- c(5,5,5,5)
   labs <- c("Females", "Males", "Total", "Detected")
-  polygon(x = c(5.6,11.6,11.6,5.6),
+  polygon(x = c(0.58*n.years,1.05*n.years,1.05*n.years,0.58*n.years),
           y = c(-2.5,-2.5,12.5,12.5),
           col = adjustcolor("white", alpha.f = 0.9),
           border = "gray60")
   
   points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 3.5, col = colSex)
   points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 1.5, col = colSex)
-  text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
+  text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.2, pos = 4)
   
   polygon(x = c(xx[4]-0.3,xx[4]+0.1,xx[4]+0.1,xx[4]-0.3),
           y = c(yy[4]-1,yy[4]-1,yy[4]+1,yy[4]+1),

@@ -561,7 +561,8 @@ makeRovquantData_bear <- function(
   detOtherSamples <- matrix(0, nrow = detectors$n.detectors, ncol = n.years)
   detOtherSamples[ ,1:n.years] <- raster::extract(ds.brickCont,
                                                   detectors$main.detector.sp)
-  detectors$detectors.df$detOtherSamples <- detOtherSamples
+  colnames(detOtherSamples) <- paste0("detOtherSamples.", years)
+  detectors$detectors.df <- cbind.data.frame(detectors$detectors.df, detOtherSamples)
   
   
   
@@ -571,7 +572,7 @@ makeRovquantData_bear <- function(
   for(t in 1:n.years){
     detCovs[ ,1,t] <- detectors$detectors.df[ ,"roads"]
   }
-  detCovs[ ,2, ] <- detectors$detectors.df$detOtherSamples
+  detCovs[ ,2, ] <- detOtherSamples
   dimnames(detCovs) <- list( "detectors" = 1:n.detectors,
                              "covariates" = c("roads", "obs"),
                              "years" = years)

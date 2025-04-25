@@ -23,6 +23,7 @@ output:
 ### `r Sys.Date()`
 
 ```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
+##-- Extract parameters to knit document
 species <- params$species
 years <- params$years
 sex <- params$sex
@@ -43,8 +44,8 @@ if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, 
   norSpecies <- "Jerv"
 }
 
-months = c("January","February","March","April","May","June",
-           "July","August","September","October","November","December")
+# months = c("January","February","March","April","May","June",
+#            "July","August","September","October","November","December")
 
 
 ##-- load libraries
@@ -75,47 +76,89 @@ This document summarizes the data preparation process of the **`r species`** DNA
 # Habitat definition
 
 ```{r, load habitat, echo = FALSE}
+##-- Load prepared habitat
 load(file.path( working.dir, "data",
                 paste0("Habitat_", engSpecies, "_", date, ".RData")))
-```
 
-## Habitat characteristics
-
-The habitat, sometimes called state-space, describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of `r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^{2}$.
-
-```{r, hab grid, echo = FALSE, fig.align = "center"}
-mapview( x = habitat$grid,
-         hide = FALSE,
-         legend = FALSE,
-         map.types = c( "OpenTopoMap",
-                        "Esri.WorldShadedRelief",
-                        "OpenStreetMap.DE"))
-```
-
-## Habitat covariates
-
-```{r, hab covs1, echo = FALSE}
 ##-- Identify number of habitat covariates
 covNames <- names(habitat$grid)[!names(habitat$grid) %in% c("Habitat","id", "x","y","geometry")]
 
-##-- Plot layout
-##-- Plot layout
-L <- length(covNames)
-ncols <- 3
-nrows <- ceiling(L/ncols)
+# ## OPTION 1: Create a list to store the different layers objects
+# map_list <- list()
+# map_list[[1]] <- mapview( x = habitat$grid,
+#          hide = FALSE,
+#          legend = FALSE,
+#          map.types = c( "OpenStreetMap.DE",
+#                         "OpenTopoMap",
+#                         "Esri.WorldShadedRelief"))
+# 
+# for(c in 1:length(covNames)){
+#   map_list[[c+1]] <- mapview(habitat$grid, zcol = covNames[c], legend = TRUE)
+# }
+# names(map_list) <- c("Habitat", covNames)
+# 
+# 
+# # Combine layers into a single map using Reduce and the + operator
+# combined_map <- Reduce(`+`, map_list) 
+# 
+# # Display the combined map
+# combined_map
+# 
+# 
+# 
+# 
+# map_list <- list()
+# for(c in 1:length(covNames)){
+#   map_list[[c]] <- habitat$grid[ ,covNames[c]]
+# }
+# names(map_list) <- covNames
+# mapview( map_list,
+#          hide = F,
+#          alpha.regions = 0.8,
+#          map.types = c( "OpenStreetMap.DE",
+#                         "OpenTopoMap",
+#                         "Esri.WorldShadedRelief"))
 ```
+
+
+The habitat, sometimes called state-space, describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of `r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^{2}$.
 
 In order to better capture the distribution of individual activity centers throughout the landscape, i.e. population density, spatial covariates can be used in the movement sub-model of the OPSCR. In the case of the `r species` model, `r L` habitat covariates were included in the OPSCR model.
 
+```{r, hab grid, echo = FALSE, fig.align = "center"}
+if(length(covNames) <= 0){
+mapview( x = habitat$grid[ ,"Habitat"],
+         legend = FALSE,
+         layer.name =  "Habitat",        
+         map.types = c( "OpenStreetMap.DE",
+                        "OpenTopoMap",
+                        "Esri.WorldShadedRelief")) 
+} else {
+mapview( x = habitat$grid[ ,"Habitat"],
+         legend = FALSE,
+         layer.name =  "Habitat",        
+         map.types = c( "OpenStreetMap.DE",
+                        "OpenTopoMap",
+                        "Esri.WorldShadedRelief")) +
+  mapview( x = habitat$grid,
+           hide = TRUE,
+           legend = FALSE,
+           alpha.regions = 0.9,
+           zcol = c(covNames))
+}
+```
+
+
+
 ```{r, hab covs2, echo = FALSE}
-par(mfrow = c(nrows,ncols))
-for(c in 1:L){     
-  plot( st_geometry(GLOBALMAP), 
-        col = "gray80",
-        border = NA,
-        main = covNames[c])
-  plot(habitat$grid[ ,covNames[c]], add=T)
-}#c
+# par(mfrow = c(nrows,ncols))
+# for(c in 1:L){     
+#   plot( st_geometry(GLOBALMAP), 
+#         col = "gray80",
+#         border = NA,
+#         main = covNames[c])
+#   plot(habitat$grid[ ,covNames[c]], add=T)
+# }#c
 ```
 
 The prepared habitat characteristics are available in : `r file.path(working.dir, "data", paste0("Habitat_", engSpecies, "_", date, ".RData"))`
@@ -127,6 +170,11 @@ The prepared habitat characteristics are available in : `r file.path(working.dir
 ```{r, det grid, echo = FALSE}
 load(file.path( working.dir, "data",
                 paste0("Detectors_", engSpecies, "_", date, ".RData")))
+
+
+##-- Identify number of detector covariates
+covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Habitat","id", "x","y","geometry")]
+
 ```
 
 ## Detectors characteristics
@@ -136,19 +184,40 @@ The surveyed area, also called detector-space, describes the region that was sea
 It is composed of `r detectors$n.detectors` detector grid cells, each of size `r (detectors$resolution/1000)^2` $km^{2}$ , leading to a total surveyed area of `r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$.
 
 ```{r, det grid2, echo = FALSE, fig.align = "center"}
-mapview(st_geometry(detectors$grid),
-        hide = FALSE,
-        legend = FALSE,
-        map.types = c( "OpenTopoMap",
-                       "Esri.WorldShadedRelief",
-                       "OpenStreetMap.DE"))
+if(length(covNames) <= 0){
+mapview( x = detectors$grid[ ,"Habitat"],
+         legend = FALSE,
+         layer.name =  "Main detectors",        
+         map.types = c( "OpenStreetMap.DE",
+                        "OpenTopoMap",
+                        "Esri.WorldShadedRelief")) 
+} else {
+mapview( x = detectors$grid[ ,"Habitat"],
+         legend = FALSE,
+         layer.name =  "Main detectors",        
+         map.types = c( "OpenStreetMap.DE",
+                        "OpenTopoMap",
+                        "Esri.WorldShadedRelief"))  +
+  mapview( x = detectors$grid,
+           hide = TRUE,
+           legend = FALSE,
+           alpha.regions = 0.9,
+           zcol = c(covNames))
+}
+
+# 
+# mapview(st_geometry(detectors$grid),
+#         hide = FALSE,
+#         legend = FALSE,
+#         map.types = c( "OpenTopoMap",
+#                        "Esri.WorldShadedRelief",
+#                        "OpenStreetMap.DE"))
 ```
 
 ## Detectors covariates
 
 ```{r, det covs1, echo = FALSE}
-##-- Identify number of detector covariates
-covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Habitat","id", "x","y","geometry")]
+
 
 ##-- Plot layout
 L <- length(covNames)

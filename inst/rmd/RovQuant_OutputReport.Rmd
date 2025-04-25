@@ -1,12 +1,13 @@
 ---
 params:
   species: "bear"
-  years: 2020:2023
+  years: 2012:2024
   date: !r Sys.Date()   
   working.dir: !r getwd()
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
 subtitle : "RovQuant - OPSCR Results"
 output:
+  pdf_document: default
   html_document: 
     theme: "cerulean" 
     toc_depth: 2
@@ -16,7 +17,6 @@ output:
     #css: bootstrap.css
     highlight: zenburn
     #fig_caption: true
-  pdf_document: default
   word_document: default
 ---
 
@@ -71,6 +71,27 @@ COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), 
 ```
 
 ### `r Sys.Date()`
+
+
+# Summary
+
+
+\textbf{Background} The Scandinavian brown bear (\textit{Ursus arctos}) population is monitored annually in Norway using non-invasive genetic sampling (NGS) and recovery of dead individuals. DNA extracted from faeces, urine, hair, and tissue is used to identify the species, sex and individual from which each sample originated. These data are compiled annually in the Scandinavian large carnivore database Rovbase 3.0 (\href{https://www.rovbase.no/}{rovbase.no}, \href{https://www.rovbase.se/}{rovbase.se}).\\
+
+\noindent
+\textbf{Approach} Using the Bayesian open-population spatial capture-recapture (OPSCR) model developed by \href{https://www.nmbu.no/en/research/projects/rovquant}{RovQuant}, we estimated the population dynamics of the Norwegian portion of the Scandinavian brown bear population between 2014 and 2023. We provide annual density maps, as well as estimates of jurisdiction-specific population sizes, cause-specific survival, recruitment, and detection probabilities. Associated uncertainties are reported with all estimates.\\
+
+\noindent
+\textbf{Results} We estimated that, within its primary range (\numprint{180630} km$^2$), the Norwegian brown bear population was likely (95\% credible interval) made up of between 122 and 154 individuals in 2023. Each year, a large proportion of bears detected in Norway can be attributed to neighbouring countries. Specifically, in 2023, between 47 and 63 (95\% credible interval) of the individuals detected in Norway were attributed to neighbouring countries (Sweden = 21 to 32, Finland = 14 to 24, Russia = 6 to 14). The OPSCR results also highlight the ongoing recovery of the brown bear population in Norway, with an overall increase in population size, mostly driven by a comparatively steeper growth in the female portion of the population in recent years.\\
+
+
+```{r, summary figure, fig.align = "center", fig.cap = paste0("Density map and ranges of abundance estimated for ", SPECIES, " in ",  years[length(years)], "."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/UD_DensityMaps_LastYear.png"))
+```
+
+
+
+
 
 # Introduction
 
