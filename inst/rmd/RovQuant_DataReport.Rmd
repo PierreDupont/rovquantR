@@ -82,7 +82,7 @@ load(file.path( working.dir, "data",
 
 ##-- Identify number of habitat covariates
 covNames <- names(habitat$grid)[!names(habitat$grid) %in% c("Habitat","id", "x","y","geometry")]
-
+ L <- length(covnames)
 # ## OPTION 1: Create a list to store the different layers objects
 # map_list <- list()
 # map_list[[1]] <- mapview( x = habitat$grid,
@@ -174,7 +174,7 @@ load(file.path( working.dir, "data",
 
 ##-- Identify number of detector covariates
 covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Habitat","id", "x","y","geometry")]
-
+L <- length(covnames)
 ```
 
 ## Detectors characteristics
