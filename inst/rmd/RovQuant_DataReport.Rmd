@@ -45,6 +45,7 @@ if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, 
 }
 
 ##-- load libraries
+library(dplyr)
 library(kableExtra)
 library(ggplot2)
 library(sf)

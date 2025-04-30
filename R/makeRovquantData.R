@@ -64,7 +64,7 @@ makeRovquantData <- function(
   
   ##-- data
   years = NULL,
-  sex = c("Hann","Hunn"),
+  sex = c("female","male"),
   aug.factor = NULL,
   sampling.months = NULL,
   

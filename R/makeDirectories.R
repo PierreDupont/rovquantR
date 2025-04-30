@@ -28,10 +28,10 @@ makeDirectories <- function( path = NULL,
 
   ##-- Set-up directory structure
   if(two.sex){
-  dir.create( file.path(path, "nimbleInFiles/Hann"), showWarnings = F, recursive = T)
-  dir.create( file.path(path, "nimbleInFiles/Hunn"), showWarnings = F, recursive = T)
-  dir.create( file.path(path, "nimbleOutFiles/Hann"), showWarnings = F, recursive = T)
-  dir.create( file.path(path, "nimbleOutFiles/Hunn"), showWarnings = F, recursive = T)
+  dir.create( file.path(path, "nimbleInFiles/male"), showWarnings = F, recursive = T)
+  dir.create( file.path(path, "nimbleInFiles/female"), showWarnings = F, recursive = T)
+  dir.create( file.path(path, "nimbleOutFiles/male"), showWarnings = F, recursive = T)
+  dir.create( file.path(path, "nimbleOutFiles/female"), showWarnings = F, recursive = T)
   } else {
     dir.create( file.path(path, "nimbleInFiles"), showWarnings = F)
     dir.create( file.path(path, "nimbleOutFiles"), showWarnings = F)  
