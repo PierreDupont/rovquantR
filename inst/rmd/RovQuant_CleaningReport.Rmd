@@ -2,7 +2,7 @@
 params:
   species: "Brown bear"
   years: !r 2012:as.numeric(format(Sys.Date(), "%Y"))
-  sex: !r c("Hunn","Hann")  
+  sex: !r c("female","male")  
   sampling.months: !r 4:11
   rename.list: !r NULL
   dir.in: !r getwd()
@@ -248,7 +248,9 @@ DNA <- suppressWarnings(readMostRecent( path = dir.in,
     ##-- Fix unknown "Id"
     Id = ifelse(Id %in% "", NA, Id),
     ##-- Fix unknown "Sex"
-    Sex = ifelse(Sex %in% "Ukjent", NA, Sex)) %>%
+    Sex = ifelse(Sex %in% "Ukjent", NA, Sex),
+    Sex = ifelse(Sex %in% "Hunn", "female", Sex),
+    Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
   ##-- Filter to the focal years
   filter(., Year %in% years) 
 
@@ -270,7 +272,7 @@ ids <- cbind(ids,
 
 This raw NGS data consists of :
 
--   `r samples["Total","Total"]` DNA samples collected between `r years[1]` and `r years[length(years)]` (`r samples["Hunn","Total"]` female ; `r samples["Hann","Total"]` male).
+-   `r samples["Total","Total"]` DNA samples collected between `r years[1]` and `r years[length(years)]` (`r samples["female","Total"]` female ; `r samples["male","Total"]` male).
 
 ```{r, NGS sample table, echo = F, collapse = TRUE}
 kable(samples, align = "lc",
@@ -278,7 +280,7 @@ kable(samples, align = "lc",
   kable_styling(full_width = F)
 ```
 
--   `r ids["Total","Total"]` individuals identified from those DNA samples (`r ids["Hunn","Total"]` female ; `r ids["Hann","Total"]` male).
+-   `r ids["Total","Total"]` individuals identified from those DNA samples (`r ids["female","Total"]` female ; `r ids["male","Total"]` male).
 
 ```{r, NGS id table data, echo = F, collapse = TRUE}
 kable( ids,
@@ -360,7 +362,7 @@ ids <- cbind(ids,
 
 This dead recovery data consists of :
 
--   `r samples["Total","Total"]` DNA samples collected between `r years[1]` and `r years[length(years)]` (`r samples["Hunn","Total"]` female ; `r samples["Hann","Total"]` male).
+-   `r samples["Total","Total"]` DNA samples collected between `r years[1]` and `r years[length(years)]` (`r samples["female","Total"]` female ; `r samples["male","Total"]` male).
 
 ```{r, DR sample table, echo = F, collapse = TRUE}
 kable( samples,
@@ -370,7 +372,7 @@ kable( samples,
 
 ```
 
--   `r ids["Total","Total"]` individuals identified from those DNA samples (`r ids["Hunn","Total"]` female ; `r ids["Hann","Total"]` male).\
+-   `r ids["Total","Total"]` individuals identified from those DNA samples (`r ids["female","Total"]` female ; `r ids["male","Total"]` male).\
 
 ```{r, DR id table data, echo = F, collapse = TRUE}
 kable( ids,
@@ -467,9 +469,9 @@ for(i in 1:length(ID)){
   tmp <- DATA$Sex[DATA$Id == ID[i]]
   
   ##-- Number of times individual i was assigned to each sex
-  tab <- table(tmp[tmp %in% c("Hunn","Hann")])
+  tab <- table(tmp[tmp %in% c("female","male")])
   
-  ##-- If conflicting sexes (ID identified as both "Hunn" and "Hann")
+  ##-- If conflicting sexes (ID identified as both "female" and "male")
   if(length(tab) == 2){
     ##-- If ID assigned the same number of times to the 2 sexes, assign to Ukjent
     if(tab[1] == tab[2]){
@@ -483,7 +485,7 @@ for(i in 1:length(ID)){
     counter <- counter + 1
   }
   
-  ##-- If only one of "Hunn" or "Hann" registered
+  ##-- If only one of "female" or "male" registered
   if(length(tab) == 1){DATA$Sex[DATA$Id == ID[i]] <- names(tab)}
   
   ##-- If anything else registered : "Ukjent"
@@ -600,8 +602,8 @@ if(engSpecies == "wolf"){
                                           })))
   micke.sex[micke.sex %in% "0"] <- NA
   micke.sex[micke.sex %in% names(table(micke.sex))[3]] <- NA
-  micke.sex[micke.sex %in% "Hona"] <- "Hunn"
-  micke.sex[micke.sex %in% "Hane"] <- "Hann"
+  micke.sex[micke.sex %in% "Hona"] <- "female"
+  micke.sex[micke.sex %in% "Hane"] <- "male"
   new.sex <- ifelse(!is.na(micke.sex), as.character(micke.sex), as.character(DATA$Sex))
   DATA$Sex <- new.sex
   
@@ -832,7 +834,7 @@ We can now start digging in the data, looking for potential issues.
 
 ```{r, multiple sex, echo = F}
 sexTab <- cbind.data.frame(
-  "problems" = c("Unknown sex", "both 'Hunn' and 'Hann'"),
+  "problems" = c("Unknown sex", "both 'female' and 'male'"),
   "number of individuals" = as.numeric(table(doubleSexID)[c(1,3)]))
 
 kable(sexTab, align = "lc") %>%

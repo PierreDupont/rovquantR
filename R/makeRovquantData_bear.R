@@ -63,7 +63,7 @@ makeRovquantData_bear <- function(
   ##-- habitat
   habitat.res = 20000, 
   buffer.size = 50000,
-  max.move.dist = 250000,
+  max.move.dist = 300000,
   
   ##-- detectors
   detector.res = 5000,

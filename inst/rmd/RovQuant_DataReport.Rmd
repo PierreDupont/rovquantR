@@ -2,7 +2,7 @@
 params:
   species: "bear"
   years: !r 2012:as.numeric(format(Sys.Date(), "%Y"))
-  sex: c("Hann","Hunn")
+  sex: !r c("female","male") 
   date: !r Sys.Date()   
   working.dir: !r getwd()
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
@@ -44,10 +44,6 @@ if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, 
   norSpecies <- "Jerv"
 }
 
-# months = c("January","February","March","April","May","June",
-#            "July","August","September","October","November","December")
-
-
 ##-- load libraries
 library(kableExtra)
 library(ggplot2)
@@ -60,7 +56,6 @@ library(rovquantR)
 
 ##-- Load pre-processed habitat shapefiles
 data(COUNTRIESWaterHumans, envir = environment()) 
-
 COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
   dplyr::group_by(ISO) %>%
   dplyr::summarise()
@@ -73,6 +68,7 @@ This document summarizes the data preparation process of the **`r species`** DNA
 
 ------------------------------------------------------------------------
 
+
 # Habitat definition
 
 ```{r, load habitat, echo = FALSE}
@@ -82,50 +78,14 @@ load(file.path( working.dir, "data",
 
 ##-- Identify number of habitat covariates
 covNames <- names(habitat$grid)[!names(habitat$grid) %in% c("Habitat","id", "x","y","geometry")]
- L <- length(covnames)
-# ## OPTION 1: Create a list to store the different layers objects
-# map_list <- list()
-# map_list[[1]] <- mapview( x = habitat$grid,
-#          hide = FALSE,
-#          legend = FALSE,
-#          map.types = c( "OpenStreetMap.DE",
-#                         "OpenTopoMap",
-#                         "Esri.WorldShadedRelief"))
-# 
-# for(c in 1:length(covNames)){
-#   map_list[[c+1]] <- mapview(habitat$grid, zcol = covNames[c], legend = TRUE)
-# }
-# names(map_list) <- c("Habitat", covNames)
-# 
-# 
-# # Combine layers into a single map using Reduce and the + operator
-# combined_map <- Reduce(`+`, map_list) 
-# 
-# # Display the combined map
-# combined_map
-# 
-# 
-# 
-# 
-# map_list <- list()
-# for(c in 1:length(covNames)){
-#   map_list[[c]] <- habitat$grid[ ,covNames[c]]
-# }
-# names(map_list) <- covNames
-# mapview( map_list,
-#          hide = F,
-#          alpha.regions = 0.8,
-#          map.types = c( "OpenStreetMap.DE",
-#                         "OpenTopoMap",
-#                         "Esri.WorldShadedRelief"))
+L <- length(covNames)
 ```
 
+The habitat, sometimes called state-space, describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of `r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^{2}$. The habitat considered in this OPSCR analysis thus covers an area of `r  habitat$n.habwindows * (habitat$resolution/1000)^2` $km^{2}$.
 
-The habitat, sometimes called state-space, describes the space available for the placement of individual activity centers. In the case of the `r species` OPSCR analysis, it is composed of `r  habitat$n.habwindows` habitat grid cells, each of size `r ( habitat$resolution/1000)^2` $km^{2}$.
+In order to better capture the distribution of individual activity centers throughout the landscape, i.e. population density, spatial covariates can be used in the density and movement sub-model of the OPSCR. In the case of the `r species` OPSCR model, `r L` habitat covariates were included in the OPSCR model.
 
-In order to better capture the distribution of individual activity centers throughout the landscape, i.e. population density, spatial covariates can be used in the movement sub-model of the OPSCR. In the case of the `r species` model, `r L` habitat covariates were included in the OPSCR model.
-
-```{r, hab grid, echo = FALSE, fig.align = "center"}
+```{r, hab grid, echo = FALSE, fig.align = "center",fig.cap = "Figure 1: Habitat characteristics}
 if(length(covNames) <= 0){
 mapview( x = habitat$grid[ ,"Habitat"],
          legend = FALSE,
@@ -148,42 +108,32 @@ mapview( x = habitat$grid[ ,"Habitat"],
 }
 ```
 
-
-
-```{r, hab covs2, echo = FALSE}
-# par(mfrow = c(nrows,ncols))
-# for(c in 1:L){     
-#   plot( st_geometry(GLOBALMAP), 
-#         col = "gray80",
-#         border = NA,
-#         main = covNames[c])
-#   plot(habitat$grid[ ,covNames[c]], add=T)
-# }#c
-```
-
 The prepared habitat characteristics are available in : `r file.path(working.dir, "data", paste0("Habitat_", engSpecies, "_", date, ".RData"))`
 
 ------------------------------------------------------------------------
 
+
 # Detectors definition
 
-```{r, det grid, echo = FALSE}
+```{r, load detectors grid, echo = FALSE}
+##-- Load prepared detectors
 load(file.path( working.dir, "data",
                 paste0("Detectors_", engSpecies, "_", date, ".RData")))
 
-
 ##-- Identify number of detector covariates
 covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Habitat","id", "x","y","geometry")]
-L <- length(covnames)
+L <- length(covNames)
 ```
 
-## Detectors characteristics
+The surveyed area, also called detector-space, describes the region that was searched for `r species` DNA samples during non-invasive genetic monitoring. Although the area searched is continuous, it is discretized for practical reasons in the model. In the case of the `r species` OPSCR analysis, we used a grid with `r detectors$resolution/1000` km resolution. 
 
-The surveyed area, also called detector-space, describes the region that was searched for `r species` DNA samples. Although the area searched is continuous, it is discretized for practical reasons in the model. In the case of the `r species` OPSCR analysis, we used a grid with `r detectors$resolution/1000` km resolution. The area surveyed is determined by using a buffer around the DNA samples collected.
+The area surveyed is determined by using a buffer around the DNA samples collected.
 
 It is composed of `r detectors$n.detectors` detector grid cells, each of size `r (detectors$resolution/1000)^2` $km^{2}$ , leading to a total surveyed area of `r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$.
 
-```{r, det grid2, echo = FALSE, fig.align = "center"}
+In order to better capture the variation in detection probability throughout the landscape as a result of e.g. a variation in search effort, spatial covariates can be used in the detection sub-model of the OPSCR. In the case of the `r species` model, `r L` detector covariates were included in the OPSCR model.
+
+```{r, det grid, echo = FALSE, fig.align = "center", fig.cap = "Figure 2: Detector characteristics}
 if(length(covNames) <= 0){
 mapview( x = detectors$grid[ ,"Habitat"],
          legend = FALSE,
@@ -202,41 +152,10 @@ mapview( x = detectors$grid[ ,"Habitat"],
            hide = TRUE,
            legend = FALSE,
            alpha.regions = 0.9,
+           lwd = 0.2,
            zcol = c(covNames))
 }
-
-# 
-# mapview(st_geometry(detectors$grid),
-#         hide = FALSE,
-#         legend = FALSE,
-#         map.types = c( "OpenTopoMap",
-#                        "Esri.WorldShadedRelief",
-#                        "OpenStreetMap.DE"))
 ```
-
-## Detectors covariates
-
-```{r, det covs1, echo = FALSE}
-
-
-##-- Plot layout
-L <- length(covNames)
-ncols <- 3
-nrows <- ceiling(L/ncols)
-```
-
-In order to better capture the variation in detection probability throughout the landscape as a result of e.g. a variation in search effort, spatial covariates can be used in the detection sub-model of the OPSCR. In the case of the `r species` model, `r L` detector covariates were included in the OPSCR model.
-
-```{r, det covs2, echo = FALSE}
-par(mfrow = c(nrows,ncols))
-for(c in 1:L){     
-  plot( st_geometry(GLOBALMAP), 
-        col = "gray80",
-        main = covNames[c])
-  plot(detectors$grid[ ,covNames[c]], border = NA, add=T)
-}#c
-```
-
 
 The prepared detector characteristics are available in : `r file.path(working.dir, "data", paste0("Detectors_", engSpecies, "_", date, ".RData"))`
 
@@ -245,12 +164,20 @@ The prepared detector characteristics are available in : `r file.path(working.di
 
 # Rovbase data
 
-```{r, data, echo = FALSE}
+```{r, data, echo = FALSE, fig.align = "center"}
+fileList <- list.files(file.path(working.dir, "data")) 
+fileName <- fileList[grep(paste0("CleanData_",engSpecies,"_"), fileList)]
+extractDate <- sub("^.*_(.*)\\.RData$", "\\1",  fileName)
+
 load(file.path( working.dir, "data",
                 paste0("FilteredData_", engSpecies, "_", date, ".RData")))
+
 ```
 
-## Non-invasive genetic samples and dead recoveries
+We included data from multiple sources, the primary one being the Scandinavian large carnivore database [RovBase 3.0](https://rovbase.no/)(rovbase.se and rovbase.no; last extraction: `r extractDate`). This database is used jointly by Norway and Sweden to record detailed information associated with large carnivore monitoring, including, but not limited to, non-invasive genetic sampling (NGS) data and dead recoveries. In the following sections, we describe the various types of data used in the analysis. We used data collected during during ten consecutive monitoring seasons from `r years[1]` to `r years[length(years)]`.
+
+
+## Non-invasive genetic samples 
 
 ```{r, ngs data, echo = FALSE, collapse = TRUE}
 
@@ -265,6 +192,27 @@ if(length(dim(numDet_sexYear)) > 1){
   rownames(numDet_sexYear) <- c(sex,"Total")
 }
 
+NGSCountrySEX <- matrix("", ncol = n.years*2, nrow = 4)
+row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")
+colnames(NGSCountrySEX) <- unlist(lapply(years,function(x) c(x,x)))
+NGSCountrySEX[1,] <- rep(c("F","M"),n.years)
+sex1 <- c(0,1)
+ye <- seq(1,n.years*2,by=2)
+for(s in 1:2){
+  for(t in 1:n.years){
+    temp <- ngs[ngs$Year == years[t] & ngs$Sex==sex[s], ]
+    NGSCountrySEX["Norway",ye[t] + sex1[s] ] <- nrow(temp[temp$Country_sf %in% "(N)", ])
+    NGSCountrySEX["Sweden",ye[t] + sex1[s]] <- nrow(temp[temp$Country_sf %in% "(S)", ])
+    NGSCountrySEX["Total",ye[t] + sex1[s]] <- nrow(temp[temp$Country_sf %in% c("(S)","(N)"), ])
+  }#t
+}
+
+
+
+##-- Number of NGS samples collected per country
+percCountry <- table(data.alive$myData.sp$Country_sample)
+percCountry <- round(percCountry[2]/sum(percCountry)*100)
+                   
 
 ##-- Number of individuals detected per sex and per year
 numId_sexYear <- apply(table(ngs$Id,ngs$Sex,ngs$Year) > 0, c(2,3), sum)
@@ -309,82 +257,29 @@ for(i in IDs){
 detDist <- do.call(rbind,detDist)
 ```
 
-A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["Hunn","Total"]` female; `r numDet_sexYear["Hann","Total"]` male) genotyped `r species` non-invasive genetic samples collected between `r years[1]` and `r years[length(years)]` were included in the analysis (\@ref(fig:NGS_maps). These samples were associated with `r numId_sexYear["Total","Total"]` (`r numId_sexYear["Hunn","Total"]` female; `r numId_sexYear["Hann","Total"]` male) individuals.
-
-
-
-```{r, ngs data1, echo = FALSE, collapse = TRUE}
-kable(numDet_sexYear, align = "lc",
-      caption = "Number of non-invasive genetic samples per year and sex") %>%
-  kable_styling(full_width = F)
+```{r, ngs timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", SPECIES, " non-invasive genetic samples collected in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/NGS_TimeSeries.png"))
 ```
 
+A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. . These samples were associated with  `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. We did not include individuals with unknown sex in this analysis.
+
+```{r, ngs data1, echo = FALSE, collapse = TRUE}
+kable(NGSCountrySEX, 
+      align = "lc",
+      caption = paste0("Annual number of non-invasive genetic samples included in the analysis. Numbers are reported by country, for females and males, and for each year. We included only samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
+  kable_styling(full_width = F)
+```
 
 ```{r, ngs data2, echo = FALSE, collapse = TRUE}
 kable(numId_sexYear, align = "lc",
-      caption = "Number of individuals detected through NGS per year and sex") %>%
+      caption = "Number of individuals included in the OPSCR analysis, per year and sex") %>%
   kable_styling(full_width = F)
-
-```
-
-We can also look at the spatial distribution of these samples and individuals:
-
-```{r, ngs data3, echo = FALSE, collapse = TRUE}
-##-- Number of individuals detected 
-ids <- apply(table(data.alive$myData.sp$Country_sample,
-                   data.alive$myData.sp$Year,
-                   data.alive$myData.sp$Id),
-             c(1,2),
-             function(x)sum(x>0))
-ids <- rbind(ids,
-             "Total" = apply(table(data.alive$myData.sp$Year,
-                                   data.alive$myData.sp$Id),
-                             1,
-                             function(x)sum(x>0)))
-ids <- cbind(ids,
-             "Total" = c(apply(table(data.alive$myData.sp$Country_sample,
-                                     data.alive$myData.sp$Id),
-                               1,
-                               function(x)sum(x>0)),
-                         length(unique(data.alive$myData.sp$Id))))
-
-kable(ids, align = "lc",
-      caption = "Number of individuals detected through NGS per country and sex") %>%
-  kable_styling(full_width = F)
-
 ```
 
 
+A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. . These samples were associated with  `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. We did not include individuals with unknown sex in this analysis.
 
-```{r NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
-
-##-- NGS map 
-numRows <- ceiling(length(years)/5)
-numCols <- 5
-NGS_map <- ggplot(data = data.alive$myData.sp) +
-  geom_sf( data = COUNTRIES,
-           aes(fill = ISO),
-           alpha = 0.3,
-           color = NA) +
-  geom_sf( color = "black",
-           alpha = 0.3, size = 0.8, pch = 3) +
-  facet_wrap(~Year, nrow = numRows, ncol = numCols) +
-  theme( axis.line = element_blank(),
-         axis.text.x = element_blank(),
-         axis.text.y = element_blank(),
-         axis.ticks = element_blank(),
-         axis.title.x = element_blank(),
-         axis.title.y = element_blank(),
-         legend.position = "none",
-         panel.background = element_blank(),
-         panel.border = element_blank(),
-         panel.grid.major = element_blank(),
-         panel.grid.minor = element_blank(),
-         plot.background = element_blank())
-NGS_map
-```
-
-```{r, ngs data4, echo = FALSE, collapse = TRUE,fig.height = 6, fig.width = 12}
+```{r, ngs data3, echo = FALSE, collapse = TRUE,  fig.cap = paste0("Figure 4: ", SPECIES, " non-invasive genetic samples collected in Norway between ", years[1], " and ", years[length(years)], "."), fig.height = 6, fig.width = 12}
 ##-- Histogram of number of samples per individual per year
 plot1 <- ggplot(df, aes(x = freq, fill = Sex)) +
   geom_histogram( position = "dodge", 
@@ -420,6 +315,92 @@ plot1 + plot2
 ```
 
 
+
+
+
+## Dead recovery data
+
+
+
+
+We also included 134 bears recovered dead in Norway or at the border area with Sweden in the OPSCR model, of which 115 (28 female; 87 male) were due to legal culling and 19 (7 female; 12 male) due to other causes of mortality. Annual tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis for the period 2014-2023 are provided in the Appendices (NGS samples and individuals: Table A.1, dead recoveries: Table A.2).
+
+
+
+
+We also used 721 (324 female; 397 male) dead recoveries of wolves in the OPSCR model, of which
+601 (267 female; 334 male) were due to legal culling and 120 (57 female; 63 male) due to other
+causes of mortality. The majority of dead recoveries (68%) originated from Sweden. Annual
+total and country-specific tallies of NGS samples and associated individuals, as well as dead
+recoveries included in the analysis are provided in the Appendices (NGS samples: Table A.2
+and Table A.1, NGS individuals: Table A.3, dead recoveries: Table A.4)
+
+
+ During the last sampling period (winter 2023/24), a total of 4 176 (1 953 female; 2 223
+male) were successfully genotyped. Among all genotyped samples, 17 741 (7947 female; 9794
+male) were assigned to structured sampling and 6 555 (2882 female; 3673 male) to unstructured
+sampling. Annual total and country-specific tallies of detections and associated individuals, as
+well as dead recoveries are provided in the appendices (NGS samples: Table A.1, number of
+individuals detected: Table A.2, number of dead recoveries: Table A.3)
+
+
+
+<!-- We can also look at the spatial distribution of these samples and individuals: -->
+
+<!-- ```{r, ngs data3, echo = FALSE, collapse = TRUE} -->
+<!-- ##-- Number of individuals detected  -->
+<!-- ids <- apply(table(data.alive$myData.sp$Country_sample, -->
+<!--                    data.alive$myData.sp$Year, -->
+<!--                    data.alive$myData.sp$Id), -->
+<!--              c(1,2), -->
+<!--              function(x)sum(x>0)) -->
+<!-- ids <- rbind(ids, -->
+<!--              "Total" = apply(table(data.alive$myData.sp$Year, -->
+<!--                                    data.alive$myData.sp$Id), -->
+<!--                              1, -->
+<!--                              function(x)sum(x>0))) -->
+<!-- ids <- cbind(ids, -->
+<!--              "Total" = c(apply(table(data.alive$myData.sp$Country_sample, -->
+<!--                                      data.alive$myData.sp$Id), -->
+<!--                                1, -->
+<!--                                function(x)sum(x>0)), -->
+<!--                          length(unique(data.alive$myData.sp$Id)))) -->
+
+<!-- kable(ids, align = "lc", -->
+<!--       caption = "Number of individuals detected through NGS per country and sex") %>% -->
+<!--   kable_styling(full_width = F) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12} -->
+<!-- # ##-- NGS map  -->
+<!-- # numRows <- ceiling(length(years)/5) -->
+<!-- # numCols <- 5 -->
+<!-- # NGS_map <- ggplot(data = data.alive$myData.sp) + -->
+<!-- #   geom_sf( data = COUNTRIES, -->
+<!-- #            aes(fill = ISO), -->
+<!-- #            alpha = 0.3, -->
+<!-- #            color = NA) + -->
+<!-- #   geom_sf( color = "black", -->
+<!-- #            alpha = 0.3, size = 0.8, pch = 3) + -->
+<!-- #   facet_wrap(~Year, nrow = numRows, ncol = numCols) + -->
+<!-- #   theme( axis.line = element_blank(), -->
+<!-- #          axis.text.x = element_blank(), -->
+<!-- #          axis.text.y = element_blank(), -->
+<!-- #          axis.ticks = element_blank(), -->
+<!-- #          axis.title.x = element_blank(), -->
+<!-- #          axis.title.y = element_blank(), -->
+<!-- #          legend.position = "none", -->
+<!-- #          panel.background = element_blank(), -->
+<!-- #          panel.border = element_blank(), -->
+<!-- #          panel.grid.major = element_blank(), -->
+<!-- #          panel.grid.minor = element_blank(), -->
+<!-- #          plot.background = element_blank()) -->
+<!-- # NGS_map -->
+<!-- ``` -->
+
+
 ## Dead recovery data
 
 ```{r, dead data1, echo = FALSE, collapse = TRUE}
@@ -428,7 +409,7 @@ row.names(Dead_SEX) <- c("","other","other","legal culling","legal culling","")
 colnames(Dead_SEX) <- c("",unlist(lapply(years, function(x) c(x,x))))
 Dead_SEX[1,] <- c("",rep(c("F","M"),n.years))
 Dead_SEX[,1] <- c("","Norway","Sweden","Norway","Sweden","Total")
-sex <- c("Hunn","Hann")
+sex <- c("female","male")
 sex1 <- c(0,1)
 ye <- seq(1,n.years*2, by = 2)
 
