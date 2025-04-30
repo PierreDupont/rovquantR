@@ -267,7 +267,7 @@ makeRovquantData_bear <- function(
     sf::st_intersection(., COUNTIES) %>%
     sf::st_as_sf()
   
-  ##-- Make habitat from predefined scandinavian raster of suitable habitat
+  ##-- Make habitat from predefined Scandinavian raster of suitable habitat
   habitat <- MakeHabitatFromRaster(
     poly = studyArea,
     habitat.r = habRaster,
@@ -639,7 +639,6 @@ makeRovquantData_bear <- function(
   save( detectors,
         file = file.path( working.dir,"data",
                           paste0("Detectors_bear_", DATE, ".RData")))
-
   
   
   
@@ -682,6 +681,7 @@ makeRovquantData_bear <- function(
       radius = detectors$resolution)
 
   
+  
   ## ------     6.3. PLOT NGS and DEAD RECOVERY MAPS ----- 
   
   ##-- layout
@@ -709,14 +709,14 @@ makeRovquantData_bear <- function(
   nf <- graphics::layout(mx,
                          widths = c(rep(1,ncol(mx))),
                          heights = rep(1,2))
-    par(mar = c(0,0,0,0))
+  par(mar = c(0,0,0,0))
   
   for(t in 1:length(years)){
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
     try(
-      plot( sf::st_geometry(data.alive$myData.sp[data.alive$myData.sp$Year == years[t], ]), add = TRUE, col = "firebrick3", pch = 3),
-        silent = TRUE)
+      plot( sf::st_geometry(data.alive$myData.sp[data.alive$myData.sp$Year == years[t], ]), add = TRUE, col = "orange", pch = 3),
+      silent = TRUE)
     plot( sf::st_geometry(COUNTRIES), border = grey(0.4), col = NA, add = TRUE)
     
     ##-- Add year
@@ -725,7 +725,7 @@ makeRovquantData_bear <- function(
           adj = 0.2, cex = 1.2)
   }#t
   dev.off()
-
+  
 
   ##-- Dead recoveries maps
   grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
@@ -747,7 +747,7 @@ makeRovquantData_bear <- function(
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
     try(
-      plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]), add = TRUE, col = "cyan4", pch = 3),
+      plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]), add = TRUE, col = "slateblue", pch = 3),
         silent = TRUE)
     plot( sf::st_geometry(COUNTRIES), border = grey(0.4), col = NA, add = TRUE)
     
