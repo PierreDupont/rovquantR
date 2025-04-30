@@ -56,7 +56,7 @@ makeRovquantData_bear <- function(
   
   ##-- data
   years = NULL,
-  sex = c("Hann","Hunn"),
+  sex = c("female","male"),
   aug.factor = 2,
   sampling.months = list(c(4,5,6,7,8,9,10,11)),
   
@@ -682,7 +682,83 @@ makeRovquantData_bear <- function(
       radius = detectors$resolution)
 
   
+  ## ------     6.3. PLOT NGS and DEAD RECOVERY MAPS ----- 
   
+  ##-- layout
+  L <- n.years
+  if(L < 6){ nrows <- 1 } else{
+    if(L < 13){ nrows <- 2 } else {
+      if(L < 22){ nrows <- 3 } else {
+        if(L < 33){ nrows <- 4 } else {
+          nrows <- 5
+        }}}}
+  ncols <- ceiling(L/nrows)
+  
+  
+  ##-- NGS maps
+  grDevices::png(filename = file.path(working.dir, "figures/NGS_TimeSeries.png"),
+                 width = ncols*2, height = nrows*4,
+                 units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  ##-- layout
+  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  for(r in 1:nrows){
+    mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
+    mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
+  }#r
+  nf <- graphics::layout(mx,
+                         widths = c(rep(1,ncol(mx))),
+                         heights = rep(1,2))
+    par(mar = c(0,0,0,0))
+  
+  for(t in 1:length(years)){
+    ##-- Plot maps
+    plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
+    try(
+      plot( sf::st_geometry(data.alive$myData.sp[data.alive$myData.sp$Year == years[t], ]), add = TRUE, col = "firebrick3", pch = 3),
+        silent = TRUE)
+    plot( sf::st_geometry(COUNTRIES), border = grey(0.4), col = NA, add = TRUE)
+    
+    ##-- Add year
+    mtext(text = years[t],
+          side = 1, line =  -20,
+          adj = 0.2, cex = 1.2)
+  }#t
+  dev.off()
+
+
+  ##-- Dead recoveries maps
+  grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
+                 width = ncols*2, height = nrows*4,
+                 units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  ##-- layout
+  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  for(r in 1:nrows){
+    mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
+    mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
+  }#r
+  nf <- graphics::layout(mx,
+                         widths = c(rep(1,ncol(mx))),
+                         heights = rep(1,2))
+  par(mar = c(0,0,0,0))
+  
+  for(t in 1:length(years)){
+    ##-- Plot maps
+    plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
+    try(
+      plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]), add = TRUE, col = "cyan4", pch = 3),
+        silent = TRUE)
+    plot( sf::st_geometry(COUNTRIES), border = grey(0.4), col = NA, add = TRUE)
+    
+    ##-- Add year
+    mtext(text = years[t],
+          side = 1, line =  -20,
+          adj = 0.2, cex = 1.2)
+  }#t
+  dev.off()
+  
+
   ## ------     6.3. SAVE FILTERED DATA ----- 
 
   save( data.alive, data.dead,

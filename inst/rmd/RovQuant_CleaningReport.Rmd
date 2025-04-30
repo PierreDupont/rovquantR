@@ -336,7 +336,9 @@ DR <- suppressWarnings(readMostRecent( path = dir.in,
     ##-- Fix unknown "Id"
     Id = ifelse(Id %in% "", NA, Id),
     ##-- Fix unknown "Sex"
-    Sex = ifelse(Sex %in% "Ukjent", NA, Sex)) %>%
+    Sex = ifelse(Sex %in% "Ukjent", NA, Sex),
+    Sex = ifelse(Sex %in% "Hunn", "female", Sex),
+    Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
   ##-- Filter to the focal years
   filter(., Year %in% years) 
 

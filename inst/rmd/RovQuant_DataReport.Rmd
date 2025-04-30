@@ -85,7 +85,7 @@ The habitat, sometimes called state-space, describes the space available for the
 
 In order to better capture the distribution of individual activity centers throughout the landscape, i.e. population density, spatial covariates can be used in the density and movement sub-model of the OPSCR. In the case of the `r species` OPSCR model, `r L` habitat covariates were included in the OPSCR model.
 
-```{r, hab grid, echo = FALSE, fig.align = "center",fig.cap = "Figure 1: Habitat characteristics}
+```{r, hab grid, echo = FALSE, fig.align = "center",fig.cap = "Figure 1: Habitat characteristics"}
 if(length(covNames) <= 0){
 mapview( x = habitat$grid[ ,"Habitat"],
          legend = FALSE,
@@ -133,7 +133,7 @@ It is composed of `r detectors$n.detectors` detector grid cells, each of size `r
 
 In order to better capture the variation in detection probability throughout the landscape as a result of e.g. a variation in search effort, spatial covariates can be used in the detection sub-model of the OPSCR. In the case of the `r species` model, `r L` detector covariates were included in the OPSCR model.
 
-```{r, det grid, echo = FALSE, fig.align = "center", fig.cap = "Figure 2: Detector characteristics}
+```{r, det grid, echo = FALSE, fig.align = "center", fig.cap = "Figure 2: Detector characteristics"}
 if(length(covNames) <= 0){
 mapview( x = detectors$grid[ ,"Habitat"],
          legend = FALSE,
@@ -477,6 +477,9 @@ We also included `r numDead` (`r numDead_F` female; `r numDead_M` male) `r speci
 
 <!-- Annual tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis for the period 2014-2023 are provided in the Appendices (NGS samples and individuals: \autoref{tab:NGSbear}, dead recoveries: \autoref{tab:Deadbear}). -->
 
+```{r, dead timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", SPECIES, " dead recoveries reported in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/DEAD_TimeSeries.png"))
+```
 
 ```{r, dead data2, echo = FALSE, collapse = TRUE}
 thisCap <- as.character("Number of cause-specific dead recoveries included in the OPSCR analysis. Numbers are reported by country, for females (F) and males (M). Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.")
