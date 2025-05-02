@@ -237,25 +237,31 @@ mu <- summarize( df,
                  .by = Sex)
 
 
-##-- Distance between detections per id and year 
+##-- Distance between the centroid and all detections per id and year 
 IDs <- unique(ngs$Id)
 detDist <- list()
 for(i in IDs){
   tmp1 <- ngs[ngs$Id %in% i, ]
   tmp.list <- list()
   for(t in 1:n.years){
-    tmp <- tmp1[tmp1$Year %in% years[t], ]
+    tmp <- st_coordinates(tmp1[tmp1$Year %in% years[t], ])
     if(nrow(tmp)>1){
-          tmp.list[[t]] <- as.numeric(st_distance(tmp))
-    }
+      mean.tmp <- colMeans(tmp)
+      tmp.list[[t]] <- sqrt((tmp[,1]-mean.tmp[1])^2 + (tmp[,2]-mean.tmp[2])^2)/1000
+    }#if
   }#t
   thisDist <- unlist(tmp.list)
   detDist[[i]] <- cbind.data.frame(
-    id = rep(i,length(thisDist)),
+    id = rep(unique(tmp1$Id),length(thisDist)),
     sex = rep(unique(tmp1$Sex),length(thisDist)),
     dist = thisDist)
 }#i
 detDist <- do.call(rbind,detDist)
+
+meanDist <- summarize( detDist, 
+                       mean = mean(dist),
+                       max = max(dist),
+                       .by = sex)
 ```
 
 ```{r, ngs timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " non-invasive genetic samples collected in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
@@ -265,22 +271,25 @@ knitr::include_graphics(file.path(working.dir, "figures/NGS_TimeSeries.png"))
 A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. . These samples were associated with  `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. We did not include individuals with unknown sex in this analysis.
 
 ```{r, ngs data1, echo = FALSE, collapse = TRUE}
-kable(NGSCountrySEX, 
-      align = "lc",
-      caption = paste0("Annual number of non-invasive genetic samples included in the analysis. Numbers are reported by country, for females and males, and for each year. We included only samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
+kable( NGSCountrySEX, 
+       align = "lc",
+       caption = paste0("Annual number of non-invasive genetic samples included in the analysis. Numbers are reported by country, for females and males, and for each year. We included only samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
   kable_styling(full_width = F)
 ```
+
 
 ```{r, ngs data2, echo = FALSE, collapse = TRUE}
-kable(numId_sexYear, align = "lc",
-      caption = "Number of individuals included in the OPSCR analysis, per year and sex") %>%
+kable( numId_sexYear,
+       align = "lc",
+      caption = paste0("Annual number of individual ",species,"  detected via non-invasive genetic sampling and included in the analysis. Numbers are reported by country, for females and males, and for each year.We included only individuals associated with samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Some individuals were detected in both countries during the same year, hence the sum of the national counts can exceed the total number of unique individuals detected in Scandinavia.")) %>%
   kable_styling(full_width = F)
 ```
 
+The number of detections per individual varied from 1 to `r max(df$freq)`, with a mean number of NGS detections of `r mu$grp.mean[1]` for females and `r mu$grp.mean[2]` for males.
 
-A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. . These samples were associated with  `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. We did not include individuals with unknown sex in this analysis.
+The distances to the centroid of an individual's detections each year were on average `r meanDist$mean[1]`km and  `r meanDist$mean[2]`km for females and males, respectively. The corresponding maximum distances were `r meanDist$max[1]`km and  `r meanDist$max[2]`km for females and males, respectively.
 
-```{r, ngs data3, echo = FALSE, collapse = TRUE,  fig.cap = paste0("Figure 4: ", species, " non-invasive genetic samples collected in Norway between ", years[1], " and ", years[length(years)], "."), fig.height = 6, fig.width = 12}
+```{r, ngs data3, echo = FALSE, collapse = TRUE,  fig.cap = paste0("Figure 4: A) Number of ", species, " NGS detections, and B) distance to the centroid of an individual's detections, per individual, year and sex. Colored dash lines represent the mean for each sex."), fig.height = 6, fig.width = 12}
 ##-- Histogram of number of samples per individual per year
 plot1 <- ggplot(df, aes(x = freq, fill = Sex)) +
   geom_histogram( position = "dodge", 
@@ -295,19 +304,15 @@ plot1 <- ggplot(df, aes(x = freq, fill = Sex)) +
   theme(legend.position = 'none')
 
 
-##-- Histogram of distances between detections in a year
-meanDist <- summarize( detDist, 
-                       grp.mean = mean(dist),
-                       .by = sex)
-
+##-- Histogram of distances between the centroid and all detections in a year
 plot2 <- ggplot(detDist, aes(x = dist, fill = sex)) +
   geom_histogram( position = "dodge", 
-                  alpha = 0.9, binwidth = 1000) +
+                  alpha = 0.9, binwidth = 1) +
   geom_vline( data = meanDist,
-              aes( xintercept = grp.mean, color = sex),
+              aes( xintercept = mean, color = sex),
               linetype = "dashed") +
   labs( tag = "B",
-        x = "Pairwise distance between detections (m)",
+        x = "Distance to the detection centroid (km)",
         y = "Number of individuals") +
   theme_classic()
 
@@ -315,91 +320,6 @@ plot2 <- ggplot(detDist, aes(x = dist, fill = sex)) +
 plot1 + plot2
 ```
 
-
-
-
-
-## Dead recovery data
-
-
-
-
-We also included 134 bears recovered dead in Norway or at the border area with Sweden in the OPSCR model, of which 115 (28 female; 87 male) were due to legal culling and 19 (7 female; 12 male) due to other causes of mortality. Annual tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis for the period 2014-2023 are provided in the Appendices (NGS samples and individuals: Table A.1, dead recoveries: Table A.2).
-
-
-
-
-We also used 721 (324 female; 397 male) dead recoveries of wolves in the OPSCR model, of which
-601 (267 female; 334 male) were due to legal culling and 120 (57 female; 63 male) due to other
-causes of mortality. The majority of dead recoveries (68%) originated from Sweden. Annual
-total and country-specific tallies of NGS samples and associated individuals, as well as dead
-recoveries included in the analysis are provided in the Appendices (NGS samples: Table A.2
-and Table A.1, NGS individuals: Table A.3, dead recoveries: Table A.4)
-
-
- During the last sampling period (winter 2023/24), a total of 4 176 (1 953 female; 2 223
-male) were successfully genotyped. Among all genotyped samples, 17 741 (7947 female; 9794
-male) were assigned to structured sampling and 6 555 (2882 female; 3673 male) to unstructured
-sampling. Annual total and country-specific tallies of detections and associated individuals, as
-well as dead recoveries are provided in the appendices (NGS samples: Table A.1, number of
-individuals detected: Table A.2, number of dead recoveries: Table A.3)
-
-
-
-<!-- We can also look at the spatial distribution of these samples and individuals: -->
-
-<!-- ```{r, ngs data3, echo = FALSE, collapse = TRUE} -->
-<!-- ##-- Number of individuals detected  -->
-<!-- ids <- apply(table(data.alive$myData.sp$Country_sample, -->
-<!--                    data.alive$myData.sp$Year, -->
-<!--                    data.alive$myData.sp$Id), -->
-<!--              c(1,2), -->
-<!--              function(x)sum(x>0)) -->
-<!-- ids <- rbind(ids, -->
-<!--              "Total" = apply(table(data.alive$myData.sp$Year, -->
-<!--                                    data.alive$myData.sp$Id), -->
-<!--                              1, -->
-<!--                              function(x)sum(x>0))) -->
-<!-- ids <- cbind(ids, -->
-<!--              "Total" = c(apply(table(data.alive$myData.sp$Country_sample, -->
-<!--                                      data.alive$myData.sp$Id), -->
-<!--                                1, -->
-<!--                                function(x)sum(x>0)), -->
-<!--                          length(unique(data.alive$myData.sp$Id)))) -->
-
-<!-- kable(ids, align = "lc", -->
-<!--       caption = "Number of individuals detected through NGS per country and sex") %>% -->
-<!--   kable_styling(full_width = F) -->
-
-<!-- ``` -->
-
-
-<!-- ```{r NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12} -->
-<!-- # ##-- NGS map  -->
-<!-- # numRows <- ceiling(length(years)/5) -->
-<!-- # numCols <- 5 -->
-<!-- # NGS_map <- ggplot(data = data.alive$myData.sp) + -->
-<!-- #   geom_sf( data = COUNTRIES, -->
-<!-- #            aes(fill = ISO), -->
-<!-- #            alpha = 0.3, -->
-<!-- #            color = NA) + -->
-<!-- #   geom_sf( color = "black", -->
-<!-- #            alpha = 0.3, size = 0.8, pch = 3) + -->
-<!-- #   facet_wrap(~Year, nrow = numRows, ncol = numCols) + -->
-<!-- #   theme( axis.line = element_blank(), -->
-<!-- #          axis.text.x = element_blank(), -->
-<!-- #          axis.text.y = element_blank(), -->
-<!-- #          axis.ticks = element_blank(), -->
-<!-- #          axis.title.x = element_blank(), -->
-<!-- #          axis.title.y = element_blank(), -->
-<!-- #          legend.position = "none", -->
-<!-- #          panel.background = element_blank(), -->
-<!-- #          panel.border = element_blank(), -->
-<!-- #          panel.grid.major = element_blank(), -->
-<!-- #          panel.grid.minor = element_blank(), -->
-<!-- #          plot.background = element_blank()) -->
-<!-- # NGS_map -->
-<!-- ``` -->
 
 
 ## Dead recovery data
@@ -476,9 +396,8 @@ numDead_M <- numLegal_M + numOther_M
 
 We also included `r numDead` (`r numDead_F` female; `r numDead_M` male) `r species` recovered dead in the OPSCR model, of which `r numLegal` (`r numLegal_F` female; `r numLegal_M`  male) were due to legal culling and `r numOther`  (`r numOther_F`  female; `r numOther_M`  male) due to other causes of mortality. 
 
-<!-- Annual tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis for the period 2014-2023 are provided in the Appendices (NGS samples and individuals: \autoref{tab:NGSbear}, dead recoveries: \autoref{tab:Deadbear}). -->
 
-```{r, dead timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " dead recoveries reported in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+```{r, dead timeSeries, fig.align = "center", fig.cap = paste0("Figure 5: ", species, " dead recoveries reported in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/DEAD_TimeSeries.png"))
 ```
 
@@ -492,30 +411,30 @@ kable( Dead_SEX,
   kable_styling(full_width = F)
 ```
 
-We can also plot the distribution of those dead recoveries each year:
+<!-- We can also plot the distribution of those dead recoveries each year: -->
 
-```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12}
-dead_map <- ggplot(data = data.dead) +
-  geom_sf(data = COUNTRIES, 
-          aes(fill = ISO),
-          alpha = 0.3,
-          color = NA) + 
-  geom_sf(color = "black", alpha = 0.5, size = 0.8, pch = 3) +
-  facet_wrap(~Year, nrow = numRows, ncol = numCols) +
-  theme(axis.line = element_blank(),
-        axis.text.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks = element_blank(),
-        axis.title.x = element_blank(),
-        axis.title.y = element_blank(),
-        legend.position = "none",
-        panel.background = element_blank(),
-        panel.border = element_blank(),
-        panel.grid.major = element_blank(),
-        panel.grid.minor = element_blank(),
-        plot.background = element_blank())
-dead_map
-```
+<!-- ```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12} -->
+<!-- dead_map <- ggplot(data = data.dead) + -->
+<!--   geom_sf(data = COUNTRIES,  -->
+<!--           aes(fill = ISO), -->
+<!--           alpha = 0.3, -->
+<!--           color = NA) +  -->
+<!--   geom_sf(color = "black", alpha = 0.5, size = 0.8, pch = 3) + -->
+<!--   facet_wrap(~Year, nrow = numRows, ncol = numCols) + -->
+<!--   theme(axis.line = element_blank(), -->
+<!--         axis.text.x = element_blank(), -->
+<!--         axis.text.y = element_blank(), -->
+<!--         axis.ticks = element_blank(), -->
+<!--         axis.title.x = element_blank(), -->
+<!--         axis.title.y = element_blank(), -->
+<!--         legend.position = "none", -->
+<!--         panel.background = element_blank(), -->
+<!--         panel.border = element_blank(), -->
+<!--         panel.grid.major = element_blank(), -->
+<!--         panel.grid.minor = element_blank(), -->
+<!--         plot.background = element_blank()) -->
+<!-- dead_map -->
+<!-- ``` -->
 
 <!-- ------------------------------------------------------------------------ -->
 <!-- # Individual detection histories -->
@@ -548,3 +467,84 @@ dead_map
 ```{r, metadata, echo = F}
 utils::sessionInfo()
 ```
+
+
+
+
+
+<!-- ## Dead recovery data -->
+
+
+<!-- We also included 134 bears recovered dead in Norway or at the border area with Sweden in the OPSCR model, of which 115 (28 female; 87 male) were due to legal culling and 19 (7 female; 12 male) due to other causes of mortality. Annual tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis for the period 2014-2023 are provided in the Appendices (NGS samples and individuals: Table A.1, dead recoveries: Table A.2). -->
+
+
+<!-- We also used 721 (324 female; 397 male) dead recoveries of wolves in the OPSCR model, of which -->
+<!-- 601 (267 female; 334 male) were due to legal culling and 120 (57 female; 63 male) due to other -->
+<!-- causes of mortality. The majority of dead recoveries (68%) originated from Sweden. Annual -->
+<!-- total and country-specific tallies of NGS samples and associated individuals, as well as dead -->
+<!-- recoveries included in the analysis are provided in the Appendices (NGS samples: Table A.2 -->
+<!-- and Table A.1, NGS individuals: Table A.3, dead recoveries: Table A.4) -->
+
+
+<!-- During the last sampling period (winter 2023/24), a total of 4 176 (1 953 female; 2 223 -->
+<!-- male) were successfully genotyped. Among all genotyped samples, 17 741 (7947 female; 9794 -->
+<!-- male) were assigned to structured sampling and 6 555 (2882 female; 3673 male) to unstructured -->
+<!-- sampling. Annual total and country-specific tallies of detections and associated individuals, as -->
+<!-- well as dead recoveries are provided in the appendices (NGS samples: Table A.1, number of -->
+<!-- individuals detected: Table A.2, number of dead recoveries: Table A.3) -->
+
+
+<!-- <!-- We can also look at the spatial distribution of these samples and individuals: --> -->
+
+<!-- ```{r, ngs data3, echo = FALSE, collapse = TRUE} -->
+<!-- ##-- Number of individuals detected  -->
+<!-- ids <- apply(table(data.alive$myData.sp$Country_sample, -->
+<!--                    data.alive$myData.sp$Year, -->
+<!--                    data.alive$myData.sp$Id), -->
+<!--              c(1,2), -->
+<!--              function(x)sum(x>0)) -->
+<!-- ids <- rbind(ids, -->
+<!--              "Total" = apply(table(data.alive$myData.sp$Year, -->
+<!--                                    data.alive$myData.sp$Id), -->
+<!--                              1, -->
+<!--                              function(x)sum(x>0))) -->
+<!-- ids <- cbind(ids, -->
+<!--              "Total" = c(apply(table(data.alive$myData.sp$Country_sample, -->
+<!--                                      data.alive$myData.sp$Id), -->
+<!--                                1, -->
+<!--                                function(x)sum(x>0)), -->
+<!--                          length(unique(data.alive$myData.sp$Id)))) -->
+
+<!-- kable(ids, align = "lc", -->
+<!--       caption = "Number of individuals detected through NGS per country and sex") %>% -->
+<!--   kable_styling(full_width = F) -->
+
+<!-- ``` -->
+
+
+<!-- ```{r NGS_maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12} -->
+<!-- # ##-- NGS map  -->
+<!-- # numRows <- ceiling(length(years)/5) -->
+<!-- # numCols <- 5 -->
+<!-- # NGS_map <- ggplot(data = data.alive$myData.sp) + -->
+<!-- #   geom_sf( data = COUNTRIES, -->
+<!-- #            aes(fill = ISO), -->
+<!-- #            alpha = 0.3, -->
+<!-- #            color = NA) + -->
+<!-- #   geom_sf( color = "black", -->
+<!-- #            alpha = 0.3, size = 0.8, pch = 3) + -->
+<!-- #   facet_wrap(~Year, nrow = numRows, ncol = numCols) + -->
+<!-- #   theme( axis.line = element_blank(), -->
+<!-- #          axis.text.x = element_blank(), -->
+<!-- #          axis.text.y = element_blank(), -->
+<!-- #          axis.ticks = element_blank(), -->
+<!-- #          axis.title.x = element_blank(), -->
+<!-- #          axis.title.y = element_blank(), -->
+<!-- #          legend.position = "none", -->
+<!-- #          panel.background = element_blank(), -->
+<!-- #          panel.border = element_blank(), -->
+<!-- #          panel.grid.major = element_blank(), -->
+<!-- #          panel.grid.minor = element_blank(), -->
+<!-- #          plot.background = element_blank()) -->
+<!-- # NGS_map -->
+<!-- ``` -->
