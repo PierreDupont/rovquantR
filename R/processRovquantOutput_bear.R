@@ -465,7 +465,7 @@ processRovquantOutput_bear <- function(
   axis(1, at = c(1:n.years), labels = years, cex.axis = 1.6)
   axis(2, at = seq(0,170,20), labels = seq(0,170,20), cex.axis = 1.6)
   abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,170, by = 10), lty = 2, col = "gray60")
+  abline(h = seq(0,170, by = 10), lty = 2, col = "gray90")
   
   for(t in 1:n.years){
     ##-- FEMALES

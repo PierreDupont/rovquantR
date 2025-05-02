@@ -35,17 +35,17 @@ date <- params$date
 if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
   engSpecies <- "bear"
   norSpecies <- "Bjørn"
-  SPECIES <- "Brown bear"
+  species <- "Brown bear"
 }
 if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
   engSpecies <- "wolf"
   norSpecies <- "Ulv"
-  SPECIES <- "Gray wolf"
+  species <- "Gray wolf"
 }
 if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
   engSpecies <- "wolverine"
   norSpecies <- "Jerv"
-  SPECIES <- "Wolverine"
+  species <- "Wolverine"
 }
 
 months = c("January","February","March","April","May","June",
@@ -85,7 +85,7 @@ COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), 
 \textbf{Results} We estimated that, within its primary range (\numprint{180630} km$^2$), the Norwegian brown bear population was likely (95\% credible interval) made up of between 122 and 154 individuals in 2023. Each year, a large proportion of bears detected in Norway can be attributed to neighbouring countries. Specifically, in 2023, between 47 and 63 (95\% credible interval) of the individuals detected in Norway were attributed to neighbouring countries (Sweden = 21 to 32, Finland = 14 to 24, Russia = 6 to 14). The OPSCR results also highlight the ongoing recovery of the brown bear population in Norway, with an overall increase in population size, mostly driven by a comparatively steeper growth in the female portion of the population in recent years.\\
 
 
-```{r, summary figure, fig.align = "center", fig.cap = paste0("Density map and ranges of abundance estimated for ", SPECIES, " in ",  years[length(years)], "."), echo = FALSE}
+```{r, summary figure, fig.align = "center", fig.cap = paste0("Density map and ranges of abundance estimated for ", species, " in ",  years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_DensityMaps_LastYear.png"))
 ```
 
@@ -147,13 +147,13 @@ knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png
 
 The OPSCR model also produces population density maps. In `r years[length(years)]`, the population density of `r species`
 
-```{r, density lastYear, fig.align = "center", fig.cap = paste0("Figure 2: ", SPECIES, " density in Norway in ", years[length(years)], ". Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between ", years[1], " and ", years[length(years)],"."), echo = FALSE}
+```{r, density lastYear, fig.align = "center", fig.cap = paste0("Figure 2: ", species, " density in Norway in ", years[length(years)], ". Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between ", years[1], " and ", years[length(years)],"."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
 ```
 
 The OPSCR model also produces population density maps. In `r years[length(years)]`, the population density of `r species`
 
-```{r, density timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", SPECIES, " density in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+```{r, density timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " density in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
 ```
 
