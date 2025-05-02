@@ -258,7 +258,7 @@ for(i in IDs){
 detDist <- do.call(rbind,detDist)
 ```
 
-```{r, ngs timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", SPECIES, " non-invasive genetic samples collected in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+```{r, ngs timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " non-invasive genetic samples collected in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/NGS_TimeSeries.png"))
 ```
 
@@ -280,7 +280,7 @@ kable(numId_sexYear, align = "lc",
 
 A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. . These samples were associated with  `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. We did not include individuals with unknown sex in this analysis.
 
-```{r, ngs data3, echo = FALSE, collapse = TRUE,  fig.cap = paste0("Figure 4: ", SPECIES, " non-invasive genetic samples collected in Norway between ", years[1], " and ", years[length(years)], "."), fig.height = 6, fig.width = 12}
+```{r, ngs data3, echo = FALSE, collapse = TRUE,  fig.cap = paste0("Figure 4: ", species, " non-invasive genetic samples collected in Norway between ", years[1], " and ", years[length(years)], "."), fig.height = 6, fig.width = 12}
 ##-- Histogram of number of samples per individual per year
 plot1 <- ggplot(df, aes(x = freq, fill = Sex)) +
   geom_histogram( position = "dodge", 
@@ -478,7 +478,7 @@ We also included `r numDead` (`r numDead_F` female; `r numDead_M` male) `r speci
 
 <!-- Annual tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis for the period 2014-2023 are provided in the Appendices (NGS samples and individuals: \autoref{tab:NGSbear}, dead recoveries: \autoref{tab:Deadbear}). -->
 
-```{r, dead timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", SPECIES, " dead recoveries reported in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+```{r, dead timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " dead recoveries reported in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/DEAD_TimeSeries.png"))
 ```
 
