@@ -59,11 +59,12 @@ cleanRovbaseData <- function(
   ##-- data
   species = c("bear","wolf","wolverine"),
   years = NULL, 
-  sex = c("Hunn","Hann"),
+  sex = c("female","male"),
   sampling.months = NULL,
   rename.list = NULL,
   
   ##-- miscellanious
+  print.report = TRUE, 
   Rmd.template = NULL,
   overwrite = FALSE,
   output.dir = NULL
@@ -73,25 +74,25 @@ cleanRovbaseData <- function(
   
   ##-- Make sure subfolders exist
   makeDirectories( path = working.dir,
-                   two.sex = length(sex)>1,
+                   subFolders = sex,
                    show.dir = TRUE)
   
   
   ##-- Species
   if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjørn", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
+    SPECIES <- "Brown bear"
     engSpecies <- "bear"
     norSpecies <- "Bjørn"
-    SPECIES <- "Brown bear"
   } else {
     if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
+      SPECIES <- "Gray wolf"
       engSpecies <- "wolf"
       norSpecies <- "Ulv"
-      SPECIES <- "Wolf"
     } else {
       if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
+        SPECIES <- "Wolverine"
         engSpecies <- "wolverine"
         norSpecies <- "Jerv"
-        SPECIES <- "Wolverine"
       } else {
        engSpecies <- norSpecies <- SPECIES <- species 
       }
@@ -163,7 +164,7 @@ cleanRovbaseData <- function(
   ##-- Render .Rmd report
   rmarkdown::render(
     input = Rmd.template,
-    params = list( species = SPECIES, 
+    params = list( species = species, 
                    years = years,
                    sampling.months = sampling.months,
                    rename.list = rename.list,

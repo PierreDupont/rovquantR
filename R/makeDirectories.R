@@ -4,34 +4,34 @@
 #' data for hte OPSCR ROvQuant analysis. 
 #' 
 #' @param path A path indicating where to create the different folders.
-#' @param twoSex A \code{logical}. If TRUE, sex-specific folders are created for the female and male inputs and outputs files, respectively.
-#'  
-#' @return boolean invisible(FALSE) if nothing was created, invisible(TRUE) if folders were created in \emph{path}.
+#' @param subFolders A \code{character vector} with the names of the subfolders to be created for the nimble input and output files.
+#' @param show.dir A \code{logical}. (Optional; requires package ´sf´) If TRUE, the directory structure created is displayed in a tree-like format.
 #'
-#' @importFrom fs dir_tree
+#' @return boolean invisible(FALSE) if nothing was created, invisible(TRUE) if folders were created in \emph{path}.
 #' 
 #' @examples \dontrun{makeDirectories()}
 #' 
 #' @rdname makeDirectories
 #' @export
 makeDirectories <- function( path = NULL,
-                             two.sex = T,
-                             show.dir){
+                             subFolders = NULL,
+                             show.dir = TRUE){
   ##-- Check if the directory already exists 
-  if(is.null(path)){path <- getwd()}
-  
-  if(dir.exists(path)){
+  if (is.null(path)) {path <- getwd()}
+  if (dir.exists(path)) {
     split <- unlist(strsplit(path, split = "/"))
     message(paste0("A folder named '", split[length(split)], "' already exists in the specified directory:"))
     message(paste(split[-length(split)], collapse = "/"))
     } 
 
   ##-- Set-up directory structure
-  if(two.sex){
-  dir.create( file.path(path, "nimbleInFiles/male"), showWarnings = F, recursive = T)
-  dir.create( file.path(path, "nimbleInFiles/female"), showWarnings = F, recursive = T)
-  dir.create( file.path(path, "nimbleOutFiles/male"), showWarnings = F, recursive = T)
-  dir.create( file.path(path, "nimbleOutFiles/female"), showWarnings = F, recursive = T)
+  if (!is.null(subFolders)) {
+   for (f in subFolders) {
+     dir.create( file.path(path, "nimbleInFiles", f), showWarnings = F, recursive = T)
+     dir.create( file.path(path, "nimbleInFiles", f), showWarnings = F, recursive = T)
+     dir.create( file.path(path, "nimbleOutFiles", f), showWarnings = F, recursive = T)
+     dir.create( file.path(path, "nimbleOutFiles", f), showWarnings = F, recursive = T)
+   }#f
   } else {
     dir.create( file.path(path, "nimbleInFiles"), showWarnings = F)
     dir.create( file.path(path, "nimbleOutFiles"), showWarnings = F)  
@@ -43,8 +43,12 @@ makeDirectories <- function( path = NULL,
   dir.create( file.path(path, "reports"), showWarnings = F)
   
   ##-- Display contents of directories in a tree-like format
-  if(show.dir){
+  if (show.dir) {
+    if (requireNamespace("fs", quietly = TRUE)) {
     message("\n The following directory  structure was created for this analysis:\n")
     fs::dir_tree(path)
+    } else {
+      warning("The ´fs´ package must be installed to use this functionality.")
+    }
   }
 }

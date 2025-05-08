@@ -43,14 +43,17 @@ dir.out <- params$dir.out
 
 ##-- Species
 if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjørn", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
-  engSpecies <- "bear"
+  species <- "bear"
+  engSpecies <- "Brown bear"
   norSpecies <- c("Bjørn", "BjÃ¸rn")
 } else {
   if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
-    engSpecies <- "wolf"
+    species <- "wolf"
+    engSpecies <- "Gray wolf"
     norSpecies <- "Ulv"
   } else {
     if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
+      species <- "wolverine"
       engSpecies <- "wolverine"
       norSpecies <- "Jerv"
     } else {
@@ -220,70 +223,78 @@ The first steps of the cleaning process consist in :
 
 The most recent file containing raw NGS data is:
 ```{r, NGS data, echo = F, collapse = TRUE}
-DNA <- suppressWarnings(readMostRecent( path = dir.in,
-                                        extension = ".xls",
-                                        pattern = "DNA")) %>%
-  ##-- Rename columns to facilitate manipulation
-  rename(., any_of(rename.list)) %>%
-  ##-- Filter to the focal species
-  filter(., Species %in% norSpecies) %>%
-  ##-- Remove any duplicates
-  distinct(., .keep_all = TRUE) %>%
-  ##-- Add some columns
-  dplyr::mutate( 
-    ##-- Add "Country" column
-    Country_sample = substrRight(County, 3),
-    ##-- Change date format
-    Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
-    ##-- Extract year
-    Year = as.numeric(format(Date,"%Y")),
-    ##-- Extract month
-    Month = as.numeric(format(Date,"%m")),
-    ##-- Extract sampling season
-    ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
-    ##-- Set all months in given sampling period to the same year)
-    Season = ifelse( Month < unlist(sampling.months)[1],
-                     Year,
-                     Year-1),
-    ##-- Fix unknown "Id"
-    Id = ifelse(Id %in% "", NA, Id),
-    ##-- Fix unknown "Sex"
-    Sex = ifelse(Sex %in% "Ukjent", NA, Sex),
-    Sex = ifelse(Sex %in% "Hunn", "female", Sex),
-    Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
-  ##-- Filter to the focal years
-  filter(., Year %in% years) 
+# DNA <- suppressWarnings(readMostRecent( path = dir.in,
+#                                         extension = ".xls",
+#                                         pattern = "DNA")) %>%
+#   ##-- Rename columns to facilitate manipulation
+#   rename(., any_of(rename.list)) %>%
+#   ##-- Filter to the focal species
+#   filter(., Species %in% norSpecies) %>%
+#   ##-- Remove any duplicates
+#   distinct(., .keep_all = TRUE) %>%
+#   ##-- Add some columns
+#   dplyr::mutate( 
+#     ##-- Add "Country" column
+#     Country_sample = substrRight(County, 3),
+#     ##-- Change date format
+#     Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
+#     ##-- Extract year
+#     Year = as.numeric(format(Date,"%Y")),
+#     ##-- Extract month
+#     Month = as.numeric(format(Date,"%m")),
+#     ##-- Extract sampling season
+#     ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
+#     ##-- Set all months in given sampling period to the same year)
+#     Season = ifelse( Month < unlist(sampling.months)[1],
+#                      Year,
+#                      Year-1),
+#     ##-- Fix unknown "Id"
+#     Id = ifelse(Id %in% "", NA, Id),
+#     ##-- Fix unknown "Sex"
+#     Sex = ifelse(Sex %in% "Ukjent", NA, Sex),
+#     Sex = ifelse(Sex %in% "Hunn", "female", Sex),
+#     Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
+#   ##-- Filter to the focal years
+#   filter(., Year %in% years) 
+# 
+# ##-- Number of NGS samples
+# samples <- table(DNA$Sex, DNA$Year, useNA = "ifany")
+# samples <- rbind(samples, "Total" = colSums(samples))
+# samples <- cbind(samples, "Total" = rowSums(samples))
+# 
+# ##-- Number of individuals detected alive
+# ids <- apply(table(DNA$Sex, DNA$Year, DNA$Id, useNA = "ifany"),
+#              c(1,2), function(x)sum(x>0))
+# ids <- rbind(ids,
+#              "Total" = apply(table(DNA$Year,DNA$Id, useNA = "ifany"),
+#                              1, function(x)sum(x>0)))
+# ids <- cbind(ids,
+#              "Total" = c(apply(table(DNA$Sex,DNA$Id, useNA = "ifany"),
+#                                1, function(x)sum(x>0)),length(unique(DNA$Id))))
 
-##-- Number of NGS samples
-samples <- table(DNA$Sex, DNA$Year, useNA = "ifany")
-samples <- rbind(samples, "Total" = colSums(samples))
-samples <- cbind(samples, "Total" = rowSums(samples))
-
-##-- Number of individuals detected alive
-ids <- apply(table(DNA$Sex, DNA$Year, DNA$Id, useNA = "ifany"),
-             c(1,2), function(x)sum(x>0))
-ids <- rbind(ids,
-             "Total" = apply(table(DNA$Year,DNA$Id, useNA = "ifany"),
-                             1, function(x)sum(x>0)))
-ids <- cbind(ids,
-             "Total" = c(apply(table(DNA$Sex,DNA$Id, useNA = "ifany"),
-                               1, function(x)sum(x>0)),length(unique(DNA$Id))))
+  ##-- NGS sample table
+  NGS_samples <- read.csv( file.path(working.dir, "tables", paste0(species, "_NGS samples_", years[1]," to ", years[length(years)], ".csv")),
+                           check.names = FALSE)
+  
+  ##-- NGS id table data
+  NGS_ids <- read.csv( file.path(working.dir, "tables", paste0(species, "_NGS ids_", years[1]," to ", years[length(years)], ".csv")),
+                           check.names = FALSE)
 ```
 
 This raw NGS data consists of :
 
--   `r samples["Total","Total"]` DNA samples collected between `r years[1]` and `r years[length(years)]` (`r samples["female","Total"]` female ; `r samples["male","Total"]` male).
+-   `r NGS_samples["Total","Total"]` DNA samples collected between `r years[1]` and `r years[length(years)]` (`r NGS_samples["female","Total"]` female ; `r NGS_samples["male","Total"]` male).
 
 ```{r, NGS sample table, echo = F, collapse = TRUE}
-kable(samples, align = "lc",
+kable(NGS_samples, align = "lc",
       caption = "Number of NGS samples collected by year and sex") %>%
   kable_styling(full_width = F)
 ```
 
--   `r ids["Total","Total"]` individuals identified from those DNA samples (`r ids["female","Total"]` female ; `r ids["male","Total"]` male).
+-   `r NGS_ids["Total","Total"]` individuals identified from those DNA samples (`r NGS_ids["female","Total"]` female ; `r NGS_ids["male","Total"]` male).
 
-```{r, NGS id table data, echo = F, collapse = TRUE}
-kable( ids,
+```{r, NGS id table, echo = F, collapse = TRUE}
+kable( NGS_ids,
        align = "lc",
        caption = "Number of individuals detected through NGS by year and sex") %>%
   kable_styling(full_width = F)
@@ -307,93 +318,88 @@ kable( ids,
 
 The most recent file containing raw dead recovery data is:
 ```{r, DR data, echo = F, collapse = TRUE}
-##-- Load raw excel file imported from rovbase 
-DR <- suppressWarnings(readMostRecent( path = dir.in,
-                                       extension = ".xls",
-                                       pattern = "dead")) %>%
-  ##-- Rename columns to facilitate manipulation
-  rename(., any_of(rename.list)) %>%
-  ##-- Filter to the focal species
-  filter(., Species %in% norSpecies) %>%
-  ##-- Remove any duplicates
-  distinct(., .keep_all = TRUE) %>%
-  ##-- Add some columns
-  dplyr::mutate( 
-    ##-- Add "Country" column
-    Country_sample = substrRight(County, 3),
-    ##-- Change date format
-    Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
-    ##-- Extract year
-    Year = as.numeric(format(Date,"%Y")),
-    ##-- Extract month
-    Month = as.numeric(format(Date,"%m")),
-    ##-- Extract sampling season
-    ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
-    ##-- Set all months in given sampling period to the same year)
-    Season = ifelse( Month < unlist(sampling.months)[1],
-                     Year,
-                     Year-1),
-    ##-- Fix unknown "Id"
-    Id = ifelse(Id %in% "", NA, Id),
-    ##-- Fix unknown "Sex"
-    Sex = ifelse(Sex %in% "Ukjent", NA, Sex),
-    Sex = ifelse(Sex %in% "Hunn", "female", Sex),
-    Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
-  ##-- Filter to the focal years
-  filter(., Year %in% years) 
+# ##-- Load raw excel file imported from rovbase 
+# DR <- suppressWarnings(readMostRecent( path = dir.in,
+#                                        extension = ".xls",
+#                                        pattern = "dead")) %>%
+#   ##-- Rename columns to facilitate manipulation
+#   rename(., any_of(rename.list)) %>%
+#   ##-- Filter to the focal species
+#   filter(., Species %in% norSpecies) %>%
+#   ##-- Remove any duplicates
+#   distinct(., .keep_all = TRUE) %>%
+#   ##-- Add some columns
+#   dplyr::mutate( 
+#     ##-- Add "Country" column
+#     Country_sample = substrRight(County, 3),
+#     ##-- Change date format
+#     Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
+#     ##-- Extract year
+#     Year = as.numeric(format(Date,"%Y")),
+#     ##-- Extract month
+#     Month = as.numeric(format(Date,"%m")),
+#     ##-- Extract sampling season
+#     ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
+#     ##-- Set all months in given sampling period to the same year)
+#     Season = ifelse( Month < unlist(sampling.months)[1],
+#                      Year,
+#                      Year-1),
+#     ##-- Fix unknown "Id"
+#     Id = ifelse(Id %in% "", NA, Id),
+#     ##-- Fix unknown "Sex"
+#     Sex = ifelse(Sex %in% "Ukjent", NA, Sex),
+#     Sex = ifelse(Sex %in% "Hunn", "female", Sex),
+#     Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
+#   ##-- Filter to the focal years
+#   filter(., Year %in% years) 
+# 
+# 
+# ##-- Number of NGS samples
+# samples <- table(DR$Sex, DR$Year, useNA = "ifany")
+# samples <- rbind(samples, "Total" = colSums(samples))
+# samples <- cbind(samples, "Total" = rowSums(samples))
+# 
+# ##-- Number of individuals detected alive
+# ids <- apply(table(DR$Sex, DR$Year, DR$Id, useNA = "ifany"),
+#              c(1,2),
+#              function(x)sum(x>0))
+# ids <- rbind(ids,
+#              "Total" = apply(table(DR$Year,DR$Id, useNA = "ifany"),
+#                              1,
+#                              function(x)sum(x>0)))
+# ids <- cbind(ids,
+#              "Total" = c(apply(table(DR$Sex,DR$Id, useNA = "ifany"),
+#                                1,
+#                                function(x)sum(x>0)),length(unique(DR$Id))))
 
-
-##-- Number of NGS samples
-samples <- table(DR$Sex, DR$Year, useNA = "ifany")
-samples <- rbind(samples, "Total" = colSums(samples))
-samples <- cbind(samples, "Total" = rowSums(samples))
-
-##-- Number of individuals detected alive
-ids <- apply(table(DR$Sex, DR$Year, DR$Id, useNA = "ifany"),
-             c(1,2),
-             function(x)sum(x>0))
-ids <- rbind(ids,
-             "Total" = apply(table(DR$Year,DR$Id, useNA = "ifany"),
-                             1,
-                             function(x)sum(x>0)))
-ids <- cbind(ids,
-             "Total" = c(apply(table(DR$Sex,DR$Id, useNA = "ifany"),
-                               1,
-                               function(x)sum(x>0)),length(unique(DR$Id))))
+  ##-- Dead recoveries sample table
+  DR_samples <- read.csv( file.path(working.dir, "tables", paste0(species, "_DR samples_", years[1]," to ", years[length(years)], ".csv")),
+                           check.names = FALSE)
+  
+  ##-- Dead Recoveries id table 
+  DR_ids <- read.csv( file.path(working.dir, "tables", paste0(species, "_DR ids_", years[1]," to ", years[length(years)], ".csv")),
+                           check.names = FALSE)
 ```
 
 This dead recovery data consists of :
 
--   `r samples["Total","Total"]` DNA samples collected between `r years[1]` and `r years[length(years)]` (`r samples["female","Total"]` female ; `r samples["male","Total"]` male).
+-   `r DR_samples["Total","Total"]` DNA samples collected between `r years[1]` and `r years[length(years)]` (`r DR_samples["female","Total"]` female ; `r DR_samples["male","Total"]` male).
 
 ```{r, DR sample table, echo = F, collapse = TRUE}
-kable( samples,
+kable( DR_samples,
        align = "lc",
        caption = "Number of dead recoveries by year and sex") %>%
   kable_styling(full_width = F)
 
 ```
 
--   `r ids["Total","Total"]` individuals identified from those DNA samples (`r ids["female","Total"]` female ; `r ids["male","Total"]` male).\
+-   `r DR_ids["Total","Total"]` individuals identified from those DNA samples (`r DR_ids["female","Total"]` female ; `r DR_ids["male","Total"]` male).\
 
 ```{r, DR id table data, echo = F, collapse = TRUE}
-kable( ids,
+kable( DR_ids,
        align = "lc",
        caption = "Number of individuals identified from dead recoveries by year and sex")%>%
   kable_styling(full_width = F)
-# samples_kable <- kable(samples, align = "lc",
-#       caption = "Number of individuals detected through NGS by year and sex",
-#       format = "latex")
-# 
-# ids_kable <- kable(ids, align = "lc",
-#       caption = "Number of individuals detected through NGS by year and sex",
-#       format = "latex")
-# 
-# cat(c("\\begin{table}[h] \\centering ", 
-#       ids_kable,
-#     "\\hspace{1cm} \\centering ",
-#       ids_kable,
-#     "\\caption{My tables} \\end{table}"))  
 ```
 
 ------------------------------------------------------------------------
@@ -424,7 +430,7 @@ if(!check2){
 
 ```{r, merge, echo = F, collapse = TRUE}
 ##-- Merge DNA and dead recoveries files using all shared names columns
-#DATA <- full_join(DNA, DR, by = names(DNA)[names(DNA) %in% names(DR)]) 
+# DATA <- full_join(DNA, DR, by = names(DNA)[names(DNA) %in% names(DR)]) 
 DATA <- merge( DR, DNA,
                by = c("Id","RovbaseID","DNAID","Species","Sex",
                       "Date","Year","Month","Season",
@@ -640,7 +646,6 @@ alive <- sf::st_as_sf( x = alive,
   sf::st_set_crs(.,sf::st_crs(32633)) 
 
 ##-- Intersect and extract country name
-#alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
 alive$Country_sf[!is.na(as.numeric(st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
 alive$Country_sf[!is.na(as.numeric(st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
 
@@ -651,7 +656,6 @@ dead.recovery <- sf::st_as_sf( x = dead.recovery,
   sf::st_set_crs(.,sf::st_crs(32633))
 
 ##-- Intersect and extract country name
-#dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
 dead.recovery$Country_sf[!is.na(as.numeric(st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
 dead.recovery$Country_sf[!is.na(as.numeric(st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
 
@@ -686,17 +690,22 @@ deadSamples <- cbind(deadSamples, "Total" = rowSums(deadSamples))
 
 
 ##-- Number of individuals recovered
-deadIds <- apply(table(dead.recovery$Country_sample, dead.recovery$Year, dead.recovery$Id),
+deadIds <- apply(table(dead.recovery$Country_sample,
+                       dead.recovery$Year,
+                       dead.recovery$Id),
                  c(1,2),
                  function(x)sum(x>0))
 deadIds <- rbind(deadIds,
-                 "Total" = apply(table(dead.recovery$Year,dead.recovery$Id),
+                 "Total" = apply(table(dead.recovery$Year,
+                                       dead.recovery$Id),
                                  1,
                                  function(x)sum(x>0)))
 deadIds <- cbind(deadIds,
-                 "Total" = c(apply(table(dead.recovery$Country_sample,dead.recovery$Id),
+                 "Total" = c(apply(table(dead.recovery$Country_sample,
+                                         dead.recovery$Id),
                                    1,
-                                   function(x)sum(x>0)),length(unique(dead.recovery$Id))))
+                                   function(x)sum(x>0)),
+                             length(unique(dead.recovery$Id))))
 ```
 
 After these initial checks several unusable samples were filtered out:
@@ -716,39 +725,48 @@ After these initial checks several unusable samples were filtered out:
 After this initial clean-up, we are left with `r paste0(samples["Total","Total"],"(NOR = ",samples["(N)","Total"]," ; SWE = ",samples["(S)","Total"], ")")` NGS samples and `r paste0(deadSamples["Total","Total"], "(NOR = ",deadSamples["(N)","Total"]," ; SWE = ",deadSamples["(S)","Total"], ")")` dead recoveries.
 
 ```{r, num samples, echo = F, fig.align = "center"}
-##-- Number of samples
-dat.alive <- alive %>%
-  mutate(Date = trunc(Date, "month")) %>%
-  dplyr::group_by(Date) %>%
-  dplyr::summarise(n = n())
-dat.alive$type = "NGS"
+# ##-- Number of NGS per month
+# dat.alive <- alive %>%
+#   mutate(Date = trunc(Date, "month")) %>%
+#   dplyr::group_by(Date) %>%
+#   dplyr::summarise(n = n())
+# dat.alive$type = "NGS"
+# 
+# ##-- Number of dead recoveries per month
+# dat.dead <- dead.recovery %>%
+#   mutate(Date = trunc(Date, "month")) %>%
+#   dplyr::group_by(Date) %>%
+#   dplyr::summarise(n = -n())
+# dat.dead$type = "dead.recovery"
+# 
+# ##-- Combine NGS and dead recoveries
+# dat <- rbind(dat.alive, dat.dead)
+# dat$Date <- as.Date(dat$Date)
+# 
+# ##-- Plot samples time series 
+# samplesTimeSeries <- ggplot(dat) +
+#   geom_col(aes(x = Date, y = n, fill = type)) +
+#   ylab("Number of samples") +
+#   guides(fill = guide_legend(reverse = TRUE)) +
+#   theme(legend.title = element_blank(),
+#         legend.position.inside = c(0.1,0.9),
+#         axis.text.x=element_text(angle = 60,
+#                                  hjust = 1)) +
+#   scale_x_date( date_breaks = "years",
+#                 date_labels = "%Y") 
+# 
+# ##-- Save plot as .png
+# grDevices::png(filename = file.path(dir.out, "figures",
+#                          paste0(species, "_samples_", years[1]," to ", years[length(years)], ".png")),
+#     width = 8, height = 6, units = "in", res = 300)
+# samplesTimeSeries
+# graphics.off()
 
-dat.dead <- dead.recovery %>%
-  mutate(Date = trunc(Date, "month")) %>%
-  dplyr::group_by(Date) %>%
-  dplyr::summarise(n = -n())
-dat.dead$type = "dead.recovery"
-
-dat <- rbind(dat.alive, dat.dead)
-dat$Date <- as.Date(dat$Date)
-
-# by_month <- function(x, n = 1){
-#   seq( trunc(min(x, na.rm = T), "month"),
-#        max(x+30, na.rm = T),
-#        by = paste0(n," months")) 
-# }
-
-ggplot(dat) +
-  geom_col(aes(x = Date, y = n, fill = type)) +
-  ylab("Number of samples") +
-  guides(fill = guide_legend(reverse = TRUE)) +
-  theme(legend.title = element_blank(),
-        legend.position.inside = c(0.1,0.9),
-        axis.text.x=element_text(angle = 60,
-                                 hjust = 1)) +
-  scale_x_date( date_breaks = "years",
-                date_labels = "%Y") 
+knitr::include_graphics(file.path( dir.out, "figures",
+                                   paste0(species, "_samples_", years[1]," to ", years[length(years)], ".png")))
 ```
+
+
 
 ```{r, echo = F}
 ##-- Number of NGS samples
@@ -758,7 +776,8 @@ kable(samples, align = "lc",
 
 ##-- Number of dead recoveries
 kable(deadSamples, align = "lc",
-      caption = "Number of DNA samples from dead animals per year and country") %>% kable_styling(full_width = F)
+      caption = "Number of DNA samples from dead animals per year and country") %>% 
+  kable_styling(full_width = F)
 ```
 
 ## Number of individuals
@@ -787,6 +806,14 @@ ggplot(dat) +
         legend.position = c(0.1,0.9)) +
   scale_x_continuous(breaks = years, labels = years)
 ```
+
+
+```{r, num ids, echo = F, fig.align = "center"}
+knitr::include_graphics(file.path(working.dir, "figures/IDs_TimeSeries.png"))
+```
+
+
+
 
 ```{r, echo = F, warning = FALSE, message = FALSE}
 ##-- Number of ID detected alive
@@ -879,7 +906,6 @@ if(length(IdDoubleDead) > 0){
     dead.recovery <- dead.recovery[-tmp, ]
   }#i
 }#if
-# dead.recovery <- droplevels(dead.recovery)
 ```
 
 There are `r length(multiDeathDate)` individuals with multiple death dates, of which `r length(multiDeathYear)` are recorded dead in different years.

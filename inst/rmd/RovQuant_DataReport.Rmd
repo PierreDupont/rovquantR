@@ -209,7 +209,6 @@ for(s in 1:2){
 }
 
 
-
 ##-- Number of NGS samples collected per country
 percCountry <- table(data.alive$myData.sp$Country_sample)
 percCountry <- round(percCountry[2]/sum(percCountry)*100)

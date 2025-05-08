@@ -196,11 +196,19 @@ getMostRecent <- function(
     path,
     pattern)
   {
-  dir( path = path,
-       pattern = pattern,
-       recursive = TRUE,
-       ignore.case = TRUE,
-       full.names = T) |>
+  
+  dirTest <- dir( path = path,
+                  pattern = pattern,
+                  recursive = TRUE,
+                  ignore.case = TRUE,
+                  full.names = T)
+  
+  if (length(dirTest) < 1) {
+    stop(paste0("No file matching the pattern '", 
+                pattern, "' was found in the specified directory: \n",  path))
+  }
+  
+  dirTest |>
     file.mtime() |>
     max() |>
     as.Date()
