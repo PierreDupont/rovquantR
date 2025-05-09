@@ -61,15 +61,15 @@ cleanRovbaseData_bear <- function(
   ##-- Sampling months
   if (is.null(sampling.months)) { sampling.months <- list(4:11) }
   
+  ##-- Initialize list of outputs for the .Rmd report
+  out <- list()
+  
   
   
   ##----- 2. CLEAN THE DATA -----
   
   ##-- Load pre-processed habitat shapefiles
   data(COUNTRIES, envir = environment()) 
-  # ##-- List months
-  # months = c("January","February","March","April","May","June",
-  #            "July","August","September","October","November","December")
   
   ##-- data info
   DATE <- getMostRecent(path = data.dir, pattern = "DNA")
@@ -110,27 +110,30 @@ cleanRovbaseData_bear <- function(
     ##-- Filter to the focal years
     filter(., Year %in% years) 
   
+  
   ##-- Number of NGS samples
   NGS_samples <- table(DNA$Sex, DNA$Year, useNA = "ifany")
   NGS_samples <- rbind(NGS_samples, "Total" = colSums(NGS_samples))
   NGS_samples <- cbind(NGS_samples, "Total" = rowSums(NGS_samples))
   write.csv(NGS_samples,
             file = file.path(working.dir, "tables",
-                             paste0(species, "_NGS samples_", years[1]," to ", years[length(years)], ".csv")))
+                             paste0(species, "_NGS samples raw_",
+                                    years[1]," to ", years[length(years)], ".csv")))
+  
   
   ##-- Number of individuals detected alive
   NGS_ids <- apply(table(DNA$Sex, DNA$Year, DNA$Id, useNA = "ifany"),
-               c(1,2), function(x)sum(x>0))
+                   c(1,2), function(x)sum(x>0))
   NGS_ids <- rbind(NGS_ids,
-               "Total" = apply(table(DNA$Year,DNA$Id, useNA = "ifany"),
-                               1, function(x)sum(x>0)))
+                   "Total" = apply(table(DNA$Year,DNA$Id, useNA = "ifany"),
+                                   1, function(x)sum(x>0)))
   NGS_ids <- cbind(NGS_ids,
-               "Total" = c(apply(table(DNA$Sex,DNA$Id, useNA = "ifany"),
-                                 1, function(x)sum(x>0)),length(unique(DNA$Id))))
+                   "Total" = c(apply(table(DNA$Sex,DNA$Id, useNA = "ifany"),
+                                     1, function(x)sum(x>0)),length(unique(DNA$Id))))
   write.csv(NGS_ids,
             file = file.path(working.dir, "tables",
-                             paste0(species, "_NGS ids_", years[1]," to ", years[length(years)], ".csv")))
-
+                             paste0(species, "_NGS ids raw_",
+                                    years[1]," to ", years[length(years)], ".csv")))
   
   
   
@@ -138,24 +141,26 @@ cleanRovbaseData_bear <- function(
   ## -- MOVE TO .RMD -----------------------------------------------------------
   ## ---------------------------------------------------------------------------
   ##-- NGS sample table
-  NGS_samples <- read.csv( file.path(working.dir, "tables", paste0(species, "_NGS samples_", years[1]," to ", years[length(years)], ".csv")),
+  NGS_samples <- read.csv( file.path( working.dir, "tables",
+                                      paste0( species, "_NGS samples raw_",
+                                              years[1]," to ", years[length(years)], ".csv")),
                            check.names = FALSE)
   knitr::kable(NGS_samples, align = "lc",
-        caption = "Number of NGS samples collected by year and sex") %>%
+               caption = "Number of NGS samples collected by year and sex") %>%
     kableExtra::kable_styling(full_width = F)
   
   
-  ##-- NGS id table data
-  NGS_ids <- read.csv( file.path(working.dir, "tables", paste0(species, "_NGS ids_", years[1]," to ", years[length(years)], ".csv")),
-                           check.names = FALSE)
+  ##-- NGS id table 
+  NGS_ids <- read.csv( file.path( working.dir, "tables",
+                                  paste0( species, "_NGS ids raw_",
+                                          years[1]," to ", years[length(years)], ".csv")),
+                       check.names = FALSE)
   knitr::kable(NGS_ids, align = "lc",
-         caption = "Number of individuals detected through NGS by year and sex") %>%
+               caption = "Number of individuals detected through NGS by year and sex") %>%
     kableExtra::kable_styling(full_width = F)
   ## ---------------------------------------------------------------------------
   ## -- MOVE TO .RMD -----------------------------------------------------------
   ## ---------------------------------------------------------------------------
-  
-  
   
   
   
@@ -195,86 +200,63 @@ cleanRovbaseData_bear <- function(
     ##-- Filter to the focal years
     filter(., Year %in% years) 
   
-  
-  ##-- Number of NGS samples
+  ##-- Number of DR samples
   DR_samples <- table(DR$Sex, DR$Year, useNA = "ifany")
   DR_samples <- rbind(DR_samples, "Total" = colSums(DR_samples))
   DR_samples <- cbind(DR_samples, "Total" = rowSums(DR_samples))
   write.csv(DR_samples,
-            file = file.path(working.dir, "tables",
-                             paste0(species, "_DR samples_", years[1]," to ", years[length(years)], ".csv")))
+            file = file.path( working.dir, "tables",
+                              paste0( species, "_DR samples raw_",
+                                      years[1]," to ", years[length(years)], ".csv")))
   
   ##-- Number of individuals detected alive
   DR_ids <- apply(table(DR$Sex, DR$Year, DR$Id, useNA = "ifany"),
-               c(1,2),
-               function(x)sum(x>0))
+                  c(1,2),
+                  function(x)sum(x>0))
   DR_ids <- rbind(DR_ids,
-               "Total" = apply(table(DR$Year,DR$Id, useNA = "ifany"),
-                               1,
-                               function(x)sum(x>0)))
+                  "Total" = apply(table(DR$Year,DR$Id, useNA = "ifany"),
+                                  1,
+                                  function(x)sum(x>0)))
   DR_ids <- cbind(DR_ids,
-               "Total" = c(apply(table(DR$Sex,DR$Id, useNA = "ifany"),
-                                 1,
-                                 function(x)sum(x>0)),length(unique(DR$Id))))
+                  "Total" = c(apply(table(DR$Sex,DR$Id, useNA = "ifany"),
+                                    1,
+                                    function(x)sum(x>0)),length(unique(DR$Id))))
   write.csv(DR_ids,
-            file = file.path(working.dir, "tables",
-                             paste0(species, "_DR ids_", years[1]," to ", years[length(years)], ".csv")))
-  
+            file = file.path( working.dir, "tables",
+                              paste0( species, "_DR ids raw_",
+                                      years[1]," to ", years[length(years)], ".csv")))
   
   
   
   ## ---------------------------------------------------------------------------
   ## -- MOVE TO .RMD -----------------------------------------------------------
   ## ---------------------------------------------------------------------------
-  ## ----DR sample table, echo = F, collapse = TRUE----------------------------------------------------------------
+  ##-- DR samples table
+  DR_samples <- read.csv( file.path( working.dir, "tables",
+                                     paste0( species, "_DR samples raw_",
+                                             years[1]," to ", years[length(years)], ".csv")),
+                          check.names = FALSE)
   kable( DR_samples,
          align = "lc",
          caption = "Number of dead recoveries by year and sex") %>%
     kable_styling(full_width = F)
   
   
-  
-  ## ----DR id table data, echo = F, collapse = TRUE---------------------------------------------------------------
-  kable( ids,
+  ##-- DR id table 
+  DR_ids <- read.csv( file.path( working.dir, "tables",
+                                 paste0( species, "_DR ids raw_",
+                                         years[1]," to ", years[length(years)], ".csv")),
+                      check.names = FALSE)
+  kable( DR_ids,
          align = "lc",
          caption = "Number of individuals identified from dead recoveries by year and sex")%>%
     kable_styling(full_width = F)
-  # samples_kable <- kable(samples, align = "lc",
-  #       caption = "Number of individuals detected through NGS by year and sex",
-  #       format = "latex")
-  # 
-  # ids_kable <- kable(ids, align = "lc",
-  #       caption = "Number of individuals detected through NGS by year and sex",
-  #       format = "latex")
-  # 
-  # cat(c("\\begin{table}[h] \\centering ", 
-  #       ids_kable,
-  #     "\\hspace{1cm} \\centering ",
-  #       ids_kable,
-  #     "\\caption{My tables} \\end{table}"))  
   ## ---------------------------------------------------------------------------
   ## -- MOVE TO .RMD -----------------------------------------------------------
   ## ---------------------------------------------------------------------------
   
-  
-  
-  
-  
-  
-  
-  
-  
-                  ## START AGAIN FROM HERE ON 06.05.2025 !!!!!!
-  
-  
-  
-  
-  
-  
-  
-  
-  
-  ## ----checks, echo = F, collapse = TRUE-------------------------------------------------------------------------
+
+  ## ------ Checks --------------------------------------
   ##-- Make sure all dead recoveries in DNA are in DR
   check1 <- all(DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
   probs_DR_in_DNA <- NULL
@@ -286,7 +268,6 @@ cleanRovbaseData_bear <- function(
   tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
   test <- anti_join(tmp,DR, by = names(tmp)[names(tmp) %in% names(DR)])
   
-  
   ##-- Make sure that only "Dead recoveries" are in DR 
   check2 <- all(substr(DR$RovbaseID,1,1) %in% "M")
   probs_DNA_in_DR <- NULL
@@ -295,7 +276,7 @@ cleanRovbaseData_bear <- function(
   }
   
   
-  ## ----merge, echo = F, collapse = TRUE--------------------------------------------------------------------------
+  ## ---- Merge --------------------------------------
   ##-- Merge DNA and dead recoveries files using all shared names columns
   #DATA <- full_join(DNA, DR, by = names(DNA)[names(DNA) %in% names(DR)]) 
   DATA <- merge( DR, DNA,
@@ -313,11 +294,9 @@ cleanRovbaseData_bear <- function(
   DATA$Birth <- DATA$Death - DATA$Age
   
   ##-- Extract useful numbers
-  noID <- sum(is.na(DATA$Id))              ## number of samples without ID
-  noDate <- sum(is.na(DATA$Year))          ## number of samples without Date
-  noCoords <- sum(is.na(DATA$East_UTM33))  ## number of samples without Coords  
-  # notInDR <- sum(as.numeric(substr(DATA$RovbaseID,1,1) %in% "M")
-  #                * as.numeric(!(DATA$DNAID %in% DR$DNAID)))
+  out$noID <- sum(is.na(DATA$Id))              ## number of samples without ID
+  out$noDate <- sum(is.na(DATA$Year))          ## number of samples without Date
+  out$noCoords <- sum(is.na(DATA$East_UTM33))  ## number of samples without Coords  
   
   ##-- Filter out unusable samples
   DATA <- DATA %>%
@@ -333,10 +312,10 @@ cleanRovbaseData_bear <- function(
     droplevels(.)
   
   
-  ## ----sex assignment, echo = F----------------------------------------------------------------------------------
+  ## ---- sex assignment -------------------------------------------------------
   ID <- unique(as.character(DATA$Id))
   DATA$Sex <- as.character(DATA$Sex)
-  doubleSexID <- IdDoubleSex <- NULL
+  out$doubleSexID <- out$IdDoubleSex <- NULL
   counter <- 1
   for(i in 1:length(ID)){
     ##-- Subset data to individual i
@@ -347,15 +326,15 @@ cleanRovbaseData_bear <- function(
     
     ##-- If conflicting sexes (ID identified as both "female" and "male")
     if(length(tab) == 2){
-      ##-- If ID assigned the same number of times to the 2 sexes, assign to Ukjent
+      ##-- If ID assigned the same number of times to the 2 sexes, assign to unknown
       if(tab[1] == tab[2]){
-        DATA$Sex[DATA$Id == ID[i]] <- "Ukjent"
+        DATA$Sex[DATA$Id == ID[i]] <- "unknown"
       } else {
         ##-- Otherwise pick the most common sex
         DATA$Sex[DATA$Id == ID[i]] <- names(tab)[which(tab == max(tab))]
       }
       # print(paste("Warnings!!!", "Individuals", ID[i], "assigned to both sexes. Now assigned to", names(tab)[which(tab == max(tab))])) 
-      IdDoubleSex[counter] <- ID[i]
+      out$IdDoubleSex[counter] <- ID[i]
       counter <- counter + 1
     }
     
@@ -363,10 +342,11 @@ cleanRovbaseData_bear <- function(
     if(length(tab) == 1){DATA$Sex[DATA$Id == ID[i]] <- names(tab)}
     
     ##-- If anything else registered : "Ukjent"
-    if(length(tab) == 0){DATA$Sex[DATA$Id == ID[i]] <- "Ukjent"}
+    if(length(tab) == 0){DATA$Sex[DATA$Id == ID[i]] <- "unknown"}
     
-    doubleSexID[i] <- length(tab)
+    out$doubleSexID[i] <- length(tab)
   }#i
+
   
   
   ## ----split DATA, echo = F--------------------------------------------------------------------------------------
@@ -390,6 +370,7 @@ cleanRovbaseData_bear <- function(
                     this.date <- dead.recovery[i,"Date"]
                     any(alive$Id %in% this.id & alive$Date < this.date)
                   }))
+  
   
   
   ## ----wolverine, echo = F, collapse = TRUE----------------------------------------------------------------------
@@ -418,11 +399,11 @@ cleanRovbaseData_bear <- function(
     
     ##-- Remove pups killed before recruitment based on weight (cf. Henrik)
     ##-- 1) remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
-    youngDeads <- which(dead.recovery$Age_class %in% "Unge" &
+    out$youngDeads <- which(dead.recovery$Age_class %in% "Unge" &
                           dead.recovery$Month > 2 &
                           dead.recovery$Month < 12)
     if(length(youngDeads) > 0){
-      dead.recovery <- dead.recovery[-youngDeads, ]
+      dead.recovery <- dead.recovery[-out$youngDeads, ]
     }
     
     
@@ -443,17 +424,18 @@ cleanRovbaseData_bear <- function(
     
     ##-- Check with Henrik (this step does not remove dead recoveries on id with weight==0 should it?)
     ##-- Check how many dead reco we remove and remove if more than 0
-    lowWeightDeads <- which(dead.recovery$weight > 0 & dead.recovery$weight < 4 &
+    out$lowWeightDeads <- which(dead.recovery$weight > 0 & dead.recovery$weight < 4 &
                               dead.recovery$Month > 2 & dead.recovery$Month < 12)
     if(length(lowWeightDeads) > 0){
-      dead.recovery <- dead.recovery[-lowWeightDeads, ]
+      dead.recovery <- dead.recovery[-out$lowWeightDeads, ]
     }
     
     ##-- Check how many dead reco with a weight of 0 kg and recovered between March and November
-    zeroWeightDeads <- which(dead.recovery$Age %in% 0 &
+    out$zeroWeightDeads <- which(dead.recovery$Age %in% 0 &
                                dead.recovery$Month > 2 &
                                dead.recovery$Month < 12)
   }
+  
   
   
   ## ----wolf, echo = F, collapse = TRUE---------------------------------------------------------------------------
@@ -479,8 +461,9 @@ cleanRovbaseData_bear <- function(
     new.sex <- ifelse(!is.na(micke.sex), as.character(micke.sex), as.character(DATA$Sex))
     DATA$Sex <- new.sex
     
-    numOverwiteSex <- sum(unique(as.character(INDIVIDUAL_ID$Individ..Rovbase.)) %in% DATA$Id)
+    out$numOverwiteSex <- sum(unique(as.character(INDIVIDUAL_ID$Individ..Rovbase.)) %in% DATA$Id)
   }
+  
   
   
   ## ----bear, echo = F, collapse = TRUE---------------------------------------------------------------------------
@@ -493,13 +476,14 @@ cleanRovbaseData_bear <- function(
       fileEncoding = "Latin1") 
     
     ##-- Remove flagged samples 
-    remove.alive <- !alive$Barcode_sample %in% flagged$Strekkode
-    alive <- alive[remove.alive, ]
-    remove.dead <- !dead.recovery$Barcode_sample %in% flagged$Strekkode
-    dead.recovery <- dead.recovery[remove.dead, ]
+    out$remove.alive <- !alive$Barcode_sample %in% flagged$Strekkode
+    alive <- alive[out$remove.alive, ]
+    out$remove.dead <- !dead.recovery$Barcode_sample %in% flagged$Strekkode
+    dead.recovery <- dead.recovery[out$remove.dead, ]
     dead.recovery$Missing <- NA
     dead.recovery$Individ <- NA
   }
+  
   
   
   ## ----turn into sf, echo = F, collapse = TRUE-------------------------------------------------------------------
@@ -532,6 +516,10 @@ cleanRovbaseData_bear <- function(
   samples2 <- table(alive$Country_sf, alive$Year)
   samples <- rbind(samples, "Total" = colSums(samples))
   samples <- cbind(samples, "Total" = rowSums(samples))
+  write.csv(samples,
+            file = file.path( working.dir, "tables",
+                              paste0( species, "_NGS samples clean_",
+                                      years[1]," to ", years[length(years)], ".csv")))
   
   
   ##-- Number of individuals detected alive
@@ -552,12 +540,20 @@ cleanRovbaseData_bear <- function(
                                  1,
                                  function(x)sum(x>0)),
                            length(unique(alive$Id))))
+  write.csv(ids,
+            file = file.path( working.dir, "tables",
+                              paste0( species, "_NGS ids clean_",
+                                      years[1]," to ", years[length(years)], ".csv")))
   
   
   ##-- Number of DR samples
   deadSamples <- table(dead.recovery$Country_sample, dead.recovery$Year)
   deadSamples <- rbind(deadSamples, "Total" = colSums(deadSamples))
   deadSamples <- cbind(deadSamples, "Total" = rowSums(deadSamples))
+  write.csv(ids,
+            file = file.path( working.dir, "tables",
+                              paste0( species, "_DR samples clean_",
+                                      years[1]," to ", years[length(years)], ".csv")))
   
   
   ##-- Number of individuals recovered
@@ -579,7 +575,10 @@ cleanRovbaseData_bear <- function(
                                      1,
                                      function(x)sum(x>0)),
                                length(unique(dead.recovery$Id))))
-  
+  write.csv(ids,
+            file = file.path( working.dir, "tables",
+                              paste0( species, "_DR ids clean_",
+                                      years[1]," to ", years[length(years)], ".csv")))
   
   
   
@@ -617,7 +616,8 @@ cleanRovbaseData_bear <- function(
   
   ##-- Save plot as .png
   grDevices::png( filename = file.path(dir.out, "figures",
-                                       paste0(species, "_monitoring_", years[1]," to ", years[length(years)], ".png")),
+                                       paste0( species, "_monitoring_",
+                                               years[1]," to ", years[length(years)], ".png")),
                   width = 8, height = 6,
                   units = "in", res = 300)
   samplesTimeSeries
@@ -625,7 +625,9 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ## ---- num samples - TABLES ---------------------------------------------------
+  ## ---------------------------------------------------------------------------
+  ## -- MOVE TO .RMD -----------------------------------------------------------
+  ## ---------------------------------------------------------------------------
   ##-- Number of NGS samples
   kable( samples,
          align = "lc",
@@ -637,6 +639,9 @@ cleanRovbaseData_bear <- function(
          align = "lc",
          caption = "Number of DNA samples from dead animals per year and country") %>% 
     kable_styling(full_width = F)
+  ## ---------------------------------------------------------------------------
+  ## -- MOVE TO .RMD -----------------------------------------------------------
+  ## ---------------------------------------------------------------------------
   
   
   
@@ -675,7 +680,10 @@ cleanRovbaseData_bear <- function(
   graphics.off()
   
   
-  ## ---- Kables ----------------------------------------------------------------
+  
+  ## ---------------------------------------------------------------------------
+  ## -- MOVE TO .RMD -----------------------------------------------------------
+  ## ---------------------------------------------------------------------------
   ##-- Number of ID detected alive
   kable(ids, align = "lc",
         caption = "Number of individuals detected through NGS per year and country") %>%
@@ -685,6 +693,9 @@ cleanRovbaseData_bear <- function(
   kable(deadIds, align = "lc",
         caption = "Number of identified dead animals per year and country") %>% 
     kable_styling(full_width = F)
+  ## ---------------------------------------------------------------------------
+  ## -- MOVE TO .RMD -----------------------------------------------------------
+  ## ---------------------------------------------------------------------------
   
   
   
