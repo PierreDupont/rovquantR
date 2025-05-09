@@ -23,6 +23,17 @@ output:
 ### `r Sys.Date()`
 
 ```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
+##-- load libraries
+library(dplyr)
+library(kableExtra)
+library(ggplot2)
+library(sf)
+library(ggmap)
+library(patchwork)
+library(mapview)
+mapviewOptions(fgb = FALSE)
+library(rovquantR)
+
 ##-- Extract parameters to knit document
 species <- params$species
 years <- params$years
@@ -43,17 +54,6 @@ if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, 
   engSpecies <- "wolverine"
   norSpecies <- "Jerv"
 }
-
-##-- load libraries
-library(dplyr)
-library(kableExtra)
-library(ggplot2)
-library(sf)
-library(ggmap)
-library(patchwork)
-library(mapview)
-mapviewOptions(fgb = FALSE)
-library(rovquantR)
 
 ##-- Load pre-processed habitat shapefiles
 data(COUNTRIESWaterHumans, envir = environment()) 

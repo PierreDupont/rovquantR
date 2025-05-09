@@ -58,7 +58,7 @@ NULL
 #' @rdname cleanRovbaseData
 #' @export
 cleanRovbaseData <- function(
-    ##-- paths
+  ##-- paths
   data.dir,
   working.dir,
   
@@ -66,7 +66,7 @@ cleanRovbaseData <- function(
   species = c("bear","wolf","wolverine"),
   years = NULL, 
   sex = c("female","male"),
-  sampling.months = NULL,
+  sampling.months = NULL, 
   rename.list = NULL,
   
   ##-- miscellanious
@@ -74,7 +74,7 @@ cleanRovbaseData <- function(
   overwrite = FALSE,
   output.dir = NULL
 ) {
-  
+
   ##----- 1. INITIAL CHECKS -----
   
   ##-- Make sure directory structure exists
@@ -82,11 +82,48 @@ cleanRovbaseData <- function(
                    subFolders = sex,
                    show.dir = TRUE)
   
+  ##-- Species
+  if (length(species)>1) {
+    stop('This function can only deal with one species at a time... \nPlease, use one of "bear", "wolf", or "wolverine" for the n target species.')
+  }
+  if (sum(grep("bear", species, ignore.case = T))>0|
+     sum(grep("bjørn", species, ignore.case = T))>0|
+     sum(grep("bjorn", species, ignore.case = T))>0) {
+    species <- "bear"
+  } else {
+    if(sum(grep("wolf", species, ignore.case = T))>0|
+       sum(grep("ulv", species, ignore.case = T))>0){
+      species <- "wolf"
+    } else {
+      if(sum(grep("wolverine", species, ignore.case = T))>0|
+         sum(grep("jerv", species, ignore.case = T))>0){
+        species <- "Wolverine"
+      }
+    }
+  }
+  
   ##-- Years
-  if(is.null(years)){ years <- 2012:as.numeric(format(Sys.Date(), "%Y")) }
+  if (is.null(years)) { years <- 2012:as.numeric(format(Sys.Date(), "%Y")) }
+  
+  ##-- Sampling months
+  if (is.null(sampling.months)) {
+    if (species == "bear") {
+      sampling.months <- list(4:11)
+    } else {
+      if (species == "wolf") {
+        sampling.months <- list(c(10:12),c(1:3))
+      } else {
+        if (species == "wolverine") {
+          sampling.months <- list(c(10:12),c(1:4))
+        } else {
+          stop("No default setting available for the monitoring period of this species. \n You must specify the monitoring season months through the 'sampling.months' argument.")
+        }
+      }
+    }
+  }
   
   ##-- Renaming list
-  if(is.null(rename.list)){
+  if (is.null(rename.list)) {
     rename.list = c(
       Age_estimated = "Alder, vurdert",
       Age = "Alder, verifisert",
@@ -186,28 +223,6 @@ cleanRovbaseData <- function(
   ##-- Extract the date from the last .xlsx data file
   DATE <- getMostRecent( path = data.dir, pattern = "DNA")
   
-  ##-- Species
-  if (length(species)>1){
-    stop('This function can only deal with one species at a time... \nPlease, use one of "bear", "wolf", or "wolverine" for the n target species.')
-  }
-  
-  if(sum(grep("bear", species, ignore.case = T))>0|
-     sum(grep("bjørn", species, ignore.case = T))>0|
-     sum(grep("bjorn", species, ignore.case = T))>0){
-    species <- "bear"
-  } else {
-    if(sum(grep("wolf", species, ignore.case = T))>0|
-       sum(grep("ulv", species, ignore.case = T))>0){
-      species <- "wolf"
-    } else {
-      if(sum(grep("wolverine", species, ignore.case = T))>0|
-         sum(grep("jerv", species, ignore.case = T))>0){
-        species <- "Wolverine"
-      }
-    }
-  }
-  
-  
   ##-- Set file name for clean data
   fileName <- paste0("CleanData_", species, "_", DATE, ".RData")
   
@@ -235,7 +250,7 @@ cleanRovbaseData <- function(
   ##-----   2.1. CLEAN BEAR DATA -----
   
   ##-- Check species and use corresponding function
-  if("bear" %in% species){
+  if ("bear" %in% species) {
     
     ##-- Prepare the data
     out <- cleanRovbaseData_bear(
@@ -254,7 +269,7 @@ cleanRovbaseData <- function(
   ##-----   2.2. CLEAN WOLF DATA -----
   
   ##-- Check species and use corresponding function
-  if(species %in% "wolf"){
+  if (species %in% "wolf") {
     
     ##-- Prepare the data
     out <- cleanRovbaseData_wolf(
@@ -273,7 +288,7 @@ cleanRovbaseData <- function(
   ##-----   2.3. CLEAN WOLVERINE DATA -----
   
   ##-- Check species and use corresponding function
-  if(species %in% "wolverine"){
+  if (species %in% "wolverine") {
     
     ##-- Prepare the data
     out <- cleanRovbaseData_wolverine(
@@ -291,19 +306,18 @@ cleanRovbaseData <- function(
   
   ##---- 3. PRINT THE REPORT -----
   
-  if(print.report){
+  if (print.report) {
     
     ##-- Find the .rmd template for the report.
-    if(is.null(Rmd.template)){
+    if (is.null(Rmd.template)) {
       Rmd.template <- system.file("rmd", "RovQuant_CleaningReport.Rmd", package = "rovquantR")
-      if(!file.exists(Rmd.template)) {
+      if (!file.exists(Rmd.template)) {
         stop('Can not find a .rmd template called "RovQuant_CleaningReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
       } 
     }
     
     ##-- Find the directory to print the report.
-    if(is.null(output.dir)){ output.dir <- file.path(working.dir, "reports") }
-    
+    if (is.null(output.dir)) { output.dir <- file.path(working.dir, "reports") }
     
     ##-- Render .Rmd report
     rmarkdown::render(

@@ -34,46 +34,217 @@
 #'
 #' @author Pierre Dupont
 #' 
+#' @importFrom rmarkdown render
+#' @importFrom sf st_intersects
 #' @import ggplot2 
+#' @import dplyr 
+
 
 NULL
 #' @rdname cleanRovbaseData_bear
 #' @export
 cleanRovbaseData_bear <- function(
-    ##-- paths
+  ##-- paths
   data.dir,
   working.dir,
   
   ##-- data
-  years, 
+  species = c("bear","wolf","wolverine"),
+  years = NULL, 
   sex = c("female","male"),
   sampling.months = NULL,
-  rename.list,
+  rename.list = NULL,
+  
+  ##-- miscellanious
+  Rmd.template = NULL,
+  overwrite = FALSE,
+  output.dir = NULL
 ) {
   
   ##----- 1. INITIAL CHECKS -----
   
+  ##-- Make sure directory structure exists
+  makeDirectories( path = working.dir,
+                   subFolders = sex,
+                   show.dir = TRUE)
+  
   ##-- Species
-  species <- "bear"
-  engSpecies <- "Brown bear"
-  norSpecies <- "Bjørn"
+  if (length(species)>1) {
+    stop('This function can only deal with one species at a time... \nPlease, use one of "bear", "wolf", or "wolverine" for the n target species.')
+  }
+  if(sum(grep("bear", species, ignore.case = T))>0|
+     sum(grep("bjørn", species, ignore.case = T))>0|
+     sum(grep("bjorn", species, ignore.case = T))>0){
+    species <- "bear"
+    engSpecies <- "Brown bear"
+    norSpecies <- c("Bjørn", "BjÃ¸rn")
+  } else {
+    if(sum(grep("wolf", species, ignore.case = T))>0|
+       sum(grep("ulv", species, ignore.case = T))>0){
+      species <- "wolf"
+      engSpecies <- "Gray wolf"
+      norSpecies <- "Ulv"
+    } else {
+      if(sum(grep("wolverine", species, ignore.case = T))>0|
+         sum(grep("jerv", species, ignore.case = T))>0){
+        species <- "wolverine"
+        engSpecies <- "wolverine"
+        norSpecies <- "Jerv"
+      } else {
+        engSpecies <- norSpecies <- species 
+      }
+    }
+  }
+  
+  ##-- Years
+  if (is.null(years)) { years <- 2012:as.numeric(format(Sys.Date(), "%Y")) }
   
   ##-- Sampling months
-  if (is.null(sampling.months)) { sampling.months <- list(4:11) }
-  
-  ##-- Initialize list of outputs for the .Rmd report
-  out <- list()
-  
-  
-  
-  ##----- 2. CLEAN THE DATA -----
+  if (is.null(sampling.months)) {
+    if (species == "bear") {
+      sampling.months <- list(4:11)
+    } else {
+      if (species == "wolf") {
+        sampling.months <- list(c(10:12),c(1:3))
+      } else {
+        if (species == "wolverine") {
+          sampling.months <- list(c(10:12),c(1:4))
+        } else {
+          stop("No default setting available for the monitoring period of this species. \n You must specify the monitoring season months through the 'sampling.months' argument.")
+        }
+      }
+    }
+  }
+
+  ##-- Renaming list
+  if (is.null(rename.list)) {
+    rename.list = c(
+      Age_estimated = "Alder, vurdert",
+      Age = "Alder, verifisert",
+      Age_verif_by = "Alder, verifisert av",
+      Age_class = "Alder på dødt individ",
+      Age_class_verif = "Aldersklasse verifisert SVA",
+      Analyzed_by = "AnalysertAv",
+      Analysis_priority = "Analyseprioritet",
+      Approved_by = "Godkjent av",
+      Approved_date = "Godkjentdato",
+      Assessment = "Vurdering",
+      Barcode_sample = "Strekkode (Prøve)",
+      Barcode = "Strekkode (Analyse)",
+      Birth_territory = "Født revir",
+      CITES = "CITES-nummer",
+      Collected_by = "Hvem samlet inn",
+      Collector_name = "Samlet selv - Navn",
+      Collector_phone = "Samlet selv - Telefon",
+      Collector_email = "Samlet selv - E-post",
+      Collector_role = "Samlet selv - Rolle",
+      Collector_other_name = "Annen innsamler - Navn" ,
+      Collector_other_phone = "Annen innsamler - Telefon",
+      Collector_other_email = "Annen innsamler - E-post",
+      Collector_other_role = "Annen innsamler - Rolle",
+      Comments_sample = "Merknad (Prøve)",
+      Comments = "Merknad (Analyse)",
+      Control_status = "Kontrollstatus",
+      Coordinate_system = "Koordinatsystem",
+      Counted_off_against_decision = "Regnes av mot vedtak",
+      County_number = "Fylkenummer",
+      County = "Fylke",
+      Date = "Funnetdato",
+      Date = "Dødsdato",
+      Death_cause = "Bakgrunn/årsak",
+      Death_method = "Bakgrunn/årsak metode",
+      Death_purpose = "Bakgrunn/årsak formål",
+      DNAID_sample = "DNAID (Prøve)",
+      DNAID = "DNAID (Analyse)",
+      EventID = "HendelseID",
+      East_Original = "Øst (opprinnelig)",
+      East_RT90 = "Øst (RT90)",
+      East_UTM33 = "Øst (UTM33/SWEREF99 TM)",
+      Felling_site_verif = "Kontroll av fellingsted",
+      Field_personnel ="Feltpersonell",
+      Hunting_date = "Observasjons/Jaktdato",
+      Id = "Individ",
+      Juvenile = "Yngling",
+      Mountain_area = "Fjellområde",
+      Method = "Metode",
+      Municipality_number = "Kommunenummer",
+      Municipality = "Kommune",
+      North_original = "Nord (opprinnelig)",
+      North_RT90 = "Nord (RT90)",
+      North_UTM33 = "Nord (UTM33/SWEREF99 TM)",
+      Origin = "Opprinnelse",
+      Outcome = "Utfall",
+      Last_saved_by_sample = "Sist lagret av (Prøve)",
+      Last_saved_sample = "Sist lagret dato (Prøve)",
+      Last_saved_by = "Sist lagret av (Analyse)",
+      Last_saved = "Sist lagret dato (Analyse)",
+      Last_saved_by = "Sist lagret av",
+      Last_saved =  "Sist lagret dato",
+      Locality = "Lokalitet",
+      Location = "Funnsted",
+      Lansstyrelsen_number = "Länsstyrelsens nr",
+      Quality_checked = "Kvalitetssikret av feltpersonell",
+      Quality_check_name = "Kvalitetssikrer - navn",
+      Quality_check_orga = "Kvalitetssikrer - Organisasjon",
+      Release_Date = "Frigivelsesdato",
+      Sample_type = "Prøvetype",
+      Sensitivity = "Følsomhet",
+      Species_sample = "Art (Prøve)",
+      Site_quality = "Stedkvalitet",
+      Time_of_death = "Dødstidspunkt",
+      Tips_name = "Tipser - Navn",
+      Tips_phone = "Tipser - Telefon",
+      Tips_email = "Tipser - E-post",
+      Tips_role = "Tipser - Rolle",
+      Tissue_sample = "Vevsprøve tatt",
+      Release_Date = "Frigivelsesdato",
+      RovbaseID = "RovbaseID (Analyse)",
+      RovbaseID_sample = "RovbaseID (Prøve)",
+      Species = "Art (Analyse)",
+      Species = "Art",
+      Sample_status = "Prøvestatus",
+      Sensitivity = "Følsomhet",
+      Sex_analysis = "Kjønn (Analyse)",
+      Sex = "Kjønn (Individ)",
+      Sex = "Kjønn",
+      Site_quality = "Stedkvalitet",
+      SVAID = "SVAID",
+      Uncertain_date = "Usikker dødsdato",
+      Weight_slaughter = "Slaktevekt",
+      Weight_total =  "Helvekt")
+  }
   
   ##-- Load pre-processed habitat shapefiles
   data(COUNTRIES, envir = environment()) 
   
   ##-- data info
   DATE <- getMostRecent(path = data.dir, pattern = "DNA")
+
+  ##-- Set file name for clean data
+  fileName <- paste0("CleanData_", species, "_", DATE, ".RData")
   
+  ##-- Check that a file with that name does not already exist to avoid overwriting
+  if (!overwrite) {
+    existTest <- file.exists(file.path(working.dir, "data", fileName))
+    if (any(existTest)) {
+      message(paste0("A file named '", fileName[existTest], "' already exists in: \n",
+                     file.path(working.dir, "data")))
+      message("Are you sure you want to proceed and overwrite existing clean data? (y/n) ")
+      question1 <- readLines(n = 1)
+      if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
+        message("Not overwriting existing files...")
+        return(invisible(NULL))
+      } else {
+        message(paste0("Now overwriting '", fileName[existTest],"'.\n"))
+      }
+    }
+  }
+  
+  
+  
+  ##----- 2. CLEAN THE DATA -----
+  
+  ##-----   2.1. RAW NGS DATA -----
   
   ##-- NGS data
   DNA <- suppressWarnings(readMostRecent( path = data.dir,
@@ -84,7 +255,7 @@ cleanRovbaseData_bear <- function(
     ##-- Filter to the focal species
     filter(., Species %in% norSpecies) %>%
     ##-- Remove any duplicates
-    distinct(., .keep_all = TRUE) %>%
+    dplyr::distinct(., .keep_all = TRUE) %>%
     ##-- Add some columns
     dplyr::mutate( 
       ##-- Add "Country" column
@@ -120,7 +291,7 @@ cleanRovbaseData_bear <- function(
                              paste0(species, "_NGS samples raw_",
                                     years[1]," to ", years[length(years)], ".csv")))
   
-  
+
   ##-- Number of individuals detected alive
   NGS_ids <- apply(table(DNA$Sex, DNA$Year, DNA$Id, useNA = "ifany"),
                    c(1,2), function(x)sum(x>0))
@@ -134,37 +305,11 @@ cleanRovbaseData_bear <- function(
             file = file.path(working.dir, "tables",
                              paste0(species, "_NGS ids raw_",
                                     years[1]," to ", years[length(years)], ".csv")))
+
   
   
+  ##-----   2.2. RAW DEAD RECOVERY DATA -----
   
-  ## ---------------------------------------------------------------------------
-  ## -- MOVE TO .RMD -----------------------------------------------------------
-  ## ---------------------------------------------------------------------------
-  ##-- NGS sample table
-  NGS_samples <- read.csv( file.path( working.dir, "tables",
-                                      paste0( species, "_NGS samples raw_",
-                                              years[1]," to ", years[length(years)], ".csv")),
-                           check.names = FALSE)
-  knitr::kable(NGS_samples, align = "lc",
-               caption = "Number of NGS samples collected by year and sex") %>%
-    kableExtra::kable_styling(full_width = F)
-  
-  
-  ##-- NGS id table 
-  NGS_ids <- read.csv( file.path( working.dir, "tables",
-                                  paste0( species, "_NGS ids raw_",
-                                          years[1]," to ", years[length(years)], ".csv")),
-                       check.names = FALSE)
-  knitr::kable(NGS_ids, align = "lc",
-               caption = "Number of individuals detected through NGS by year and sex") %>%
-    kableExtra::kable_styling(full_width = F)
-  ## ---------------------------------------------------------------------------
-  ## -- MOVE TO .RMD -----------------------------------------------------------
-  ## ---------------------------------------------------------------------------
-  
-  
-  
-  ## ----DR data ---------------------------------------------------------------
   ##-- Load raw excel file imported from rovbase 
   DR <- suppressWarnings(readMostRecent( path = data.dir,
                                          extension = ".xls",
@@ -228,35 +373,8 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ## ---------------------------------------------------------------------------
-  ## -- MOVE TO .RMD -----------------------------------------------------------
-  ## ---------------------------------------------------------------------------
-  ##-- DR samples table
-  DR_samples <- read.csv( file.path( working.dir, "tables",
-                                     paste0( species, "_DR samples raw_",
-                                             years[1]," to ", years[length(years)], ".csv")),
-                          check.names = FALSE)
-  kable( DR_samples,
-         align = "lc",
-         caption = "Number of dead recoveries by year and sex") %>%
-    kable_styling(full_width = F)
+  ##-----   2.3. CHECKS -----
   
-  
-  ##-- DR id table 
-  DR_ids <- read.csv( file.path( working.dir, "tables",
-                                 paste0( species, "_DR ids raw_",
-                                         years[1]," to ", years[length(years)], ".csv")),
-                      check.names = FALSE)
-  kable( DR_ids,
-         align = "lc",
-         caption = "Number of individuals identified from dead recoveries by year and sex")%>%
-    kable_styling(full_width = F)
-  ## ---------------------------------------------------------------------------
-  ## -- MOVE TO .RMD -----------------------------------------------------------
-  ## ---------------------------------------------------------------------------
-  
-
-  ## ------ Checks --------------------------------------
   ##-- Make sure all dead recoveries in DNA are in DR
   check1 <- all(DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
   probs_DR_in_DNA <- NULL
@@ -276,7 +394,9 @@ cleanRovbaseData_bear <- function(
   }
   
   
-  ## ---- Merge --------------------------------------
+  
+  ##-----   2.4. MERGE -----
+  
   ##-- Merge DNA and dead recoveries files using all shared names columns
   #DATA <- full_join(DNA, DR, by = names(DNA)[names(DNA) %in% names(DR)]) 
   DATA <- merge( DR, DNA,
@@ -294,9 +414,9 @@ cleanRovbaseData_bear <- function(
   DATA$Birth <- DATA$Death - DATA$Age
   
   ##-- Extract useful numbers
-  out$noID <- sum(is.na(DATA$Id))              ## number of samples without ID
-  out$noDate <- sum(is.na(DATA$Year))          ## number of samples without Date
-  out$noCoords <- sum(is.na(DATA$East_UTM33))  ## number of samples without Coords  
+  numNoID <- sum(is.na(DATA$Id))              ## number of samples without ID
+  numNoDate <- sum(is.na(DATA$Year))          ## number of samples without Date
+  numNoCoords <- sum(is.na(DATA$East_UTM33))  ## number of samples without Coords  
   
   ##-- Filter out unusable samples
   DATA <- DATA %>%
@@ -312,10 +432,12 @@ cleanRovbaseData_bear <- function(
     droplevels(.)
   
   
-  ## ---- sex assignment -------------------------------------------------------
+  
+  ##-----   2.5. SEX ASSIGNMENT -----
+  
   ID <- unique(as.character(DATA$Id))
   DATA$Sex <- as.character(DATA$Sex)
-  out$doubleSexID <- out$IdDoubleSex <- NULL
+  doubleSexID <- IdDoubleSex <- NULL
   counter <- 1
   for(i in 1:length(ID)){
     ##-- Subset data to individual i
@@ -334,7 +456,7 @@ cleanRovbaseData_bear <- function(
         DATA$Sex[DATA$Id == ID[i]] <- names(tab)[which(tab == max(tab))]
       }
       # print(paste("Warnings!!!", "Individuals", ID[i], "assigned to both sexes. Now assigned to", names(tab)[which(tab == max(tab))])) 
-      out$IdDoubleSex[counter] <- ID[i]
+      IdDoubleSex[counter] <- ID[i]
       counter <- counter + 1
     }
     
@@ -344,12 +466,13 @@ cleanRovbaseData_bear <- function(
     ##-- If anything else registered : "Ukjent"
     if(length(tab) == 0){DATA$Sex[DATA$Id == ID[i]] <- "unknown"}
     
-    out$doubleSexID[i] <- length(tab)
+    doubleSexID[i] <- length(tab)
   }#i
 
   
   
-  ## ----split DATA, echo = F--------------------------------------------------------------------------------------
+  ##-----   2.6. SPLIT DATA -----
+  
   ##-- Split DATA into alive and dead.recovery datasets
   alive <- DATA[is.na(DATA$Death), ]
   dead.recovery <- DATA[!is.na(DATA$Death), ]
@@ -373,7 +496,8 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ## ----wolverine, echo = F, collapse = TRUE----------------------------------------------------------------------
+  ##-----   2.7. WOLVERINE -----
+  
   if(engSpecies == "wolverine"){
     ##-- Remove un-verified dead recoveries [HB] 
     ##-- ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
@@ -437,8 +561,9 @@ cleanRovbaseData_bear <- function(
   }
   
   
+
+  ##-----   2.8. WOLF -----
   
-  ## ----wolf, echo = F, collapse = TRUE---------------------------------------------------------------------------
   if(engSpecies == "wolf"){
     ##-- Load most recent Micke's file
     INDIVIDUAL_ID <- readMostRecent.csv(
@@ -466,7 +591,8 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ## ----bear, echo = F, collapse = TRUE---------------------------------------------------------------------------
+  ##-----   2.9. BEAR -----
+  
   if(engSpecies == "bear"){
     ##-- Load most recent "flagged" file from HB
     flagged <- readMostRecent( 
@@ -486,7 +612,8 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ## ----turn into sf, echo = F, collapse = TRUE-------------------------------------------------------------------
+  ##-----   2.10. TURN INTO .sf OBJECTS -----
+  
   ##-- Turn into sf points dataframe
   alive <- sf::st_as_sf( x = alive,
                          coords = c("East_UTM33","North_UTM33")) %>%
@@ -510,7 +637,10 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ## ---- Rovbase data summary ---------------------------------------------------
+  ##-----   2.11. DATA SUMMARY -----
+  
+  ##-----     2.11.1. DATA SUMMARY - TABLES -----
+  
   ##-- Number of NGS samples
   samples <- table(alive$Country_sample, alive$Year)
   samples2 <- table(alive$Country_sf, alive$Year)
@@ -582,7 +712,7 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ## ---- num samples - FIGURE ---------------------------------------------------
+  ##-----     2.11.2. NUMBER OF SAMPLES - FIGURE -----
   
   ##-- Number of NGS per month
   dat.alive <- alive %>%
@@ -603,7 +733,12 @@ cleanRovbaseData_bear <- function(
   dat$Date <- as.Date(dat$Date)
   
   ##-- Plot time series of number of samples per month
-  samplesTimeSeries <- ggplot(dat) +
+  grDevices::png( filename = file.path(working.dir, "figures",
+                                       paste0( species, "_clean data samples_",
+                                               years[1]," to ", years[length(years)], ".png")),
+                  width = 8, height = 6,
+                  units = "in", res = 300)
+  ggplot(dat) +
     geom_col(aes(x = Date, y = n, fill = type)) +
     ylab("Number of samples") +
     guides(fill = guide_legend(reverse = TRUE)) +
@@ -613,39 +748,12 @@ cleanRovbaseData_bear <- function(
                                    hjust = 1)) +
     scale_x_date( date_breaks = "years",
                   date_labels = "%Y") 
-  
-  ##-- Save plot as .png
-  grDevices::png( filename = file.path(dir.out, "figures",
-                                       paste0( species, "_monitoring_",
-                                               years[1]," to ", years[length(years)], ".png")),
-                  width = 8, height = 6,
-                  units = "in", res = 300)
-  samplesTimeSeries
   graphics.off()
   
+
   
+  ##-----     2.11.3. NUMBER OF INDIVIDUALS - FIGURE -----
   
-  ## ---------------------------------------------------------------------------
-  ## -- MOVE TO .RMD -----------------------------------------------------------
-  ## ---------------------------------------------------------------------------
-  ##-- Number of NGS samples
-  kable( samples,
-         align = "lc",
-         caption = "Number of NGS samples per year and country") %>%
-    kable_styling(full_width = F)
-  
-  ##-- Number of dead recoveries
-  kable( deadSamples,
-         align = "lc",
-         caption = "Number of DNA samples from dead animals per year and country") %>% 
-    kable_styling(full_width = F)
-  ## ---------------------------------------------------------------------------
-  ## -- MOVE TO .RMD -----------------------------------------------------------
-  ## ---------------------------------------------------------------------------
-  
-  
-  
-  ## ---- num ids ---------------------------------
   ##-- Number of IDs
   dat.alive <- alive %>% 
     dplyr::group_by(Year) %>% 
@@ -662,71 +770,64 @@ cleanRovbaseData_bear <- function(
   dat <- rbind(dat.alive, dat.dead)
   
   ##-- Plot time series of number of IDs per year
-  idsTimeSeries <- ggplot(dat) +
+  grDevices::png( filename = file.path(working.dir, "figures",
+                                       paste0(species, "_clean data ids_",
+                                              years[1]," to ", years[length(years)], ".png")),
+                  width = 8, height = 6,
+                  units = "in", res = 300)
+  ggplot(dat) +
     geom_col(aes(x = Year, y = n, fill = type)) +
     ylab("Number of individuals") +
     guides(fill = guide_legend(reverse = TRUE)) +
     theme(legend.title = element_blank(),
-          legend.position = c(0.1,0.9)) +
+          legend.position.inside = c(0.1,0.9)) +
     scale_x_continuous( breaks = years,
                         labels = years)
+  graphics.off()
   
-  ##-- Save plot as .png
-  grDevices::png( filename = file.path(dir.out, "figures",
-                                       paste0(species, "_monitoring_", years[1]," to ", years[length(years)], ".png")),
+  
+
+  ##-----     2.11.4. PREVIOUSLY DETECTED - FIGURES -----
+
+  ##-- Plot number of individuals with previous NGS detections
+  grDevices::png( filename = file.path(working.dir, "figures",
+                                       paste0(species, "_NGS previously detected_",
+                                              years[1]," to ", years[length(years)], ".png")),
                   width = 8, height = 6,
                   units = "in", res = 300)
-  samplesTimeSeries
+  alive %>%
+    dplyr::group_by(Year, detected.earlier) %>%
+    dplyr::summarise(n = length(unique(Id)))%>%
+    ggplot() +
+    geom_col(aes(x = Year, y = n, fill = detected.earlier)) +
+    ylab("Number of individuals detected through NGS") +
+    theme(legend.position = c(0.1,0.9)) +
+    scale_x_continuous(breaks = years, labels = years) +
+    scale_fill_manual(values = c("gray20", "gray60"))
+  graphics.off()
+  
+
+  ##-- Plot number of dead recoveries with previous detections
+  grDevices::png( filename = file.path(working.dir, "figures",
+                                       paste0(species, "_DR previously detected_",
+                                              years[1]," to ", years[length(years)], ".png")),
+                  width = 8, height = 6,
+                  units = "in", res = 300)
+  dead.recovery %>%
+    dplyr::group_by(Year, detected.earlier) %>%
+    dplyr::summarise(n = length(unique(Id))) %>%
+    ggplot() +
+    geom_col(aes(x = Year, y = n, fill = detected.earlier)) +
+    ylab("Number of individuals recovered dead") +
+    theme(legend.position = c(0.1,0.9)) +
+    scale_x_continuous(breaks = years, labels = years) +
+    scale_fill_manual(values = c("gray20", "gray60"))
   graphics.off()
   
   
   
-  ## ---------------------------------------------------------------------------
-  ## -- MOVE TO .RMD -----------------------------------------------------------
-  ## ---------------------------------------------------------------------------
-  ##-- Number of ID detected alive
-  kable(ids, align = "lc",
-        caption = "Number of individuals detected through NGS per year and country") %>%
-    kable_styling(full_width = F)
+  ##-----   2.12. DATA ISSUES -----
   
-  ##-- Number of ID detected alive
-  kable(deadIds, align = "lc",
-        caption = "Number of identified dead animals per year and country") %>% 
-    kable_styling(full_width = F)
-  ## ---------------------------------------------------------------------------
-  ## -- MOVE TO .RMD -----------------------------------------------------------
-  ## ---------------------------------------------------------------------------
-  
-  
-  
-  ## ---- previous det ----------------------------
-  dat.alive <- alive %>%
-    dplyr::group_by(Year, detected.earlier) %>%
-    dplyr::summarise(n = length(unique(Id)))
-  dat.alive$type = "NGS"
-  
-  dat.dead <- dead.recovery %>%
-    dplyr::group_by(Year, detected.earlier) %>%
-    dplyr::summarise(n = length(unique(Id)))
-  dat.dead$type = "dead.recovery"
-  
-  ggplot() +
-    geom_col(data = dat.alive,
-             aes(x = Year, y = n, fill = detected.earlier)) +
-    ylab("Number of individuals detected through NGS") +
-    theme(legend.position = c(0.1,0.9)) +
-    scale_x_continuous(breaks = years, labels = years)
-  
-  ggplot() +
-    geom_col(data = dat.dead,
-             aes(x = Year, y = n, fill = detected.earlier)) +
-    ylab("Number of dead individuals") +
-    theme(legend.position = c(0.1,0.9)) +
-    scale_x_continuous(breaks = years, labels = years)
-  
-  
-  
-  ## ---- multiple sex -----------------------------------------------------------
   sexTab <- cbind.data.frame(
     "problems" = c("Unknown sex", "both 'female' and 'male'"),
     "number of individuals" = as.numeric(table(doubleSexID)[c(1,3)]))
@@ -824,7 +925,7 @@ cleanRovbaseData_bear <- function(
           plot.background = element_blank())
   
   ##-- Save maps as .png
-  grDevices::png(filename = file.path(dir.out, "figures",
+  grDevices::png(filename = file.path(working.dir, "figures",
                                       paste0(species, "_NGS_", years[1]," to ", years[length(years)], ".png")),
                  width = 8, height = 6, units = "in", res = 300)
   NGS_map
@@ -852,7 +953,7 @@ cleanRovbaseData_bear <- function(
           plot.background = element_blank())
   
   ##-- Save maps as .png
-  grDevices::png(filename = file.path(dir.out, "figures",
+  grDevices::png(filename = file.path(working.dir, "figures",
                                       paste0(engSpecies, "_DEAD_", years[1]," to ", years[length(years)], ".png")),
                  width = 8, height = 6, units = "in", res = 300)
   dead_map
@@ -865,9 +966,28 @@ cleanRovbaseData_bear <- function(
   save( alive, 
         dead.recovery,
         IdDoubleSex,
-        file = file.path(dir.out, "data", fileName))
+        file = file.path(working.dir, "data", fileName))
   
   
   
+  ## ----- OUTPUT ------
+  ##-- List of outputs for the .Rmd report
+  out <- list()
+  out$SPECIES <- "bear"
+  out$YEARS <- years
+  out$SEX <- sex
+  out$DATE <- DATE
+  out$info.ls <- list()
+  out$info.ls$IdDoubleSex <- IdDoubleSex
+  out$info.ls$doubleSexID <- doubleSexID
+  out$info.ls$numNoID <- numNoID
+  out$info.ls$numNoDate <- numNoDate
+  out$info.ls$numNoCoords <- numNoCoords
+  if(species == "bear"){}
+  if(species == "wolf"){}
+  if(species == "wolverine"){}
+  
+  
+  return(out)
   
 }
