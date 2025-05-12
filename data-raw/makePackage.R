@@ -55,7 +55,7 @@ system(paste0('R CMD build ', baseDir))
 
 
 ## ------ CHECK PACKAGE ------
-#check(baseDir)
+check(baseDir)
 
 
 ## ------ INSTALL PACKAGE FROM .tar ------

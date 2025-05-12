@@ -1026,7 +1026,6 @@ cleanRovbaseData <- function(
   ##-- Find the .rmd template for the report
   if(is.null(Rmd.template)) {
     Rmd.template <- system.file("rmd", "RovQuant_CleaningReport.Rmd", package = "rovquantR")
-    Rmd.template <- "C:/My_documents/rovquantR/inst/rmd/RovQuant_CleaningReport2.Rmd"
     if(!file.exists(Rmd.template)) {
       stop("Can not find the Rmarkdown document to use for cleaning Rovbase.3.0 data.\n You must provide the path to the Rmarkdown template through the \"Rmd_template\" argument.")
     }
