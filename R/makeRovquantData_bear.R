@@ -721,8 +721,8 @@ makeRovquantData_bear <- function(
     
     ##-- Add year
     mtext(text = years[t],
-          side = 1, line =  -20,
-          adj = 0.2, cex = 1.2)
+          side = 1, line = -18,
+          adj = 0.18, cex = 1.2)
   }#t
   dev.off()
   
@@ -753,8 +753,8 @@ makeRovquantData_bear <- function(
     
     ##-- Add year
     mtext(text = years[t],
-          side = 1, line =  -20,
-          adj = 0.2, cex = 1.2)
+          side = 1, line = -18,
+          adj = 0.18, cex = 1.2)
   }#t
   dev.off()
   

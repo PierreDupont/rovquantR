@@ -28,7 +28,7 @@ output:
 
 ```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
 
-options(scipen=999)
+options(scipen = 999)
 
 ##-- load libraries
 library(dplyr)
@@ -49,7 +49,7 @@ date <- params$date
 sampling.months <- params$sampling.months
 working.dir <- params$working.dir
 data.dir <- params$data.dir 
-info.ls <- parms$info.ls
+info.ls <- params$info.ls
 
 n.years <- length(years)
 
@@ -83,12 +83,11 @@ For the **`r species`**, we consider a sampling period each year that extends fr
 ------------------------------------------------------------------------
 
 
-
 # Rovbase data files
 
 We start by loading the most recent data for the focal species available from RovBase. This data was downloaded from [rovbase.3.0](https://rovbase30.miljodirektoratet.no/) on `r date` and includes two '.xlsx' spreadsheets containing the species-specific **NGS** data and the large carnivores' **dead recoveries** data.
 
-(We could also load a file with *problematic samples* or *individuals* flagged to be removed from the analysis, but this would require using standardized names for these files as well (not impossible))
+<!-- (We could also load a file with *problematic samples* or *individuals* flagged to be removed from the analysis, but this would require using standardized names for these files as well (not impossible)) -->
 
 The first steps of the cleaning process consist in :
 
@@ -121,14 +120,16 @@ print(dirTest[index])
 
 ##-- NGS sample table
 NGS_samples <- read.csv( file.path( working.dir, "tables",
-                                    paste0( species, "_NGS samples raw_",
-                                            years[1]," to ", years[length(years)], ".csv")),
+                                    paste0( species, "_Raw NGS Samples_",
+                                            years[1]," to ", years[length(years)],
+                                            ".csv")),
                          check.names = FALSE)
 
 ##-- NGS id table data
 NGS_ids <- read.csv( file.path( working.dir, "tables",
-                                paste0( species, "_NGS ids raw_",
-                                        years[1]," to ", years[length(years)], ".csv")),
+                                paste0( species, "_Raw NGS Ids_",
+                                        years[1]," to ", years[length(years)],
+                                        ".csv")),
                      check.names = FALSE)
 ```
 
@@ -171,14 +172,16 @@ print(dirTest[index])
 
 ##-- Dead recoveries sample table
 DR_samples <- read.csv( file.path( working.dir, "tables",
-                                   paste0( species, "_DR samples raw_",
-                                           years[1]," to ", years[length(years)], ".csv")),
+                                   paste0( species, "_Raw DR Samples_",
+                                           years[1]," to ", years[length(years)],
+                                           ".csv")),
                         check.names = FALSE)
 
 ##-- Dead Recoveries id table 
 DR_ids <- read.csv( file.path( working.dir, "tables",
-                               paste0( species, "_DR ids raw_",
-                                       years[1]," to ", years[length(years)], ".csv")),
+                               paste0( species, "_Raw DR Ids_",
+                                       years[1]," to ", years[length(years)],
+                                       ".csv")),
                     check.names = FALSE)
 ```
 
@@ -198,12 +201,11 @@ knitr::kable( DR_samples,
 ```{r, raw DR ids table data, echo = F, collapse = TRUE}
 knitr::kable( DR_ids,
        align = "lc",
-       caption = "Number of individuals identified from dead recoveries by year and sex")%>%
+       caption = "Number of individuals identified from dead recoveries by year and sex") %>%
   kableExtra::kable_styling(full_width = F)
 ```
 
 ------------------------------------------------------------------------
-
 
 
 # Data cleaning
@@ -211,26 +213,30 @@ knitr::kable( DR_ids,
 ```{r, clean data summary, echo = F, collapse = TRUE}
 ##-- Number of NGS samples
 samples <-  read.csv( file.path( working.dir, "tables",
-                                   paste0( species, "_DR samples raw_",
-                                           years[1]," to ", years[length(years)], ".csv")),
+                                   paste0( species, "_Clean NGS Samples_",
+                                           years[1]," to ", years[length(years)],
+                                           ".csv")),
                         check.names = FALSE)
 
 ##-- Number of individuals detected alive
 ids <-  read.csv( file.path( working.dir, "tables",
-                                   paste0( species, "_DR samples raw_",
-                                           years[1]," to ", years[length(years)], ".csv")),
+                                   paste0( species, "_Clean NGS Ids_",
+                                           years[1]," to ", years[length(years)],
+                                           ".csv")),
                         check.names = FALSE)
 
 ##-- Number of DR samples
 deadSamples <-  read.csv( file.path( working.dir, "tables",
-                                   paste0( species, "_DR samples raw_",
-                                           years[1]," to ", years[length(years)], ".csv")),
+                                   paste0( species, "_Clean DR Samples_",
+                                           years[1]," to ", years[length(years)], 
+                                           ".csv")),
                         check.names = FALSE)
 
 ##-- Number of individuals recovered
 deadIds <-  read.csv( file.path( working.dir, "tables",
-                                   paste0( species, "_DR samples raw_",
-                                           years[1]," to ", years[length(years)], ".csv")),
+                                   paste0( species, "_Clean DR Ids_",
+                                           years[1]," to ", years[length(years)], 
+                                           ".csv")),
                         check.names = FALSE)
 ```
 
@@ -240,11 +246,11 @@ After these initial checks several unusable samples were filtered out:
 -   samples without spatial coordinates (N = `r info.ls$noCoords`)
 -   samples without dates (N = `r info.ls$noDate`)
 
-`r if(engSpecies == "wolverine"){paste0("-   removing ", length(info.ls$youngDeads) + length(info.ls$lowWeightDeads), " young wolverines recovered between March and November (Note that ", length(info.ls$zeroWeightDeads), " wolverines with weight = 0kg were kept in the data)")}`
+`r if(species == "wolverine"){paste0("-   removing ", length(info.ls$youngDeads) + length(info.ls$lowWeightDeads), " young wolverines recovered between March and November (Note that ", length(info.ls$zeroWeightDeads), " wolverines with weight = 0kg were kept in the data)")}`
 
-`r if(engSpecies == "wolf"){paste0("-   overwriting sex assignment using info from Micke (N = ", info.ls$numOverwiteSex," individuals)")}`
+`r if(species == "wolf"){paste0("-   overwriting sex assignment using info from Micke (N = ", info.ls$numOverwiteSex," individuals)")}`
 
-`r if(engSpecies == "bear"){paste0("-   removing ", sum(!info.ls$remove.alive), " bear DNA samples and ", sum(!info.ls$remove.dead), " dead recoveries flagged by H.Brøseth")}`
+`r if(species == "bear"){paste0("-   removing ", sum(!info.ls$remove.alive), " bear DNA samples and ", sum(!info.ls$remove.dead), " dead recoveries flagged by H.Brøseth")}`
 
 
 
@@ -253,7 +259,6 @@ After these initial checks several unusable samples were filtered out:
 After this initial clean-up, we are left with `r paste0(samples["Total","Total"],"(NOR = ",samples["(N)","Total"]," ; SWE = ",samples["(S)","Total"], ")")` NGS samples and `r paste0(deadSamples["Total","Total"], "(NOR = ",deadSamples["(N)","Total"]," ; SWE = ",deadSamples["(S)","Total"], ")")` dead recoveries.
 
 ```{r, clean data samples timeSeries, fig.align = "center", fig.cap = paste0("Figure 1: Numbers of ", species, " non-invasive genetic samples and dead recoveries per month between ", years[1], " and ", years[length(years)], ". Presented are the number of samples that were available in Rovbase and useable for the OPSCR analysis, i.e. with the individual ID, species, date and coordinates succesfully identified."), echo = FALSE}
-##-- Insert figure
 knitr::include_graphics(file.path( working.dir, "figures",
                                    paste0( species, "_clean data samples_",
                                            years[1]," to ", years[length(years)], ".png")))
@@ -283,7 +288,8 @@ In terms of individuals identified, these correspond to `r paste0(ids["Total","T
 ##-- Insert figure
 knitr::include_graphics(file.path( working.dir, "figures",
                                    paste0( species, "_clean data ids_",
-                                           years[1]," to ", years[length(years)], ".png")))
+                                           years[1]," to ", years[length(years)],
+                                           ".png")))
 ```
 
 
@@ -308,13 +314,15 @@ knitr::kable( deadIds,
 ```{r, NGS previously detected, fig.align = "center", fig.cap = paste0("Figure 3: Numbers of ", species, " individuals previously detected through non-invasive genetic sampling each year between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path( working.dir, "figures",
                                    paste0( species, "_NGS previously detected_",
-                                           years[1]," to ", years[length(years)], ".png")))
+                                           years[1]," to ", years[length(years)], 
+                                           ".png")))
 ```
 
 ```{r, DR previously detected, fig.align = "center", fig.cap = paste0("Figure 3: Numbers of ", species, " individuals recovered dead that were previously detected through non-invasive genetic sampling each year between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path( working.dir, "figures",
                                    paste0( species, "_DR previously detected_",
-                                           years[1]," to ", years[length(years)], ".png")))
+                                           years[1]," to ", years[length(years)], 
+                                           ".png")))
 ```
 
 
@@ -415,7 +423,8 @@ We can also add maps of the NGS samples collected year:
 ```{r, NGS maps, fig.align = "center", fig.height = 8, fig.width = 12, fig.cap = paste0("Figure 4: Numbers of ", species, " individuals previously detected through non-invasive genetic sampling each year between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path( working.dir, "figures",
                                    paste0( species,  "_NGS maps_",
-                                           years[1]," to ", years[length(years)], ".png")))
+                                           years[1]," to ", years[length(years)],
+                                           ".png")))
 ```
 
 and a series of maps for the dead recoveries each year:
@@ -444,7 +453,9 @@ dead_map
 
 ##-- Save maps as .png
 grDevices::png(filename = file.path(working.dir, "figures",
-                         paste0(engSpecies, "_DEAD_", years[1]," to ", years[length(years)], ".png")),
+                         paste0(engSpecies, "_DEAD_",
+                                years[1]," to ", years[length(years)], 
+                                ".png")),
     width = 8, height = 6, units = "in", res = 300)
 dead_map
 graphics.off()
@@ -455,7 +466,7 @@ graphics.off()
 # Save clean data
 
 ```{r, save data, echo = F}
-fileName <-  paste0("CleanData_", engSpecies, "_",DATE,".RData")
+fileName <- paste0("CleanData_", species, "_", date, ".RData")
 
 save( alive, 
       dead.recovery,
@@ -465,10 +476,15 @@ save( alive,
 
 Finally, we save the cleaned **alive** and **dead.recovery** sf objects as a .RData file with name **`r fileName`** located in the `r engSpecies`-specific folder (`r file.path(working.dir, "data")`).
 
+
+------------------------------------------------------------------------
+
+# References
+
+
 ------------------------------------------------------------------------
 
 # Metadata
-
 ```{r, metadata, echo = F}
 utils::sessionInfo()
 ```
