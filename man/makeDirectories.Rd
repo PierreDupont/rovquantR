@@ -4,12 +4,14 @@
 \alias{makeDirectories}
 \title{Prepare folder structure}
 \usage{
-makeDirectories(path = NULL, twoSex = T)
+makeDirectories(path = NULL, subFolders = NULL, show.dir = TRUE)
 }
 \arguments{
 \item{path}{A path indicating where to create the different folders.}
 
-\item{twoSex}{A \code{logical}. If TRUE, sex-specific folders are created for the female and male inputs and outputs files, respectively.}
+\item{subFolders}{A \code{character vector} with the names of the subfolders to be created for the nimble input and output files.}
+
+\item{show.dir}{A \code{logical}. (Optional; requires package ´sf´) If TRUE, the directory structure created is displayed in a tree-like format.}
 }
 \value{
 boolean invisible(FALSE) if nothing was created, invisible(TRUE) if folders were created in \emph{path}.

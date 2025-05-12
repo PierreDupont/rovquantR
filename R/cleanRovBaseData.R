@@ -51,6 +51,7 @@
 #' 
 #' @importFrom rmarkdown render
 #' @importFrom grDevices png
+#' @import patchwork
 #' @import sf 
 #' @import ggplot2 
 #' @import dplyr 

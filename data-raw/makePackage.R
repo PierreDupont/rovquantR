@@ -47,7 +47,7 @@ if(Sys.info()['user'] == 'dturek') {
 
 
 ## ------ DOCUMENT PACKAGE ------
-#document(baseDir)
+document(baseDir)
 
 
 ## ------ BUILD PACKAGE ------

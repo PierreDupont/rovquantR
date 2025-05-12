@@ -49,7 +49,7 @@ library(rovquantR)
 ## Working Environment
 
 Next, we need to set-up the general working environment for the analysis. This includes the location of the raw data files (imported from RovBase) and the directory chosen for the analysis. 
-The first directory is called 'data_dir' and corresponds to the folder where the raw data is located. 
+The first directory is called 'data.dir' and corresponds to the folder where the raw data is located. 
 
 It contains the different files necessary for the OPSCR analysis:
 * an excel file of all the brown bear DNA samples available from Rovbase
@@ -60,29 +60,29 @@ It contains the different files necessary for the OPSCR analysis:
 Note that this is NOT the working directory. For all intent and purposes, it should be treated as a 'read-only' directory.
 
 ```{r set-up1.1, eval = TRUE, echo = FALSE}
-data_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/Data"
+##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
+data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Data"
+
+##-- WORKING DIRECTORY (= main folder for the analysis)
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Analysis"
 ```
 
 ```{r set-up1.2, eval = FALSE, echo = TRUE}
-data_dir <- "./Data"
+data.dir <- "./Data"
 ```
 
 
 The second directory will be used to store all the files and outputs from the analysis.
 
-```{r set-up2.1, eval = TRUE, echo = FALSE}
-working_dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2023/RovQuant_test/BearVignette"
-``` 
-
 ```{r set-up2.2, eval = FALSE, echo = TRUE}
-working_dir <- "./BearVignette"
+working.dir <- "./BearVignette"
 ``` 
 
 
-To make it easier (and more reproducible), we created the 'makeDirectories' function. This will create a set of folders in the location specific by 'working_dir' that will later be used to store processed data, model input and output, as well as results figures and tables.
+To make it easier (and more reproducible), we created the 'makeDirectories' function. This will create a set of folders in the location specific by 'working.dir' that will later be used to store processed data, model input and output, as well as results figures and tables.
 
 ```{r set.up3, eval = TRUE}
-makeDirectories(path = working_dir)
+makeDirectories(path = working.dir)
 ``` 
 
 
@@ -96,7 +96,7 @@ In addition, we have noted that, over the years, certain fields have been added,
 
 ```{r rename_DNA, eval=FALSE}
 ##-- Load raw excel file imported from rovbase 
-DNA <- readxl::read_xlsx(file.path(data_dir,"DNA.xlsx")) %>%
+DNA <- readxl::read_xlsx(file.path(data.dir,"DNA.xlsx")) %>%
   ##-- Remove any duplicates
   distinct(., .keep_all = TRUE) %>%
   ##-- Rename columns to facilitate manipulation
@@ -160,7 +160,7 @@ DNA <- readxl::read_xlsx(file.path(data_dir,"DNA.xlsx")) %>%
   ##-- Filter to the focal species
   filter(., Species == "Bjørn") %>%
   ##-- Save as.csv 
-  writeMostRecent.csv( ., file = file.path(data_dir, "dna_bear.csv"))
+  writeMostRecent.csv( ., file = file.path(data.dir, "dna_bear.csv"))
 ```
 
 
@@ -168,7 +168,7 @@ We also have to rename the dead recovery file for easier handling.
 
 ```{r rename_DR, eval=FALSE}
 ##-- Load raw excel file imported from rovbase 
-DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
+DR <- readxl::read_xlsx(file.path(data.dir,"dead carnivores.xlsx")) %>%
   ##-- Remove any duplicates
   distinct(., .keep_all = TRUE) %>%
   ##-- Rename columns to facilitate manipulation
@@ -222,7 +222,7 @@ DR <- readxl::read_xlsx(file.path(data_dir,"dead carnivores.xlsx")) %>%
   ##-- Filter to the focal species
   filter(., Species == "Bjørn") %>%
   ##-- Save as.csv 
-  writeMostRecent.csv( ., file = file.path(data_dir, "dead_bear.csv"))
+  writeMostRecent.csv( ., file = file.path(data.dir, "dead_bear.csv"))
 ```
 
 
@@ -235,8 +235,8 @@ In order to evaluate the cleaning procedure, the cleaing function prints out a r
 ```{r clean, eval = FALSE}
 cleanRovbaseData( species = "bear",
                   years = 2020:2024,
-                  data_dir = data_dir,
-                  output_dir = file.path(working_dir, "data"))
+                  data.dir = data.dir,
+                  output_dir = file.path(working.dir, "data"))
 ```
 
 
@@ -250,8 +250,8 @@ This process can be quite opaque and complex and this is why we have created the
 makeRovquantData(    
   ##-- paths
   species = "bear",
-  data_dir = data_dir,
-  working_dir = working_dir,
+  data.dir = data.dir,
+  working.dir = working.dir,
   ##-- data
   years = NULL,
   sex = c("Hann","Hunn"),
@@ -280,7 +280,7 @@ In this example, as in most cases in the RovQuant project, we fit sex-specific m
 
 ```{r run_females1.1, eval=FALSE}
 ##-- List all prepared input files
-inputFiles <- list.files(file.path(working_dir, "nimbleInFiles/Hunn"),
+inputFiles <- list.files(file.path(working.dir, "nimbleInFiles/Hunn"),
                          full.names = T)
 
 ##-- Load the first one
@@ -336,7 +336,7 @@ Finally, once the MCMC algorithm and the model are prepared and compiled, we can
 system.time(runMCMCbites( mcmc = Cmcmc,
                           bite.size = 100,
                           bite.number = 5,
-                          path = file.path(working_dir,"nimbleOutfiles/Hunn")))
+                          path = file.path(working.dir,"nimbleOutfiles/Hunn")))
 
 ```
 
@@ -344,7 +344,7 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 And now we can do the same for males:
 ```{r run_males, eval=FALSE}
 ##-- Load the first prepared input files
-inputFiles <- load(list.files(file.path(working_dir, "nimbleInFiles/Hann"),
+inputFiles <- load(list.files(file.path(working.dir, "nimbleInFiles/Hann"),
                               full.names = T)[1])
 
 ##-- Build nimble model object
@@ -371,7 +371,7 @@ Cmcmc <- compiledList$mcmc
 system.time(runMCMCbites( mcmc = Cmcmc,
                           bite.size = 100,
                           bite.number = 5,
-                          path = file.path(working_dir,"nimbleOutfiles/Hann")))
+                          path = file.path(working.dir,"nimbleOutfiles/Hann")))
 ```
 
 
@@ -384,8 +384,8 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 processRovquantOutput(   
   ##-- paths
   species = "bear",
-  data_dir = data_dir,
-  working_dir = working_dir,
+  data.dir = data.dir,
+  working.dir = working.dir,
   ##-- MCMC processing
   nburnin = 0,
   ##-- Density extraction

@@ -5,52 +5,73 @@
 \title{Data set clean-up.}
 \usage{
 cleanRovbaseData(
-  species,
+  data.dir,
+  working.dir,
+  species = c("bear", "wolf", "wolverine"),
   years = NULL,
-  data_dir = "./Data",
-  output_dir = "./Data",
-  Rmd_template = NULL,
-  overwrite = FALSE
+  sex = c("female", "male"),
+  sampling.months = NULL,
+  rename.list = NULL,
+  Rmd.template = NULL,
+  overwrite = FALSE,
+  output.dir = NULL
 )
 }
 \arguments{
+\item{data.dir}{the \code{path} pointing to the directory containing the raw 
+data from Rovbase.}
+
+\item{working.dir}{the \code{path} pointing to the working directory. By default,
+the cleaned data will be stored in a subfolder of this working directory called 'data'.}
+
 \item{species}{A \code{character} string with the name of the focal species
 ("bear", "wolf", or "wolverine").}
 
 \item{years}{A \code{numeric} vector containing the years of interest. 
 Only data for those years will be cleaned and returned.}
 
-\item{data_dir}{the \code{path} pointing to the directory containing the raw 
-data from Rovbase.}
+\item{sex}{A \code{character} vector containing the sex of interest. 
+Can be "Hunn" for females or "Hann" for males. Default is both sexes (c("Hunn","Hann")).}
 
-\item{output_dir}{the \code{path} pointing to the directory where the cleaned 
-data will be stored. The clean data, as well as a \code{.html} report describing 
-the content of the clean data, will be placed in a folder with the species name,
-inside a subfolder with the date of extraction of the raw Rovbase data.}
+\item{sampling.months}{(Optional) A \code{list} containing the sampling period months.
+If the sampling period overlaps two calendar years, the list should contain one element per year.
+(e.g. samplingMonths <- list(c(11,12), c(1,2,3,4))) for a sampling period extending from November to April of the following year.}
 
-\item{Rmd_template}{the \code{path} to the \code{.rmd} template to be used for
+\item{rename.list}{(Optional) A named \code{character} vector used to rename columns in the raw Rovbase files.}
+
+\item{Rmd.template}{(Optional) The \code{path} to the \code{.rmd} template to be used for
 cleaning the data. By default, the \code{.rmd} template provided with the 
 \code{rovquantR} package is used.}
 
-\item{overwrite}{A \code{logical} Whether previously existing clean data should
-be overwritten or not (default = FALSE).}
+\item{overwrite}{A \code{logical} (default = FALSE) to force ovewriting of previously existing clean data.
+If FALSE, the function checks for any pre-existing clean data files and ask whether to overwrite it or not.}
+
+\item{output.dir}{(Optional) the \code{path} pointing to the directory where the \code{.html} report will be printed.
+By default, the \code{.html} report describing the content of the clean data will 
+be placed in a subfolder of the working directory (\code{working.dir}) called 'reports'.}
 }
 \value{
 This function returns:
 \enumerate{
-\item A \code{.RData} file with the clean NGS and dead recovery data objects
- for the species and period specified.
+\item A \code{.RData} file with the clean NGS and dead recovery data objects 
+for the species and period specified. The clean data file is saved as an \code{.RData} 
+file named using the species name and the date of extraction of the raw Rovbase data 
+to facilitate replicability (e.g. 'CleanData_bear_2024-08-10.RData').
 \item A \code{.html} report summarizing the data cleaning process. 
-\item Additional \code{.png} images that can be reused somewhere else.
+The \code{.RData} report is using the same naming convention as the clean \code{.RData} (e.g. 'CleanData_bear_2024-08-10.html').
+\item Additional \code{.png} images and summary \code{.csv} tables that can be reused somewhere else.
 }
 }
 \description{
-\code{cleanRovbaseData} calls a custom Rmarkdown template that identifies and loads
- the most recent RovBase data available on dropbox for the specified species
- and conducts a set of data cleaning steps that include:
- - removing un-identified samples
- - checking sex-assignment
- - removing flagged samples from RovData/Mike
+\code{cleanRovbaseData} identifies and loads the most recent RovBase data available 
+for the specified species in the specified \code{data.dir} location, and conducts a set of data cleaning steps that include:
+ \itemize{
+ \item{"parameter 1"}{removing un-identified samples}
+ \item{"parameter 2"}{checking sex-assignment}
+ \item{"parameter 3"}{removing samples flagged as unusable by RovData/Mike}
+}
+ 
+Additionally, it can produce a \code{html} report describing the content of the data in terms of number of samples, individuals, etc...
 }
 \author{
 Pierre Dupont

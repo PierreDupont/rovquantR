@@ -6,30 +6,31 @@
 \usage{
 makeRovquantData(
   species = c("bear", "wolf", "wolverine"),
-  data_dir = "./Data",
-  working_dir = NULL,
+  data.dir = getwd(),
+  working.dir = getwd(),
   years = NULL,
-  sex = c("Hann", "Hunn"),
-  aug.factor = 2,
-  sampling.months = list(4, 5, 6, 7, 8, 9, 10, 11),
-  habitat.res = 20000,
-  buffer.size = 50000,
-  max.move.dist = 250000,
-  detector.res = 5000,
-  subdetector.res = 1000,
-  max.det.dist = 70000,
-  resize.factor = 1,
-  plot.check = FALSE,
-  print.report = TRUE
+  sex = c("female", "male"),
+  aug.factor = NULL,
+  sampling.months = NULL,
+  habitat.res = NULL,
+  buffer.size = NULL,
+  max.move.dist = NULL,
+  detector.res = NULL,
+  subdetector.res = NULL,
+  max.det.dist = NULL,
+  resize.factor = NULL,
+  print.report = TRUE,
+  Rmd.template = NULL,
+  output.dir = NULL
 )
 }
 \arguments{
 \item{species}{A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.}
 
-\item{data_dir}{A \code{path} to the directory containing the clean Rovbase data,
+\item{data.dir}{A \code{path} to the directory containing the clean Rovbase data,
 as prepared by \code{cleanRovBaseData}.}
 
-\item{working_dir}{A \code{path} to the directory for this analysis containing
+\item{working.dir}{A \code{path} to the directory for this analysis containing
 the \code{nimbleInputFiles} folder to store the prepared data.}
 
 \item{years}{A \code{list}  Whether dead recovery should be included (TRUE) or not(FALSE)}
@@ -54,9 +55,11 @@ the \code{nimbleInputFiles} folder to store the prepared data.}
 
 \item{resize.factor}{A \code{numeric}.}
 
-\item{plot.check}{A \code{logical}.}
-
 \item{print.report}{A \code{logical}.}
+
+\item{Rmd.template}{A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.}
+
+\item{output.dir}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
 }
 \value{
 This function returns:
@@ -71,7 +74,15 @@ This function returns:
 The \code{makeRovquantData} function calls a custom Rmarkdown template that identifies 
 and loads the most recent Rovbase data available for the specified species 
 and performs the OPSCR data preparation for model fitting. 
-The data preparation is specific to each species and incorporates the
+
+The data preparation process is composed of three main steps:
+\enumerate{
+\item Defining and formatting habitat characteristics
+\item Defining and formatting detectors characteristics
+\item Defining and formatting individual detection histories
+}
+
+The data preparation process is specific to each species and incorporates the
 different developments from project RovQuant to allow fitting large-scale
 SCR and OPSCR models (see Turek et al., 2021 <doi.org/10.1002/ecs2.3385>  for more details):
 \enumerate{

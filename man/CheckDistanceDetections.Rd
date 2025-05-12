@@ -9,7 +9,8 @@ CheckDistanceDetections(
   detector.xy = detector.xy,
   max.distance = NULL,
   method = "pairwise",
-  plot.check = FALSE
+  plot.check = FALSE,
+  verbose = FALSE
 )
 }
 \arguments{
@@ -21,7 +22,9 @@ CheckDistanceDetections(
 
 \item{method}{A \code{character} describing the method to be used to select which detections to remove.}
 
-\item{plot.check}{A \code{logical} plot distance histogram if \code{TRUE}.}
+\item{verbose}{A \code{logical}. Prints out information messages if set to TRUE.}
+
+\item{plot.che#'}{@param plot.check A \code{logical} plot distance histogram if \code{TRUE}.}
 }
 \value{
 A \code{list} object with the distances between detections and centroid of detections and which detection(s) from which id are outside the max.distance.

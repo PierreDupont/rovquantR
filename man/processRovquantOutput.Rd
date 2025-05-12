@@ -6,22 +6,23 @@
 \usage{
 processRovquantOutput(
   species = c("bear", "wolf", "wolverine"),
-  data_dir = "./Data",
-  working_dir = NULL,
+  data.dir = "./Data",
+  working.dir = NULL,
   nburnin = 0,
   niter = 100,
   extraction.res = 5000,
-  plot.check = FALSE,
-  print.report = TRUE
+  print.report = TRUE,
+  Rmd.template = NULL,
+  output.dir = NULL
 )
 }
 \arguments{
 \item{species}{A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.}
 
-\item{data_dir}{A \code{path} to the directory containing the clean Rovbase data,
+\item{data.dir}{A \code{path} to the directory containing the clean Rovbase data,
 as prepared by \code{cleanRovBaseData}.}
 
-\item{working_dir}{A \code{path} to the directory for this analysis containing
+\item{working.dir}{A \code{path} to the directory for this analysis containing
 the \code{nimbleInputFiles} folder to store the prepared data.}
 
 \item{nburnin}{An \code{integer} denoting the number of MCMC  dead recovery should be included (TRUE) or not (FALSE)}
@@ -30,9 +31,11 @@ the \code{nimbleInputFiles} folder to store the prepared data.}
 
 \item{extraction.res}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
 
-\item{plot.check}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
-
 \item{print.report}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+
+\item{output_dir}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+
+\item{Rmd_template}{A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.}
 }
 \value{
 This function returns:

@@ -10,7 +10,7 @@
 #'
 #' @name sampler_categorical_general1
 #'
-#' After an MCMC algorithm has been configured and built, the value of the proposal standard deviation of a RW_block sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to will modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value which the proposal standard deviation is reset to, at the onset of a new MCMC chain.
+#' @return After an MCMC algorithm has been configured and built, the value of the proposal standard deviation of a RW_block sampler can be modified using the setScale method of the sampler object.  This use the scalar argument to will modify the current value of the proposal standard deviation, as well as modifying the initial (pre-adaptation) value which the proposal standard deviation is reset to, at the onset of a new MCMC chain.
 #'
 #' Operating analogous to the setScale method, the RW_block sampler also has a setPropCov method.  This method accepts a single matrix-valued argument, which will modify both the current and initial (used at the onset of a new MCMC chain) values of the multivariate normal proposal covariance.
 #'
@@ -28,12 +28,8 @@
 #'
 #' @import nimble 
 #' 
+#' @rdname sampler_categorical_general1
 #' @export
-NULL
-#' @rdname dbinomLocal_normalCovs
-#' @export
-
-
 sampler_categorical_general1 <- nimbleFunction(
   name = 'sampler_categorical1',
   contains = sampler_BASE,
