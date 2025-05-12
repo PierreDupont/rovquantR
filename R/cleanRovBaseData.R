@@ -768,7 +768,7 @@ cleanRovbaseData <- function(
                                                ".png")),
                   width = 8, height = 6,
                   units = "in", res = 300)
-  ggplot(dat) +
+  ggplot2::ggplot(dat) +
     geom_col(aes(x = Date, y = n, fill = type)) +
     ylab("Number of samples") +
     guides(fill = guide_legend(reverse = TRUE)) +
@@ -806,7 +806,7 @@ cleanRovbaseData <- function(
                                               ".png")),
                   width = 8, height = 6,
                   units = "in", res = 300)
-  ggplot(dat) +
+  ggplot2::ggplot(dat) +
     geom_col(aes(x = Year, y = n, fill = type)) +
     ylab("Number of individuals") +
     guides(fill = guide_legend(reverse = TRUE)) +
@@ -879,7 +879,7 @@ cleanRovbaseData <- function(
   plot1 <- alive %>%
     dplyr::group_by(Year, detected.earlier) %>%
     dplyr::summarise(n = length(unique(Id))) %>%
-    ggplot() +
+    ggplot2::ggplot() +
     geom_col(aes(x = Year, y = n, fill = detected.earlier)) +
     labs( tag = "A",
           x = "years",
@@ -895,7 +895,7 @@ cleanRovbaseData <- function(
   plot2 <- dead.recovery %>%
     dplyr::group_by(Year, detected.earlier) %>%
     dplyr::summarise(n = length(unique(Id))) %>%
-    ggplot() +
+    ggplot2::ggplot() +
     geom_col(aes(x = Year, y = n, fill = detected.earlier)) +
     labs( tag = "B",
           x = "years",
