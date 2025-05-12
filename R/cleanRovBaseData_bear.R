@@ -973,7 +973,7 @@ cleanRovbaseData <- function(
   save( alive, 
         dead.recovery,
         file = file.path( working.dir, "data",
-                          paste0("CleanData_", species, "_", date,
+                          paste0("CleanData_", species, "_", DATE,
                                  ".RData")))
   
   
@@ -984,7 +984,7 @@ cleanRovbaseData <- function(
   out$SPECIES <- "bear"
   out$YEARS <- years
   out$SEX <- sex
-  out$DATE <- date
+  out$DATE <- DATE
   out$info.ls <- list()
   out$info.ls$IdDoubleSex <- IdDoubleSex
   out$info.ls$doubleSexID <- doubleSexID
