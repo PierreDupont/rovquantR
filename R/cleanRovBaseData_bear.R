@@ -41,9 +41,9 @@
 
 
 NULL
-#' @rdname cleanRovbaseData_bear
+#' @rdname cleanRovbaseData
 #' @export
-cleanRovbaseData_bear <- function(
+cleanRovbaseData <- function(
   ##-- paths
   data.dir,
   working.dir,
@@ -496,7 +496,8 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ##-----   2.7. WOLVERINE -----
+  ##----- 3. SPECIES-SPECIFIC CLEANING STEPS
+  ##-----   3.1. WOLVERINE -----
   
   if(engSpecies == "wolverine"){
     ##-- Remove un-verified dead recoveries [HB] 
@@ -562,7 +563,7 @@ cleanRovbaseData_bear <- function(
   
   
 
-  ##-----   2.8. WOLF -----
+  ##-----   3.2. WOLF -----
   
   if(engSpecies == "wolf"){
     ##-- Load most recent Micke's file
@@ -591,7 +592,7 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ##-----   2.9. BEAR -----
+  ##-----   3.3. BEAR -----
   
   if(engSpecies == "bear"){
     ##-- Load most recent "flagged" file from HB
@@ -612,7 +613,7 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ##-----   2.10. TURN INTO .sf OBJECTS -----
+  ##----- 4. TURN INTO .sf OBJECTS -----
   
   ##-- Turn into sf points dataframe
   alive <- sf::st_as_sf( x = alive,
@@ -637,9 +638,9 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ##-----   2.11. DATA SUMMARY -----
+  ##----- 5. DATA SUMMARY -----
   
-  ##-----     2.11.1. DATA SUMMARY - TABLES -----
+  ##-----   5.1. DATA SUMMARY - TABLES -----
   
   ##-- Number of NGS samples
   samples <- table(alive$Country_sample, alive$Year)
@@ -712,7 +713,7 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ##-----     2.11.2. NUMBER OF SAMPLES - FIGURE -----
+  ##-----   5.2. NUMBER OF SAMPLES - FIGURE -----
   
   ##-- Number of NGS per month
   dat.alive <- alive %>%
@@ -752,7 +753,7 @@ cleanRovbaseData_bear <- function(
   
 
   
-  ##-----     2.11.3. NUMBER OF INDIVIDUALS - FIGURE -----
+  ##-----   5.3. NUMBER OF INDIVIDUALS - FIGURE -----
   
   ##-- Number of IDs
   dat.alive <- alive %>% 
@@ -787,7 +788,74 @@ cleanRovbaseData_bear <- function(
   
   
 
-  ##-----     2.11.4. PREVIOUSLY DETECTED - FIGURES -----
+  ##-----   5.4. MAPS ------
+  
+  ##-----     5.4.1. NGS MAPS ------
+  
+  numRows <- ceiling(length(years)/5)
+  numCols <- 5
+  NGS_map <- ggplot(data = alive) +
+    geom_sf(data = COUNTRIES,
+            aes(fill = ISO),
+            alpha = 0.3,
+            color = NA) +
+    geom_sf(color = "black",
+            alpha = 0.3, size = 0.8, pch = 3) +
+    facet_wrap(~Year, nrow = numRows, ncol = numCols) +
+    theme(axis.line = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          legend.position = "none",
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.background = element_blank())
+  
+  ##-- Save maps as .png
+  grDevices::png(filename = file.path( working.dir, "figures",
+                                       paste0( species, "_NGS_",
+                                               years[1]," to ", years[length(years)], ".png")),
+                 width = 8, height = 6, units = "in", res = 300)
+  NGS_map
+  graphics.off()
+  
+  
+  
+  ##-----     5.4.1. DEAD RECOVERY MAPS ------
+  
+  dead_map <- ggplot(data = dead.recovery) +
+    geom_sf(data = COUNTRIES, 
+            aes(fill = ISO),
+            alpha = 0.3,
+            color = NA) + 
+    geom_sf(color = "black", alpha = 0.5, size = 0.8, pch = 3) +
+    facet_wrap(~Year, nrow = numRows, ncol = numCols) +
+    theme(axis.line = element_blank(),
+          axis.text.x = element_blank(),
+          axis.text.y = element_blank(),
+          axis.ticks = element_blank(),
+          axis.title.x = element_blank(),
+          axis.title.y = element_blank(),
+          legend.position = "none",
+          panel.background = element_blank(),
+          panel.border = element_blank(),
+          panel.grid.major = element_blank(),
+          panel.grid.minor = element_blank(),
+          plot.background = element_blank())
+  
+  ##-- Save maps as .png
+  grDevices::png(filename = file.path(working.dir, "figures",
+                                      paste0(engSpecies, "_DEAD_", years[1]," to ", years[length(years)], ".png")),
+                 width = 8, height = 6, units = "in", res = 300)
+  dead_map
+  graphics.off()
+  
+  
+  ##----- 6. PREVIOUSLY DETECTED - FIGURES -----
 
   ##-- Plot number of individuals with previous NGS detections
   grDevices::png( filename = file.path(working.dir, "figures",
@@ -826,18 +894,10 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ##-----   2.12. DATA ISSUES -----
+  ##----- 7. DATA ISSUES -----
+
+  ##-----   7.1. MULTIPLE DEATHS ------
   
-  sexTab <- cbind.data.frame(
-    "problems" = c("Unknown sex", "both 'female' and 'male'"),
-    "number of individuals" = as.numeric(table(doubleSexID)[c(1,3)]))
-  
-  kable(sexTab, align = "lc") %>%
-    kable_styling(full_width = F)
-  
-  
-  
-  ## ---- multiple deaths --------------------------------------------------------
   ##-- Identify and count individuals dead "more than once"
   ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1]
   multiDeathDate <- multiDeathYear <- multiDeathLocs <-  NULL
@@ -874,7 +934,7 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ## ---- ghost individuals ------------------------------------------------------
+  ##-----   7.2. GHOST INDIVIDUALS ------
   id.list <- unique(c(as.character(dead.recovery$Id), as.character(alive$Id)))
   ghosts <- unlist(lapply(id.list, function(id){
     out <- NULL
@@ -899,78 +959,16 @@ cleanRovbaseData_bear <- function(
   
   
   
-  ## ---- NGS maps ----------------------------------
-  ##-- NGS map
-  numRows <- ceiling(length(years)/5)
-  numCols <- 5
-  NGS_map <- ggplot(data = alive) +
-    geom_sf(data = COUNTRIES,
-            aes(fill = ISO),
-            alpha = 0.3,
-            color = NA) +
-    geom_sf(color = "black",
-            alpha = 0.3, size = 0.8, pch = 3) +
-    facet_wrap(~Year, nrow = numRows, ncol = numCols) +
-    theme(axis.line = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks = element_blank(),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          legend.position = "none",
-          panel.background = element_blank(),
-          panel.border = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.background = element_blank())
-  
-  ##-- Save maps as .png
-  grDevices::png(filename = file.path(working.dir, "figures",
-                                      paste0(species, "_NGS_", years[1]," to ", years[length(years)], ".png")),
-                 width = 8, height = 6, units = "in", res = 300)
-  NGS_map
-  graphics.off()
-  
-  ## ---- Dead recovery maps ------------------------
-  dead_map <- ggplot(data = dead.recovery) +
-    geom_sf(data = COUNTRIES, 
-            aes(fill = ISO),
-            alpha = 0.3,
-            color = NA) + 
-    geom_sf(color = "black", alpha = 0.5, size = 0.8, pch = 3) +
-    facet_wrap(~Year, nrow = numRows, ncol = numCols) +
-    theme(axis.line = element_blank(),
-          axis.text.x = element_blank(),
-          axis.text.y = element_blank(),
-          axis.ticks = element_blank(),
-          axis.title.x = element_blank(),
-          axis.title.y = element_blank(),
-          legend.position = "none",
-          panel.background = element_blank(),
-          panel.border = element_blank(),
-          panel.grid.major = element_blank(),
-          panel.grid.minor = element_blank(),
-          plot.background = element_blank())
-  
-  ##-- Save maps as .png
-  grDevices::png(filename = file.path(working.dir, "figures",
-                                      paste0(engSpecies, "_DEAD_", years[1]," to ", years[length(years)], ".png")),
-                 width = 8, height = 6, units = "in", res = 300)
-  dead_map
-  graphics.off()
-  
-  
-  ## ---- save data ---------------------------------------------------------------------------------------
-  fileName <-  paste0("CleanData_", engSpecies, "_",DATE,".RData")
-  
+  ##----- 8. SAVE DATA ------
   save( alive, 
         dead.recovery,
-        IdDoubleSex,
-        file = file.path(working.dir, "data", fileName))
+        #IdDoubleSex,
+        file = file.path( working.dir, "data",
+                          paste0("CleanData_", species, "_", DATE, ".RData")))
   
   
   
-  ## ----- OUTPUT ------
+  ##----- 9. OUTPUT ------
   ##-- List of outputs for the .Rmd report
   out <- list()
   out$SPECIES <- "bear"
@@ -983,6 +981,11 @@ cleanRovbaseData_bear <- function(
   out$info.ls$numNoID <- numNoID
   out$info.ls$numNoDate <- numNoDate
   out$info.ls$numNoCoords <- numNoCoords
+  out$info.ls$multiDeathDate <- multiDeathDate
+  out$info.ls$multiDeathDate <- multiDeathDate
+  out$info.ls$multiDeathYear <- multiDeathYear
+  out$info.ls$multiDeathLocs <- multiDeathLocs
+  out$info.ls$samples.to.remove <- samples.to.remove
   if(species == "bear"){}
   if(species == "wolf"){}
   if(species == "wolverine"){}
