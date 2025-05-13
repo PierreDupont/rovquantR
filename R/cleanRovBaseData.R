@@ -69,7 +69,7 @@ cleanRovbaseData <- function(
   ##-- data
   species = c("bear","wolf","wolverine"),
   years = NULL, 
-  sex = c("female","male"),
+  two.sex = TRUE,
   sampling.months = NULL,
   rename.list = NULL,
   
@@ -83,9 +83,14 @@ cleanRovbaseData <- function(
   ##----- 1. INITIAL CHECKS -----
   
   ##-- Make sure directory structure exists
+  if(two.sex){
   makeDirectories( path = working.dir,
-                   subFolders = sex,
+                   subFolders = c("female","male"),
                    show.dir = TRUE)
+    } else {
+    makeDirectories( path = working.dir,
+                     show.dir = TRUE)
+  }
   
   ##-- Species
   if (length(species)>1) {
@@ -538,11 +543,11 @@ cleanRovbaseData <- function(
     
     ##-- Remove pups killed before recruitment based on weight (cf. Henrik)
     ##-- 1) remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
-    out$youngDeads <- which(dead.recovery$Age_class %in% "Unge" &
+    youngDeads <- which(dead.recovery$Age_class %in% "Unge" &
                               dead.recovery$Month > 2 &
                               dead.recovery$Month < 12)
     if(length(youngDeads) > 0){
-      dead.recovery <- dead.recovery[-out$youngDeads, ]
+      dead.recovery <- dead.recovery[-youngDeads, ]
     }
     
     
@@ -563,14 +568,14 @@ cleanRovbaseData <- function(
     
     ##-- Check with Henrik (this step does not remove dead recoveries on id with weight==0 should it?)
     ##-- Check how many dead reco we remove and remove if more than 0
-    out$lowWeightDeads <- which(dead.recovery$weight > 0 & dead.recovery$weight < 4 &
+    lowWeightDeads <- which(dead.recovery$weight > 0 & dead.recovery$weight < 4 &
                                   dead.recovery$Month > 2 & dead.recovery$Month < 12)
     if(length(lowWeightDeads) > 0){
-      dead.recovery <- dead.recovery[-out$lowWeightDeads, ]
+      dead.recovery <- dead.recovery[-lowWeightDeads, ]
     }
     
     ##-- Check how many dead reco with a weight of 0 kg and recovered between March and November
-    out$zeroWeightDeads <- which(dead.recovery$Age %in% 0 &
+    zeroWeightDeads <- which(dead.recovery$Age %in% 0 &
                                    dead.recovery$Month > 2 &
                                    dead.recovery$Month < 12)
   }
@@ -601,7 +606,7 @@ cleanRovbaseData <- function(
     new.sex <- ifelse(!is.na(micke.sex), as.character(micke.sex), as.character(DATA$Sex))
     DATA$Sex <- new.sex
     
-    out$numOverwiteSex <- sum(unique(as.character(INDIVIDUAL_ID$Individ..Rovbase.)) %in% DATA$Id)
+    numOverwiteSex <- sum(unique(as.character(INDIVIDUAL_ID$Individ..Rovbase.)) %in% DATA$Id)
   }
   
   
@@ -724,7 +729,8 @@ cleanRovbaseData <- function(
                                                years[1]," to ", years[length(years)],
                                                ".png")),
                   width = 8, height = 6,
-                  units = "in", res = 300)
+                  units = "in", pointsize = 12,
+                  res = 300, bg = NA)  
   ggplot2::ggplot(dat) +
     ggplot2::geom_col(aes(x = Date, y = n, fill = type)) +
 
@@ -736,8 +742,8 @@ cleanRovbaseData <- function(
                                    hjust = 1)) +
     scale_x_date( date_breaks = "years",
                   date_labels = "%Y") 
-  graphics.off()
-
+  dev.off()
+  
   
   
   ##-----   5.3. NUMBER OF INDIVIDUALS - FIGURE -----
@@ -763,7 +769,8 @@ cleanRovbaseData <- function(
                                               years[1]," to ", years[length(years)],
                                               ".png")),
                   width = 8, height = 6,
-                  units = "in", res = 300)
+                  units = "in", pointsize = 12,
+                  res = 300, bg = NA)
   ggplot2::ggplot(dat) +
     geom_col(aes(x = Year, y = n, fill = type)) +
     ylab("Number of individuals") +
@@ -774,7 +781,7 @@ cleanRovbaseData <- function(
                                    hjust = 1)) +
     scale_x_continuous( breaks = years,
                         labels = years)
-  graphics.off()
+  dev.off()
   
   
   
@@ -798,7 +805,6 @@ cleanRovbaseData <- function(
                  width = ncols*2, height = nrows*4,
                  units = "in", pointsize = 12,
                  res = 300, bg = NA)
-  
 
   ##-- Maps layout
   mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
@@ -827,7 +833,7 @@ cleanRovbaseData <- function(
           side = 1, line = -18,
           adj = 0.18, cex = 1.2)
   }#t
-  graphics.off()
+  dev.off()
   
   
   
@@ -854,7 +860,7 @@ cleanRovbaseData <- function(
     dplyr::group_by(Year, detected.earlier) %>%
     dplyr::summarise(n = length(unique(Id))) %>%
     ggplot2::ggplot() +
-    geom_col(aes(x = Year, y = n, fill = detected.earlier)) +
+    ggplot2::geom_col(aes(x = Year, y = n, fill = detected.earlier)) +
     labs( tag = "B",
           x = "years",
           y = "Number of individuals recovered dead") +
@@ -870,10 +876,11 @@ cleanRovbaseData <- function(
                                         paste0( engSpecies, "_Previous Detection_",
                                                 years[1]," to ", years[length(years)],
                                                 ".png")),
-                  width = 16, height = 6,
-                  units = "in", res = 300)
+                  width = 12, height = 6,
+                  units = "in", pointsize = 12,
+                  res = 300, bg = NA)
   plot1 + plot2
-  graphics.off()
+  dev.off()
   
   
   
