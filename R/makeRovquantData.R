@@ -58,11 +58,11 @@
 #' @export
 makeRovquantData <- function(
   ##-- paths
-  species = c("bear","wolf","wolverine"),
-  data.dir = getwd(),
-  working.dir = getwd(),
+  data.dir = "./Data",
+  working.dir = NULL,
   
   ##-- data
+  species = c("bear","wolf","wolverine"),
   years = NULL,
   sex = c("female","male"),
   aug.factor = NULL,
@@ -80,17 +80,38 @@ makeRovquantData <- function(
   resize.factor = NULL,
   
   ##-- miscellanious
-  print.report = TRUE, 
+  print.report = TRUE,
   Rmd.template = NULL,
-  output.dir = NULL
+  output.dir = NULL,
+  overwrite = FALSE
 ) {
+  
+  
+  ##-- Check that a file with that name does not already exist to avoid overwriting
+  if (!overwrite) {
+    if (length(list.files( file.path(working.dir, "nimbleInFiles"),
+                              recursive = TRUE,
+                              pattern = "nimbleInput.+RData"))>0) {
+      message(paste0("Nimble input files already exist in: \n",
+                     file.path(working.dir, "nimbleInFiles")))
+      message("Are you sure you want to proceed and overwrite existing input files? (y/n) ")
+      question1 <- readLines(n = 1)
+      if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
+        message("Not overwriting existing files...")
+        return(invisible(NULL))
+      } else {
+        message("Now overwriting existing nimble input files.\n")
+      }
+    }
+  }
+
   
   ##---- 1. BROWN BEAR DATA PREPARATION -----
   
   ##-- Check species and use corresponding function
-  if(sum(grep("bear", species, ignore.case = T))>0|
+  if (sum(grep("bear", species, ignore.case = T))>0|
      sum(grep("bjørn", species, ignore.case = T))>0|
-     sum(grep("bjorn", species, ignore.case = T))>0){
+     sum(grep("bjorn", species, ignore.case = T))>0) {
   
     ##-- Prepare the data
     out <- makeRovquantData_bear(
@@ -156,9 +177,9 @@ makeRovquantData <- function(
   ##---- 3. WOLVERINE DATA PREPARATION -----
 
   ##-- Check species and use corresponding function
-  if(sum(grep("wolverine", species, ignore.case = T))>0|
+  if (sum(grep("wolverine", species, ignore.case = T))>0|
      sum(grep("jerv", species, ignore.case = T))>0|
-     sum(grep("järv", species, ignore.case = T))>0){
+     sum(grep("järv", species, ignore.case = T))>0) {
 
     ##-- Get clean name for the report
     SPECIES <- "Wolverine"
@@ -193,20 +214,18 @@ makeRovquantData <- function(
   
   ##---- 4. PRINT REPORT -----
   
-  if(print.report){
+  if (print.report) {
     
     ##-- Find the .rmd template for the report.
-    if(is.null(Rmd.template)){
+    if (is.null(Rmd.template)) {
       Rmd.template <- system.file("rmd", "RovQuant_DataReport.Rmd", package = "rovquantR")
-      if(!file.exists(Rmd.template)) {
+      if (!file.exists(Rmd.template)) {
         stop('Can not find a .rmd template called "RovQuant_DataReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
       } 
     }
     
-    
     ##-- Find the directory to print the report.
-    if(is.null(output.dir)){ output.dir <- file.path(working.dir, "reports") }
-    
+    if (is.null(output.dir)) { output.dir <- file.path(working.dir, "reports") }
     
     ##-- Clean the data and print report
     rmarkdown::render(

@@ -40,11 +40,11 @@
 #' @export
 processRovquantOutput <- function(
   ##-- paths
-  species = c("bear","wolf","wolverine"),
   data.dir = "./Data",
   working.dir = NULL,
   
   ##-- MCMC processing
+  species = c("bear","wolf","wolverine"),
   nburnin = 0,
   
   ##-- Density extraction
@@ -54,9 +54,9 @@ processRovquantOutput <- function(
   ##-- miscellanious
   print.report = TRUE,
   Rmd.template = NULL,
-  output.dir = NULL
+  output.dir = NULL,
+  overwrite = FALSE
 ) {
-
   
   ##---- 1. BROWN BEAR RESULTS PROCESSING -----
   
@@ -70,7 +70,8 @@ processRovquantOutput <- function(
       working.dir,
       nburnin,
       niter,
-      extraction.res)
+      extraction.res,
+      overwrite)
   } else {
     message("Come back some other time for wolves and wolverines...or any other species")
   }
@@ -79,10 +80,20 @@ processRovquantOutput <- function(
 
   ##---- 2. WOLF RESULTS PROCESSING -----
   
-  # if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
-  #   out <- processRovquantOutput_wolf(...)
-  # }
   
+  if(sum(grep("wolf", species, ignore.case = T))>0|
+     sum(grep("ulv", species, ignore.case = T))>0|
+     sum(grep("bjorn", species, ignore.case = T))>0){
+    
+    ##-- Process the model output
+    out <- processRovquantOutput_wolf(
+      data.dir,
+      working.dir,
+      nburnin,
+      niter,
+      extraction.res,
+      overwrite)
+  }
   
   
   ##---- 3. WOLVERINE RESULTS PROCESSING -----
@@ -99,8 +110,6 @@ processRovquantOutput <- function(
     
     ##-- Find the .rmd template for the report.
     if(is.null(Rmd.template)){
-      Rmd.template <- "C:/My_documents/rovquantR/inst/rmd/RovQuant_OutputReport.Rmd"
-      
       Rmd.template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
       if(!file.exists(Rmd.template)) {
         stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')

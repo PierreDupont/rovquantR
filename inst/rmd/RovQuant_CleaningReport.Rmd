@@ -3,11 +3,10 @@ params:
   species: "Brown bear"
   years: !r 2012:as.numeric(format(Sys.Date(), "%Y"))
   sex: !r c("female","male")  
+  date: !r Sys.Date()  
   sampling.months: !r 4:11
-  #rename.list: !r NULL
   working.dir: !r getwd()
   data.dir: !r getwd() 
-  date: !r Sys.Date()  
   info.ls: !r NULL
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
 subtitle: "RovQuant - OPSCR Data Cleaning"
@@ -34,8 +33,6 @@ options(scipen = 999)
 library(dplyr)
 library(kableExtra)
 library(ggplot2)
-# library(mapview)
-# mapviewOptions(fgb = FALSE)
 library(rovquantR)
 
 ##-- Extract parameters to knit document
@@ -51,16 +48,27 @@ info.ls <- params$info.ls
 n.years <- length(years)
 
 ##-- Species
-if(species == "bear"){
-  engSpecies <- "Brown bear"
+if (sum(grep("bear", species, ignore.case = T))>0|
+    sum(grep("bjørn", species, ignore.case = T))>0|
+    sum(grep("bjorn", species, ignore.case = T))>0) {
+  SPECIES <- "Brown bear"
+  engSpecies <- "bear"
+  norSpecies <- c("Bjørn", "BjÃ¸rn")
 } else {
-  if(species == "wolf"){
-    engSpecies <- "Gray wolf"
+  if (sum(grep("wolf", species, ignore.case = T))>0|
+      sum(grep("ulv", species, ignore.case = T))>0) {
+    SPECIES <- "Gray wolf"
+    engSpecies <- "wolf"
+    norSpecies <- "Ulv"
   } else {
-    if(species == "wolverine"){
-      engSpecies <- "Wolverine"
+    if (sum(grep("wolverine", species, ignore.case = T))>0|
+        sum(grep("järv", species, ignore.case = T))>0|
+        sum(grep("jerv", species, ignore.case = T))>0) {
+      SPECIES <- "wolverine"
+      engSpecies <- "wolverine"
+      norSpecies <- "Jerv"
     } else {
-      engSpecies <- species 
+      SPECIES <- engSpecies <- norSpecies <- species 
     }
   }
 }
@@ -73,9 +81,9 @@ months = c("January","February","March","April","May","June",
 
 # Introduction
 
-This document presents the data cleaning and checking process of the **`r species`** DNA data available from [RovBase 3.0](https://rovbase.no/), as done by the [AQEG team](https://www.nmbu.no/en/research/groups/applied-quantitative-ecology-group-aqeg) as part of the data preparation steps for SCR or OPSCR analyses of the large carnivore populations of Scandinavia. In this particular instance, we focus on the **`r species`** data collected during the period **`r years[1]`** to **`r years[length(years)]`**.
+This document presents the data cleaning and checking process of the **`r SPECIES`** DNA data available from [RovBase 3.0](https://rovbase.no/), as done by the [AQEG team](https://www.nmbu.no/en/research/groups/applied-quantitative-ecology-group-aqeg) as part of the data preparation steps for SCR or OPSCR analyses of the large carnivore populations of Scandinavia. In this particular instance, we focus on the **`r engSpecies`** data collected during the period **`r years[1]`** to **`r years[length(years)]`**.
 
-For the **`r species`**, we consider a sampling period each year that extends from **`r months[unlist(sampling.months)[1]]`** to **`r months[last(unlist(sampling.months))]`** (inclusive).
+For the **`r SPECIES`**, we consider a sampling period each year that extends from **`r months[unlist(sampling.months)[1]]`** to **`r months[last(unlist(sampling.months))]`** (inclusive).
 
 ------------------------------------------------------------------------
 
@@ -84,9 +92,9 @@ For the **`r species`**, we consider a sampling period each year that extends fr
 
 The first step consists in loading the most recent data for the focal species available from RovBase. This data was downloaded from [rovbase](https://rovbase30.miljodirektoratet.no/) on `r date` and is composed of two '.xlsx' spreadsheets containing:
 
-- the species-specific **NGS** data, i.e. the compilation of all non-invasively collected DNA samples that were identified as coming from a `r species` after genetic analysis, the date and spatial coordinates where the DNA sample was collected, and the ID and sex of the individual it originated from (when available).
+- the species-specific **NGS** data, i.e. the compilation of all non-invasively collected DNA samples that were identified as coming from a `r engSpecies` after genetic analysis, the date and spatial coordinates where the DNA sample was collected, and the ID and sex of the individual it originated from (when available).
 
-- the large carnivores' **dead recoveries** data, the compilation of all individuals recovered dead as part of the `r species` population management, hunts, or accidental deaths reported to managers.
+- the large carnivores' **dead recoveries** data, the compilation of all individuals recovered dead as part of the `r engSpecies` population management, hunts, or accidental deaths reported to managers.
 
 
 The first steps of the cleaning process consist in :
@@ -120,7 +128,7 @@ print(dirTest[index])
 
 ##-- NGS sample table
 NGS_samples <- read.csv( file.path( working.dir, "tables",
-                                    paste0( species, "_Raw NGS Samples_",
+                                    paste0( engSpecies, "_Raw NGS Samples_",
                                             years[1]," to ", years[length(years)],
                                             ".csv")),
                          row.names = 1,
@@ -128,7 +136,7 @@ NGS_samples <- read.csv( file.path( working.dir, "tables",
 
 ##-- NGS id table data
 NGS_ids <- read.csv( file.path( working.dir, "tables",
-                                paste0( species, "_Raw NGS Ids_",
+                                paste0( engSpecies, "_Raw NGS Ids_",
                                         years[1]," to ", years[length(years)],
                                         ".csv")),
                      row.names = 1,
@@ -174,7 +182,7 @@ print(dirTest[index])
 
 ##-- Dead recoveries sample table
 DR_samples <- read.csv( file.path( working.dir, "tables",
-                                   paste0( species, "_Raw DR Samples_",
+                                   paste0( engSpecies, "_Raw DR Samples_",
                                            years[1]," to ", years[length(years)],
                                            ".csv")),
                         row.names = 1,
@@ -182,7 +190,7 @@ DR_samples <- read.csv( file.path( working.dir, "tables",
 
 ##-- Dead Recoveries id table 
 DR_ids <- read.csv( file.path( working.dir, "tables",
-                               paste0( species, "_Raw DR Ids_",
+                               paste0( engSpecies, "_Raw DR Ids_",
                                        years[1]," to ", years[length(years)],
                                        ".csv")),
                     row.names = 1,
@@ -217,7 +225,7 @@ knitr::kable( DR_ids,
 ```{r, clean data summary, echo = F, collapse = TRUE}
 ##-- Number of NGS samples
 samples <-  read.csv( file.path( working.dir, "tables",
-                                 paste0( species, "_Clean NGS Samples_",
+                                 paste0( engSpecies, "_Clean NGS Samples_",
                                          years[1]," to ", years[length(years)],
                                          ".csv")),
                       row.names = 1,
@@ -225,7 +233,7 @@ samples <-  read.csv( file.path( working.dir, "tables",
 
 ##-- Number of individuals detected alive
 ids <-  read.csv( file.path( working.dir, "tables",
-                             paste0( species, "_Clean NGS Ids_",
+                             paste0( engSpecies, "_Clean NGS Ids_",
                                      years[1]," to ", years[length(years)],
                                      ".csv")),
                   row.names = 1,
@@ -233,7 +241,7 @@ ids <-  read.csv( file.path( working.dir, "tables",
 
 ##-- Number of DR samples
 deadSamples <-  read.csv( file.path( working.dir, "tables",
-                                     paste0( species, "_Clean DR Samples_",
+                                     paste0( engSpecies, "_Clean DR Samples_",
                                              years[1]," to ", years[length(years)], 
                                              ".csv")),  
                           row.names = 1,
@@ -241,7 +249,7 @@ deadSamples <-  read.csv( file.path( working.dir, "tables",
 
 ##-- Number of individuals recovered
 deadIds <-  read.csv( file.path( working.dir, "tables",
-                                 paste0( species, "_Clean DR Ids_",
+                                 paste0( engSpecies, "_Clean DR Ids_",
                                          years[1]," to ", years[length(years)], 
                                          ".csv")),
                       row.names = 1,
@@ -256,11 +264,11 @@ After these initial checks several unusable samples were filtered out:
 
 -   samples without dates (N = `r info.ls$noDate`)
 
-`r if(species == "wolverine"){paste0("-   removing ", length(info.ls$youngDeads) + length(info.ls$lowWeightDeads), " young wolverines recovered between March and November (Note that ", length(info.ls$zeroWeightDeads), " wolverines with weight = 0kg were kept in the data)")}`
+`r if(engSpecies == "wolverine"){paste0("-   removing ", length(info.ls$youngDeads) + length(info.ls$lowWeightDeads), " young wolverines recovered between March and November (Note that ", length(info.ls$zeroWeightDeads), " wolverines with weight = 0kg were kept in the data)")}`
 
-`r if(species == "wolf"){paste0("-   overwriting sex assignment using info from Micke (N = ", info.ls$numOverwiteSex," individuals)")}`
+`r if(engSpecies == "wolf"){paste0("-   overwriting sex assignment using info from Micke (N = ", info.ls$numOverwiteSex," individuals)")}`
 
-`r if(species == "bear"){paste0("-   removing ", sum(!info.ls$remove.alive), " bear DNA samples and ", sum(!info.ls$remove.dead), " dead recoveries flagged by H.Brøseth")}`
+`r if(engSpecies == "bear"){paste0("-   removing ", sum(!info.ls$remove.alive), " bear DNA samples and ", sum(!info.ls$remove.dead), " dead recoveries flagged by H.Brøseth")}`
 
 
 
@@ -268,9 +276,9 @@ After these initial checks several unusable samples were filtered out:
 
 After this initial clean-up, we are left with `r paste0(samples["Total","Total"],"(NOR = ",samples["(N)","Total"]," ; SWE = ",samples["(S)","Total"], ")")` NGS samples and `r paste0(deadSamples["Total","Total"], "(NOR = ",deadSamples["(N)","Total"]," ; SWE = ",deadSamples["(S)","Total"], ")")` dead recoveries.
 
-```{r, clean data samples timeSeries, fig.align = "center", fig.cap = paste0("Figure 1: Numbers of ", species, " non-invasive genetic samples and dead recoveries per month between ", years[1], " and ", years[length(years)], ". Presented are the number of samples that were available in Rovbase and useable for the OPSCR analysis, i.e. with the individual ID, species, date and coordinates succesfully identified."), echo = FALSE}
+```{r, clean data samples timeSeries, fig.align = "center", fig.cap = paste0("Figure 1: Numbers of ", engSpecies, " non-invasive genetic samples and dead recoveries per month between ", years[1], " and ", years[length(years)], ". Presented are the number of samples that were available in Rovbase and useable for the OPSCR analysis, i.e. with the individual ID, engSpecies, date and coordinates succesfully identified."), echo = FALSE}
 knitr::include_graphics(file.path( working.dir, "figures",
-                                   paste0( species, "_Clean Rovbase Samples_",
+                                   paste0( engSpecies, "_Clean Rovbase Samples_",
                                            years[1]," to ", years[length(years)], ".png")))
 ```
 
@@ -294,10 +302,10 @@ knitr::kable( deadSamples,
 
 In terms of individuals identified, these correspond to `r paste0(ids["Total","Total"], "(NOR = ",ids["(N)","Total"]," ; SWE = ",ids["(S)","Total"], ")")` individuals detected alive and `r paste0(deadIds["Total","Total"], "(NOR = ",deadIds["(N)","Total"]," ; SWE = ",deadIds["(S)","Total"], ")")` individuals recovered.
 
-```{r, clean data ids timeSeries, fig.align = "center", fig.cap = paste0("Figure 2: Numbers of ", species, " individuals detected through non-invasive genetic samples and dead recoveries each year between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+```{r, clean data ids timeSeries, fig.align = "center", fig.cap = paste0("Figure 2: Numbers of ", engSpecies, " individuals detected through non-invasive genetic samples and dead recoveries each year between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 ##-- Insert figure
 knitr::include_graphics(file.path( working.dir, "figures",
-                                   paste0( species, "_Clean Rovbase Ids_",
+                                   paste0( engSpecies, "_Clean Rovbase Ids_",
                                            years[1]," to ", years[length(years)],
                                            ".png")))
 ```
@@ -321,9 +329,9 @@ knitr::kable( deadIds,
 
 ## Number of recaptures
 
-```{r, NGS previously detected, fig.align = "center", fig.cap = paste0("Figure 3: A) Numbers of ", species, " individuals detected through non-invasive genetic sampling, and B) Numbers of ", species, " individuals recovered dead that were previously detected through NGS per year between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+```{r, NGS previously detected, fig.align = "center", fig.cap = paste0("Figure 3: A) Numbers of ", engSpecies, " individuals detected through non-invasive genetic sampling, and B) Numbers of ", engSpecies, " individuals recovered dead that were previously detected through NGS per year between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path( working.dir, "figures",
-                                   paste0( species, "_Previous Detection_",
+                                   paste0( engSpecies, "_Previous Detection_",
                                            years[1]," to ", years[length(years)], 
                                            ".png")))
 ```
@@ -422,9 +430,9 @@ There are `r length(info.ls$samples.to.remove)` individuals identified with NGS 
 
 We can also add maps of the NGS samples and dead recoveries collected each year:
 
-```{r, NGS maps, fig.align = "center", fig.height = 8, fig.width = 12, fig.cap = paste0("Figure 4: Numbers of ", species, " individuals previously detected through non-invasive genetic sampling each year between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+```{r, NGS maps, fig.align = "center", fig.height = 8, fig.width = 12, fig.cap = paste0("Figure 4: Numbers of ", engSpecies, " individuals previously detected through non-invasive genetic sampling each year between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path( working.dir, "figures",
-                                   paste0( species,  "_Clean Rovbase Maps_",
+                                   paste0( engSpecies,  "_Clean Rovbase Maps_",
                                            years[1]," to ", years[length(years)],
                                            ".png")))
 ```
@@ -467,10 +475,10 @@ knitr::include_graphics(file.path( working.dir, "figures",
 # Save clean data
 
 ```{r, save data, echo = F}
-fileName <- paste0("CleanData_", species, "_", date, ".RData")
+fileName <- paste0("CleanData_", engSpecies, "_", date, ".RData")
 ```
 
-Finally, we save the cleaned **alive** and **dead.recovery** sf objects as a .RData file with name **`r fileName`** located in the `r species`-specific folder (`r file.path(working.dir, "data")`).
+Finally, we save the cleaned **alive** and **dead.recovery** sf objects as a .RData file with name **`r fileName`** located in the `r engSpecies`-specific folder (`r file.path(working.dir, "data")`).
 
 
 ------------------------------------------------------------------------

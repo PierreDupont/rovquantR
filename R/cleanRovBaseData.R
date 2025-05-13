@@ -62,9 +62,9 @@ NULL
 #' @rdname cleanRovbaseData
 #' @export
 cleanRovbaseData <- function(
-    ##-- paths
-  data.dir,
-  working.dir,
+  ##-- paths
+  data.dir = "./Data",
+  working.dir = NULL,
   
   ##-- data
   species = c("bear","wolf","wolverine"),
@@ -74,9 +74,10 @@ cleanRovbaseData <- function(
   rename.list = NULL,
   
   ##-- miscellanious
+  print.report = TRUE,
   Rmd.template = NULL,
-  overwrite = FALSE,
-  output.dir = NULL
+  output.dir = NULL,
+  overwrite = FALSE
 ) {
   
   ##----- 1. INITIAL CHECKS -----
@@ -90,26 +91,27 @@ cleanRovbaseData <- function(
   if (length(species)>1) {
     stop('This function can only deal with one species at a time... \nPlease, use one of "bear", "wolf", or "wolverine" for the n target species.')
   }
-  if(sum(grep("bear", species, ignore.case = T))>0|
+  if (sum(grep("bear", species, ignore.case = T))>0|
      sum(grep("bjørn", species, ignore.case = T))>0|
-     sum(grep("bjorn", species, ignore.case = T))>0){
-    species <- "bear"
-    engSpecies <- "Brown bear"
+     sum(grep("bjorn", species, ignore.case = T))>0) {
+    SPECIES <- "Brown bear"
+    engSpecies <- "bear"
     norSpecies <- c("Bjørn", "BjÃ¸rn")
   } else {
-    if(sum(grep("wolf", species, ignore.case = T))>0|
-       sum(grep("ulv", species, ignore.case = T))>0){
-      species <- "wolf"
-      engSpecies <- "Gray wolf"
+    if (sum(grep("wolf", species, ignore.case = T))>0|
+       sum(grep("ulv", species, ignore.case = T))>0) {
+      SPECIES <- "Gray wolf"
+      engSpecies <- "wolf"
       norSpecies <- "Ulv"
     } else {
-      if(sum(grep("wolverine", species, ignore.case = T))>0|
-         sum(grep("jerv", species, ignore.case = T))>0){
-        species <- "wolverine"
+      if (sum(grep("wolverine", species, ignore.case = T))>0|
+          sum(grep("järv", species, ignore.case = T))>0|
+         sum(grep("jerv", species, ignore.case = T))>0) {
+        SPECIES <- "wolverine"
         engSpecies <- "wolverine"
         norSpecies <- "Jerv"
       } else {
-        engSpecies <- norSpecies <- species 
+        SPECIES <- engSpecies <- norSpecies <- species 
       }
     }
   }
@@ -119,13 +121,13 @@ cleanRovbaseData <- function(
   
   ##-- Sampling months
   if (is.null(sampling.months)) {
-    if (species == "bear") {
+    if (engSpecies == "bear") {
       sampling.months <- list(4:11)
     } else {
-      if (species == "wolf") {
+      if (engSpecies == "wolf") {
         sampling.months <- list(c(10:12),c(1:3))
       } else {
-        if (species == "wolverine") {
+        if (engSpecies == "wolverine") {
           sampling.months <- list(c(10:12),c(1:4))
         } else {
           stop("No default setting available for the monitoring period of this species. \n You must specify the monitoring season months through the 'sampling.months' argument.")
@@ -239,7 +241,7 @@ cleanRovbaseData <- function(
   DATE <- getMostRecent(path = data.dir, pattern = "DNA")
   
   ##-- Set file name for clean data
-  fileName <- paste0("CleanData_", species, "_", DATE, ".RData")
+  fileName <- paste0("CleanData_", engSpecies, "_", DATE, ".RData")
   
   ##-- Check that a file with that name does not already exist to avoid overwriting
   if (!overwrite) {
@@ -287,9 +289,11 @@ cleanRovbaseData <- function(
       ##-- Extract sampling season
       ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
       ##-- Set all months in given sampling period to the same year)
-      Season = ifelse( Month < unlist(sampling.months)[1],
-                       Year,
-                       Year-1),
+      Season = ifelse( length(sampling.months) > 1, 
+                       ifelse( Month < unlist(sampling.months)[1],
+                               Year,
+                               Year-1), 
+                       Year),
       ##-- Fix unknown "Id"
       Id = ifelse(Id %in% "", NA, Id),
       ##-- Fix unknown "Sex"
@@ -306,26 +310,21 @@ cleanRovbaseData <- function(
   NGS_samples <- rbind(NGS_samples, "Total" = colSums(NGS_samples))
   NGS_samples <- cbind(NGS_samples, "Total" = rowSums(NGS_samples))
   write.csv( NGS_samples,
-             file = file.path(working.dir, "tables",
-                              paste0(species, "_Raw NGS Samples_",
-                                     years[1]," to ", years[length(years)],
-                                     ".csv")))
+             file = file.path( working.dir, "tables",
+                               paste0(engSpecies, "_Raw NGS Samples_",
+                                      years[1]," to ", years[length(years)],
+                                      ".csv")))
   
   
   ##-- Number of individuals detected alive
-  NGS_ids <- apply(table(DNA$Sex, DNA$Year, DNA$Id, useNA = "ifany"),
-                   c(1,2), function(x)sum(x>0))
-  NGS_ids <- rbind(NGS_ids,
-                   "Total" = apply(table(DNA$Year,DNA$Id, useNA = "ifany"),
-                                   1, function(x)sum(x>0)))
-  NGS_ids <- cbind(NGS_ids,
-                   "Total" = c(apply(table(DNA$Sex,DNA$Id, useNA = "ifany"),
-                                     1, function(x)sum(x>0)),length(unique(DNA$Id))))
-  write.csv(NGS_ids,
-            file = file.path(working.dir, "tables",
-                             paste0(species, "_Raw NGS Ids_",
-                                    years[1]," to ", years[length(years)],
-                                    ".csv")))
+  NGS_ids <- apply(table(DNA$Sex, DNA$Year, DNA$Id, useNA = "ifany"), c(1,2), function(x)sum(x>0))
+  NGS_ids <- rbind(NGS_ids, "Total" = apply(table(DNA$Year,DNA$Id, useNA = "ifany"), 1, function(x)sum(x>0)))
+  NGS_ids <- cbind(NGS_ids, "Total" = c(apply(table(DNA$Sex,DNA$Id, useNA = "ifany"), 1, function(x)sum(x>0)),length(unique(DNA$Id))))
+  write.csv( NGS_ids,
+             file = file.path( working.dir, "tables",
+                               paste0(engSpecies, "_Raw NGS Ids_",
+                                      years[1]," to ", years[length(years)],
+                                      ".csv")))
   
   
   
@@ -354,9 +353,11 @@ cleanRovbaseData <- function(
       ##-- Extract sampling season
       ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
       ##-- Set all months in given sampling period to the same year)
-      Season = ifelse( Month < unlist(sampling.months)[1],
-                       Year,
-                       Year-1),
+      Season = ifelse( length(sampling.months) > 1, 
+                       ifelse( Month < unlist(sampling.months)[1],
+                               Year,
+                               Year-1), 
+                       Year),
       ##-- Fix unknown "Id"
       Id = ifelse(Id %in% "", NA, Id),
       ##-- Fix unknown "Sex"
@@ -371,29 +372,21 @@ cleanRovbaseData <- function(
   DR_samples <- table(DR$Sex, DR$Year, useNA = "ifany")
   DR_samples <- rbind(DR_samples, "Total" = colSums(DR_samples))
   DR_samples <- cbind(DR_samples, "Total" = rowSums(DR_samples))
-  write.csv(DR_samples,
-            file = file.path( working.dir, "tables",
-                              paste0( species, "_Raw DR Samples_",
-                                      years[1]," to ", years[length(years)],
-                                      ".csv")))
+  write.csv( DR_samples,
+             file = file.path( working.dir, "tables",
+                               paste0( engSpecies, "_Raw DR Samples_",
+                                       years[1]," to ", years[length(years)],
+                                       ".csv")))
   
-  ##-- Number of individuals detected alive
-  DR_ids <- apply(table(DR$Sex, DR$Year, DR$Id, useNA = "ifany"),
-                  c(1,2),
-                  function(x)sum(x>0))
-  DR_ids <- rbind(DR_ids,
-                  "Total" = apply(table(DR$Year,DR$Id, useNA = "ifany"),
-                                  1,
-                                  function(x)sum(x>0)))
-  DR_ids <- cbind(DR_ids,
-                  "Total" = c(apply(table(DR$Sex,DR$Id, useNA = "ifany"),
-                                    1,
-                                    function(x)sum(x>0)),length(unique(DR$Id))))
-  write.csv(DR_ids,
-            file = file.path( working.dir, "tables",
-                              paste0( species, "_Raw DR Ids_",
-                                      years[1]," to ", years[length(years)],
-                                      ".csv")))
+  ##-- Number of individuals recovered dead
+  DR_ids <- apply(table(DR$Sex, DR$Year, DR$Id, useNA = "ifany"), c(1,2), function(x)sum(x>0))
+  DR_ids <- rbind(DR_ids, "Total" = apply(table(DR$Year,DR$Id, useNA = "ifany"), 1, function(x)sum(x>0)))
+  DR_ids <- cbind(DR_ids, "Total" = c(apply(table(DR$Sex,DR$Id, useNA = "ifany"), 1, function(x)sum(x>0)),length(unique(DR$Id))))
+  write.csv( DR_ids,
+             file = file.path( working.dir, "tables",
+                               paste0( engSpecies, "_Raw DR Ids_",
+                                       years[1]," to ", years[length(years)],
+                                       ".csv")))
   
   
   
@@ -450,9 +443,7 @@ cleanRovbaseData <- function(
                   ##-- Filter out samples with no Coordinates
                   !is.na(East_UTM33),
                   ##-- Filter out samples with no dates  
-                  !is.na(Year),
-                  ##-- Filter out samples with 
-                  Year %in% years) %>%
+                  !is.na(Year)) %>%
     droplevels(.)
   
   
@@ -461,7 +452,8 @@ cleanRovbaseData <- function(
   
   ID <- unique(as.character(DATA$Id))
   DATA$Sex <- as.character(DATA$Sex)
-  doubleSexID <- IdDoubleSex <- NULL
+  IdDoubleSex <- NULL  
+  # doubleSexID <- 
   counter <- 1
   for(i in 1:length(ID)){
     ##-- Subset data to individual i
@@ -483,14 +475,11 @@ cleanRovbaseData <- function(
       IdDoubleSex[counter] <- ID[i]
       counter <- counter + 1
     }
-    
-    ##-- If only one of "female" or "male" registered
-    if(length(tab) == 1){DATA$Sex[DATA$Id == ID[i]] <- names(tab)}
-    
-    ##-- If anything else registered : "unknown"
-    if(length(tab) == 0){DATA$Sex[DATA$Id == ID[i]] <- "unknown"}
-    
-    doubleSexID[i] <- length(tab)
+    # ##-- If only one of "female" or "male" registered
+    # if(length(tab) == 1){DATA$Sex[DATA$Id == ID[i]] <- names(tab)}
+    # ##-- If anything else registered : "unknown"
+    # if(length(tab) == 0){DATA$Sex[DATA$Id == ID[i]] <- "unknown"}
+    # doubleSexID[i] <- length(tab)
   }#i
   
   
@@ -524,7 +513,7 @@ cleanRovbaseData <- function(
   
   ##-----   3.1. WOLVERINE -----
   
-  if(species == "wolverine"){
+  if(engSpecies == "wolverine"){
     ##-- Remove un-verified dead recoveries [HB] 
     ##-- ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
     dead.recovery <- dead.recovery[!grepl(pattern = "Påskutt",
@@ -590,7 +579,7 @@ cleanRovbaseData <- function(
   
   ##-----   3.2. WOLF -----
   
-  if(species == "wolf"){
+  if(engSpecies == "wolf"){
     ##-- Load most recent Micke's file
     INDIVIDUAL_ID <- readMostRecent.csv(
       path = dir.in,
@@ -619,7 +608,7 @@ cleanRovbaseData <- function(
   
   ##-----   3.3. BEAR -----
   
-  if(species == "bear"){
+  if(engSpecies == "bear"){
     ##-- Load most recent "flagged" file from HB
     flagged <- readMostRecent( 
       path = data.dir,
@@ -667,78 +656,45 @@ cleanRovbaseData <- function(
   
   ##-----   5.1. DATA SUMMARY - TABLES -----
   
-  ##-- Number of NGS samples
+  ##-- Number of NGS samples per year and country (date,rovbase)
   samples <- table(alive$Country_sample, alive$Year)
-  samples2 <- table(alive$Country_sf, alive$Year)
   samples <- rbind(samples, "Total" = colSums(samples))
   samples <- cbind(samples, "Total" = rowSums(samples))
-  write.csv(samples,
-            file = file.path( working.dir, "tables",
-                              paste0( species, "_Clean NGS Samples_",
-                                      years[1]," to ", years[length(years)],
-                                      ".csv")))
-  
+  write.csv( samples,
+             file = file.path( working.dir, "tables",
+                               paste0( engSpecies, "_Clean NGS Samples_",
+                                       years[1]," to ", years[length(years)],
+                                       ".csv")))
   
   ##-- Number of individuals detected alive
-  ids <- apply(table(alive$Country_sample,
-                     alive$Year,
-                     alive$Id),
-               c(1,2),
-               function(x)sum(x>0))
-  
-  ids <- rbind(ids,
-               "Total" = apply(table(alive$Year,
-                                     alive$Id),
-                               1,
-                               function(x)sum(x>0)))
-  
-  ids <- cbind(ids,
-               "Total" = c(apply(table(alive$Country_sample,alive$Id),
-                                 1,
-                                 function(x)sum(x>0)),
-                           length(unique(alive$Id))))
-  write.csv(ids,
-            file = file.path( working.dir, "tables",
-                              paste0( species, "_Clean NGS Ids_",
-                                      years[1]," to ", years[length(years)],
-                                      ".csv")))
-  
+  ids <- apply(table(alive$Country_sample, alive$Year, alive$Id), c(1,2), function(x)sum(x>0))
+  ids <- rbind(ids, "Total" = apply(table(alive$Year, alive$Id), 1, function(x)sum(x>0)))
+  ids <- cbind(ids, "Total" = c(apply(table(alive$Country_sample,alive$Id), 1, function(x)sum(x>0)), length(unique(alive$Id))))
+  write.csv( ids,
+             file = file.path( working.dir, "tables",
+                               paste0( engSpecies, "_Clean NGS Ids_",
+                                       years[1]," to ", years[length(years)],
+                                       ".csv")))
   
   ##-- Number of DR samples
   deadSamples <- table(dead.recovery$Country_sample, dead.recovery$Year)
   deadSamples <- rbind(deadSamples, "Total" = colSums(deadSamples))
   deadSamples <- cbind(deadSamples, "Total" = rowSums(deadSamples))
-  write.csv( ids,
+  write.csv( deadSamples,
              file = file.path( working.dir, "tables",
-                               paste0( species, "_Clean DR Samples_",
+                               paste0( engSpecies, "_Clean DR Samples_",
                                        years[1]," to ", years[length(years)],
                                        ".csv")))
   
-  
   ##-- Number of individuals recovered
-  deadIds <- apply(table(dead.recovery$Country_sample,
-                         dead.recovery$Year,
-                         dead.recovery$Id),
-                   c(1,2),
-                   function(x)sum(x>0))
-  
-  deadIds <- rbind(deadIds,
-                   "Total" = apply(table(dead.recovery$Year,
-                                         dead.recovery$Id),
-                                   1,
-                                   function(x)sum(x>0)))
-  
-  deadIds <- cbind(deadIds,
-                   "Total" = c(apply(table(dead.recovery$Country_sample,
-                                           dead.recovery$Id),
-                                     1,
-                                     function(x)sum(x>0)),
-                               length(unique(dead.recovery$Id))))
-  write.csv(ids,
-            file = file.path( working.dir, "tables",
-                              paste0( species, "_Clean DR Ids_",
-                                      years[1]," to ", years[length(years)],
-                                      ".csv")))
+  deadIds <- apply(table(dead.recovery$Country_sample,dead.recovery$Year,dead.recovery$Id),c(1,2),function(x)sum(x>0))
+  deadIds <- rbind(deadIds, "Total" = apply(table(dead.recovery$Year,dead.recovery$Id), 1, function(x)sum(x>0)))
+  deadIds <- cbind(deadIds, "Total" = c(apply(table(dead.recovery$Country_sample,dead.recovery$Id), 1, function(x)sum(x>0)), length(unique(dead.recovery$Id))))
+  write.csv( deadIds,
+             file = file.path( working.dir, "tables",
+                               paste0( engSpecies, "_Clean DR Ids_",
+                                       years[1]," to ", years[length(years)],
+                                       ".csv")))
   
   
   
@@ -764,13 +720,14 @@ cleanRovbaseData <- function(
   
   ##-- Plot time series of number of samples per month
   grDevices::png( filename = file.path(working.dir, "figures",
-                                       paste0( species, "_Clean Rovbase Samples_",
+                                       paste0( engSpecies, "_Clean Rovbase Samples_",
                                                years[1]," to ", years[length(years)],
                                                ".png")),
                   width = 8, height = 6,
                   units = "in", res = 300)
   ggplot2::ggplot(dat) +
-    geom_col(aes(x = Date, y = n, fill = type)) +
+    ggplot2::geom_col(aes(x = Date, y = n, fill = type)) +
+
     ylab("Number of samples") +
     guides(fill = guide_legend(reverse = TRUE)) +
     theme(legend.title = element_blank(),
@@ -780,7 +737,7 @@ cleanRovbaseData <- function(
     scale_x_date( date_breaks = "years",
                   date_labels = "%Y") 
   graphics.off()
-  
+
   
   
   ##-----   5.3. NUMBER OF INDIVIDUALS - FIGURE -----
@@ -802,7 +759,7 @@ cleanRovbaseData <- function(
   
   ##-- Plot time series of number of IDs per year
   grDevices::png( filename = file.path(working.dir, "figures",
-                                       paste0(species, "_Clean Rovbase Ids_",
+                                       paste0(engSpecies, "_Clean Rovbase Ids_",
                                               years[1]," to ", years[length(years)],
                                               ".png")),
                   width = 8, height = 6,
@@ -835,7 +792,7 @@ cleanRovbaseData <- function(
   
   ##-- Save maps as .png
   grDevices::png(filename = file.path( working.dir, "figures",
-                                       paste0( species, "_Clean Rovbase Maps_",
+                                       paste0( engSpecies, "_Clean Rovbase Maps_",
                                                years[1]," to ", years[length(years)],
                                                ".png")),
                  width = ncols*2, height = nrows*4,
@@ -910,7 +867,7 @@ cleanRovbaseData <- function(
   
   #-- Save figure
   grDevices::png( filename = file.path( working.dir, "figures",
-                                        paste0( species, "_Previous Detection_",
+                                        paste0( engSpecies, "_Previous Detection_",
                                                 years[1]," to ", years[length(years)],
                                                 ".png")),
                   width = 16, height = 6,
@@ -927,7 +884,7 @@ cleanRovbaseData <- function(
   ##-- Identify and count individuals dead "more than once"
   ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1]
   multiDeathDate <- multiDeathYear <- multiDeathLocs <-  NULL
-  for(i in 1:length(ID)){
+  for (i in 1:length(ID)) {
     tmp <- dead.recovery[dead.recovery$Id == ID[i], ] 
     ##-- Multiple death dates
     if(length(unique(tmp$Date)) > 1){
@@ -946,7 +903,7 @@ cleanRovbaseData <- function(
   ##-- Remove individuals that died more than once
   dead.recovery$Id <- as.character(dead.recovery$Id)
   IdDoubleDead <- names(table(dead.recovery$Id))[table(dead.recovery$Id) > 1]
-  if(length(IdDoubleDead) > 0){
+  if (length(IdDoubleDead) > 0) {
     for(i in IdDoubleDead){
       ##-- Identify repeated deaths
       tmp <- which(dead.recovery$Id %in% i) 
@@ -961,19 +918,20 @@ cleanRovbaseData <- function(
   
   
   ##-----   6.2. GHOST INDIVIDUALS ------
+  
   id.list <- unique(c(as.character(dead.recovery$Id), as.character(alive$Id)))
-  ghosts <- unlist(lapply(id.list, function(id){
+  ghosts <- unlist(lapply(id.list, function(id) {
     out <- NULL
     try({
       if(id %in% dead.recovery$Id){
         mort.year <- min(dead.recovery$Year[dead.recovery$Id == id])
         this.alive <- alive[alive$Id == id, ]
-        ## Was it detected alive in any season after death?
+        ##-- Was it detected alive in any season after death?
         temp <- this.alive[this.alive$Year > mort.year, ]
         if(length(temp) > 0){
           out <- rownames(temp)
           names(out) <- id
-        }## FLAG THOSE FOR HENDRIK
+        }
       }
     }, silent = TRUE)
     return(out)
@@ -985,62 +943,61 @@ cleanRovbaseData <- function(
   
   
   
-  ##----- 8. SAVE DATA ------
+  ##----- 7. SAVE DATA ------
+  
   save( alive, 
         dead.recovery,
-        file = file.path( working.dir, "data",
-                          paste0("CleanData_", species, "_", DATE,
-                                 ".RData")))
+        file = file.path( working.dir, "data", fileName))
+                         
   
   
+  ##---- 8. PRINT REPORT -----
   
-  ##----- 9. OUTPUT ------
-  ##-- List of outputs for the .Rmd report
-  info.ls <- list()
-  info.ls$IdDoubleSex <- IdDoubleSex
-  info.ls$doubleSexID <- doubleSexID
-  info.ls$numNoID <- numNoID
-  info.ls$numNoDate <- numNoDate
-  info.ls$numNoCoords <- numNoCoords
-  info.ls$multiDeathDate <- multiDeathDate
-  info.ls$multiDeathDate <- multiDeathDate
-  info.ls$multiDeathYear <- multiDeathYear
-  info.ls$multiDeathLocs <- multiDeathLocs
-  info.ls$samples.to.remove <- samples.to.remove
-  if(species == "bear"){
-    info.ls$remove.alive <- remove.alive
-    info.ls$remove.dead <- remove.dead
-  }
-  if(species == "wolf"){}
-  if(species == "wolverine"){}
-  
-  
-  
-  ##---- 10. PRINT REPORT -----
-  
-  ##-- Find the .rmd template for the report
-  if(is.null(Rmd.template)) {
-    Rmd.template <- system.file("rmd", "RovQuant_CleaningReport.Rmd", package = "rovquantR")
-    if(!file.exists(Rmd.template)) {
-      stop("Can not find the Rmarkdown document to use for cleaning Rovbase.3.0 data.\n You must provide the path to the Rmarkdown template through the \"Rmd_template\" argument.")
+  if (print.report) {
+    
+    ##-- List of rendering parameters for the .Rmd report
+    info.ls <- list()
+    info.ls$IdDoubleSex <- IdDoubleSex
+    #info.ls$doubleSexID <- doubleSexID
+    info.ls$numNoID <- numNoID
+    info.ls$numNoDate <- numNoDate
+    info.ls$numNoCoords <- numNoCoords
+    info.ls$multiDeathDate <- multiDeathDate
+    info.ls$multiDeathDate <- multiDeathDate
+    info.ls$multiDeathYear <- multiDeathYear
+    info.ls$multiDeathLocs <- multiDeathLocs
+    info.ls$samples.to.remove <- samples.to.remove
+    if (engSpecies == "bear") {
+      info.ls$remove.alive <- remove.alive
+      info.ls$remove.dead <- remove.dead
     }
+    if (engSpecies == "wolf") {}
+    if (engSpecies == "wolverine") {}
+    
+    
+    ##-- Find the .rmd template for the report
+    if(is.null(Rmd.template)) {
+      Rmd.template <- system.file("rmd", "RovQuant_CleaningReport.Rmd", package = "rovquantR")
+      if(!file.exists(Rmd.template)) {
+        stop("Can not find the Rmarkdown document to use for cleaning Rovbase.3.0 data.\n You must provide the path to the Rmarkdown template through the \"Rmd_template\" argument.")
+      }
+    }
+    
+    ##-- Find the directory to print the report
+    if(is.null(output.dir)){ output.dir <- file.path(working.dir, "reports") }
+    
+    ##-- Render .Rmd report
+    rmarkdown::render(
+      input = Rmd.template,
+      params = list( species = SPECIES, 
+                     years = years,
+                     sex = sex,
+                     sampling.months = sampling.months,
+                     data.dir = data.dir,
+                     working.dir = working.dir,
+                     date = DATE,
+                     info.ls = info.ls),
+      output_dir = output.dir,
+      output_file = paste0("CleanData_", engSpecies, "_", DATE,".html"))
   }
-  
-  ##-- Find the directory to print the report
-  if(is.null(output.dir)){ output.dir <- file.path(working.dir, "reports") }
-  
-  ##-- Render .Rmd report
-  rmarkdown::render(
-    input = Rmd.template,
-    params = list( species = species, 
-                   years = years,
-                   sex = sex,
-                   sampling.months = sampling.months,
-                   #rename.list = rename.list,
-                   data.dir = data.dir,
-                   working.dir = working.dir,
-                   date = DATE,
-                   info.ls = info.ls),
-    output_dir = output.dir,
-    output_file = paste0("CleanData_", species, "_", DATE,".html"))
 }

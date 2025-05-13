@@ -38,15 +38,10 @@ A user-friendly interface to reproduce RovQuant's analyses.
 </p>
 
 <!-- badges: end -->
-
 <!-- <p align="center"> -->
-
 <!--   <a href="#installation">Installation</a> • -->
-
 <!--   <a href="#example">Example</a> • -->
-
 <!--   <a href="#goodrm">Good Readme</a>  -->
-
 <!-- </p> -->
 
 ------------------------------------------------------------------------

@@ -656,6 +656,7 @@ makeRovquantData_bear <- function(
       ##-- Filter data for space
       !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
     ) %>%
+    ##-- Assign detector based on distance
     AssignDetectors(
       myData = .,                
       myDetectors = detectors$main.detector.sp,
@@ -675,6 +676,7 @@ makeRovquantData_bear <- function(
       ##-- Filter data for space
       !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
     ) %>% 
+    ##-- Assign detector based on distance
     AssignDetectors(
       myData = .,
       myDetectors = detectors$main.detector.sp,
