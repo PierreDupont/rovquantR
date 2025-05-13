@@ -323,7 +323,7 @@ knitr::kable( deadIds,
 
 ```{r, NGS previously detected, fig.align = "center", fig.cap = paste0("Figure 3: A) Numbers of ", species, " individuals detected through non-invasive genetic sampling, and B) Numbers of ", species, " individuals recovered dead that were previously detected through NGS per year between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path( working.dir, "figures",
-                                   paste0( species, "_previous detection_",
+                                   paste0( species, "_Previous Detection_",
                                            years[1]," to ", years[length(years)], 
                                            ".png")))
 ```

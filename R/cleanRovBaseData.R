@@ -910,7 +910,7 @@ cleanRovbaseData <- function(
   
   #-- Save figure
   grDevices::png( filename = file.path( working.dir, "figures",
-                                        paste0( species, "_previous detection_",
+                                        paste0( species, "_Previous Detection_",
                                                 years[1]," to ", years[length(years)],
                                                 ".png")),
                   width = 16, height = 6,
@@ -996,11 +996,6 @@ cleanRovbaseData <- function(
   
   ##----- 9. OUTPUT ------
   ##-- List of outputs for the .Rmd report
-  # out <- list()
-  # out$SPECIES <- "bear"
-  # out$YEARS <- years
-  # out$SEX <- sex
-  # out$DATE <- DATE
   info.ls <- list()
   info.ls$IdDoubleSex <- IdDoubleSex
   info.ls$doubleSexID <- doubleSexID

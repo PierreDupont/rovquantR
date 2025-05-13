@@ -42,7 +42,9 @@ processRovquantOutput_bear <- function(
   nburnin = 0,
   niter = 100,
   ##-- Density 
-  extraction.res = 5000
+  extraction.res = 5000,
+  ##-- Miscellanious
+  overwrite = FALSE
 ){
   ## ------ 0. BASIC SET-UP ------
   if(is.null(working.dir)){working.dir <- getwd()}
@@ -61,12 +63,12 @@ processRovquantOutput_bear <- function(
   
   ## ------ 1. LOAD NECESSARY INPUTS -----
   ##-- Females
-  load(list.files(file.path(working.dir, "NimbleInFiles/Hunn"), full.names = T)[1])
+  load(list.files(file.path(working.dir, "nimbleInFiles/female"), full.names = T)[1])
   nimDataF <- nimData
   nimInitsF <- nimInits
   
   ##-- Males
-  load(list.files(file.path(working.dir, "NimbleInFiles/Hann"), full.names = T)[1])
+  load(list.files(file.path(working.dir, "nimbleInFiles/male"), full.names = T)[1])
   nimDataM <- nimData
   nimInitsM <- nimInits
   
@@ -115,12 +117,26 @@ processRovquantOutput_bear <- function(
   ## ------ 2. PROCESS MCMC SAMPLES -----
   message("## Processing model MCMC outputs...")
   
-  if(file.exists(file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))){
-    load(file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
-  } else {
+    ##-- Check that a file with that name does not already exist to avoid overwriting
+    if (!overwrite) {
+      fileName <- paste0("MCMC_bear_", DATE, ".RData")
+      if (file.exists(file.path(working.dir, "data", fileName))) {
+        message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
+                       file.path(working.dir, "data")))
+        message("Are you sure you want to proceed and overwrite existing processed MCMC output file? (y/n) ")
+        question1 <- readLines(n = 1)
+        if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
+          message("Not overwriting existing files...")
+          message(paste0("Loading '", fileName, "' instead..."))
+          load(file.path(working.dir, "data", fileName))
+          } else {
+          message(paste0("Now overwriting '", fileName,"'.\n"))
+        }
+      }
+    } else {
     ## ------   2.1. FEMALES -----
     ##-- Compile MCMC bites
-    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/Hunn"),
+    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
                                      burnin = nburnin)
     
     ##-- Traceplots
@@ -148,7 +164,7 @@ processRovquantOutput_bear <- function(
     
     ## ------   2.2. MALES -----
     ##-- Compile MCMC bites
-    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/Hann"),
+    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/male"),
                                      burnin = nburnin)
     
     ##-- Traceplots
@@ -210,6 +226,8 @@ processRovquantOutput_bear <- function(
   
   
   ## ------ 3. EXTRACT DENSITY -----
+  message("## Processing density outputs...")
+  
   ##-- Names of regions to extract density for
   regions.names <- c("Region 1","Region 2","Region 3","Region 4",
                      "Region 5","Region 6","Region 7","Region 8")
@@ -257,6 +275,24 @@ processRovquantOutput_bear <- function(
   }
   
   ##-- Calculate density only if necessary
+  ##-- Check that a file with that name does not already exist to avoid overwriting
+  if (!overwrite) {
+    fileName <- paste0("Density_bear_", DATE, ".RData")
+    if (file.exists(file.path(working.dir, "data", fileName))) {
+      message(paste0("A density output file named '", fileName, "' already exists in: \n",
+                     file.path(working.dir, "data")))
+      message("Are you sure you want to proceed and overwrite existing density output file? (y/n) ")
+      question1 <- readLines(n = 1)
+      if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
+        message("Not overwriting existing files...")
+        message(paste0("Loading '", fileName, "' instead..."))
+        load(file.path(working.dir, "data", fileName))
+      } else {
+        message(paste0("Now overwriting '", fileName,"'.\n"))
+      }
+    }
+  } 
+  
   if(file.exists(file.path(working.dir, "data", paste0("Density_bear_", DATE, ".RData")))){
     
     message("## Loading pre-processed population density...")
