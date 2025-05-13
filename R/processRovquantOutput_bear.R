@@ -26,6 +26,7 @@
 #' @importFrom adehabitatHR estUDm2spixdf kernelUD
 #' @importFrom stats density
 #' @importFrom grDevices adjustcolor dev.off pdf
+#' @importFrom graphics axis abline par
 #' @importFrom stars st_as_stars
 #' @importFrom nimbleSCR scaleCoordsToHabitatGrid
 #' @importFrom abind abind
@@ -492,16 +493,16 @@ processRovquantOutput_bear <- function(
                  width = 12, height = 8.5, units = "in", pointsize = 12,
                  res = 300, bg = NA)
   
-  par(mar = c(5,5,1,1))
+  graphics::par(mar = c(5,5,1,1))
   plot(-1000,
        xlim = c(0.5, n.years + 0.5),
        ylim = c(0,180),
        xlab = "", ylab = paste("Number of bears"),
        xaxt = "n", axes = F, cex.lab = 1.6)
-  axis(1, at = c(1:n.years), labels = years, cex.axis = 1.6)
-  axis(2, at = seq(0,170,20), labels = seq(0,170,20), cex.axis = 1.6)
-  abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,170, by = 10), lty = 2, col = "gray90")
+  graphics::axis(1, at = c(1:n.years), labels = years, cex.axis = 1.6)
+  graphics::axis(2, at = seq(0,170,20), labels = seq(0,170,20), cex.axis = 1.6)
+  graphics::abline(v = (0:n.years)+0.5, lty = 2)
+  graphics::abline(h = seq(0,170, by = 10), lty = 2, col = "gray90")
   
   for(t in 1:n.years){
     ##-- FEMALES

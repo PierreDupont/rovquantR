@@ -7,7 +7,7 @@
 #' @param detector.xy A \code{matrix} object with xy coordinates of detectors. 
 #' @param max.distance A \code{numeric} distance (radius) used to identify  which detections are too far.
 #' @param method A \code{character} describing the method to be used to select which detections to remove.
-#' @param plot.che#' @param plot.check A \code{logical} plot distance histogram if \code{TRUE}.
+#' @param plot.check A \code{logical}. Plots distance histogram if \code{TRUE}.
 #' @param verbose A \code{logical}. Prints out information messages if set to TRUE.
 #' 
 #' @return A \code{list} object with the distances between detections and centroid of detections and which detection(s) from which id are outside the max.distance. 

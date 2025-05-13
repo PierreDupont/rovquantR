@@ -19,21 +19,21 @@
 #' 
 #' @author Pierre Dupont
 #'
-#' @importFrom raster res image 
-#' @importFrom graphics plot layout par segments
+#' @importFrom raster res image extent
+#' @importFrom graphics plot layout par segments mtext text 
 #' @importFrom sf st_geometry 
 #' @importFrom grDevices pdf colorRampPalette
 #'
 #' @rdname plotDensityMaps
 #' @export
 plotDensityMaps <- function( 
-    input = densityInputRegions,
-    estimates = spaceUSED,
+    input,
+    estimates,
     unit = 100,
-    mask = rrCombined,
+    mask,
     background = NULL,
     type = c("all"),# "last.year", "time.series"),
-    path = file.path(working_dir, "figures"),
+    path = file.path(working.dir, "figures"),
     name = "UD_Density")
 {
   
@@ -98,7 +98,7 @@ plotDensityMaps <- function(
     legend.y <- raster::extent(background)[3] + 0.4*diff(raster::extent(background)[3:4])
     
     ##-- Plot density maps
-    par(mar = c(0,0,0,0))
+    graphics::par(mar = c(0,0,0,0))
     
     for(t in 1:length(density)){
       ##-- Plot density
@@ -107,11 +107,11 @@ plotDensityMaps <- function(
                      breaks = c(cuts, max(cuts)+1000),
                      col = col, legend = FALSE)
       plot( sf::st_geometry(background),
-            border = grey(0.4), col = NA, add = TRUE)
+            border = "gray40", col = NA, add = TRUE)
       
       ##-- Add year if available
       if(!is.null(names(estimates))){
-        mtext(text = names(estimates)[t],
+        graphics::mtext(text = names(estimates)[t],
               side = 1, line =  -20,
               adj = 0.2, cex = 1.2)
       }
@@ -121,7 +121,7 @@ plotDensityMaps <- function(
         graphics::segments(
           x0 = legend.x, x1 = legend.x,
           y0 = legend.y-250000, y1 = legend.y + 250000,
-          col = grey(0.3), lwd = 4, lend = 2)
+          col = "grey30", lwd = 4, lend = 2)
         graphics::text(
           x = legend.x-0.05*diff(raster::extent(background)[1:2]),
           y = legend.y,
@@ -160,13 +160,13 @@ plotDensityMaps <- function(
     
     t <- length(density)
     
-    par(mar = c(0,0,0,0))
+    graphics::par(mar = c(0,0,0,0))
     plot(sf::st_geometry(background), border = NA, col = "gray80")
     raster::image( density[[t]], add = TRUE,
                    breaks = c(cuts, max(cuts)+1000),
                    col = col, legend = FALSE)
     plot( sf::st_geometry(background),
-          border = grey(0.4), col = NA, add = TRUE)
+          border = "gray40", col = NA, add = TRUE)
     
     ##-- Add year if available
     if(!is.null(names(estimates))){
@@ -182,7 +182,7 @@ plotDensityMaps <- function(
     graphics::segments(
       x0 = legend.x, x1 = legend.x,
       y0 = legend.y-250000, y1 = legend.y + 250000,
-      col = grey(0.3), lwd = 4, lend = 2)
+      col = "gray30", lwd = 4, lend = 2)
     graphics::text(
       x = legend.x-0.05*diff(raster::extent(background)[1:2]),
       y = legend.y,
@@ -198,10 +198,10 @@ plotDensityMaps <- function(
                   legend.args = list(text = paste0("Individuals/", unit, " km2"),
                                      side = 2, font = 1, line = 0, cex = 1))
     ######----- NEED TO FIX LEGEND TEXT 
-    # segments(x0 = 800000, x1 = 800000,
+    # graphics::segments(x0 = 800000, x1 = 800000,
     #          y0 = 6650000, y1 = 6650000 + 500000,
-    #          col = grey(0.3), lwd = 4, lend = 2)
-    # text(760000, 6650000+500000/2, labels = "500 km", srt = 90, cex = 1.2)
+    #          col = "gray30", lwd = 4, lend = 2)
+    # graphics::text(760000, 6650000+500000/2, labels = "500 km", srt = 90, cex = 1.2)
     # raster::plot( density[[t]],
     #       legend.only = T,
     #       breaks = cuts,

@@ -5,25 +5,26 @@
 \title{RovQuant OPSCR output processing}
 \usage{
 processRovquantOutput(
-  species = c("bear", "wolf", "wolverine"),
   data.dir = "./Data",
   working.dir = NULL,
+  species = c("bear", "wolf", "wolverine"),
   nburnin = 0,
   niter = 100,
   extraction.res = 5000,
   print.report = TRUE,
   Rmd.template = NULL,
-  output.dir = NULL
+  output.dir = NULL,
+  overwrite = FALSE
 )
 }
 \arguments{
-\item{species}{A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.}
-
 \item{data.dir}{A \code{path} to the directory containing the clean Rovbase data,
 as prepared by \code{cleanRovBaseData}.}
 
 \item{working.dir}{A \code{path} to the directory for this analysis containing
 the \code{nimbleInputFiles} folder to store the prepared data.}
+
+\item{species}{A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.}
 
 \item{nburnin}{An \code{integer} denoting the number of MCMC  dead recovery should be included (TRUE) or not (FALSE)}
 

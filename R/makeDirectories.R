@@ -1,15 +1,17 @@
 #' @title Prepare folder structure
 #'
 #' @description \code{makeDirectories} creates a set of folders to store all the necessary
-#' data for hte OPSCR ROvQuant analysis. 
+#' data for the OPSCR ROvQuant analysis. 
 #' 
 #' @param path A path indicating where to create the different folders.
 #' @param subFolders A \code{character vector} with the names of the subfolders to be created for the nimble input and output files.
-#' @param show.dir A \code{logical}. (Optional; requires package ´sf´) If TRUE, the directory structure created is displayed in a tree-like format.
+#' @param show.dir A \code{logical}. (Optional; requires package  \emph{fs}) If TRUE, the directory structure created is displayed in a tree-like format.
 #'
 #' @return boolean invisible(FALSE) if nothing was created, invisible(TRUE) if folders were created in \emph{path}.
 #' 
 #' @examples \dontrun{makeDirectories()}
+#' 
+#' @author Pierre Dupont
 #' 
 #' @rdname makeDirectories
 #' @export
@@ -48,7 +50,7 @@ makeDirectories <- function( path = NULL,
     message("\n The following directory  structure was created for this analysis:\n")
     fs::dir_tree(path)
     } else {
-      warning("The ´fs´ package must be installed to use this functionality.")
+      warning("The 'fs' package must be installed to use this functionality.")
     }
   }
 }

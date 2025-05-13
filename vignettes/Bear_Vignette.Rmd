@@ -37,13 +37,9 @@ gc()
 We start by loading the different R packages necessary for the analysis, and in particular the 'rovquantR' package, which contains a set of wrapper functions to facilitate the analysis. 
 
 ```{r library, warning = FALSE, message = FALSE}
-library(devtools)
-library(dplyr)
-library(readxl)
 library(nimbleSCR)
 library(rovquantR)
 ```
-
 
 
 ## Working Environment
@@ -59,7 +55,7 @@ It contains the different files necessary for the OPSCR analysis:
 
 Note that this is NOT the working directory. For all intent and purposes, it should be treated as a 'read-only' directory.
 
-```{r set-up1.1, eval = TRUE, echo = FALSE}
+```{r set-up1.1, eval = FALSE, echo = FALSE}
 ##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Data"
 
@@ -81,7 +77,7 @@ working.dir <- "./BearVignette"
 
 To make it easier (and more reproducible), we created the 'makeDirectories' function. This will create a set of folders in the location specific by 'working.dir' that will later be used to store processed data, model input and output, as well as results figures and tables.
 
-```{r set.up3, eval = TRUE}
+```{r set.up3, eval = FALSE}
 makeDirectories(path = working.dir)
 ``` 
 

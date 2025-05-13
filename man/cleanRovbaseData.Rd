@@ -5,16 +5,17 @@
 \title{Data set clean-up.}
 \usage{
 cleanRovbaseData(
-  data.dir,
-  working.dir,
+  data.dir = "./Data",
+  working.dir = NULL,
   species = c("bear", "wolf", "wolverine"),
   years = NULL,
-  sex = c("female", "male"),
+  two.sex = TRUE,
   sampling.months = NULL,
   rename.list = NULL,
+  print.report = TRUE,
   Rmd.template = NULL,
-  overwrite = FALSE,
-  output.dir = NULL
+  output.dir = NULL,
+  overwrite = FALSE
 )
 }
 \arguments{
@@ -30,9 +31,6 @@ the cleaned data will be stored in a subfolder of this working directory called 
 \item{years}{A \code{numeric} vector containing the years of interest. 
 Only data for those years will be cleaned and returned.}
 
-\item{sex}{A \code{character} vector containing the sex of interest. 
-Can be "Hunn" for females or "Hann" for males. Default is both sexes (c("Hunn","Hann")).}
-
 \item{sampling.months}{(Optional) A \code{list} containing the sampling period months.
 If the sampling period overlaps two calendar years, the list should contain one element per year.
 (e.g. samplingMonths <- list(c(11,12), c(1,2,3,4))) for a sampling period extending from November to April of the following year.}
@@ -43,12 +41,15 @@ If the sampling period overlaps two calendar years, the list should contain one 
 cleaning the data. By default, the \code{.rmd} template provided with the 
 \code{rovquantR} package is used.}
 
-\item{overwrite}{A \code{logical} (default = FALSE) to force ovewriting of previously existing clean data.
-If FALSE, the function checks for any pre-existing clean data files and ask whether to overwrite it or not.}
-
 \item{output.dir}{(Optional) the \code{path} pointing to the directory where the \code{.html} report will be printed.
 By default, the \code{.html} report describing the content of the clean data will 
 be placed in a subfolder of the working directory (\code{working.dir}) called 'reports'.}
+
+\item{overwrite}{A \code{logical} (default = FALSE) to force ovewriting of previously existing clean data.
+If FALSE, the function checks for any pre-existing clean data files and ask whether to overwrite it or not.}
+
+\item{sex}{A \code{character} vector containing the sex of interest. 
+Can be "Hunn" for females or "Hann" for males. Default is both sexes (c("Hunn","Hann")).}
 }
 \value{
 This function returns:
@@ -65,10 +66,10 @@ The \code{.RData} report is using the same naming convention as the clean \code{
 \description{
 \code{cleanRovbaseData} identifies and loads the most recent RovBase data available 
 for the specified species in the specified \code{data.dir} location, and conducts a set of data cleaning steps that include:
- \itemize{
- \item{"parameter 1"}{removing un-identified samples}
- \item{"parameter 2"}{checking sex-assignment}
- \item{"parameter 3"}{removing samples flagged as unusable by RovData/Mike}
+\itemize{
+ \item{removing un-identified samples}
+ \item{checking sex-assignment}
+ \item{removing samples flagged as unusable by RovData/Mike}
 }
  
 Additionally, it can produce a \code{html} report describing the content of the data in terms of number of samples, individuals, etc...

@@ -98,10 +98,10 @@ dbinomLocal_normalCovsResponse <- nimbleFunction(
                   log = integer(0, default = 0)
   ){
     
-    ## Return type declaration
+    ##-- Return type declaration
     returnType(double(0))
     
-    ## Deal with cases where detection info is combined in one vector 
+    ##-- Deal with cases where detection info is combined in one vector 
     if(detNums == -999){
       detNums <- x[1]
       nMaxDetectors <- (lengthYCombined-1)/2
@@ -112,7 +112,7 @@ dbinomLocal_normalCovsResponse <- nimbleFunction(
       detIndices1 <- detIndices
     }
     
-    ## Shortcut if the current individual is not available for detection
+    ##-- Shortcut if the current individual is not available for detection
     if(indicator == 0){
       if(detNums == 0){
         if(log == 0) return(1.0)
@@ -123,13 +123,13 @@ dbinomLocal_normalCovsResponse <- nimbleFunction(
       }
     }
     
-    ## Retrieve the index of the habitat cell where the current AC is
+    ##-- Retrieve the index of the habitat cell where the current AC is
     sID <- habitatGrid[trunc(s[2]/resizeFactor)+1, trunc(s[1]/resizeFactor)+1]
     
-    ## Retrieve the indices of the local traps surrounding the selected habitat grid cell
+    ##-- Retrieve the indices of the local traps surrounding the selected habitat grid cell
     theseLocalTraps <- localTrapsIndices[sID,1:localTrapsNum[sID]]
     
-    ## Check if detections are within the list of local traps
+    ##-- Check if detections are within the list of local traps
     if(detNums > 0){
       for(r in 1:detNums){
         if(sum(detIndices1[r] == theseLocalTraps) == 0){
@@ -139,19 +139,19 @@ dbinomLocal_normalCovsResponse <- nimbleFunction(
       }#r
     }
     
-    ## Calculate the log-probability of the vector of detections
+    ##-- Calculate the log-probability of the vector of detections
     alpha <- -1.0 / (2.0 * sigma * sigma)
     logitp0 <- logit(p0State)
     logProb <- 0.0 
     detIndices1 <- c(detIndices1, 0)
-    indCov <- trapResponse * betaResponse
+    indCov <- responseCovs * responseBetas
     count <- 1 
     
     for(r in 1:localTrapsNum[sID]){
-      ## Calculate distance to local traps
+      ##-- Calculate distance to local traps
       d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) +
         pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
-      ## Calculate p0 
+      ##-- Calculate p0 
       pZero <- ilogit(logitp0[trapCountries[theseLocalTraps[r]]] + 
                         inprod(trapBetas,trapCovs[theseLocalTraps[r], ]) +
                         indCov)
@@ -194,37 +194,37 @@ rbinomLocal_normalCovsResponse <- nimbleFunction(
                   responseCovs = double(0),
                   responseBetas = double(0)
   ) {
-    ## Specify return type
+    ##-- Specify return type
     returnType(double(1))
     
-    ## Initial checks
+    ##-- Initial checks
     if(detNums >= 0) stop("Random generation for the dbinomLocal_normalCovsResponse distribution is not currently supported without combining all individual detections information in one vector. See 'getSparseY()'")
     if(n!=1){print("dbinomLocal_normalCovsResponse only allows n = 1; using n = 1")}
     
-    ## Get necessary info
+    ##-- Get necessary info
     alpha <- -1.0 / (2.0 * sigma * sigma)
     nMAxDetections <- (lengthYCombined-1)/2
     
-    ## SHORTCUT IF INDIVIDUAL IS NOT AVAILABLE FOR DETECTION
+    ##-- SHORTCUT IF INDIVIDUAL IS NOT AVAILABLE FOR DETECTION
     if(indicator == 0){return(rep(0.0, lengthYCombined))}
     
-    ## RETRIEVE THE ID OF THE HABITAT WINDOW THE CURRENT sxy FALLS IN FROM THE HABITAT_ID MATRIX
+    ##-- RETRIEVE THE ID OF THE HABITAT WINDOW THE CURRENT sxy FALLS IN FROM THE HABITAT_ID MATRIX
     sID <- habitatGrid[trunc(s[2]/resizeFactor)+1, trunc(s[1]/resizeFactor)+1]
     
-    ## RETRIEVE THE IDs OF THE RELEVANT DETECTORS
+    ##-- RETRIEVE THE IDs OF THE RELEVANT DETECTORS
     theseLocalTraps <- localTrapsIndices[sID, 1:localTrapsNum[sID]]
     
-    ## INITIALIZE THE OUTPUT VECTOR OF DETECTIONS
+    ##-- INITIALIZE THE OUTPUT VECTOR OF DETECTIONS
     detectOut <- rep(0, localTrapsNum[sID])
     ys <- rep(-1, nMAxDetections)
     dets <- rep(-1, nMAxDetections)
     logitp0 <- logit(p0State)
-    indCov <- trapResponse * betaResponse
+    indCov <- responseCovs * responseBetas
     count <- 1
     
-    ## SAMPLE THE DETECTION HISTORY (FOR RELEVANT DETECTORS ONLY)
+    ##-- SAMPLE THE DETECTION HISTORY (FOR RELEVANT DETECTORS ONLY)
     for(r in 1:localTrapsNum[sID]){
-      ## Calculate distance to local traps
+      ##-- Calculate distance to local traps
       d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) +
         pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
       
@@ -234,7 +234,7 @@ rbinomLocal_normalCovsResponse <- nimbleFunction(
                         indCov)
       p <- pZero * exp(alpha * d2)
       
-      ## Draw the observation at detector j from a binomial distribution with probability p
+      ##-- Draw the observation at detector j from a binomial distribution with probability p
       detectOut[r] <- rbinom(1, size[theseLocalTraps[r]], p)
       if(detectOut[r] > 0){
         if(nMAxDetections < count){
@@ -247,7 +247,7 @@ rbinomLocal_normalCovsResponse <- nimbleFunction(
       }#if
     }#r 
     
-    ## Format output vector
+    ##-- Format output vector
     count <- count - 1
     out <- rep(-1, lengthYCombined)
     out[1] <- count
@@ -256,6 +256,6 @@ rbinomLocal_normalCovsResponse <- nimbleFunction(
       out[(nMAxDetections+2):(nMAxDetections+count+1)] <- dets[1:count]
     }
     
-    ## OUTPUT
+    ##-- OUTPUT
     return(out)
   })

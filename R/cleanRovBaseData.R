@@ -3,34 +3,28 @@
 #' @description
 #' \code{cleanRovbaseData} identifies and loads the most recent RovBase data available 
 #' for the specified species in the specified \code{data.dir} location, and conducts a set of data cleaning steps that include:
-#'  \itemize{
-#'  \item{"parameter 1"}{removing un-identified samples}
-#'  \item{"parameter 2"}{checking sex-assignment}
-#'  \item{"parameter 3"}{removing samples flagged as unusable by RovData/Mike}
+#' \itemize{
+#'  \item{removing un-identified samples}
+#'  \item{checking sex-assignment}
+#'  \item{removing samples flagged as unusable by RovData/Mike}
 #' }
 #'  
 #' Additionally, it can produce a \code{html} report describing the content of the data in terms of number of samples, individuals, etc... 
 #'
 #' @name cleanRovbaseData
 #' 
-#' @param data.dir the \code{path} pointing to the directory containing the raw 
-#' data from Rovbase.
-#' @param working.dir the \code{path} pointing to the working directory. By default,
-#'  the cleaned data will be stored in a subfolder of this working directory called 'data'.
+#' @param data.dir the \code{path} pointing to the directory containing the raw data from Rovbase.
+#' @param working.dir the \code{path} pointing to the working directory. By default, the cleaned data will be stored in a subfolder of this working directory called 'data'.
 #' @param species A \code{character} string with the name of the focal species
 #'  ("bear", "wolf", or "wolverine").
 #' @param years A \code{numeric} vector containing the years of interest. 
 #' Only data for those years will be cleaned and returned.
-#' @param sex A \code{character} vector containing the sex of interest. 
-#' Can be "Hunn" for females or "Hann" for males. Default is both sexes (c("Hunn","Hann")).
-#' @param sampling.months (Optional) A \code{list} containing the sampling period months.
-#' If the sampling period overlaps two calendar years, the list should contain one element per year.
-#' (e.g. samplingMonths <- list(c(11,12), c(1,2,3,4))) for a sampling period extending from November to April of the following year.
+#' @param two.sex A \code{logical} determining whether the analysis will be done by sex (two.sex = T) or both together (two.sex = F).
+#' @param sampling.months (Optional) A \code{list} containing the sampling period months. If the sampling period overlaps two calendar years, the list should contain one element per year (e.g. samplingMonths <- list(c(11,12), c(1,2,3,4))) for a sampling period extending from November to April of the following year.
 #' @param rename.list (Optional) A named \code{character} vector used to rename columns in the raw Rovbase files.
-#' @param Rmd.template (Optional) The \code{path} to the \code{.rmd} template to be used for
-#'  cleaning the data. By default, the \code{.rmd} template provided with the 
-#'  \code{rovquantR} package is used.  
-#' @param overwrite A \code{logical} (default = FALSE) to force ovewriting of previously existing clean data.
+#' @param print.report A \code{logical} denoting wheteher to prin t out a \code{.html} report summarizing the cleaning process or not.
+#' @param Rmd.template (Optional) The \code{path} to the \code{.rmd} template to be used for cleaning the data. By default, the \code{.rmd} template provided with the \code{rovquantR} package is used.  
+#' @param overwrite A \code{logical} (default = FALSE) to force overwriting of previously existing clean data.
 #'  If FALSE, the function checks for any pre-existing clean data files and ask whether to overwrite it or not.
 #' @param output.dir (Optional) the \code{path} pointing to the directory where the \code{.html} report will be printed.
 #' By default, the \code{.html} report describing the content of the clean data will 
@@ -51,14 +45,12 @@
 #' 
 #' @importFrom rmarkdown render
 #' @importFrom grDevices png
-#' @import patchwork
+#' @importFrom graphics mtext 
 #' @import sf 
-#' @import ggplot2 
+#' @import ggplot2
+#' @import patchwork
 #' @import dplyr 
-#' @import patchwork 
-
-
-NULL
+#' 
 #' @rdname cleanRovbaseData
 #' @export
 cleanRovbaseData <- function(
@@ -526,7 +518,7 @@ cleanRovbaseData <- function(
     
     ##-- Remove suspect NGS samples according to Henrik
     SUSPECT_NGS_SAMPLES <- readMostRecent(
-      path = dir.in,
+      path = data.dir,
       extension = ".xls",
       pattern = "Remove ngs samples list wolverine")
     alive$DNAID <- as.character(alive$DNAID)
@@ -534,7 +526,7 @@ cleanRovbaseData <- function(
     
     ##-- Remove suspect dead recoveries according to Henrik
     SUSPECT_DeadRecoSAMPLES <- readMostRecent(
-      path = dir.in,
+      path = data.dir,
       extension = ".xls",
       pattern = "Remove dead recoveries list wolverine")
     dead.recovery$DNAID <- as.character(dead.recovery$DNAID)
@@ -587,7 +579,7 @@ cleanRovbaseData <- function(
   if(engSpecies == "wolf"){
     ##-- Load most recent Micke's file
     INDIVIDUAL_ID <- readMostRecent.csv(
-      path = dir.in,
+      path = data.dir,
       pattern = "_ID Grouping ",
       fileEncoding = "latin1")  
     
@@ -826,10 +818,10 @@ cleanRovbaseData <- function(
     try(
       plot( sf::st_geometry(dead.recovery[dead.recovery$Year == years[t], ]), add = TRUE, col = "slateblue", pch = 3),
       silent = TRUE)
-    plot( sf::st_geometry(COUNTRIES), border = grey(0.4), col = NA, add = TRUE)
+    plot( sf::st_geometry(COUNTRIES), border = "gray40", col = NA, add = TRUE)
     
     ##-- Add year
-    mtext(text = years[t],
+    graphics::mtext(text = years[t],
           side = 1, line = -18,
           adj = 0.18, cex = 1.2)
   }#t

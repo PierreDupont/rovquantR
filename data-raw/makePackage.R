@@ -23,11 +23,9 @@ rm(list = ls())
 gc()
 
 
-
 ## ------ IMPORT REQUIRED LIBRARIES ------
 library(devtools)
 library(roxygen2)
-
 
 
 ## ------ SET PACKAGE DIRECTORY ------

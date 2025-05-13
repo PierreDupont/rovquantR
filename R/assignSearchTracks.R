@@ -7,35 +7,13 @@
 #' 
 #' @name assignSearchtTracks
 #' 
-#' @param mcmc a \code{NIMBLE MCMC algorithm} object. 
-#' @param model a \code{NIMBLE model} object.
-#' @param conf a \code{NIMBLE MCMC configuration} object.
-#' @param bite.size an \code{integer} denoting the number of MCMC iterations in 
-#' each MCMC bite. 
-#' @param bite.number an \code{integer} denoting the number of MCMC bites to run.
-#' @param path a \code{character string} denoting the path where MCMC bite outputs are
-#'  to be saved as .RData files (when using \code{runMCMCbites} or \code{restartMCMCbites}) 
-#'  or looked for (when using \code{collectMCMCbites}). 
-#' @param save.rds (optional) a \code{logical value}. if TRUE, the state of the
-#' nimble model is saved at the end of every MCMC bite. This is later used to restart 
-#' the MCMC sampling process if necessary using \code{restartMCMCbites}.
-#' @param path.rds (optional) a \code{path} to the folder containing the last MCMC model state file.
-#' @param burnin an \code{integer} denoting the number of MCMC bites to be removed 
-#' as burn-in. 
-#' @param pattern a \code{character string} denoting the name of the object containing
-#' MCMC samples in each .R Data bite file.
-#' @param param.omit a \code{character vector} denoting the names of parameters 
-#' that are to be ignored when combining MCMC bites.
-#' @param progress.bar a \code{logical value}. if TRUE, a separate progress bar is 
-#' printed for each MCMC chain.
-#' @param samplerDef a  \code{NIMBLE sampler definition} object.
-#' @param modelState \code{NIMBLE model state} object.
-#' @param mcmcState \code{NIMBLE MCMC state} object.
+#' @param data A \code{sf} object containing the detection data
+#' @param detectors A \code{tracks} of sf objects containing the search tracks
+#' @param dist a \code{numeric} value denoting the maximum distance to consider for tracks assignment. 
+#' Any detection further than \code{dist} m from any track will not be assigned to any track. Instead it will get a 'NA'.
+#' @param progress.bar a \code{logical}, whether to display a progress bar or not. 
 #' 
-#' @return \code{runMCMCbites} and \code{restartMCMCbites} run and save locally 
-#' nimble MCMC posterior samples. \code{collectMCMCbites} combines multiple MCMC
-#'  bites (and MCMC chains) and returns them in the commnonly used \code{mcmc.list}
-#'  format from the \code{coda} package.
+#' @return A \code{sf} object with the x and y locations of the different detections with associated tracks Id 
 #'
 #' @author Pierre Dupont
 #' 
@@ -45,9 +23,9 @@
 NULL
 #' @rdname assignSearchtTracks
 #' @export
-assignSearchtTracks <- function( data = myFilteredData.sp$alive,
-                                 tracks = TRACKS_YEAR,
-                                 dist = 750,
+assignSearchtTracks <- function( data,
+                                 tracks,
+                                 dist = 500,
                                  progress.bar = T)
 {
   ##-- Initialise track ID and distance
@@ -55,7 +33,7 @@ assignSearchtTracks <- function( data = myFilteredData.sp$alive,
   data$track_dist <- NA
   
   ##-- Buffer DNA detections
-  buffData <- st_as_sf(data) %>% st_buffer(., dist = dist)
+  buffData <- st_buffer(st_as_sf(data), dist = dist)
   
   ##-- Set-up progress bar 
   if(progress.bar){
@@ -69,9 +47,7 @@ assignSearchtTracks <- function( data = myFilteredData.sp$alive,
   for(i in 1:nrow(data)){
     
     ##-- INTERSECT BUFFERED POINT WITH TRACKS
-    tmpTRACKS <- tracks %>%
-      filter(., Dato == data$Date[i]) %>%
-      st_intersection(., buffData[i, ])
+    tmpTRACKS <- st_intersection(filter(tracks, Dato == data$Date[i]), buffData[i, ])
     
     ##-- If no match, move on...
     if(nrow(tmpTRACKS) == 0){
@@ -84,7 +60,7 @@ assignSearchtTracks <- function( data = myFilteredData.sp$alive,
       data$track_dist[i] <- min(dist)
     }
     ## Print progress bar
-    if(progress.bar){ utils::setTxtProgressBar(pb,b) }
+    if(progress.bar){ utils::setTxtProgressBar(pb,i) }
   }#i
   if(progress.bar)close(pb)  
 return(data)

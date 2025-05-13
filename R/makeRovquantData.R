@@ -41,7 +41,9 @@
 #' @param print.report A \code{logical}.
 #' @param Rmd.template A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
 #' @param output.dir A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
-#' 
+#' @param overwrite A \code{logical} (default = FALSE) to force overwriting of previously existing data.
+#'  If FALSE, the function checks for any pre-existing data files and ask whether to overwrite it or not.
+#'  
 #' @return This function returns:
 #' \enumerate{
 #' \item A \code{.RData} file with the clean NGS and dead recovery data objects

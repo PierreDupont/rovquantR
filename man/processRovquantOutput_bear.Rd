@@ -9,7 +9,8 @@ processRovquantOutput_bear(
   working.dir = NULL,
   nburnin = 0,
   niter = 100,
-  extraction.res = 5000
+  extraction.res = 5000,
+  overwrite = FALSE
 )
 }
 \arguments{

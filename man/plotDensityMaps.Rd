@@ -5,13 +5,13 @@
 \title{Plot population density maps}
 \usage{
 plotDensityMaps(
-  input = densityInputRegions,
-  estimates = spaceUSED,
+  input,
+  estimates,
   unit = 100,
-  mask = rrCombined,
+  mask,
   background = NULL,
   type = c("all"),
-  path = file.path(working_dir, "figures"),
+  path = file.path(working.dir, "figures"),
   name = "UD_Density"
 )
 }

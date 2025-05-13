@@ -22,9 +22,6 @@
 #' @param subdetector.res A \code{Numeric}.
 #' @param max.det.dist A \code{Numeric}.  
 #' @param resize.factor A \code{Numeric}.
-#' @param plot.check A \code{Logical}.
-#' @param print.report A \code{Logical}.
-#' 
 #' 
 #' @return 
 #' A \code{html} report summarizing the data preparation process
@@ -35,6 +32,7 @@
 #' @import sf 
 #' @import raster
 #' @import dplyr
+#' @importFrom graphics mtext layout 
 #' @importFrom adehabitatHR estUDm2spixdf kernelUD
 #' @importFrom fasterize fasterize
 #' @importFrom nimbleSCR getSparseY scaleCoordsToHabitatGrid
@@ -657,10 +655,10 @@ makeRovquantData_bear <- function(
       !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
     ) %>%
     ##-- Assign detector based on distance
-    AssignDetectors(
-      myData = .,                
-      myDetectors = detectors$main.detector.sp,
-      mysubDetectors = detectors$detector.sp,
+    assignDetectors(
+      data = .,                
+      detectors = detectors$main.detector.sp,
+      subDetectors = detectors$detector.sp,
       radius = detectors$resolution)
   
   
@@ -677,9 +675,9 @@ makeRovquantData_bear <- function(
       !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
     ) %>% 
     ##-- Assign detector based on distance
-    AssignDetectors(
-      myData = .,
-      myDetectors = detectors$main.detector.sp,
+    assignDetectors(
+      data = .,
+      detectors = detectors$main.detector.sp,
       radius = detectors$resolution)
 
   
@@ -719,10 +717,10 @@ makeRovquantData_bear <- function(
     try(
       plot( sf::st_geometry(data.alive$myData.sp[data.alive$myData.sp$Year == years[t], ]), add = TRUE, col = "orange", pch = 3),
       silent = TRUE)
-    plot( sf::st_geometry(COUNTRIES), border = grey(0.4), col = NA, add = TRUE)
+    plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
     
     ##-- Add year
-    mtext(text = years[t],
+    graphics::mtext(text = years[t],
           side = 1, line = -18,
           adj = 0.18, cex = 1.2)
   }#t
@@ -751,10 +749,10 @@ makeRovquantData_bear <- function(
     try(
       plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]), add = TRUE, col = "slateblue", pch = 3),
         silent = TRUE)
-    plot( sf::st_geometry(COUNTRIES), border = grey(0.4), col = NA, add = TRUE)
+    plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
     
     ##-- Add year
-    mtext(text = years[t],
+    graphics::mtext(text = years[t],
           side = 1, line = -18,
           adj = 0.18, cex = 1.2)
   }#t
@@ -842,7 +840,7 @@ makeRovquantData_bear <- function(
       #       scalebar(2*myVars$DETECTIONS$maxDist, xy = c(800000,6700000), type = "bar", divs = 2, below = "km",
       #                label = c(0, myVars$DETECTIONS$maxDist/1000, myVars$DETECTIONS$maxDist/500), cex = 0.8, adj = c(0.5,-0.9))
       #       plot(st_geometry(COUNTRIES), add = T)
-      #       plot(st_geometry(detectors$main.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
+      #       plot(st_geometry(detectors$main.detector.sp), add = T, col = "gray80", cex = 0.3, pch = 19)
       #       
       #       tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Id == dimnames(y.ar.ALIVE)[[1]][i] &
       #                                        myFilteredData.sp$alive$Year == years[t], ]
