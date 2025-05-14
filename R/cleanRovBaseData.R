@@ -980,7 +980,7 @@ cleanRovbaseData <- function(
     ##-- List of rendering parameters for the .Rmd report
     info.ls <- list()
     info.ls$IdDoubleSex <- IdDoubleSex
-    #info.ls$doubleSexID <- doubleSexID
+    info.ls$doubleSexID <- doubleSexID
     info.ls$numNoID <- numNoID
     info.ls$numNoDate <- numNoDate
     info.ls$numNoCoords <- numNoCoords
