@@ -11,7 +11,7 @@ plotDensityMaps(
   mask,
   background = NULL,
   type = c("all"),
-  path = file.path(working.dir, "figures"),
+  path = file.path(getwd(), "figures"),
   name = "UD_Density"
 )
 }

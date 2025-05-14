@@ -11,16 +11,19 @@ makeDirectories(path = NULL, subFolders = NULL, show.dir = TRUE)
 
 \item{subFolders}{A \code{character vector} with the names of the subfolders to be created for the nimble input and output files.}
 
-\item{show.dir}{A \code{logical}. (Optional; requires package ´sf´) If TRUE, the directory structure created is displayed in a tree-like format.}
+\item{show.dir}{A \code{logical}. (Optional; requires package  \emph{fs}) If TRUE, the directory structure created is displayed in a tree-like format.}
 }
 \value{
 boolean invisible(FALSE) if nothing was created, invisible(TRUE) if folders were created in \emph{path}.
 }
 \description{
 \code{makeDirectories} creates a set of folders to store all the necessary
-data for hte OPSCR ROvQuant analysis.
+data for the OPSCR ROvQuant analysis.
 }
 \examples{
 \dontrun{makeDirectories()}
 
+}
+\author{
+Pierre Dupont
 }

@@ -33,7 +33,7 @@ plotDensityMaps <- function(
     mask,
     background = NULL,
     type = c("all"),# "last.year", "time.series"),
-    path = file.path(working.dir, "figures"),
+    path = file.path(getwd(), "figures"),
     name = "UD_Density")
 {
   

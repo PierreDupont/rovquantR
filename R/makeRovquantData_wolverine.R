@@ -743,10 +743,10 @@ makeRovquantData_wolverine <- function(
       ##-- Filter data for space
       !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
     ) %>%
-    AssignDetectors(
-      myData = .,                
-      myDetectors = detectors$main.detector.sp,
-      mysubDetectors = detectors$detector.sp,
+    assignDetectors(
+      data = .,                
+      detectors = detectors$main.detector.sp,
+      subDetectors = detectors$detector.sp,
       radius = detectors$resolution)
   
   
@@ -762,9 +762,9 @@ makeRovquantData_wolverine <- function(
       ##-- Filter data for space
       !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
     ) %>% 
-    AssignDetectors(
-      myData = .,
-      myDetectors = detectors$main.detector.sp,
+    assignDetectors(
+      data = .,
+      detectors = detectors$main.detector.sp,
       radius = detectors$resolution)
   
   

@@ -61,6 +61,9 @@ the \code{nimbleInputFiles} folder to store the prepared data.}
 \item{Rmd.template}{A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.}
 
 \item{output.dir}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+
+\item{overwrite}{A \code{logical} (default = FALSE) to force overwriting of previously existing data.
+If FALSE, the function checks for any pre-existing data files and ask whether to overwrite it or not.}
 }
 \value{
 This function returns:

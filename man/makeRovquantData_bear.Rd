@@ -46,10 +46,6 @@ makeRovquantData_bear(
 \item{max.det.dist}{A \code{Numeric}.}
 
 \item{resize.factor}{A \code{Numeric}.}
-
-\item{plot.check}{A \code{Logical}.}
-
-\item{print.report}{A \code{Logical}.}
 }
 \value{
 A \code{html} report summarizing the data preparation process

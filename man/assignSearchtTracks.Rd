@@ -4,58 +4,20 @@
 \alias{assignSearchtTracks}
 \title{Assign DNA samples to search tracks bite-size NIMBLE MCMC algorithms}
 \usage{
-assignSearchtTracks(
-  data = myFilteredData.sp$alive,
-  tracks = TRACKS_YEAR,
-  dist = 750,
-  progress.bar = T
-)
+assignSearchtTracks(data, tracks, dist = 500, progress.bar = T)
 }
 \arguments{
-\item{progress.bar}{a \code{logical value}. if TRUE, a separate progress bar is 
-printed for each MCMC chain.}
+\item{data}{A \code{sf} object containing the detection data}
 
-\item{mcmc}{a \code{NIMBLE MCMC algorithm} object.}
+\item{dist}{a \code{numeric} value denoting the maximum distance to consider for tracks assignment. 
+Any detection further than \code{dist} m from any track will not be assigned to any track. Instead it will get a 'NA'.}
 
-\item{model}{a \code{NIMBLE model} object.}
+\item{progress.bar}{a \code{logical}, whether to display a progress bar or not.}
 
-\item{conf}{a \code{NIMBLE MCMC configuration} object.}
-
-\item{bite.size}{an \code{integer} denoting the number of MCMC iterations in 
-each MCMC bite.}
-
-\item{bite.number}{an \code{integer} denoting the number of MCMC bites to run.}
-
-\item{path}{a \code{character string} denoting the path where MCMC bite outputs are
-to be saved as .RData files (when using \code{runMCMCbites} or \code{restartMCMCbites}) 
-or looked for (when using \code{collectMCMCbites}).}
-
-\item{save.rds}{(optional) a \code{logical value}. if TRUE, the state of the
-nimble model is saved at the end of every MCMC bite. This is later used to restart 
-the MCMC sampling process if necessary using \code{restartMCMCbites}.}
-
-\item{path.rds}{(optional) a \code{path} to the folder containing the last MCMC model state file.}
-
-\item{burnin}{an \code{integer} denoting the number of MCMC bites to be removed 
-as burn-in.}
-
-\item{pattern}{a \code{character string} denoting the name of the object containing
-MCMC samples in each .R Data bite file.}
-
-\item{param.omit}{a \code{character vector} denoting the names of parameters 
-that are to be ignored when combining MCMC bites.}
-
-\item{samplerDef}{a  \code{NIMBLE sampler definition} object.}
-
-\item{modelState}{\code{NIMBLE model state} object.}
-
-\item{mcmcState}{\code{NIMBLE MCMC state} object.}
+\item{detectors}{A \code{tracks} of sf objects containing the search tracks}
 }
 \value{
-\code{runMCMCbites} and \code{restartMCMCbites} run and save locally 
-nimble MCMC posterior samples. \code{collectMCMCbites} combines multiple MCMC
- bites (and MCMC chains) and returns them in the commnonly used \code{mcmc.list}
- format from the \code{coda} package.
+A \code{sf} object with the x and y locations of the different detections with associated tracks Id
 }
 \description{
 the \code{assignSearchtTracks} function is a R function used to match RovBase

@@ -19,11 +19,9 @@ cleanRovbaseData(
 )
 }
 \arguments{
-\item{data.dir}{the \code{path} pointing to the directory containing the raw 
-data from Rovbase.}
+\item{data.dir}{the \code{path} pointing to the directory containing the raw data from Rovbase.}
 
-\item{working.dir}{the \code{path} pointing to the working directory. By default,
-the cleaned data will be stored in a subfolder of this working directory called 'data'.}
+\item{working.dir}{the \code{path} pointing to the working directory. By default, the cleaned data will be stored in a subfolder of this working directory called 'data'.}
 
 \item{species}{A \code{character} string with the name of the focal species
 ("bear", "wolf", or "wolverine").}
@@ -31,25 +29,22 @@ the cleaned data will be stored in a subfolder of this working directory called 
 \item{years}{A \code{numeric} vector containing the years of interest. 
 Only data for those years will be cleaned and returned.}
 
-\item{sampling.months}{(Optional) A \code{list} containing the sampling period months.
-If the sampling period overlaps two calendar years, the list should contain one element per year.
-(e.g. samplingMonths <- list(c(11,12), c(1,2,3,4))) for a sampling period extending from November to April of the following year.}
+\item{two.sex}{A \code{logical} determining whether the analysis will be done by sex (two.sex = T) or both together (two.sex = F).}
+
+\item{sampling.months}{(Optional) A \code{list} containing the sampling period months. If the sampling period overlaps two calendar years, the list should contain one element per year (e.g. samplingMonths <- list(c(11,12), c(1,2,3,4))) for a sampling period extending from November to April of the following year.}
 
 \item{rename.list}{(Optional) A named \code{character} vector used to rename columns in the raw Rovbase files.}
 
-\item{Rmd.template}{(Optional) The \code{path} to the \code{.rmd} template to be used for
-cleaning the data. By default, the \code{.rmd} template provided with the 
-\code{rovquantR} package is used.}
+\item{print.report}{A \code{logical} denoting wheteher to prin t out a \code{.html} report summarizing the cleaning process or not.}
+
+\item{Rmd.template}{(Optional) The \code{path} to the \code{.rmd} template to be used for cleaning the data. By default, the \code{.rmd} template provided with the \code{rovquantR} package is used.}
 
 \item{output.dir}{(Optional) the \code{path} pointing to the directory where the \code{.html} report will be printed.
 By default, the \code{.html} report describing the content of the clean data will 
 be placed in a subfolder of the working directory (\code{working.dir}) called 'reports'.}
 
-\item{overwrite}{A \code{logical} (default = FALSE) to force ovewriting of previously existing clean data.
+\item{overwrite}{A \code{logical} (default = FALSE) to force overwriting of previously existing clean data.
 If FALSE, the function checks for any pre-existing clean data files and ask whether to overwrite it or not.}
-
-\item{sex}{A \code{character} vector containing the sex of interest. 
-Can be "Hunn" for females or "Hann" for males. Default is both sexes (c("Hunn","Hann")).}
 }
 \value{
 This function returns:
