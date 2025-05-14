@@ -31,7 +31,9 @@ gc()
 ## ------ IMPORT REQUIRED LIBRARIES ------
 
 devtools::install_github("PierreDupont/rovquantR")
+
 ## Ctrl + Shift + F10 (to restart R session)
+
 library(rovquantR)
 library(nimbleSCR)
 
@@ -57,7 +59,9 @@ cleanRovbaseData(
   species = "bear",
   years = 2012:2025,
   data.dir = data.dir,
-  working.dir = working.dir)
+  working.dir = working.dir,
+  two.sex = TRUE,
+  print.report = TRUE)
 
 
 
