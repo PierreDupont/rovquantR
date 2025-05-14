@@ -2,7 +2,6 @@
 params:
   species: "Brown bear"
   years: !r 2012:as.numeric(format(Sys.Date(), "%Y"))
-  sex: !r c("female","male")  
   date: !r Sys.Date()  
   sampling.months: !r 4:11
   working.dir: !r getwd()
@@ -38,7 +37,6 @@ library(rovquantR)
 ##-- Extract parameters to knit document
 species <- params$species
 years <- params$years
-sex <- params$sex
 date <- params$date
 sampling.months <- params$sampling.months
 working.dir <- params$working.dir

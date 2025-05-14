@@ -990,7 +990,6 @@ cleanRovbaseData <- function(
       input = Rmd.template,
       params = list( species = SPECIES, 
                      years = years,
-                     sex = sex,
                      sampling.months = sampling.months,
                      data.dir = data.dir,
                      working.dir = working.dir,
