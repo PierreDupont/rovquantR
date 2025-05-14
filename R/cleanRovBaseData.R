@@ -716,6 +716,17 @@ cleanRovbaseData <- function(
   dat$Date <- as.Date(dat$Date)
   
   ##-- Plot time series of number of samples per month
+  NGS_plot <- ggplot(dat) +
+    geom_col(aes(x = Date, y = n, fill = type)) +
+    ylab("Number of samples") +
+    guides(fill = guide_legend(reverse = TRUE)) +
+    theme(legend.title = element_blank(),
+          legend.position.inside = c(0.1,0.9),
+          axis.text.x = element_text(angle = 60,
+                                     hjust = 1)) +
+    scale_x_date( date_breaks = "years",
+                  date_labels = "%Y") 
+  
   grDevices::png( filename = file.path(working.dir, "figures",
                                        paste0( engSpecies, "_Clean Rovbase Samples_",
                                                years[1]," to ", years[length(years)],
@@ -723,17 +734,7 @@ cleanRovbaseData <- function(
                   width = 8, height = 6,
                   units = "in", pointsize = 12,
                   res = 300, bg = NA)  
-  ggplot2::ggplot(dat) +
-    ggplot2::geom_col(aes(x = Date, y = n, fill = type)) +
-
-    ylab("Number of samples") +
-    guides(fill = guide_legend(reverse = TRUE)) +
-    theme(legend.title = element_blank(),
-          legend.position.inside = c(0.1,0.9),
-          axis.text.x = element_text(angle = 60,
-                                   hjust = 1)) +
-    scale_x_date( date_breaks = "years",
-                  date_labels = "%Y") 
+  NGS_plot
   dev.off()
   
   
@@ -756,6 +757,17 @@ cleanRovbaseData <- function(
   dat <- rbind(dat.alive, dat.dead)
   
   ##-- Plot time series of number of IDs per year
+  IDS_plot <- ggplot2::ggplot(dat) +
+    geom_col(aes(x = Year, y = n, fill = type)) +
+    ylab("Number of individuals") +
+    guides(fill = guide_legend(reverse = TRUE)) +
+    theme(legend.title = element_blank(),
+          legend.position.inside = c(0.1,0.9),
+          axis.text.x = element_text(angle = 60,
+                                     hjust = 1)) +
+    scale_x_continuous( breaks = years,
+                        labels = years)
+  
   grDevices::png( filename = file.path(working.dir, "figures",
                                        paste0(engSpecies, "_Clean Rovbase Ids_",
                                               years[1]," to ", years[length(years)],
@@ -763,16 +775,7 @@ cleanRovbaseData <- function(
                   width = 8, height = 6,
                   units = "in", pointsize = 12,
                   res = 300, bg = NA)
-  ggplot2::ggplot(dat) +
-    geom_col(aes(x = Year, y = n, fill = type)) +
-    ylab("Number of individuals") +
-    guides(fill = guide_legend(reverse = TRUE)) +
-    theme(legend.title = element_blank(),
-          legend.position.inside = c(0.1,0.9),
-          axis.text.x = element_text(angle = 60,
-                                   hjust = 1)) +
-    scale_x_continuous( breaks = years,
-                        labels = years)
+  IDS_plot
   dev.off()
   
   
