@@ -776,7 +776,7 @@ cleanRovbaseData <- function(
                         labels = years)
   ##-- Export as .png
   ggsave(filename = file.path(working.dir, "figures",
-                              paste0( engSpecies, "_Clean Rovbase Ids",
+                              paste0( engSpecies, "_Clean Rovbase Ids_",
                                       years[1]," to ", years[length(years)],
                                       ".png")),
          plot = IDS_plot,
