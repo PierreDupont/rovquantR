@@ -629,7 +629,7 @@ cleanRovbaseData <- function(
   ##-- Turn into sf points dataframe
   alive <- sf::st_as_sf( x = alive,
                          coords = c("East_UTM33","North_UTM33")) %>%
-    sf::st_set_crs(.,sf::st_crs(32633)) 
+    sf::st_set_crs(., sf::st_crs(32633)) 
   
   ##-- Intersect and extract country name
   #alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
@@ -726,17 +726,24 @@ cleanRovbaseData <- function(
                                      hjust = 1)) +
     scale_x_date( date_breaks = "years",
                   date_labels = "%Y") 
-  
-  grDevices::png( filename = file.path(working.dir, "figures",
-                                       paste0( engSpecies, "_Clean Rovbase Samples_",
-                                               years[1]," to ", years[length(years)],
-                                               ".png")),
-                  width = 8, height = 6,
-                  units = "in", pointsize = 12,
-                  res = 300, bg = NA)  
-  NGS_plot
-  dev.off()
-  
+
+  ##-- Export as .png
+  ggsave(filename = file.path(working.dir, "figures",
+                              paste0( engSpecies, "_Clean Rovbase Samples_",
+                                      years[1]," to ", years[length(years)],
+                                      ".png")),
+         plot = NGS_plot,
+         dpi = 300, height = 6, width = 12, device = "png")
+  # grDevices::png( filename = file.path(working.dir, "figures",
+  #                                      paste0( engSpecies, "_Clean Rovbase Samples_",
+  #                                              years[1]," to ", years[length(years)],
+  #                                              ".png")),
+  #                 width = 8, height = 6,
+  #                 units = "in", pointsize = 12,
+  #                 res = 300, bg = NA)  
+  # NGS_plot
+  # dev.off()
+
   
   
   ##-----   5.3. NUMBER OF INDIVIDUALS - FIGURE -----
@@ -767,16 +774,23 @@ cleanRovbaseData <- function(
                                      hjust = 1)) +
     scale_x_continuous( breaks = years,
                         labels = years)
+  ##-- Export as .png
+  ggsave(filename = file.path(working.dir, "figures",
+                              paste0( engSpecies, "_Clean Rovbase Ids",
+                                      years[1]," to ", years[length(years)],
+                                      ".png")),
+         plot = IDS_plot,
+         dpi = 300, height = 6, width = 12, device = "png")
   
-  grDevices::png( filename = file.path(working.dir, "figures",
-                                       paste0(engSpecies, "_Clean Rovbase Ids_",
-                                              years[1]," to ", years[length(years)],
-                                              ".png")),
-                  width = 8, height = 6,
-                  units = "in", pointsize = 12,
-                  res = 300, bg = NA)
-  IDS_plot
-  dev.off()
+  # grDevices::png( filename = file.path(working.dir, "figures",
+  #                                      paste0(engSpecies, "_Clean Rovbase Ids_",
+  #                                             years[1]," to ", years[length(years)],
+  #                                             ".png")),
+  #                 width = 8, height = 6,
+  #                 units = "in", pointsize = 12,
+  #                 res = 300, bg = NA)
+  # IDS_plot
+  # dev.off()
   
   
   
@@ -865,17 +879,23 @@ cleanRovbaseData <- function(
                                       hjust = 1)) +
     scale_x_continuous(breaks = years, labels = years) +
     scale_fill_manual(values = c("gray20", "gray60"))
+  plot_total <- plot1 + plot2
   
   #-- Save figure
-  grDevices::png( filename = file.path( working.dir, "figures",
-                                        paste0( engSpecies, "_Previous Detection_",
-                                                years[1]," to ", years[length(years)],
-                                                ".png")),
-                  width = 12, height = 6,
-                  units = "in", pointsize = 12,
-                  res = 300, bg = NA)
-  plot1 + plot2
-  dev.off()
+  ggsave(filename = file.path(working.dir, "figures",
+                              paste0( engSpecies, "_Previous Detection_",
+                                      years[1]," to ", years[length(years)],
+                                      ".png")),
+         plot = plot_total,
+         dpi = 300, height = 6, width = 12, device = "png")
+  # grDevices::png( filename = file.path( working.dir, "figures",
+  #                                       paste0( engSpecies, "_Previous Detection_",
+  #                                               years[1]," to ", years[length(years)],
+  #                                               ".png")),
+  #                 width = 12, height = 6,
+  #                 units = "in", pointsize = 12,
+  #                 res = 300, bg = NA)
+  # dev.off()
   
   
   
@@ -953,7 +973,7 @@ cleanRovbaseData <- function(
                          
   
   
-  ##---- 8. PRINT REPORT -----
+  ##----- 8. PRINT REPORT -----
   
   if (print.report) {
     
