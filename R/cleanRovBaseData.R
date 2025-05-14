@@ -449,8 +449,8 @@ cleanRovbaseData <- function(
   
   ID <- unique(as.character(DATA$Id))
   DATA$Sex <- as.character(DATA$Sex)
-  IdDoubleSex <- NULL  
-  # doubleSexID <- 
+  doubleSexID <- IdDoubleSex <- NULL  
+   
   counter <- 1
   for(i in 1:length(ID)){
     ##-- Subset data to individual i
@@ -476,7 +476,7 @@ cleanRovbaseData <- function(
     # if(length(tab) == 1){DATA$Sex[DATA$Id == ID[i]] <- names(tab)}
     # ##-- If anything else registered : "unknown"
     # if(length(tab) == 0){DATA$Sex[DATA$Id == ID[i]] <- "unknown"}
-    # doubleSexID[i] <- length(tab)
+    doubleSexID[i] <- length(tab)
   }#i
   
   
