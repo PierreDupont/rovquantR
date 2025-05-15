@@ -26,30 +26,29 @@
 #' @param data.dir A \code{path} to the directory containing the clean Rovbase data,
 #'  as prepared by \code{cleanRovBaseData}.
 #' @param working.dir A \code{path} to the directory for this analysis containing
-#'  the \code{nimbleInputFiles} folder to store the prepared data.  
-#' @param years A \code{list}  Whether dead recovery should be included (TRUE) or not(FALSE)
-#' @param sex A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.
-#' @param aug.factor A \code{numeric} to the directory containing the clean Rovbase data,
-#' @param sampling.months A \code{list}.
-#' @param habitat.res A \code{numeric}  Whether dead recovery should be included (TRUE) or not(FALSE)
-#' @param buffer.size A \code{numeric} denoting the species; can be any of "bear", "wolf" or "wolverine.
-#' @param max.move.dist A \code{numeric}.
-#' @param detector.res A \code{numeric} to the directory for this analysis containing
-#' @param subdetector.res A \code{numeric}  Whether dead recovery should be included (TRUE) or not(FALSE)
-#' @param max.det.dist A \code{numeric} denoting the species; can be any of "bear", "wolf" or "wolverine.
-#' @param resize.factor A \code{numeric}.
-#' @param print.report A \code{logical}.
-#' @param Rmd.template A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
-#' @param output.dir A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
+#'  the \code{nimbleInFiles} folder to store the prepared data.  
+#' @param years A \code{numeric} vector denoting which years of data will be used for this analysis.
+#' @param sex A \code{character} denoting for which sex the data should be prepared ("female", "male" or both).
+#' @param aug.factor A \code{numeric} denoting the augmentation factor.
+#' @param sampling.months A \code{list} denoting the months of the monitoring period. Can accomodate sampling periods over two calendar years, e.g. 'list(c(10:12),c(1:3))' for a monitoring period extending from October to March (included).
+#' @param habitat.res A \code{numeric} denoting the resolution (in meters) to be used for the habitat definition.
+#' @param buffer.size A \code{numeric} denoting the size (in meters) of the buffer around the searched area.
+#' @param max.move.dist A \code{numeric} denoting the maximum allowed distance for inter-annual movement.
+#' @param detector.res A \code{numeric} denoting the resolution (in meters) to be used for the detectors definition.
+#' @param subdetector.res A \code{numeric} denoting the resolution (in meters) to be used for the sub-detectors.
+#' @param max.det.dist A \code{numeric} denoting the maximum allowed distance for intra-annual movement.
+#' @param resize.factor A \code{numeric} denoting the aggregation factor to be used for the local evaluation.
+#' @param print.report A \code{logical} denoting whether to print out a \code{.html} report summarizing the data preparation process or not.
+#' @param Rmd.template (optional) A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
+#' @param output.dir (optional) A \code{path} denoting where to print the .html report. Default is in a folder named 'reports' in the working directory.
 #' @param overwrite A \code{logical} (default = FALSE) to force overwriting of previously existing data.
-#'  If FALSE, the function checks for any pre-existing data files and ask whether to overwrite it or not.
+#'  If FALSE, the function checks for any pre-existing data files and asks whether to overwrite it or not.
 #'  
 #' @return This function returns:
 #' \enumerate{
-#' \item A \code{.RData} file with the clean NGS and dead recovery data objects
-#'  for the species and period specified.
-#' \item A \code{.html} report summarizing the data cleaning process. 
-#' \item Additional \code{.png} images that can be reused somewhere else.
+#' \item Multiple \code{.RData} nimble input files containing the input data, model code and initial values necessary for fitting the model in nimble (one input file per MCMC chain).
+#' \item A \code{.html} report summarizing the data preparation process. 
+#' \item Additional \code{.png} images and \code{.csv} tables of the figures and tables present in the report.
 #' }
 #'
 #' @author Pierre Dupont

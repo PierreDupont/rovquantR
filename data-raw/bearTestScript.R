@@ -72,7 +72,7 @@ makeRovquantData(
   species = "bear",
   #years = 2020:2024,
   data.dir = data.dir,
-  working.dir = working.dir)
+  working.dir = working.dir,)
 
 
 

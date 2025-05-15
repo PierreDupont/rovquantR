@@ -715,7 +715,7 @@ makeRovquantData_bear <- function(
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
     try(
-      plot( sf::st_geometry(data.alive$myData.sp[data.alive$myData.sp$Year == years[t], ]), add = TRUE, col = "orange", pch = 3),
+      plot( sf::st_geometry(data.alive$data.sp[data.alive$data.sp$Year == years[t], ]), add = TRUE, col = "orange", pch = 3),
       silent = TRUE)
     plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
     
@@ -778,7 +778,7 @@ makeRovquantData_bear <- function(
     load(file.path( working.dir, "data",
                     paste0("FilteredData_bear_", DATE, ".RData")))
     
-    data.alive$myData.sp <- data.alive$myData.sp %>%
+    data.alive$data.sp <- data.alive$data.sp %>%
       dplyr::filter(Sex %in% thisSex)
     
     data.dead <-  data.dead %>%
@@ -788,7 +788,7 @@ makeRovquantData_bear <- function(
     
     ## ------     7.2. GENERATE DETECTION HISTORY ARRAYS -----
     
-    y.ar <- MakeY( myData = data.alive$myData.sp,
+    y.ar <- MakeY( myData = data.alive$data.sp,
                    myDetectors = detectors$main.detector.sp,
                    method = "Binomial",
                    myData2 = data.dead,

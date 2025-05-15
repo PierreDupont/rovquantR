@@ -22,7 +22,7 @@
 #' @param two.sex A \code{logical} determining whether the analysis will be done by sex (two.sex = T) or both together (two.sex = F).
 #' @param sampling.months (Optional) A \code{list} containing the sampling period months. If the sampling period overlaps two calendar years, the list should contain one element per year (e.g. samplingMonths <- list(c(11,12), c(1,2,3,4))) for a sampling period extending from November to April of the following year.
 #' @param rename.list (Optional) A named \code{character} vector used to rename columns in the raw Rovbase files.
-#' @param print.report A \code{logical} denoting wheteher to prin t out a \code{.html} report summarizing the cleaning process or not.
+#' @param print.report A \code{logical} denoting whether to print out a \code{.html} report summarizing the cleaning process or not.
 #' @param Rmd.template (Optional) The \code{path} to the \code{.rmd} template to be used for cleaning the data. By default, the \code{.rmd} template provided with the \code{rovquantR} package is used.  
 #' @param overwrite A \code{logical} (default = FALSE) to force overwriting of previously existing clean data.
 #'  If FALSE, the function checks for any pre-existing clean data files and ask whether to overwrite it or not.
