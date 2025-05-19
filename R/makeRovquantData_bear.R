@@ -1157,16 +1157,17 @@ makeRovquantData_bear <- function(
                           upperCoords = habitat$scaledUpperCoords,
                           habitatGrid = habitat$localObjects$habitatGrid,
                           baseIntensities = rep(2,nimConstants$n.habwindows),
-                          sd = 1)
+                          sd = 1,
+                          radius = habitat$maxDist)
     s.init[!is.na(s.data)] <- NA
     
     ##-- Check AC-movement distances
-    test <- s.init
-    test[is.na(test)] <- s.data[is.na(test)]
-    dist <- sapply(2:dim(test)[3],
-                   function(t){
-                     sqrt((test[ ,1,t]-test[ ,1,t-1])^2 + (test[ ,2,t]-test[ ,2,t-1])^2)
-                   })
+    # test <- s.init
+    # test[is.na(test)] <- s.data[is.na(test)]
+    # dist <- sapply(2:dim(test)[3],
+    #                function(t){
+    #                  sqrt((test[ ,1,t]-test[ ,1,t-1])^2 + (test[ ,2,t]-test[ ,2,t-1])^2)
+    #                })
     # hist(dist)
     # max(dist)
     

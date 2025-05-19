@@ -78,14 +78,18 @@ makeRovquantData(
 
 
 ##------------------------------------------------------------------------------
-## ----- III. PREPARE OPSCR DATA ------
+## ----- IV. CHECK OPSCR DATA ------
+
+
 for (s in c("female", "male")) {
   
-  input <- list.files(file.path( working.dir, "nimbleInFiles", s ),
+  ##-- Load first input
+  input <- list.files( file.path( working.dir, "nimbleInFiles", s ),
                        full.names = TRUE)
   load(input[1])
-
-   modelCode <- nimbleCode({
+  
+  ##-- Reduce model code
+  newModel <- nimbleCode({
     ##----- SPATIAL PROCESS -----
     tau ~ dunif(0,4)
     
@@ -94,7 +98,7 @@ for (s in c("female", "male")) {
       betaDens[2,tp] ~ dnorm(0,0.01)
       
       habIntensity[1:n.habwindows,tp] <- exp( betaDens[1,tp] * habDens[1:n.habwindows,1] +
-                                               betaDens[2,tp] * habDens[1:n.habwindows,2])
+                                                betaDens[2,tp] * habDens[1:n.habwindows,2])
       sumHabIntensity[tp] <- sum(habIntensity[1:n.habwindows,tp])
       logHabIntensity[1:n.habwindows,tp] <- log(habIntensity[1:n.habwindows,tp])
       logSumHabIntensity[tp] <- log(sumHabIntensity[tp])
@@ -128,18 +132,17 @@ for (s in c("female", "male")) {
       }#i
     }#t
   })
-   
-   
-   lapply(names(nimConstants), function(x){grep(x, modelCode)})
-   
-   grep("n.detectors", as.character(modelCode))
-}
+  
+  ##-- Reduce input lists
+  newConstants <- getNewList(nimConstants, newModel)
+  newData <- getNewList(nimData, newModel)
+  newInits <- getNewList(nimInits, newModel)
   
   ##-- Build nimble model object
-  model <- nimbleModel( code = modelCode,
-                        constants = nimConstants),
-                        inits = nimInits,
-                        data = nimData,
+  model <- nimbleModel( code = newModel,
+                        constants = newConstants,
+                        inits = newInits,
+                        data = newData,
                         check = FALSE,
                         calculate = FALSE) 
   model$calculate()
@@ -149,17 +152,15 @@ for (s in c("female", "male")) {
   
   model$sxy[15, , ]
   colSums(nimData$y.alive[15,,]>0)
-
   model$sxy[15, ,4] <- (model$sxy[15, ,3]*0.2 +  model$sxy[15, ,5]*0.8)
-
-  
-  
 }#
 
 
+cat(as.character(modelCode))
+
 
 ##------------------------------------------------------------------------------
-## ----- IV. FIT ROVQUANT MODELS ------
+## ----- V. FIT ROVQUANT MODELS ------
 
 ## -----   1. Females ------
 

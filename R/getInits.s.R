@@ -27,9 +27,11 @@
 #' @author Pierre Dupont
 #'
 #' @importFrom nimbleSCR rbernppACmovement_normal rbernppAC
+#' @importFrom RANN nn2
 #' 
 #' @rdname getInits.s
 #' @export
+
 getInits.s <- function( y,
                         trapCoords,
                         lowerCoords,
@@ -37,11 +39,27 @@ getInits.s <- function( y,
                         habitatGrid,
                         known.s = NULL,
                         baseIntensities = NULL,
-                        sd = NULL,
+                        sd,
                         detNums = NULL,
-                        detIndices = NULL)
-  {
-  if(is.null(detNums)){
+                        detIndices = NULL,
+                        radius = NULL){
+  ## ----- 1. Function set-up -----
+  
+  ##-- Inner function to create equally spaced points 
+  splitNequal <- function(start,end,n) {
+    numSegments <- n + 1
+    deltax <- (end[1]-start[1])/numSegments
+    deltay <- (end[2]-start[2])/numSegments
+    xcoords <- start[1] + deltax + (1:n-1)*deltax
+    ycoords <- start[2] + deltay + (1:n-1)*deltay
+    out <- rbind(xcoords,ycoords)
+    dimnames(out) <- list("coords" = c("x","y"),
+                          "years" = 1:n)
+    return(out)
+  }
+  
+  ##-- Check detection matrix format
+  if (is.null(detNums)) {
     detNums <- y[ ,1, ]
     nMaxDetectors <- (dim(y)[2]-1)/2
     detIndices <- y[ ,(nMaxDetectors + 2):dim(y)[2], ]
@@ -53,13 +71,13 @@ getInits.s <- function( y,
   numGridRows <- dim(habitatGrid)[1]
   numGridCols <- dim(habitatGrid)[2]
   numHabWindows <- nrow(lowerCoords)
-  if(is.null(baseIntensities)){baseIntensities <- rep(2,numHabWindows)}
+  if (is.null(baseIntensities)) { baseIntensities <- rep(2,numHabWindows) }
   logIntensities <- log(baseIntensities)
   logSumIntensity <- log(sum(baseIntensities))
   s <- array(NA, c(n.individuals, 2, n.years))
   
   ##-- Check if trap coords vary among years
-  if(length(dim(trapCoords)) == 2){
+  if (length(dim(trapCoords)) == 2) {
     trapCoords.xy <- array(NA, c(dim(trapCoords), n.years))
     for(t in 1:n.years){
       trapCoords.xy[ ,1,t] <- trapCoords[ ,1]
@@ -69,29 +87,30 @@ getInits.s <- function( y,
     trapCoords.xy <- trapCoords
   }
   
+
+  
+  ## ----- 2. For detected IDs -----
+  
   ##-- Find out who's detected at least once
   detected.any <- which(apply(y, 1, function(x)any(x[1, ] > 0)))
-  if(!is.null(known.s)){ 
+  if (!is.null(known.s)) { 
     detected.any <- unique(c(detected.any,
                              which(apply(known.s, 1, function(x)any(!is.na(x))))))
   }
   
-  ##-- Find out who's never detected
-  detected.never <- which(!(1:dim(y)[1]) %in% detected.any)
-  
   ##-- Find out who's detected each year
   detected.t <- lapply(1:n.years, function(x) which(y[ ,1,x] > 0))
   
-  
-  ##-- Detected IDs : 
-  ##-- Use the centroid of detections each year the ID is detected
-  ##-- Sample a random location centered on the centroids of all detections 
-  ##-- when the individual is not detected.
   for(i in detected.any){
-    ##-- Fill in known locations
-    if(!is.null(known.s)){s[i, , ] <- known.s[i, , ]}
     
-    ##-- Calculate locations of detection centroids each year
+    ##-- Fill in known locations (if any)
+    if(!is.null(known.s)) { s[i, , ] <- known.s[i, , ] }
+    
+
+    
+    ## -----    2.1. For years detected ... -----
+    
+    ##-- We use the location of detection centroids each year
     centroids.t <- lapply(1:n.years, function(t){
       if(detNums[i,t] > 0){
         detInd <- detIndices[i,detIndices[i, ,t] > 0,t]
@@ -102,34 +121,116 @@ getInits.s <- function( y,
         }
       }
     })
-    
-    ##-- For years detected:
     years.det <- which(sapply(detected.t, function(x)i %in% x))
     for(t in years.det){ s[i, ,t] <- centroids.t[[t]] }#t
-      
-    ##-- For years not detected:
-    ##-- Identify the closest year 
-    years.not.det <- which(is.na(s[i,1, ]))
-    years.det <- which(!is.na(s[i,1, ]))
-    for(t in years.not.det){
-        closestInTime <- years.det[which.min(abs(years.det - t))]
+
+    
+    
+    ## -----    2.2. Before first detection ... -----
+    
+    ##-- We sample backward from first detection
+    years.before.det <- which(1:n.years < min(years.det))
+    if(length(years.before.det) > 0){
+      for(t in rev(years.before.det)){
         s[i, ,t] <- rbernppACmovement_normal(
           n = 1,
           lowerCoords = as.matrix(lowerCoords),
           upperCoords = as.matrix(upperCoords),
-          s = s[i, ,closestInTime],
+          s = s[i, ,t+1],
           sd = sd,
           baseIntensities = baseIntensities,
           habitatGrid = habitatGrid,
           numGridRows = numGridRows,
           numGridCols = numGridCols,
           numWindows = numHabWindows)
-    }#t
+      }#t
+    }#if
+    
+    
+    
+    ## -----    2.3. After last detection ... -----
+    
+    ##-- We sample forward from last detection
+    years.after.det <- which(1:n.years > max(years.det))
+    if(length(years.after.det) > 0){
+      for(t in years.after.det){
+        s[i, ,t] <- rbernppACmovement_normal(
+          n = 1,
+          lowerCoords = as.matrix(lowerCoords),
+          upperCoords = as.matrix(upperCoords),
+          s = s[i, ,t-1],
+          sd = sd,
+          baseIntensities = baseIntensities,
+          habitatGrid = habitatGrid,
+          numGridRows = numGridRows,
+          numGridCols = numGridCols,
+          numWindows = numHabWindows)
+      }#t
+    }#if
+    
+    
+    
+    ## -----    2.4. In between ... -----
+    
+    ##-- We sample activity center locations on a straight line
+    ##-- First, we need to identify gaps >= 2 years
+    start.years <- years.det[1:(length(years.det)-1)] 
+    end.years <- years.det[2:length(years.det)] 
+    gaps <- end.years - start.years - 1
+    
+    start.years <- start.years[gaps > 0] 
+    end.years <- end.years[gaps > 0] 
+    gaps <- gaps[gaps > 0]
+    
+    ##-- Identify the closest year ...
+    if(length(gaps) > 0){
+      for(g in 1:length(gaps)){
+        
+        ##-- Split the trajectory between the two extremities into equal segments
+        tmp <- splitNequal( 
+          start = s[i, ,start.years[g]],
+          end = s[i, ,end.years[g]],
+          n = gaps[g])
+        
+        ##-- Check if new points are in valid habitat
+        outsideHab <- apply(tmp, 2, function(p){
+          is.na(habitatGrid[trunc(p[2])+1, trunc(p[1])+1])
+        })
+        
+        ##-- If not ...
+        if(any(outsideHab)){
+          ##-- Find out the closest habitat grid cell
+          whichOut <- which(outsideHab)
+          closest <- RANN::nn2( data = trapCoords,
+                                query = data.frame( tmp[1,whichOut],
+                                                    tmp[2,whichOut]),
+                                k = 1, 
+                                searchtype = "radius",
+                                radius = )
+
+          ##-- Sample uniform AC location in closest habitat grid cell
+          tmp[1,which(outsideHab)] <- runif( n = length(whichOut),
+                                             min = lowerCoords[closest$nn.idx,1],
+                                             max = upperCoords[closest$nn.idx,1])
+          tmp[2,which(outsideHab)] <- runif( n = length(whichOut),
+                                             min = lowerCoords[closest$nn.idx,2],
+                                             max = upperCoords[closest$nn.idx,2])
+        }#if
+
+        s[i, ,start.years[g]:end.years[g]] <- tmp
+        
+      }#g
+    }#if
   }#i
   
   
-  ##-- Augmented IDs : 
-  ##-- Sample a random walk 
+  
+  ## ----- 3. For augmented IDs ------
+  
+  ##-- First, we find out who's never detected
+  detected.never <- which(!(1:dim(y)[1]) %in% detected.any)
+  
+  ##-- ...then, we sample a random walk trajectory
   for(i in detected.never){
     s[i, ,1] <- rbernppAC(
       n = 1,
@@ -158,5 +259,10 @@ getInits.s <- function( y,
     }
   }#i
   
+  
+  
+  ## ----- 4. Output ------
+  
   return(s)
+  
 }
