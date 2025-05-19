@@ -182,7 +182,7 @@ We included data from multiple sources, the primary one being the Scandinavian l
 
 ```{r, ngs data, echo = FALSE, collapse = TRUE}
 
-ngs <- data.alive$myData.sp
+ngs <- data.alive$data.sp
 
 ##-- Number of NGS samples collected per sex and per year 
 numDet_sexYear <- table(ngs$Sex,ngs$Year)
@@ -210,7 +210,7 @@ for(s in 1:2){
 
 
 ##-- Number of NGS samples collected per country
-percCountry <- table(data.alive$myData.sp$Country_sample)
+percCountry <- table(data.alive$data.sp$Country_sample)
 percCountry <- round(percCountry[2]/sum(percCountry)*100)
                    
 
@@ -410,7 +410,41 @@ kable( Dead_SEX,
   kable_styling(full_width = F)
 ```
 
-<!-- We can also plot the distribution of those dead recoveries each year: -->
+<!-- We can also check the validity of the nimble input files created.  -->
+<!-- ```{r, inout check, echo = TRUE, collapse = TRUE} -->
+<!-- for(thisSex in sex) { -->
+
+<!--   load(file.path( working.dir, "nimbleInFiles", thisSex, -->
+<!--                   paste0("nimbleInput_", DATE, "_", thisSex, "_1.RData"))) -->
+
+<!--  sxy_test <- nimData$sxy -->
+<!--   sxy_test[is.na(sxy_test)] <- nimInits$sxy[is.na(sxy_test)] -->
+<!--   #any(is.na(sxy_test)) -->
+
+<!--   z_test <- nimData$z -->
+<!--   z_test[is.na(z_test)] <- nimInits$z[is.na(z_test)] -->
+<!--   #any(is.na(z_test)) -->
+
+<!--   checkInputValidity_lite( -->
+<!--     id = NULL, -->
+<!--     s = sxy_test, -->
+<!--     y = nimData$y.alive, -->
+<!--     z = z_test, -->
+<!--     lowerHabCoords = nimData$lowerHabCoords, -->
+<!--     upperHabCoords = nimData$upperHabCoords, -->
+<!--     localHabWindowIndices = nimData$localHabIndices, -->
+<!--     numLocalHabWindows = nimData$localHabNum, -->
+<!--     trapCoords = abind(nimData$detCoords,nimData$detCoords,along=3), -->
+<!--     localTrapsIndices = abind(nimData$localDetIndices,nimData$localDetIndices,along=3), -->
+<!--     localTrapsNum = abind(nimData$localDetNum,nimData$localDetNum,along=2), -->
+<!--     resizeFactor = nimConstants$resizeFactor, -->
+<!--     habitatGrid = nimData$habitatGrid, -->
+<!--     habitatGridLocal = nimData$habitatGridLocal) -->
+
+<!-- }#thisSex -->
+
+<!-- ``` -->
+
 
 <!-- ```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12} -->
 <!-- dead_map <- ggplot(data = data.dead) + -->
@@ -497,22 +531,22 @@ utils::sessionInfo()
 
 <!-- ```{r, ngs data3, echo = FALSE, collapse = TRUE} -->
 <!-- ##-- Number of individuals detected  -->
-<!-- ids <- apply(table(data.alive$myData.sp$Country_sample, -->
-<!--                    data.alive$myData.sp$Year, -->
-<!--                    data.alive$myData.sp$Id), -->
+<!-- ids <- apply(table(data.alive$data.sp$Country_sample, -->
+<!--                    data.alive$data.sp$Year, -->
+<!--                    data.alive$data.sp$Id), -->
 <!--              c(1,2), -->
 <!--              function(x)sum(x>0)) -->
 <!-- ids <- rbind(ids, -->
-<!--              "Total" = apply(table(data.alive$myData.sp$Year, -->
-<!--                                    data.alive$myData.sp$Id), -->
+<!--              "Total" = apply(table(data.alive$data.sp$Year, -->
+<!--                                    data.alive$data.sp$Id), -->
 <!--                              1, -->
 <!--                              function(x)sum(x>0))) -->
 <!-- ids <- cbind(ids, -->
-<!--              "Total" = c(apply(table(data.alive$myData.sp$Country_sample, -->
-<!--                                      data.alive$myData.sp$Id), -->
+<!--              "Total" = c(apply(table(data.alive$data.sp$Country_sample, -->
+<!--                                      data.alive$data.sp$Id), -->
 <!--                                1, -->
 <!--                                function(x)sum(x>0)), -->
-<!--                          length(unique(data.alive$myData.sp$Id)))) -->
+<!--                          length(unique(data.alive$data.sp$Id)))) -->
 
 <!-- kable(ids, align = "lc", -->
 <!--       caption = "Number of individuals detected through NGS per country and sex") %>% -->
@@ -525,7 +559,7 @@ utils::sessionInfo()
 <!-- # ##-- NGS map  -->
 <!-- # numRows <- ceiling(length(years)/5) -->
 <!-- # numCols <- 5 -->
-<!-- # NGS_map <- ggplot(data = data.alive$myData.sp) + -->
+<!-- # NGS_map <- ggplot(data = data.alive$data.sp) + -->
 <!-- #   geom_sf( data = COUNTRIES, -->
 <!-- #            aes(fill = ISO), -->
 <!-- #            alpha = 0.3, -->

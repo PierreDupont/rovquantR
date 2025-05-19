@@ -844,7 +844,7 @@ makeRovquantData_bear <- function(
       #       
       #       tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Id == dimnames(y.ar.ALIVE)[[1]][i] &
       #                                        myFilteredData.sp$alive$Year == years[t], ]
-      #       tmp <- tmp[order(tmp$Date), ]
+      #       tmp <- tmp[order(tmp$DATE), ]
       #       tmp.xy <- st_coordinates(tmp)
       #       n.det <- nrow(tmp.xy)
       #       
@@ -1230,7 +1230,11 @@ makeRovquantData_bear <- function(
     
     
     
-    ## ------   6. SAVE INPUTS ----- 
+    ## ------   6. CHECK INPUT VALIDITY ------
+    
+
+    
+    ## ------   7. SAVE INPUTS ----- 
     
     for(c in 1:4){
       nimInits <- list( "sxy" = s.init,

@@ -72,7 +72,84 @@ makeRovquantData(
   species = "bear",
   #years = 2020:2024,
   data.dir = data.dir,
-  working.dir = working.dir,)
+  working.dir = working.dir)
+
+
+
+
+##------------------------------------------------------------------------------
+## ----- III. PREPARE OPSCR DATA ------
+for (s in c("female", "male")) {
+  
+  input <- list.files(file.path( working.dir, "nimbleInFiles", s ),
+                       full.names = TRUE)
+  load(input[1])
+
+  modelCode <- nimbleCode({
+    ##----- SPATIAL PROCESS -----
+    tau ~ dunif(0,4)
+    
+    for(tp in 1:2){
+      betaDens[1,tp] ~ dnorm(0,0.01)
+      betaDens[2,tp] ~ dnorm(0,0.01)
+      
+      habIntensity[1:n.habwindows,tp] <- exp(betaDens[1,tp] * habDens[1:n.habwindows,1] +
+                                               betaDens[2,tp] * habDens[1:n.habwindows,2])
+      sumHabIntensity[tp] <- sum(habIntensity[1:n.habwindows,tp])
+      logHabIntensity[1:n.habwindows,tp] <- log(habIntensity[1:n.habwindows,tp])
+      logSumHabIntensity[tp] <- log(sumHabIntensity[tp])
+    }#tp
+    
+    
+    for(i in 1:n.individuals){
+      sxy[i,1:2,1] ~ dbernppAC(
+        lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
+        upperCoords = upperHabCoords[1:n.habwindows,1:2],
+        logIntensities = logHabIntensity[1:n.habwindows,1],
+        logSumIntensity = logSumHabIntensity[1],
+        habitatGrid = habitatGrid[1:y.max,1:x.max],
+        numGridRows = y.max,
+        numGridCols = x.max)
+      
+      for(t in 2:n.years){
+        sxy[i,1:2,t] ~ dbernppLocalACmovement_normal(
+          lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
+          upperCoords = upperHabCoords[1:n.habwindows,1:2],
+          s = sxy[i,1:2,t-1],
+          sd = tau,
+          baseIntensities = habIntensity[1:n.habwindows,2],
+          habitatGrid = habitatGrid[1:y.max,1:x.max],
+          habitatGridLocal = habitatGrid[1:y.max,1:x.max],
+          resizeFactor = resizeFactor,
+          localHabWindowIndices = localHabIndices[1:n.habwindows,1:localHabNumMax],
+          numLocalHabWindows = localHabNum[1:n.habwindows],
+          numGridRows = y.max,
+          numGridCols = x.max,
+          numWindows = n.habwindows)
+      }#i
+    }#t
+  })
+  
+  ##-- Build nimble model object
+  model <- nimbleModel( code = modelCode,
+                        constants = nimConstants,
+                        inits = nimInits,
+                        data = nimData,
+                        check = FALSE,
+                        calculate = FALSE) 
+  model$calculate()
+  
+  which( is.infinite(model$logProb_sxy),
+         arr.ind = TRUE)
+  
+  model$sxy[15, , ]
+  colSums(nimData$y.alive[15,,]>0)
+
+  model$sxy[15, ,4] <- (model$sxy[15, ,3]*0.2 +  model$sxy[15, ,5]*0.8)
+
+  
+  
+}#
 
 
 
@@ -83,7 +160,7 @@ makeRovquantData(
 
 ##-- List all prepared input files
 inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/Hunn"),
-                         full.names = T)
+                          full.names = T)
 
 ##-- Load the first one
 load(inputFiles[1]) 
