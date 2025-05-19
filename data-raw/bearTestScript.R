@@ -85,7 +85,7 @@ for (s in c("female", "male")) {
                        full.names = TRUE)
   load(input[1])
 
-  modelCode <- nimbleCode({
+   modelCode <- nimbleCode({
     ##----- SPATIAL PROCESS -----
     tau ~ dunif(0,4)
     
@@ -93,13 +93,12 @@ for (s in c("female", "male")) {
       betaDens[1,tp] ~ dnorm(0,0.01)
       betaDens[2,tp] ~ dnorm(0,0.01)
       
-      habIntensity[1:n.habwindows,tp] <- exp(betaDens[1,tp] * habDens[1:n.habwindows,1] +
+      habIntensity[1:n.habwindows,tp] <- exp( betaDens[1,tp] * habDens[1:n.habwindows,1] +
                                                betaDens[2,tp] * habDens[1:n.habwindows,2])
       sumHabIntensity[tp] <- sum(habIntensity[1:n.habwindows,tp])
       logHabIntensity[1:n.habwindows,tp] <- log(habIntensity[1:n.habwindows,tp])
       logSumHabIntensity[tp] <- log(sumHabIntensity[tp])
     }#tp
-    
     
     for(i in 1:n.individuals){
       sxy[i,1:2,1] ~ dbernppAC(
@@ -129,10 +128,16 @@ for (s in c("female", "male")) {
       }#i
     }#t
   })
+   
+   
+   lapply(names(nimConstants), function(x){grep(x, modelCode)})
+   
+   grep("n.detectors", as.character(modelCode))
+}
   
   ##-- Build nimble model object
   model <- nimbleModel( code = modelCode,
-                        constants = nimConstants,
+                        constants = nimConstants),
                         inits = nimInits,
                         data = nimData,
                         check = FALSE,
