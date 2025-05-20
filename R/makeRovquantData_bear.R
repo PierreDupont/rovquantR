@@ -237,7 +237,7 @@ makeRovquantData_bear <- function(
   legal.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "yes")
   Other.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "no")
   
-  
+  ##-- Define years
   if(is.null(years)){
     years <- sort(unique(c(myFullData.sp$alive$Year,
                            myFullData.sp$dead.recovery$Year)))
@@ -363,7 +363,7 @@ makeRovquantData_bear <- function(
     "skandObs.smooth" = base::scale(r.skandObsBinary.smooth[isHab]))
   
   ##-- Merge with the habitat grid
-  habitat$grid <- left_join(
+  habitat$grid <- dplyr::left_join(
     x = habitat$grid,
     y = habitat$habitat.df,
     by = "id")
@@ -578,7 +578,7 @@ makeRovquantData_bear <- function(
   
   
   ##-- Merge with the habitat grid
-  detectors$grid <- left_join(
+  detectors$grid <- dplyr::left_join(
     x = detectors$grid,
     y = detectors$detectors.df,
     by = "id")

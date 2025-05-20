@@ -70,7 +70,7 @@ cleanRovbaseData(
 
 makeRovquantData(    
   species = "bear",
-  #years = 2020:2024,
+  # years = 2020:2024,
   data.dir = data.dir,
   working.dir = working.dir)
 
@@ -79,7 +79,6 @@ makeRovquantData(
 
 ##------------------------------------------------------------------------------
 ## ----- IV. CHECK OPSCR DATA ------
-
 
 for (s in c("female", "male")) {
   
@@ -156,7 +155,6 @@ for (s in c("female", "male")) {
 }#
 
 
-cat(as.character(modelCode))
 
 
 ##------------------------------------------------------------------------------
