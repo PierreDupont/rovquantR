@@ -888,6 +888,16 @@ makeRovquantData_bear <- function(
     
     ## ------ IV. MODEL SETTING ------- 
     
+    
+    
+    ############################################################################
+    
+    ##-- ADD STATE:
+    ##-- RECOVERED DEAD OTHER CAUSES OF MORTALITY
+    
+    ############################################################################
+    
+    
     ## -----    1. NIMBLE CODE ------
     
     modelCode <- nimbleCode({
@@ -898,8 +908,8 @@ makeRovquantData_bear <- function(
         betaDens[1,tp] ~ dnorm(0,0.01)
         betaDens[2,tp] ~ dnorm(0,0.01)
         
-        habIntensity[1:n.habwindows,tp] <- exp(betaDens[1,tp] * habDens[1:n.habwindows,1] +
-                                                 betaDens[2,tp] * habDens[1:n.habwindows,2])
+        habIntensity[1:n.habwindows,tp] <- exp(betaDens[1,tp] * habCovs[1:n.habwindows,1] +
+                                                 betaDens[2,tp] * habCovs[1:n.habwindows,2])
         sumHabIntensity[tp] <- sum(habIntensity[1:n.habwindows,tp])
         logHabIntensity[1:n.habwindows,tp] <- log(habIntensity[1:n.habwindows,tp])
         logSumHabIntensity[tp] <- log(sumHabIntensity[tp])
@@ -917,17 +927,13 @@ makeRovquantData_bear <- function(
           numGridCols = x.max)
         
         for(t in 2:n.years){
-          sxy[i,1:2,t] ~ dbernppLocalACmovement_normal(
+          sxy[i,1:2,t] ~ dbernppACmovement_normal(
             lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
             upperCoords = upperHabCoords[1:n.habwindows,1:2],
             s = sxy[i,1:2,t-1],
             sd = tau,
             baseIntensities = habIntensity[1:n.habwindows,2],
             habitatGrid = habitatGrid[1:y.max,1:x.max],
-            habitatGridLocal = habitatGrid[1:y.max,1:x.max],
-            resizeFactor = resizeFactor,
-            localHabWindowIndices = localHabIndices[1:n.habwindows,1:localHabNumMax],
-            numLocalHabWindows = localHabNum[1:n.habwindows],
             numGridRows = y.max,
             numGridCols = x.max,
             numWindows = n.habwindows)
@@ -948,18 +954,40 @@ makeRovquantData_bear <- function(
         N[t] <- sum(z[1:n.individuals,t] == 2)
       }#t
       
+      # for(t in 1:(n.years-1)){
+      #   gamma[t] ~ dunif(0,1)
+      #   mhW[t] ~ dunif(-10,10)
+      #   mhH[t] ~ dunif(-10,10)
+      #   
+      #   for(i in 1:n.individuals){
+      #     z[i,t+1] ~ dcatHR( z = z[i,t],
+      #                        gamma = gamma[t],
+      #                        mhH = mhH[t],
+      #                        mhW = mhW[t])
+      #   }#i
+      # }#t
+      
       for(t in 1:(n.years-1)){
-        gamma[t] ~ dunif(0,1)
-        mhW[t] ~ dunif(-10,10)
-        mhH[t] ~ dunif(-10,10)
         
-        for(i in 1:n.individuals){
-          z[i,t+1] ~ dcatHR( z = z[i,t],
-                             gamma = gamma[t],
-                             mhH = mhH[t],
-                             mhW = mhW[t])
-        }#i
-      }#t
+        gamma[t] ~ dunif(0,1)
+        w[t] ~ dunif(0,1)
+        h[t] ~ dunif(0,1)
+        r[t] ~ dunif(0,1)
+        phi[t] <- 1-h[t]-w[t]
+        
+        ones.dead[t] ~ dbern(step(1 - (h[2,t] + w[2,t])))  
+        
+        omega[1,1:5,t] <- c(1-gamma[t], gamma[t], 0, 0, 0)
+        omega[2,1:5,t] <- c(0,phi[t],h[t],w[t]*r[t],w[t]*(1-r[t]))
+        omega[3,1:5,t] <- c(0,0,0,0,1)
+        omega[4,1:5,t] <- c(0,0,0,0,1)
+        omega[5,1:5,t] <- c(0,0,0,0,1)
+        
+        
+        for(i in 1:n.individuals){ 
+          z[i,t+1] ~ dcat(omega[z[i,t],1:5,t]) 
+        }#i 								
+      }#t 
       
       
       ##----- DETECTION PROCESS -----
@@ -996,7 +1024,8 @@ makeRovquantData_bear <- function(
       
       for(t in 1:n.years){
         for(i in 1:n.individuals){
-          y.dead[i,t] ~ dbern(z[i,t] == 3) 
+          y.dead.legal[i,t] ~ dbern(z[i,t] == 3) 
+          y.dead.other[i,t] ~ dbern(z[i,t] == 4) 
         }#i
       }#t
     })
@@ -1015,8 +1044,6 @@ makeRovquantData_bear <- function(
                           x.max = ncol(habitat$localObjects$habitatGrid),
                           lengthYCombined = y.sparse$lengthYCombined,
                           localDetNumMax = detectors$localObjects$numLocalIndicesMax,
-                          localHabNumMax = habitat$localObjects$numLocalIndicesMax,
-                          resizeFactor = habitat$localObjects$resizeFactor,
                           county = detectors$detectors.df$counties)
     
     
@@ -1050,8 +1077,7 @@ makeRovquantData_bear <- function(
         if(any(x[1:length(unlist(sampling.months))] >= 2, na.rm = T)){
           4 }
         else {NA}}})
-    #table(zYears)
-    
+
     z.data <- zYears
     allDead <- apply(z.data, 1, function(x)all(x==4))
     z.data[allDead, ] <- 1
@@ -1106,6 +1132,25 @@ makeRovquantData_bear <- function(
       if(any(x==1)) out[min(which(x==1))] <- 1
       return(out)
     }))
+    
+    
+    x.deadculled <- x.deadOther <- z.age
+    x.deadculled[] <- ifelse(z.age%in%c(4) & legal.mx==1,1,0)
+    x.deadculled <- t(apply(x.deadculled, 1, function(x){
+      out <- x
+      out[] <- 0
+      if(any(x==1)) out[min(which(x==1))] <- 1
+      return(out)
+    }))
+    
+    x.deadOther[] <- ifelse(z.age%in%c(5) & other.mx==1,1,0)
+    x.deadOther <- t(apply(x.deadOther, 1, function(x){
+      out <- x
+      out[] <- 0
+      if(any(x==1)) out[min(which(x==1))] <- 1
+      return(out)
+    }))
+    
     
     ##-- DISTINGUISH MORTALITY SOURCE IN z.data and z.init
     z.data[] <- ifelse(y.dead == 1, 3, z.data)
@@ -1205,11 +1250,9 @@ makeRovquantData_bear <- function(
                      y.dead = y.dead,
                      lowerHabCoords = habitat$scaledLowerCoords, 
                      upperHabCoords = habitat$scaledUpperCoords, 
-                     habDens = cbind(habitat$habitat.df$dead.reco.trunc,
+                     habCovs = cbind(habitat$habitat.df$dead.reco.trunc,
                                      habitat$habitat.df$skandObs.smooth),
                      habitatGrid = habitat$localObjects$habitatGrid,
-                     localHabIndices = habitat$localObjects$localIndices,
-                     localHabNum = habitat$localObjects$numLocalIndices,
                      alpha = c(1,1),
                      detCoords = detectors$scaledCoords,
                      size = detectors$detectors.df$size,
