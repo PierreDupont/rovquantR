@@ -1226,7 +1226,7 @@ makeRovquantData_bear <- function(
                                      habitat$habitat.df$skandObs.smooth),
                      habitatGrid = habitat$localObjects$habitatGrid,
                      alpha = c(1,1),
-                     ones.dead = 
+                     ones.dead = rep(1,dim(y.alive)[3]-1),
                      detCoords = detectors$scaledCoords,
                      size = detectors$detectors.df$size,
                      detCovs = detCovs,
