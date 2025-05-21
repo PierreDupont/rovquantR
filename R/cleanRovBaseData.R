@@ -64,6 +64,7 @@ cleanRovbaseData <- function(
   two.sex = TRUE,
   sampling.months = NULL,
   rename.list = NULL,
+  legal.dead = NULL, 
   
   ##-- miscellanious
   print.report = TRUE,
@@ -113,8 +114,10 @@ cleanRovbaseData <- function(
     }
   }
   
+  
   ##-- Years
   if (is.null(years)) { years <- 2012:as.numeric(format(Sys.Date(), "%Y")) }
+  
   
   ##-- Sampling months
   if (is.null(sampling.months)) {
@@ -132,6 +135,25 @@ cleanRovbaseData <- function(
       }
     }
   }
+  
+  
+  ##-- Legal mortality patterns
+  if (is.null(legal.dead)) {
+    if (engSpecies == "bear") {
+      legal.dead <- c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske")
+    } else {
+      if (engSpecies == "wolf") {
+        legal.dead <- c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske")
+      } else {
+        if (engSpecies == "wolverine") {
+          legal.dead <- c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske")
+        } else {
+          legal.dead <- ""
+          }
+      }
+    }
+  }
+  
   
   ##-- Renaming list
   if (is.null(rename.list)) {
@@ -231,14 +253,18 @@ cleanRovbaseData <- function(
       Weight_total =  "Helvekt")
   }
   
+  
   ##-- Load pre-processed habitat shapefiles
   data(COUNTRIES, envir = environment()) 
+  
   
   ##-- data info
   DATE <- getMostRecent(path = data.dir, pattern = "DNA")
   
+  
   ##-- Set file name for clean data
   fileName <- paste0("CleanData_", engSpecies, "_", DATE, ".RData")
+  
   
   ##-- Check that a file with that name does not already exist to avoid overwriting
   if (!overwrite) {
@@ -361,7 +387,10 @@ cleanRovbaseData <- function(
       Sex = ifelse(Sex %in% "Ukjent", "unknown", Sex),
       Sex = ifelse(is.na(Sex), "unknown", Sex),
       Sex = ifelse(Sex %in% "Hunn", "female", Sex),
-      Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
+      Sex = ifelse(Sex %in% "Hann", "male", Sex),
+      ##-- Identify legal deaths
+      Legal = grepl(pattern = paste(legal.dead, collapse="|"),
+                    )) %>%
     ##-- Filter to the focal years
     dplyr::filter(., Year %in% years) 
   

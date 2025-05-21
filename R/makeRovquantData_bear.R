@@ -612,12 +612,12 @@ makeRovquantData_bear <- function(
   
   ## ------   4. CREATE LOCAL OBJECTS -----
   
-  ##-- Get local habitat windows
-  habitat$localObjects <- getLocalObjects(
-    habitatMask = habitat$habitat.mx,
-    coords = habitat$scaledCoords,
-    dmax = habitat$maxDist/habitat$resolution,
-    plot.check = F)
+  # ##-- Get local habitat windows
+  # habitat$localObjects <- getLocalObjects(
+  #   habitatMask = habitat$habitat.mx,
+  #   coords = habitat$scaledCoords,
+  #   dmax = habitat$maxDist/habitat$resolution,
+  #   plot.check = F)
   
   ##-- Get local detectors
   detectors$localObjects <- getLocalObjects(
@@ -747,8 +747,12 @@ makeRovquantData_bear <- function(
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
     try(
-      plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]), add = TRUE, col = "slateblue", pch = 3),
+      plot( sf::st_geometry(data.dead[data.dead$Year == years[t] & 
+                                        data.dead$Legal, ]), add = TRUE, col = "slateblue1", pch = 3),
         silent = TRUE)
+    try(
+      plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]), add = TRUE, col = "slateblue4", pch = 3),
+      silent = TRUE)
     plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
     
     ##-- Add year
@@ -819,7 +823,8 @@ makeRovquantData_bear <- function(
     
     distances <- list()
     for(t in 1:n.years){
-      # print(paste("------ ", t ," -------", sep = "" ))
+      
+      ##-- Identify detections further then maxDist
       distances[[t]] <- CheckDistanceDetections(
         y = y.ar.ALIVE[,,t], 
         detector.xy = detectors$detectors.df[ ,c("x","y")], 
@@ -828,39 +833,7 @@ makeRovquantData_bear <- function(
         plot.check = F,
         verbose = F)
       
-      # ##-- Plot individuals with detections further than the threshold distance
-      # if(plot.check){
-      #   par(mfrow = c(1,1))
-      #   if(sum(distances[[t]]$y.flagged) > 0){
-      #     affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
-      #     count <- 0
-      #     for(i in affected.ids){
-      #       count <- count+1
-      #       plot(st_geometry(studyArea), main = paste("t: ",t,"     i: ", names(affected.ids)[count], sep = ""))
-      #       scalebar(2*myVars$DETECTIONS$maxDist, xy = c(800000,6700000), type = "bar", divs = 2, below = "km",
-      #                label = c(0, myVars$DETECTIONS$maxDist/1000, myVars$DETECTIONS$maxDist/500), cex = 0.8, adj = c(0.5,-0.9))
-      #       plot(st_geometry(COUNTRIES), add = T)
-      #       plot(st_geometry(detectors$main.detector.sp), add = T, col = "gray80", cex = 0.3, pch = 19)
-      #       
-      #       tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Id == dimnames(y.ar.ALIVE)[[1]][i] &
-      #                                        myFilteredData.sp$alive$Year == years[t], ]
-      #       tmp <- tmp[order(tmp$DATE), ]
-      #       tmp.xy <- st_coordinates(tmp)
-      #       n.det <- nrow(tmp.xy)
-      #       
-      #       plot(st_geometry(tmp), col = "pink", pch = 16, cex = 1,add=T)
-      #       arrows(x0 = tmp.xy[1:(n.det-1),1], y0 = tmp.xy[1:(n.det-1),2],
-      #              x1 = tmp.xy[2:n.det,1], y1 = tmp.xy[2:n.det,2],
-      #              length = 0.1, lwd = 1)
-      #       plot(st_geometry(detectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0), ]), pch = 16, col = "red",add=T)
-      #       
-      #       tmp2 <- detectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
-      #       plot(st_geometry(tmp2), add = T, col = "blue", pch = 13, cex = 1.5, lwd = 1)
-      #     }#i
-      #   }#if
-      # }#if plot.check
-      # 
-      ##-- REMOVE DETECTIONS THAT ARE FURTHER THAN THE THRESHOLD
+      ##-- Remove detections that are further than the threshold
       y.ar.ALIVE[ , ,t] <- y.ar.ALIVE[ , ,t] * (1-distances[[t]]$y.flagged)
     }#t
     
@@ -896,6 +869,7 @@ makeRovquantData_bear <- function(
     ##-- RECOVERED DEAD OTHER CAUSES OF MORTALITY
     
     ############################################################################
+    
     
     
     ## -----    1. NIMBLE CODE ------
@@ -975,7 +949,7 @@ makeRovquantData_bear <- function(
         r[t] ~ dunif(0,1)
         phi[t] <- 1-h[t]-w[t]
         
-        ones.dead[t] ~ dbern(step(1 - (h[2,t] + w[2,t])))  
+        ones.dead[t] ~ dbern(step(1 - (h[t] + w[t])))  
         
         omega[1,1:5,t] <- c(1-gamma[t], gamma[t], 0, 0, 0)
         omega[2,1:5,t] <- c(0,phi[t],h[t],w[t]*r[t],w[t]*(1-r[t]))
@@ -1075,11 +1049,11 @@ makeRovquantData_bear <- function(
         2
       } else {
         if(any(x[1:length(unlist(sampling.months))] >= 2, na.rm = T)){
-          4 }
+          5 }
         else {NA}}})
 
     z.data <- zYears
-    allDead <- apply(z.data, 1, function(x)all(x==4))
+    allDead <- apply(z.data, 1, function(x)all(x==5))
     z.data[allDead, ] <- 1
     
     
@@ -1090,11 +1064,11 @@ makeRovquantData_bear <- function(
       out <- zz
       out[] <- 1
       if(any(!is.na(zz))){
-        ##-- Set all occasions after the last detection to 4
-        if(sum(zz == 4, na.rm = T)<1){
+        ##-- Set all occasions after the last detection to 5
+        if(sum(zz == 5, na.rm = T)<1){
           range.det <- range(which(!is.na(zz)))
           if(range.det[1]>1) zz[1:(range.det[1]-1)] <- 1
-          if(range.det[2]<length(zz)) zz[(range.det[2]+1):length(zz)] <- 4
+          if(range.det[2]<length(zz)) zz[(range.det[2]+1):length(zz)] <- 5
         }
         ##-- Set occasion before recovery to 2  
         if(sum(zz == 3, na.rm = T)>0){
@@ -1113,38 +1087,35 @@ makeRovquantData_bear <- function(
     
     ##-- Set all known states to NA in the inits
     z.init[!is.na(z.data)] <- NA
-    #table(z.init, useNA = "always")
-    
+
     
     
     ## ------     3.3. GENERATE y.dead -----
+    
     legal.mx <- do.call(rbind, lapply(dimnames(y.alive)[[1]], function(x){
       out <- rep(0,dim(z.data)[2])
-      if(x %in% myFullData.sp$dead.recovery$Id[myFullData.sp$dead.recovery$legal == "yes"]) out <- rep(1,dim(z.data)[2])
+      if(x %in% dead.recovery$Id[dead.recovery$Legal]) out <- rep(1,dim(z.data)[2])
       return(out)
     }))
     
-    y.dead <- z.data
-    y.dead[] <- ifelse(z.data %in% c(4) & legal.mx == 1,1,0)
-    y.dead <- t(apply(y.dead, 1, function(x){
+    y.dead.legal <- z.data
+    y.dead.legal[] <- ifelse(z.data %in% c(5) & legal.mx == 1,1,0)
+    y.dead.legal <- t(apply(y.dead.legal, 1, function(x){
       out <- x
       out[] <- 0
       if(any(x==1)) out[min(which(x==1))] <- 1
       return(out)
     }))
     
-    
-    x.deadculled <- x.deadOther <- z.age
-    x.deadculled[] <- ifelse(z.age%in%c(4) & legal.mx==1,1,0)
-    x.deadculled <- t(apply(x.deadculled, 1, function(x){
-      out <- x
-      out[] <- 0
-      if(any(x==1)) out[min(which(x==1))] <- 1
+    other.mx <- do.call(rbind, lapply(dimnames(y.alive)[[1]], function(x){
+      out <- rep(0,dim(z.data)[2])
+      if(x %in% dead.recovery$Id[!dead.recovery$Legal]) out <- rep(1,dim(z.data)[2])
       return(out)
     }))
     
-    x.deadOther[] <- ifelse(z.age%in%c(5) & other.mx==1,1,0)
-    x.deadOther <- t(apply(x.deadOther, 1, function(x){
+    y.dead.other <- z.data
+    y.dead.other[] <- ifelse(z.data %in% c(5) & other.mx == 1,1,0)
+    y.dead.other <- t(apply(y.dead.other, 1, function(x){
       out <- x
       out[] <- 0
       if(any(x==1)) out[min(which(x==1))] <- 1
@@ -1153,9 +1124,10 @@ makeRovquantData_bear <- function(
     
     
     ##-- DISTINGUISH MORTALITY SOURCE IN z.data and z.init
-    z.data[] <- ifelse(y.dead == 1, 3, z.data)
-    # z.staggered[] <- ifelse(y.dead == 1, 3, z.staggered)
+    z.data[] <- ifelse(y.dead.legal == 1, 3, z.data)
+    z.data[] <- ifelse(y.dead.other == 1, 4, z.data)
     
+
     
     
     ## ------     3.4. GENERATE sxy & sxy.init ARRAYS -----
@@ -1254,6 +1226,7 @@ makeRovquantData_bear <- function(
                                      habitat$habitat.df$skandObs.smooth),
                      habitatGrid = habitat$localObjects$habitatGrid,
                      alpha = c(1,1),
+                     ones.dead = 
                      detCoords = detectors$scaledCoords,
                      size = detectors$detectors.df$size,
                      detCovs = detCovs,
@@ -1265,7 +1238,7 @@ makeRovquantData_bear <- function(
     ## ------   5. NIMBLE PARAMETERS -----
     
     nimParams <- c("N", "n.available", "omeg1",
-                   "gamma", "p0", "mhH", "mhW",
+                   "gamma", "p0", "h", "w", "phi", "r",
                    "tau",
                    "p0", "sigma",
                    "betaDet", "betaDens")
@@ -1287,8 +1260,9 @@ makeRovquantData_bear <- function(
                         "betaDens" = matrix(stats::runif(4,0,1),nrow = 2),
                         "omeg1" = c(0.7,0.3),
                         "gamma" = stats::runif(dim(y.alive)[3]-1,0.02,0.1),
-                        "mhW" = stats::runif(dim(y.alive)[3]-1,0.1,0.3),
-                        "mhH" = stats::runif(dim(y.alive)[3]-1,0.1,0.2),
+                        "h" = stats::runif(dim(y.alive)[3]-1,0.05,0.1),
+                        "w" = stats::runif(dim(y.alive)[3]-1,0.1,0.4),
+                        "r" = stats::runif(dim(y.alive)[3]-1,0,0.5),
                         "p0" = array(stats::runif(nimConstants$n.counties*n.years,0,0.1),
                                      c(nimConstants$n.counties,n.years)),
                         "betaDet" = stats::runif(2,-0.5,0.5),
