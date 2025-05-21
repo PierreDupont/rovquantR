@@ -222,20 +222,20 @@ makeRovquantData_bear <- function(
     pattern = "CleanData_bear",
     extension = ".RData")
   
-  ##-- Define legal mortality causes
-  MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
-  legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
-  legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
-  
-  myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
-    dplyr::mutate( legal = ifelse(Death_cause %in% legalCauses, "yes", "no"))
-  
-  legal.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "yes")
-  Other.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "no")
+  # ##-- Define legal mortality causes
+  # MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
+  # legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
+  # legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
+  # 
+  # myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
+  #   dplyr::mutate( legal = ifelse(Death_cause %in% legalCauses, "yes", "no"))
+  # 
+  # legal.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "yes")
+  # Other.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "no")
   
   ##-- Define years
   if(is.null(years)){
@@ -785,7 +785,7 @@ makeRovquantData_bear <- function(
     data.alive$data.sp <- data.alive$data.sp %>%
       dplyr::filter(Sex %in% thisSex)
     
-    data.dead <-  data.dead %>%
+    data.dead <- data.dead %>%
       dplyr::filter(Sex %in% thisSex)
     
     
@@ -860,17 +860,6 @@ makeRovquantData_bear <- function(
     
     
     ## ------ IV. MODEL SETTING ------- 
-    
-    
-    
-    ############################################################################
-    
-    ##-- ADD STATE:
-    ##-- RECOVERED DEAD OTHER CAUSES OF MORTALITY
-    
-    ############################################################################
-    
-    
     
     ## -----    1. NIMBLE CODE ------
     
@@ -1094,7 +1083,7 @@ makeRovquantData_bear <- function(
     
     legal.mx <- do.call(rbind, lapply(dimnames(y.alive)[[1]], function(x){
       out <- rep(0,dim(z.data)[2])
-      if(x %in% dead.recovery$Id[dead.recovery$Legal]) out <- rep(1,dim(z.data)[2])
+      if(x %in% data.dead$Id[data.dead$Legal]) out <- rep(1,dim(z.data)[2])
       return(out)
     }))
     
@@ -1109,7 +1098,7 @@ makeRovquantData_bear <- function(
     
     other.mx <- do.call(rbind, lapply(dimnames(y.alive)[[1]], function(x){
       out <- rep(0,dim(z.data)[2])
-      if(x %in% dead.recovery$Id[!dead.recovery$Legal]) out <- rep(1,dim(z.data)[2])
+      if(x %in% data.dead$Id[!data.dead$Legal]) out <- rep(1,dim(z.data)[2])
       return(out)
     }))
     
