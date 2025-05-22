@@ -256,11 +256,17 @@ deadIds <-  read.csv( file.path( working.dir, "tables",
 
 After these initial checks several unusable samples were filtered out:
 
--   samples without ID (N = `r info.ls$numNoID`)
+-   DNA samples without ID (N = `r info.ls$numNoID_DNA`)
 
--   samples without spatial coordinates (N = `r info.ls$numNoCoords`)
+-   DNA samples without spatial coordinates (N = `r info.ls$numNoCoords_DNA`)
 
--   samples without dates (N = `r info.ls$numNoDate`)
+-   DNA samples without dates (N = `r info.ls$numNoDate_DNA`)
+
+-   dead recoveries without ID (N = `r info.ls$numNoID_DR`)
+
+-   dead recoveries without spatial coordinates (N = `r info.ls$numNoCoords_DR`)
+
+-   dead recoveries without dates (N = `r info.ls$numNoDate_DR`)
 
 `r if(engSpecies == "wolverine"){paste0("-   removing ", length(info.ls$youngDeads) + length(info.ls$lowWeightDeads), " young wolverines recovered between March and November (Note that ", length(info.ls$zeroWeightDeads), " wolverines with weight = 0kg were kept in the data)")}`
 

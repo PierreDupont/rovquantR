@@ -76,7 +76,7 @@ cleanRovbaseData <- function(
   ##----- 1. INITIAL CHECKS -----
   
   ##-- Make sure directory structure exists
-  if(two.sex){
+  if (two.sex) {
   makeDirectories( path = working.dir,
                    subFolders = c("female","male"),
                    show.dir = TRUE)
@@ -86,12 +86,12 @@ cleanRovbaseData <- function(
   }
   
   ##-- Species
-  if (length(species)>1) {
+  if (length(species) > 1) {
     stop('This function can only deal with one species at a time... \nPlease, use one of "bear", "wolf", or "wolverine" for the n target species.')
   }
-  if (sum(grep("bear", species, ignore.case = T))>0|
-     sum(grep("bjørn", species, ignore.case = T))>0|
-     sum(grep("bjorn", species, ignore.case = T))>0) {
+  if (sum(grep("bear", species, ignore.case = T)) > 0|
+     sum(grep("bjørn", species, ignore.case = T)) > 0|
+     sum(grep("bjorn", species, ignore.case = T)) > 0) {
     SPECIES <- "Brown bear"
     engSpecies <- "bear"
     norSpecies <- c("Bjørn", "BjÃ¸rn")
@@ -299,6 +299,8 @@ cleanRovbaseData <- function(
     dplyr::filter(., Species %in% norSpecies) %>%
     ##-- Remove any duplicates
     dplyr::distinct(., .keep_all = TRUE) %>%
+    ##-- Turn potential factors into characters 
+    dplyr::mutate(across(where(is.factor), as.character)) %>%
     ##-- Add some columns
     dplyr::mutate( 
       ##-- Add "Country" column
@@ -312,11 +314,9 @@ cleanRovbaseData <- function(
       ##-- Extract sampling season
       ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
       ##-- Set all months in given sampling period to the same year)
-      Season = ifelse( length(sampling.months) > 1, 
-                       ifelse( Month < unlist(sampling.months)[1],
-                               Year,
-                               Year-1), 
-                       Year),
+      Season = ifelse( Month < unlist(sampling.months)[1],
+                               Year-1,
+                               Year),
       ##-- Fix unknown "Id"
       Id = ifelse(Id %in% "", NA, Id),
       ##-- Fix unknown "Sex"
@@ -327,7 +327,7 @@ cleanRovbaseData <- function(
     ##-- Filter to the focal years
     dplyr::filter(., Year %in% years) 
   
-  
+
   ##-- Number of NGS samples
   NGS_samples <- table(DNA$Sex, DNA$Year, useNA = "ifany")
   NGS_samples <- rbind(NGS_samples, "Total" = colSums(NGS_samples))
@@ -350,7 +350,7 @@ cleanRovbaseData <- function(
                                       ".csv")))
   
   
-  
+
   ##-----   2.2. RAW DEAD RECOVERY DATA -----
   
   ##-- Load raw excel file imported from rovbase 
@@ -363,6 +363,8 @@ cleanRovbaseData <- function(
     dplyr::filter(., Species %in% norSpecies) %>%
     ##-- Remove any duplicates
     dplyr::distinct(., .keep_all = TRUE) %>%
+    ##-- Turn potential factors into characters 
+    dplyr::mutate(across(where(is.factor), as.character)) %>%
     ##-- Add some columns
     dplyr::mutate( 
       ##-- Add "Country" column
@@ -376,11 +378,9 @@ cleanRovbaseData <- function(
       ##-- Extract sampling season
       ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
       ##-- Set all months in given sampling period to the same year)
-      Season = ifelse( length(sampling.months) > 1, 
-                       ifelse( Month < unlist(sampling.months)[1],
-                               Year,
-                               Year-1), 
-                       Year),
+      Season = ifelse( Month < unlist(sampling.months)[1],
+                               Year-1,
+                               Year), 
       ##-- Fix unknown "Id"
       Id = ifelse(Id %in% "", NA, Id),
       ##-- Fix unknown "Sex"
@@ -415,26 +415,100 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   2.3. CHECKS -----
+  ##-----   2.3. CHECKS & FILTERS -----
+  
+  ##-- Filter out unusable samples
+  numNoID_DNA <- sum(is.na(DNA$Id))              ## number of samples without ID
+  numNoDate_DNA <- sum(is.na(DNA$Year))          ## number of samples without Date
+  numNoCoords_DNA <- sum(is.na(DNA$East_UTM33))  ## number of samples without Coords  
+  
+  DNA <- DNA %>%
+    dplyr::filter(##-- Filter out samples with no ID
+                  !is.na(Id),
+                  ##-- Filter out samples with no Coordinates
+                  !is.na(East_UTM33),
+                  ##-- Filter out samples with no dates  
+                  !is.na(Year))
+
+  
+  ##-- Filter out unusable samples
+  numNoID_DR <- sum(is.na(DR$Id))                ## number of DR without ID
+  numNoDate_DR <- sum(is.na(DR$Year))            ## number of DR without Date
+  numNoCoords_DR <- sum(is.na(DR$East_UTM33))    ## number of DR without Coords  
+  
+  DR <- DR %>%
+    dplyr::filter(##-- Filter out samples with no ID
+                  !is.na(Id),
+                  ##-- Filter out samples with no Coordinates
+                  !is.na(East_UTM33),
+                  ##-- Filter out samples with no dates  
+                  !is.na(Year))
+
+  
+  ##-- Check duplications in the DNA data
+  any(duplicated(DNA))
+  any(duplicated(DNA[ ,c("Id","RovbaseID", "DNAID", "Date"), ]))
+  any(duplicated(DNA[ ,c("Id","RovbaseID", "DNAID"), ]))
+  any(duplicated(DNA[ ,c("Id","RovbaseID"), ]))
+  
+
+  ##-- Check duplications in the DR data
+  any(duplicated(DR))
+  any(duplicated(DR[ ,c("Id","RovbaseID", "DNAID", "Date"), ]))
+  any(duplicated(DR[ ,c("Id","RovbaseID", "DNAID"), ]))
+  any(duplicated(DR[ ,c("Id","RovbaseID"), ]))
+  
   
   ##-- Make sure all dead recoveries in DNA are in DR
   check1 <- all(DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
-  probs_DR_in_DNA <- NULL
   if(!check1){
     tmp <- DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"]
     probs_DR_in_DNA <- tmp[!tmp %in% DR$DNAID]
   } 
   
-  tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
-  test <- dplyr::anti_join(tmp,DR, by = names(tmp)[names(tmp) %in% names(DR)])
-  
   ##-- Make sure that only "Dead recoveries" are in DR 
   check2 <- all(substr(DR$RovbaseID,1,1) %in% "M")
-  probs_DNA_in_DR <- NULL
   if(!check2){
     probs_DNA_in_DR <- DR$DNAID[!substr(DR$RovbaseID,1,1) %in% "M"]
   }
   
+  colNames <- c("Id","RovbaseID", "DNAID", "Date")
+  df1 <- DNA[substr(DNA$RovbaseID,1,1) %in% "M",colNames]
+  #df1 <- df1[ ,order(names(df1))]
+  df2 <- DR[ ,colNames]
+  #df2 <- df2[ ,order(names(df2))]
+  
+  test <- apply(df1, 1, function(r1){
+    any(apply(df2, 1, function(r2){
+      all(r2 == r1)
+    }))
+  })
+  
+        
+  
+
+  
+  
+
+
+  any(duplicated(DR[,c("Id","RovbaseID", "DNAID", "Date"),]))
+  tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
+  
+  test <- dplyr::anti_join(tmp, DR, by = c("Id", "DNAID", "RovbaseID"))# names(tmp)[names(tmp) %in% names(DR)])
+  
+  
+  test$DNAID %in% DR$DNAID
+  DR[DR$DNAID%in% test$DNAID ,c("Id", "DNAID", "RovbaseID") ]
+  test[,c("Id", "DNAID", "RovbaseID")]
+  test$RovbaseID %in% DR$RovbaseID
+  test$Id %in% DR$Id
+  
+  test2 <-  merge( DR, tmp,
+                   by = c("Id","RovbaseID", "DNAID", "Date"),
+                   all = TRUE)
+  
+
+
   
   
   ##-----   2.4. MERGE -----
@@ -455,23 +529,7 @@ cleanRovbaseData <- function(
   DATA$Death[substr(DATA$RovbaseID,1,1) %in% "M"] <- DATA$Year[substr(DATA$RovbaseID,1,1) %in% "M"]
   DATA$Birth <- DATA$Death - DATA$Age
   
-  ##-- Extract useful numbers
-  numNoID <- sum(is.na(DATA$Id))              ## number of samples without ID
-  numNoDate <- sum(is.na(DATA$Year))          ## number of samples without Date
-  numNoCoords <- sum(is.na(DATA$East_UTM33))  ## number of samples without Coords  
-  
-  ##-- Filter out unusable samples
-  DATA <- DATA %>%
-    dplyr::filter(., 
-                  ##-- Filter out samples with no ID
-                  !is.na(Id),
-                  ##-- Filter out samples with no Coordinates
-                  !is.na(East_UTM33),
-                  ##-- Filter out samples with no dates  
-                  !is.na(Year)) %>%
-    droplevels(.)
-  
-  
+
   
   ##-----   2.5. SEX ASSIGNMENT -----
   
@@ -514,6 +572,7 @@ cleanRovbaseData <- function(
   ##-- Split DATA into alive and dead.recovery datasets
   alive <- DATA[is.na(DATA$Death), ]
   dead.recovery <- DATA[!is.na(DATA$Death), ]
+
   
   ##-- Add earlier detection index
   alive$detected.earlier <-
@@ -642,17 +701,78 @@ cleanRovbaseData <- function(
       fileEncoding = "Latin1") 
     
     ##-- Remove flagged samples 
-    remove.alive <- !alive$Barcode_sample %in% flagged$Strekkode
-    alive <- alive[remove.alive, ]
-    remove.dead <- !dead.recovery$Barcode_sample %in% flagged$Strekkode
-    dead.recovery <- dead.recovery[remove.dead, ]
-    dead.recovery$Missing <- NA
-    dead.recovery$Individ <- NA
+    remove.alive <- alive$Barcode_sample %in% flagged$Strekkode
+    alive <- alive[!remove.alive, ]
+    remove.dead <- dead.recovery$Barcode_sample %in% flagged$Strekkode
+    dead.recovery <- dead.recovery[!remove.dead, ]
+    # dead.recovery$Missing <- NA
+    # dead.recovery$Individ <- NA
   }
   
   
+
+  ##----- 4. DATA ISSUES -----
   
-  ##----- 4. TURN INTO .sf OBJECTS -----
+  ##-----   4.1. MULTIPLE DEATHS ------
+  
+  ##-- Identify and count individuals dead "more than once"
+  ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1]
+  multiDeathDate <- multiDeathYear <- multiDeathLocs <-  NULL
+  for (i in 1:length(ID)) {
+    tmp <- dead.recovery[dead.recovery$Id == ID[i], ] 
+    ##-- Multiple death dates
+    if(length(unique(tmp$Date)) > 1){
+      multiDeathDate <- c(multiDeathDate, ID[i])
+    }
+    ##-- Multiple death years
+    if(length(unique(tmp$Year)) > 1){
+      multiDeathYear <- c(multiDeathYear, ID[i])
+    }
+    ##-- Multiple death locations
+    if(length(unique(tmp$East)) > 1 | length(unique(tmp$North)) > 1){
+      multiDeathLocs <- c(multiDeathLocs, ID[i])
+    }
+  }#i
+  
+  ##-- Remove individuals that died more than once
+  dead.recovery$Id <- as.character(dead.recovery$Id)
+  IdDoubleDead <- dead.recovery$Id[duplicated(dead.recovery$Id)]
+  duplicatedDeath <- NULL
+  for(i in IdDoubleDead){
+    tmp <- which(dead.recovery$Id == i & is.na(dead.recovery$Death_cause))
+    if(length(tmp)==0){tmp  <- which(dead.recovery$Id == i)[-1]}
+    duplicatedDeath <- c(duplicatedDeath, tmp)
+  }#i  
+ dead.recovery <- dead.recovery[-duplicatedDeath, ]
+  
+
+  ##-----   4.2. GHOST INDIVIDUALS ------
+  
+  id.list <- unique(c(as.character(dead.recovery$Id), as.character(alive$Id)))
+  ghosts <- unlist(lapply(id.list, function(id) {
+    out <- NULL
+    try({
+      if(id %in% dead.recovery$Id){
+        mort.year <- min(dead.recovery$Year[dead.recovery$Id == id])
+        this.alive <- alive[alive$Id == id, ]
+        ##-- Was it detected alive in any season after death?
+        temp <- this.alive[this.alive$Year > mort.year, ]
+        if(length(temp) > 0){
+          out <- rownames(temp)
+          names(out) <- id
+        }
+      }
+    }, silent = TRUE)
+    return(out)
+  }))
+  samples.to.remove <- unlist(ghosts)
+  
+  ##-- Remove flagged NGS detections after dead recovery
+  alive <- alive[!rownames(alive) %in% samples.to.remove, ]
+  
+  
+  
+  ##----- 5. TURN INTO .sf OBJECTS -----
   
   ##-- Turn into sf points dataframe
   alive <- sf::st_as_sf( x = alive,
@@ -675,11 +795,9 @@ cleanRovbaseData <- function(
   dead.recovery$Country_sf[!is.na(as.numeric(sf::st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
   dead.recovery$Country_sf[!is.na(as.numeric(sf::st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
   
+  ##----- 6. DATA SUMMARY -----
   
-  
-  ##----- 5. DATA SUMMARY -----
-  
-  ##-----   5.1. DATA SUMMARY - TABLES -----
+  ##-----   6.1. DATA SUMMARY - TABLES -----
   
   ##-- Number of NGS samples per year and country (date,rovbase)
   samples <- table(alive$Country_sample, alive$Year)
@@ -723,7 +841,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   5.2. NUMBER OF SAMPLES - FIGURE -----
+  ##-----   6.2. NUMBER OF SAMPLES - FIGURE -----
   
   ##-- Number of NGS per month
   dat.alive <- alive %>%
@@ -754,7 +872,7 @@ cleanRovbaseData <- function(
                                      hjust = 1)) +
     scale_x_date( date_breaks = "years",
                   date_labels = "%Y") 
-
+  
   ##-- Export as .png
   ggsave(filename = file.path(working.dir, "figures",
                               paste0( engSpecies, "_Clean Rovbase Samples_",
@@ -762,6 +880,7 @@ cleanRovbaseData <- function(
                                       ".png")),
          plot = NGS_plot,
          dpi = 300, height = 6, width = 12, device = "png")
+  
   # grDevices::png( filename = file.path(working.dir, "figures",
   #                                      paste0( engSpecies, "_Clean Rovbase Samples_",
   #                                              years[1]," to ", years[length(years)],
@@ -771,10 +890,10 @@ cleanRovbaseData <- function(
   #                 res = 300, bg = NA)  
   # NGS_plot
   # dev.off()
-
   
   
-  ##-----   5.3. NUMBER OF INDIVIDUALS - FIGURE -----
+  
+  ##-----   6.3. NUMBER OF INDIVIDUALS - FIGURE -----
   
   ##-- Number of IDs
   dat.alive <- alive %>% 
@@ -822,8 +941,8 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   5.4. SAMPLING MAPS - FIGURE ------
-
+  ##-----   6.4. SAMPLING MAPS - FIGURE ------
+  
   ##-- Maps layout
   L <- length(years)
   if(L < 6){ nrows <- 1 } else{
@@ -842,7 +961,7 @@ cleanRovbaseData <- function(
                  width = ncols*2, height = nrows*4,
                  units = "in", pointsize = 12,
                  res = 300, bg = NA)
-
+  
   ##-- Maps layout
   mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
   for(r in 1:nrows){
@@ -867,14 +986,14 @@ cleanRovbaseData <- function(
     
     ##-- Add year
     graphics::mtext(text = years[t],
-          side = 1, line = -18,
-          adj = 0.18, cex = 1.2)
+                    side = 1, line = -18,
+                    adj = 0.18, cex = 1.2)
   }#t
   dev.off()
   
   
   
-  ##-----   5.5. PREVIOUSLY DETECTED - FIGURE -----
+  ##-----   6.5. PREVIOUSLY DETECTED - FIGURE -----
   
   ##-- Plot number of individuals with previous NGS detections
   plot1 <- alive %>%
@@ -927,72 +1046,6 @@ cleanRovbaseData <- function(
   
   
   
-  ##----- 6. DATA ISSUES -----
-  
-  ##-----   6.1. MULTIPLE DEATHS ------
-  
-  ##-- Identify and count individuals dead "more than once"
-  ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1]
-  multiDeathDate <- multiDeathYear <- multiDeathLocs <-  NULL
-  for (i in 1:length(ID)) {
-    tmp <- dead.recovery[dead.recovery$Id == ID[i], ] 
-    ##-- Multiple death dates
-    if(length(unique(tmp$Date)) > 1){
-      multiDeathDate <- c(multiDeathDate, ID[i])
-    }
-    ##-- Multiple death years
-    if(length(unique(tmp$Year)) > 1){
-      multiDeathYear <- c(multiDeathYear, ID[i])
-    }
-    ##-- Multiple death locations
-    if(length(unique(tmp$East)) > 1 | length(unique(tmp$North)) > 1){
-      multiDeathLocs <- c(multiDeathLocs, ID[i])
-    }
-  }#i
-  
-  ##-- Remove individuals that died more than once
-  dead.recovery$Id <- as.character(dead.recovery$Id)
-  IdDoubleDead <- names(table(dead.recovery$Id))[table(dead.recovery$Id) > 1]
-  if (length(IdDoubleDead) > 0) {
-    for(i in IdDoubleDead){
-      ##-- Identify repeated deaths
-      tmp <- which(dead.recovery$Id %in% i) 
-      ##-- Try to keep death with known death cause 
-      tmp2 <- which(!is.na(dead.recovery$DeathCause_2[tmp]))[1]
-      if(length(tmp2) == 0){tmp <- tmp[-1]} else {tmp <- tmp[!tmp %in% tmp2]}
-      ##-- Remove repeated deaths
-      dead.recovery <- dead.recovery[-tmp, ]
-    }#i
-  }#if
-  
-  
-  
-  ##-----   6.2. GHOST INDIVIDUALS ------
-  
-  id.list <- unique(c(as.character(dead.recovery$Id), as.character(alive$Id)))
-  ghosts <- unlist(lapply(id.list, function(id) {
-    out <- NULL
-    try({
-      if(id %in% dead.recovery$Id){
-        mort.year <- min(dead.recovery$Year[dead.recovery$Id == id])
-        this.alive <- alive[alive$Id == id, ]
-        ##-- Was it detected alive in any season after death?
-        temp <- this.alive[this.alive$Year > mort.year, ]
-        if(length(temp) > 0){
-          out <- rownames(temp)
-          names(out) <- id
-        }
-      }
-    }, silent = TRUE)
-    return(out)
-  }))
-  samples.to.remove <- unlist(ghosts)
-  
-  ##-- Remove flagged NGS detections after dead recovery
-  alive <- alive[!rownames(alive) %in% samples.to.remove, ]
-  
-  
-  
   ##----- 7. SAVE DATA ------
   
   save( alive, 
@@ -1009,9 +1062,12 @@ cleanRovbaseData <- function(
     info.ls <- list()
     info.ls$IdDoubleSex <- IdDoubleSex
     info.ls$doubleSexID <- doubleSexID
-    info.ls$numNoID <- numNoID
-    info.ls$numNoDate <- numNoDate
-    info.ls$numNoCoords <- numNoCoords
+    info.ls$numNoID_DNA <- numNoID_DNA
+    info.ls$numNoDate_DNA <- numNoDate_DNA
+    info.ls$numNoCoords_DNA <- numNoCoords_DNA
+    info.ls$numNoID_DR <- numNoID_DR
+    info.ls$numNoDate_DR <- numNoDate_DR
+    info.ls$numNoCoords_DR <- numNoCoords_DR
     info.ls$multiDeathDate <- multiDeathDate
     info.ls$multiDeathDate <- multiDeathDate
     info.ls$multiDeathYear <- multiDeathYear
