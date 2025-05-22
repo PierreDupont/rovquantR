@@ -100,8 +100,8 @@ stri_enc_isutf8(COUNTIES$NAME_1)
 
 
 ##-- HABITAT RASTERS AT DIFFERENT RESOLUTIONS (REFERENCE RASTERS)
-load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20kmNewSweCounties.RData"))
-load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
+load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20kmNewNorCounties.RData"))
+load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNewNorCounties.RData"))
 
 
 ##-- Save necessary data in the right folder (./data)
