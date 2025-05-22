@@ -445,21 +445,8 @@ cleanRovbaseData <- function(
                   !is.na(Year))
 
   
-  ##-- Check duplications in the DNA data
-  any(duplicated(DNA))
-  any(duplicated(DNA[ ,c("Id","RovbaseID", "DNAID", "Date"), ]))
-  any(duplicated(DNA[ ,c("Id","RovbaseID", "DNAID"), ]))
-  any(duplicated(DNA[ ,c("Id","RovbaseID"), ]))
-  
-
-  ##-- Check duplications in the DR data
-  any(duplicated(DR))
-  any(duplicated(DR[ ,c("Id","RovbaseID", "DNAID", "Date"), ]))
-  any(duplicated(DR[ ,c("Id","RovbaseID", "DNAID"), ]))
-  any(duplicated(DR[ ,c("Id","RovbaseID"), ]))
-  
-  
   ##-- Make sure all dead recoveries in DNA are in DR
+  dim(DNA[substr(DNA$RovbaseID,1,1) %in% "M", ])
   check1 <- all(DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
   if(!check1){
     tmp <- DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"]
@@ -472,43 +459,25 @@ cleanRovbaseData <- function(
     probs_DNA_in_DR <- DR$DNAID[!substr(DR$RovbaseID,1,1) %in% "M"]
   }
   
-  colNames <- c("Id","RovbaseID", "DNAID", "Date")
-  df1 <- DNA[substr(DNA$RovbaseID,1,1) %in% "M",colNames]
-  #df1 <- df1[ ,order(names(df1))]
-  df2 <- DR[ ,colNames]
-  #df2 <- df2[ ,order(names(df2))]
+  ##-- Check which data is duplicated
+  duplicateData <- dplyr::inner_join( DNA, DR,
+                                      by = c("Id","RovbaseID","DNAID","Species","Sex",
+                                             "Date","Year","Month","Season",
+                                             "East_UTM33","North_UTM33",
+                                             "County","Country_sample"))
+  dim(duplicateData)  
+  write.csv( duplicateData,
+             file = file.path( working.dir, "tables",
+                               paste0( engSpecies, "_DR in DNA_",
+                                       years[1]," to ", years[length(years)],
+                                       ".csv")))
   
-  test <- apply(df1, 1, function(r1){
-    any(apply(df2, 1, function(r2){
-      all(r2 == r1)
-    }))
-  })
+  ##-- Remove duplicated data in DNA before merging 
+  DNA <- DNA[!DNA$DNAID %in% duplicateData$DNAID, ]
   
-        
+  # ##-- Identify dead recoveries left in 'DNA' 
+  # DNA[substr(DNA$RovbaseID,1,1) %in% "M", ] 
   
-
-  
-  
-
-
-  any(duplicated(DR[,c("Id","RovbaseID", "DNAID", "Date"),]))
-  tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
-  
-  test <- dplyr::anti_join(tmp, DR, by = c("Id", "DNAID", "RovbaseID"))# names(tmp)[names(tmp) %in% names(DR)])
-  
-  
-  test$DNAID %in% DR$DNAID
-  DR[DR$DNAID%in% test$DNAID ,c("Id", "DNAID", "RovbaseID") ]
-  test[,c("Id", "DNAID", "RovbaseID")]
-  test$RovbaseID %in% DR$RovbaseID
-  test$Id %in% DR$Id
-  
-  test2 <-  merge( DR, tmp,
-                   by = c("Id","RovbaseID", "DNAID", "Date"),
-                   all = TRUE)
-  
-
-
   
   
   ##-----   2.4. MERGE -----
@@ -522,6 +491,10 @@ cleanRovbaseData <- function(
                         "County","Country_sample"),
                  all = TRUE)
   
+  
+  
+  ##-----   2.5. AGE -----
+  
   ##-- Determine Death and Birth Years
   DATA$Age <- suppressWarnings(as.numeric(as.character(DATA$Age))) 
   DATA$RovbaseID <- as.character(DATA$RovbaseID)
@@ -531,7 +504,7 @@ cleanRovbaseData <- function(
   
 
   
-  ##-----   2.5. SEX ASSIGNMENT -----
+  ##-----   2.6. SEX ASSIGNMENT -----
   
   ID <- unique(as.character(DATA$Id))
   DATA$Sex <- as.character(DATA$Sex)
@@ -745,6 +718,7 @@ cleanRovbaseData <- function(
  dead.recovery <- dead.recovery[-duplicatedDeath, ]
   
 
+ 
   ##-----   4.2. GHOST INDIVIDUALS ------
   
   id.list <- unique(c(as.character(dead.recovery$Id), as.character(alive$Id)))
@@ -793,6 +767,8 @@ cleanRovbaseData <- function(
   #dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
   dead.recovery$Country_sf[!is.na(as.numeric(sf::st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
   dead.recovery$Country_sf[!is.na(as.numeric(sf::st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
+  
+  
   
   ##----- 6. DATA SUMMARY -----
   
