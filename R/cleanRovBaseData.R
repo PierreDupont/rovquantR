@@ -958,7 +958,7 @@ cleanRovbaseData <- function(
       ##-- Identify repeated deaths
       tmp <- which(dead.recovery$Id %in% i) 
       ##-- Try to keep death with known death cause 
-      tmp2 <- which(!is.na(dead.recovery$DeathCause_2[tmp]))[1]
+      tmp2 <- which(!is.na(dead.recovery$Death_cause[tmp]))[1]
       if(length(tmp2) == 0){tmp <- tmp[-1]} else {tmp <- tmp[!tmp %in% tmp2]}
       ##-- Remove repeated deaths
       dead.recovery <- dead.recovery[-tmp, ]
