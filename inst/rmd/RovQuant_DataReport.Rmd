@@ -284,9 +284,9 @@ kable( numId_sexYear,
   kable_styling(full_width = F)
 ```
 
-The number of detections per individual varied from 1 to `r max(df$freq)`, with a mean number of NGS detections of `r mu$grp.mean[1]` for females and `r mu$grp.mean[2]` for males.
+The number of detections per individual varied from 1 to `r max(df$freq)`, with a mean number of NGS detections of `r round(mu$grp.mean[1],2)` for females and `r round(mu$grp.mean[2],2)` for males.
 
-The distances to the centroid of an individual's detections each year were on average `r meanDist$mean[1]`km and  `r meanDist$mean[2]`km for females and males, respectively. The corresponding maximum distances were `r meanDist$max[1]`km and  `r meanDist$max[2]`km for females and males, respectively.
+The distances to the centroid of an individual's detections each year were on average `r round(meanDist$mean[1],2)`km and  `r round(meanDist$mean[2],2)`km for females and males, respectively. The corresponding maximum distances were `r round(meanDist$max[1],2)`km and  `r round(meanDist$max[2],2)"`km for females and males, respectively.
 
 ```{r, ngs data3, echo = FALSE, collapse = TRUE,  fig.cap = paste0("Figure 4: A) Number of ", species, " NGS detections, and B) distance to the centroid of an individual's detections, per individual, year and sex. Colored dash lines represent the mean for each sex."), fig.height = 6, fig.width = 12}
 ##-- Histogram of number of samples per individual per year
@@ -339,9 +339,9 @@ for(t in 1:n.years){
   for(s in 1:2){
     for(d in 1:2){
       if(d==1){
-        temp <- data.dead[data.dead$Year == years[t] & data.dead$Sex==sex[s] & data.dead$legal == "yes", ]
+        temp <- data.dead[data.dead$Year == years[t] & data.dead$Sex==sex[s] & data.dead$Legal == "yes", ]
       } else {
-        temp <- data.dead[data.dead$Year == years[t] & data.dead$Sex==sex[s] & data.dead$legal != "yes", ]
+        temp <- data.dead[data.dead$Year == years[t] & data.dead$Sex==sex[s] & data.dead$Legal != "yes", ]
       }
       row <- which(rownames(Dead_SEX) == cause[d] & Dead_SEX[,1]=="Norway")
       Dead_SEX[row,ye[t] + sex1[s]+1 ] <- length(unique(temp$Id[temp$Country_sample %in% "(N)" ]))

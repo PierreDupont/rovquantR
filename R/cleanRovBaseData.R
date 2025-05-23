@@ -672,12 +672,10 @@ cleanRovbaseData <- function(
       fileEncoding = "Latin1") 
     
     ##-- Remove flagged samples 
-    remove.alive <- alive$Barcode_sample %in% flagged$Strekkode
-    alive <- alive[!remove.alive, ]
-    remove.dead <- dead.recovery$Barcode_sample %in% flagged$Strekkode
-    dead.recovery <- dead.recovery[!remove.dead, ]
-    # dead.recovery$Missing <- NA
-    # dead.recovery$Individ <- NA
+    remove.alive <- !alive$Barcode_sample %in% flagged$Strekkode
+    alive <- alive[remove.alive, ]
+    remove.dead <- !dead.recovery$Barcode_sample %in% flagged$Strekkode
+    dead.recovery <- dead.recovery[remove.dead, ]
   }
   
   
