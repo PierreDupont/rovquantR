@@ -114,10 +114,8 @@ cleanRovbaseData <- function(
     }
   }
   
-  
   ##-- Years
   if (is.null(years)) { years <- 2012:as.numeric(format(Sys.Date(), "%Y")) }
-  
   
   ##-- Sampling months
   if (is.null(sampling.months)) {
@@ -136,7 +134,6 @@ cleanRovbaseData <- function(
     }
   }
   
-  
   ##-- Legal mortality patterns
   if (is.null(legal.dead)) {
     if (engSpecies == "bear") {
@@ -153,7 +150,6 @@ cleanRovbaseData <- function(
       }
     }
   }
-  
   
   ##-- Renaming list
   if (is.null(rename.list)) {
@@ -253,18 +249,14 @@ cleanRovbaseData <- function(
       Weight_total =  "Helvekt")
   }
   
-  
   ##-- Load pre-processed habitat shapefiles
   data(COUNTRIES, envir = environment()) 
-  
   
   ##-- data info
   DATE <- getMostRecent(path = data.dir, pattern = "DNA")
   
-  
   ##-- Set file name for clean data
   fileName <- paste0("CleanData_", engSpecies, "_", DATE, ".RData")
-  
   
   ##-- Check that a file with that name does not already exist to avoid overwriting
   if (!overwrite) {
@@ -435,7 +427,7 @@ cleanRovbaseData <- function(
   numNoID_DR <- sum(is.na(DR$Id))                ## number of DR without ID
   numNoDate_DR <- sum(is.na(DR$Year))            ## number of DR without Date
   numNoCoords_DR <- sum(is.na(DR$East_UTM33))    ## number of DR without Coords  
-  
+
   DR <- DR %>%
     dplyr::filter(##-- Filter out samples with no ID
                   !is.na(Id),
@@ -443,47 +435,56 @@ cleanRovbaseData <- function(
                   !is.na(East_UTM33),
                   ##-- Filter out samples with no dates  
                   !is.na(Year))
-
   
-  ##-- Make sure all dead recoveries in DNA are in DR
-  dim(DNA[substr(DNA$RovbaseID,1,1) %in% "M", ])
-  check1 <- all(DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
-  if(!check1){
-    tmp <- DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"]
-    probs_DR_in_DNA <- tmp[!tmp %in% DR$DNAID]
-  } 
   
-  ##-- Make sure that only "Dead recoveries" are in DR 
-  check2 <- all(substr(DR$RovbaseID,1,1) %in% "M")
-  if(!check2){
-    probs_DNA_in_DR <- DR$DNAID[!substr(DR$RovbaseID,1,1) %in% "M"]
+  ##-- FIlter out problematic samples
+  numDupId_DR <- sum(duplicated(DR$Id))          ## number of individuals w/ multiple dead recoveries
+  numInDNA_notinDR <- sum(!DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) ## number of 'dead recovery" samples in DNA only
+  
+  dupId_DR <- NULL
+  if(numDupId_DR > 0){
+    ##-- Identify duplicated dead recoveries
+    dupId_DR <- DR[DR$Id == DR$Id[duplicated(DR$Id)], c("DNAID", "RovbaseID", "DNAID")]
+    ##-- Remove duplicated individuals (keeping the last occurrence)
+    DR <- dplyr::filter(DR, !duplicated(Id, fromLast = T))
   }
   
+  inDNA_notinDR <- NULL
+  if(numInDNA_notinDR > 0){
+    ##-- Identify dead recoveries only in DNA
+    tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
+    inDNA_notinDR <- tmp[!tmp$DNAID %in% DR$DNAID, c("DNAID", "RovbaseID", "Id")]
+  } 
+  
+
   ##-- Check which data is duplicated
   duplicateData <- dplyr::inner_join( DNA, DR,
                                       by = c("Id","RovbaseID","DNAID","Species","Sex",
                                              "Date","Year","Month","Season",
                                              "East_UTM33","North_UTM33",
                                              "County","Country_sample"))
-  dim(duplicateData)  
+  numDupData <- nrow(duplicateData)
   write.csv( duplicateData,
              file = file.path( working.dir, "tables",
                                paste0( engSpecies, "_DR in DNA_",
                                        years[1]," to ", years[length(years)],
                                        ".csv")))
   
+  
   ##-- Remove duplicated data in DNA before merging 
   DNA <- DNA[!DNA$DNAID %in% duplicateData$DNAID, ]
   
-  # ##-- Identify dead recoveries left in 'DNA' 
-  # DNA[substr(DNA$RovbaseID,1,1) %in% "M", ] 
+  
+  test <- DNA[DNA$DNAID %in% DR$DNAID, ]
+  dupData$Id.x[dupData$Id.x != dupData$Id.y]
+  dupData$Id.y[dupData$Id.x != dupData$Id.y]
   
   
   
   ##-----   2.4. MERGE -----
   
   ##-- Merge DNA and dead recoveries files using all shared names columns
-  #DATA <- full_join(DNA, DR, by = names(DNA)[names(DNA) %in% names(DR)]) 
+  # DATA <- full_join(DNA, DR, by = names(DNA)[names(DNA) %in% names(DR)]) 
   DATA <- merge( DR, DNA,
                  by = c("Id","RovbaseID","DNAID","Species","Sex",
                         "Date","Year","Month","Season",
@@ -497,7 +498,6 @@ cleanRovbaseData <- function(
   
   ##-- Determine Death and Birth Years
   DATA$Age <- suppressWarnings(as.numeric(as.character(DATA$Age))) 
-  DATA$RovbaseID <- as.character(DATA$RovbaseID)
   DATA$Death <- NA
   DATA$Death[substr(DATA$RovbaseID,1,1) %in% "M"] <- DATA$Year[substr(DATA$RovbaseID,1,1) %in% "M"]
   DATA$Birth <- DATA$Death - DATA$Age
@@ -507,7 +507,6 @@ cleanRovbaseData <- function(
   ##-----   2.6. SEX ASSIGNMENT -----
   
   ID <- unique(as.character(DATA$Id))
-  DATA$Sex <- as.character(DATA$Sex)
   doubleSexID <- IdDoubleSex <- NULL  
    
   counter <- 1
@@ -687,24 +686,24 @@ cleanRovbaseData <- function(
   
   ##-----   4.1. MULTIPLE DEATHS ------
   
-  ##-- Identify and count individuals dead "more than once"
-  ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1]
-  multiDeathDate <- multiDeathYear <- multiDeathLocs <-  NULL
-  for (i in 1:length(ID)) {
-    tmp <- dead.recovery[dead.recovery$Id == ID[i], ] 
-    ##-- Multiple death dates
-    if(length(unique(tmp$Date)) > 1){
-      multiDeathDate <- c(multiDeathDate, ID[i])
-    }
-    ##-- Multiple death years
-    if(length(unique(tmp$Year)) > 1){
-      multiDeathYear <- c(multiDeathYear, ID[i])
-    }
-    ##-- Multiple death locations
-    if(length(unique(tmp$East)) > 1 | length(unique(tmp$North)) > 1){
-      multiDeathLocs <- c(multiDeathLocs, ID[i])
-    }
-  }#i
+  # ##-- Identify and count individuals dead "more than once"
+  # ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1]
+  # multiDeathDate <- multiDeathYear <- multiDeathLocs <-  NULL
+  # for (i in 1:length(ID)) {
+  #   tmp <- dead.recovery[dead.recovery$Id == ID[i], ] 
+  #   ##-- Multiple death dates
+  #   if(length(unique(tmp$Date)) > 1){
+  #     multiDeathDate <- c(multiDeathDate, ID[i])
+  #   }
+  #   ##-- Multiple death years
+  #   if(length(unique(tmp$Year)) > 1){
+  #     multiDeathYear <- c(multiDeathYear, ID[i])
+  #   }
+  #   ##-- Multiple death locations
+  #   if(length(unique(tmp$East)) > 1 | length(unique(tmp$North)) > 1){
+  #     multiDeathLocs <- c(multiDeathLocs, ID[i])
+  #   }
+  # }#i
   
   ##-- Remove individuals that died more than once
   dead.recovery$Id <- as.character(dead.recovery$Id)
@@ -753,7 +752,7 @@ cleanRovbaseData <- function(
     sf::st_set_crs(., sf::st_crs(32633)) 
   
   ##-- Intersect and extract country name
-  #alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
+  # alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
   alive$Country_sf[!is.na(as.numeric(sf::st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
   alive$Country_sf[!is.na(as.numeric(sf::st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
   
@@ -764,7 +763,7 @@ cleanRovbaseData <- function(
     sf::st_set_crs(.,sf::st_crs(32633))
   
   ##-- Intersect and extract country name
-  #dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
+  # dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
   dead.recovery$Country_sf[!is.na(as.numeric(sf::st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
   dead.recovery$Country_sf[!is.na(as.numeric(sf::st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
   
@@ -1043,10 +1042,11 @@ cleanRovbaseData <- function(
     info.ls$numNoID_DR <- numNoID_DR
     info.ls$numNoDate_DR <- numNoDate_DR
     info.ls$numNoCoords_DR <- numNoCoords_DR
-    info.ls$multiDeathDate <- multiDeathDate
-    info.ls$multiDeathDate <- multiDeathDate
-    info.ls$multiDeathYear <- multiDeathYear
-    info.ls$multiDeathLocs <- multiDeathLocs
+    info.ls$numDupId_DR <- numDupId_DR
+    info.ls$dupId_DR <- dupId_DR
+    info.ls$numInDNA_notinDR <- numInDNA_notinDR
+    info.ls$inDNA_notinDR <- inDNA_notinDR
+    info.ls$numDupData <- numDupData
     info.ls$samples.to.remove <- samples.to.remove
     if (engSpecies == "bear") {
       info.ls$remove.alive <- remove.alive

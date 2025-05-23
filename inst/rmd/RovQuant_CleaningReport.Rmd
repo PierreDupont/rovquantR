@@ -218,7 +218,7 @@ knitr::kable( DR_ids,
 ------------------------------------------------------------------------
 
 
-# Data cleaning
+# Data cleaning & issues
 
 ```{r, clean data summary, echo = F, collapse = TRUE}
 ##-- Number of NGS samples
@@ -254,6 +254,9 @@ deadIds <-  read.csv( file.path( working.dir, "tables",
                       check.names = FALSE)
 ```
 
+
+## Unuseable samples
+
 After these initial checks several unusable samples were filtered out:
 
 -   DNA samples without ID (N = `r info.ls$numNoID_DNA`)
@@ -276,9 +279,54 @@ After these initial checks several unusable samples were filtered out:
 
 
 
+## Issues
+
+In addition, there were multiple flags raised during the data cleaning process.
+These consist in e.g. individuals with multiple dead recoveries, individuals with multiple sex assignment, samples with contrasting information in the NGS and dead recovery files, etc... 
+
+
+
+### Sex assignment
+ 
+The numbers of individuals with problematic sex assigment, either because they were associated with multiple samples associated with different sexes after genotyping, or because the sex assignment procedure was not successful.
+
+```{r, multiple sex, echo = F}
+sexTab <- cbind.data.frame(
+  "problems" = c("Unknown sex", "both 'female' and 'male'"),
+  "number of individuals" = as.numeric(table(info.ls$doubleSexID)[c(1,3)]))
+
+kable(sexTab, align = "lc") %>%
+  kable_styling(full_width = F)
+```
+
+
+
+### Dead recovery issues
+
+-  `r info.ls$numDupId_DR` individuals had multiple dead recoveries in the dead recoveries Rovbase files.
+
+`r if(!is.null(info.ls$dupId_DR)){info.ls$dupId_DR}`
+
+
+- `r info.ls$numInDNA_notinDR` samples presumably associated with a dead recovery ('RovbaseID' starting with 'M') were registered in the NGS data file but not in the dead recovery file. 
+
+`r if(!is.null(info.ls$inDNA_notinDR)){info.ls$inDNA_notinDR}`
+
+
+- `r info.ls$numDupData` samples in the NGS data file were duplicated in the dead recovery file. `r if(info.ls$numDupData > 0) { paste0(" These samples were flagged and saved in '", file.path( working.dir, "tables", paste0( engSpecies, "_DR in DNA_", years[1]," to ", years[length(years)], ".csv'"))}`
+
+
+- `r length(info.ls$samples.to.remove)` individuals were identified with NGS samples detected after their supposed death
+
+
+------------------------------------------------------------------------
+
+
+# Cleaned data
+
 ## Number of samples
 
-After this initial clean-up, we are left with `r paste0(samples["Total","Total"],"(NOR = ",samples["(N)","Total"]," ; SWE = ",samples["(S)","Total"], ")")` NGS samples and `r paste0(deadSamples["Total","Total"], "(NOR = ",deadSamples["(N)","Total"]," ; SWE = ",deadSamples["(S)","Total"], ")")` dead recoveries.
+After this clean-up, we are left with `r paste0(samples["Total","Total"],"(NOR = ",samples["(N)","Total"]," ; SWE = ",samples["(S)","Total"], ")")` NGS samples and `r paste0(deadSamples["Total","Total"], "(NOR = ",deadSamples["(N)","Total"]," ; SWE = ",deadSamples["(S)","Total"], ")")` dead recoveries.
 
 ```{r, clean data samples timeSeries, fig.align = "center", fig.cap = paste0("Figure 1: Numbers of ", engSpecies, " non-invasive genetic samples and dead recoveries per month between ", years[1], " and ", years[length(years)], ". Presented are the number of samples that were available in Rovbase and useable for the OPSCR analysis, i.e. with the individual ID, engSpecies, date and coordinates succesfully identified."), echo = FALSE}
 knitr::include_graphics(file.path( working.dir, "figures",
@@ -341,96 +389,8 @@ knitr::include_graphics(file.path( working.dir, "figures",
 ```
 
 
-------------------------------------------------------------------------
 
-# Issues
-
-We can now start digging in the data, looking for potential issues.
-
-## Sex assignment
-
-```{r, multiple sex, echo = F}
-sexTab <- cbind.data.frame(
-  "problems" = c("Unknown sex", "both 'female' and 'male'"),
-  "number of individuals" = as.numeric(table(info.ls$doubleSexID)[c(1,3)]))
-
-kable(sexTab, align = "lc") %>%
-  kable_styling(full_width = F)
-```
-
-## Multiple deaths
-
-<!-- # ```{r, multiple deaths, echo = F} -->
-<!-- # ##-- Identify and count individuals dead "more than once" -->
-<!-- # ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1] -->
-<!-- # multiDeathDate <- multiDeathYear <- multiDeathLocs <-  NULL -->
-<!-- # for(i in 1:length(ID)){ -->
-<!-- #   tmp <- dead.recovery[dead.recovery$Id == ID[i], ]  -->
-<!-- #   ##-- Multiple death dates -->
-<!-- #   if(length(unique(tmp$Date)) > 1){ -->
-<!-- #     multiDeathDate <- c(multiDeathDate, ID[i]) -->
-<!-- #   } -->
-<!-- #   ##-- Multiple death years -->
-<!-- #   if(length(unique(tmp$Year)) > 1){ -->
-<!-- #     multiDeathYear <- c(multiDeathYear, ID[i]) -->
-<!-- #   } -->
-<!-- #   ##-- Multiple death locations -->
-<!-- #   if(length(unique(tmp$East)) > 1 | length(unique(tmp$North)) > 1){ -->
-<!-- #     multiDeathLocs <- c(multiDeathLocs, ID[i]) -->
-<!-- #   } -->
-<!-- # }#i -->
-<!-- #  -->
-<!-- # ##-- Remove individuals that died more than once -->
-<!-- # dead.recovery$Id <- as.character(dead.recovery$Id) -->
-<!-- # IdDoubleDead <- names(table(dead.recovery$Id))[table(dead.recovery$Id) > 1] -->
-<!-- # if(length(IdDoubleDead) > 0){ -->
-<!-- #   for(i in IdDoubleDead){ -->
-<!-- #     ##-- Identify repeated deaths -->
-<!-- #     tmp <- which(dead.recovery$Id %in% i)  -->
-<!-- #     ##-- Try to keep death with known death cause  -->
-<!-- #     tmp2 <- which(!is.na(dead.recovery$DeathCause_2[tmp]))[1] -->
-<!-- #     if(length(tmp2) == 0){tmp <- tmp[-1]} else {tmp <- tmp[!tmp %in% tmp2]} -->
-<!-- #     ##-- Remove repeated deaths -->
-<!-- #     dead.recovery <- dead.recovery[-tmp, ] -->
-<!-- #   }#i -->
-<!-- # }#if -->
-<!-- # ``` -->
-
-There are `r length(info.ls$multiDeathDate)` individuals with multiple death dates, of which `r length(info.ls$multiDeathYear)` are recorded dead in different years.
-
-There are also `r length(info.ls$multiDeathLocs)` recorded with different death locations.
-
-## Detections after death
-
-<!-- ```{r, ghost individuals, echo = F} -->
-<!-- id.list <- unique(c(as.character(dead.recovery$Id), as.character(alive$Id))) -->
-<!-- ghosts <- unlist(lapply(id.list, function(id){ -->
-<!--   out <- NULL -->
-<!--   try({ -->
-<!--     if(id %in% dead.recovery$Id){ -->
-<!--       mort.year <- min(dead.recovery$Year[dead.recovery$Id == id]) -->
-<!--       this.alive <- alive[alive$Id == id, ] -->
-<!--       ## Was it detected alive in any season after death? -->
-<!--       temp <- this.alive[this.alive$Year > mort.year, ] -->
-<!--       if(length(temp) > 0){ -->
-<!--         out <- rownames(temp) -->
-<!--         names(out) <- id -->
-<!--       }## FLAG THOSE FOR HENDRIK -->
-<!--     } -->
-<!--   }, silent = TRUE) -->
-<!--   return(out) -->
-<!-- })) -->
-<!-- samples.to.remove <- unlist(ghosts) -->
-
-<!-- ##-- Remove flagged NGS detections after dead recovery -->
-<!-- alive <- alive[!rownames(alive) %in% samples.to.remove, ] -->
-<!-- ``` -->
-
-There are `r length(info.ls$samples.to.remove)` individuals identified with NGS samples detected after their supposed death
-
-------------------------------------------------------------------------
-
-# Maps
+## Maps
 
 We can also add maps of the NGS samples and dead recoveries collected each year:
 
@@ -440,39 +400,6 @@ knitr::include_graphics(file.path( working.dir, "figures",
                                            years[1]," to ", years[length(years)],
                                            ".png")))
 ```
-<!-- and a series of maps for the dead recoveries each year: -->
-
-<!-- ```{r, Dead recovery maps, echo = F, fig.align = "center", fig.height = 8, fig.width = 12} -->
-<!-- dead_map <- ggplot(data = dead.recovery) + -->
-<!--   geom_sf(data = COUNTRIES,  -->
-<!--           aes(fill = ISO), -->
-<!--           alpha = 0.3, -->
-<!--           color = NA) +  -->
-<!--   geom_sf(color = "black", alpha = 0.5, size = 0.8, pch = 3) + -->
-<!--   facet_wrap(~Year, nrow = numRows, ncol = numCols) + -->
-<!--   theme(axis.line = element_blank(), -->
-<!--         axis.text.x = element_blank(), -->
-<!--         axis.text.y = element_blank(), -->
-<!--         axis.ticks = element_blank(), -->
-<!--         axis.title.x = element_blank(), -->
-<!--         axis.title.y = element_blank(), -->
-<!--         legend.position = "none", -->
-<!--         panel.background = element_blank(), -->
-<!--         panel.border = element_blank(), -->
-<!--         panel.grid.major = element_blank(), -->
-<!--         panel.grid.minor = element_blank(), -->
-<!--         plot.background = element_blank()) -->
-<!-- dead_map -->
-
-<!-- ##-- Save maps as .png -->
-<!-- grDevices::png(filename = file.path(working.dir, "figures", -->
-<!--                          paste0(engSpecies, "_DEAD_", -->
-<!--                                 years[1]," to ", years[length(years)],  -->
-<!--                                 ".png")), -->
-<!--     width = 8, height = 6, units = "in", res = 300) -->
-<!-- dead_map -->
-<!-- graphics.off() -->
-<!-- ``` -->
 
 ------------------------------------------------------------------------
 
@@ -484,11 +411,9 @@ fileName <- paste0("CleanData_", engSpecies, "_", date, ".RData")
 
 Finally, we save the cleaned **alive** and **dead.recovery** sf objects as a .RData file with name **`r fileName`** located in the `r engSpecies`-specific folder (`r file.path(working.dir, "data")`).
 
-
 ------------------------------------------------------------------------
 
 # References
-
 
 ------------------------------------------------------------------------
 
