@@ -313,7 +313,7 @@ kable(sexTab, align = "lc") %>%
 `r if(!is.null(info.ls$inDNA_notinDR)){info.ls$inDNA_notinDR}`
 
 
-- `r info.ls$numDupData` samples in the NGS data file were duplicated in the dead recovery file. `r if(info.ls$numDupData > 0) { paste0(" These samples were flagged and saved in '", file.path( working.dir, "tables", paste0( engSpecies, "_DR in DNA_", years[1]," to ", years[length(years)], ".csv'"))}`
+- `r info.ls$numDupData` samples in the NGS data file were duplicated in the dead recovery file. `r if(info.ls$numDupData > 0) { paste0(" These samples were flagged and saved in '", engSpecies, "_DR in DNA_", years[1]," to ", years[length(years)], ".csv'") }`
 
 
 - `r length(info.ls$samples.to.remove)` individuals were identified with NGS samples detected after their supposed death
