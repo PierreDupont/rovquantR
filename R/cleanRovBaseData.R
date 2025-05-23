@@ -475,9 +475,9 @@ cleanRovbaseData <- function(
   DNA <- DNA[!DNA$DNAID %in% duplicateData$DNAID, ]
   
   
-  test <- DNA[DNA$DNAID %in% DR$DNAID, ]
-  dupData$Id.x[dupData$Id.x != dupData$Id.y]
-  dupData$Id.y[dupData$Id.x != dupData$Id.y]
+  # test <- DNA[DNA$DNAID %in% DR$DNAID, ]
+  # dupData$Id.x[dupData$Id.x != dupData$Id.y]
+  # dupData$Id.y[dupData$Id.x != dupData$Id.y]
   
   
   
