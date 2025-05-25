@@ -61,8 +61,7 @@ cleanRovbaseData(
   data.dir = data.dir,
   working.dir = working.dir,
   two.sex = TRUE,
-  print.report = TRUE
-  )
+  print.report = TRUE)
 
 
 
@@ -88,17 +87,14 @@ for (s in c("female", "male")) {
   load(input[1])
   
   ##-- Build nimble model object
-  model <- nimbleModel( code = nimModel,
+  model <- nimbleModel( code = modelCode,
                         constants = nimConstants,
                         inits = nimInits,
                         data = nimData,
                         check = FALSE,
                         calculate = FALSE) 
   model$calculate()
-  
-  # which( is.infinite(model$logProb_sxy),
-  #        arr.ind = TRUE)
-  # 
+  # which( is.infinite(model$logProb_sxy), arr.ind = TRUE)
   # model$sxy[15, , ]
   # colSums(nimData$y.alive[15,,]>0)
   # model$sxy[15, ,4] <- (model$sxy[15, ,3]*0.2 +  model$sxy[15, ,5]*0.8)

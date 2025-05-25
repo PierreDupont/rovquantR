@@ -600,14 +600,6 @@ makeRovquantData_bear <- function(
   ##-- Scaled detector coordinates
   detectors$scaledCoords <- scaledCoords$coordsDataScaled
   
-  # ##-- Create habitat grid
-  # habIDCells.mx <- habitat$IDCells.mx
-  # habIDCells.mx[] <- 0
-  # for(i in 1:nrow( habitat$scaledCoords)){
-  #   habIDCells.mx[trunc( habitat$scaledCoords[i,2])+1,
-  #                 trunc( habitat$scaledCoords[i,1])+1] <- i
-  # }
-  
   
   
   ## ------   4. CREATE LOCAL OBJECTS -----
@@ -1003,8 +995,8 @@ makeRovquantData_bear <- function(
                           n.years = dim(y.alive)[3],
                           n.habwindows = nrow(habitat$habitat.df),
                           n.counties = max(detectors$detectors.df$counties),
-                          y.max = nrow(habitat$localObjects$habitatGrid),
-                          x.max = ncol(habitat$localObjects$habitatGrid),
+                          y.max = nrow(detectors$localObjects$habitatGrid),
+                          x.max = ncol(detectors$localObjects$habitatGrid),
                           lengthYCombined = y.sparse$lengthYCombined,
                           localDetNumMax = detectors$localObjects$numLocalIndicesMax,
                           county = detectors$detectors.df$counties)
@@ -1161,7 +1153,7 @@ makeRovquantData_bear <- function(
                           trapCoords = detectors$scaledCoords,
                           lowerCoords = habitat$scaledLowerCoords,                    
                           upperCoords = habitat$scaledUpperCoords,
-                          habitatGrid = habitat$localObjects$habitatGrid,
+                          habitatGrid = detectors$localObjects$habitatGrid,
                           baseIntensities = rep(2,nimConstants$n.habwindows),
                           sd = 1,
                           radius = habitat$maxDist)
@@ -1183,13 +1175,13 @@ makeRovquantData_bear <- function(
     # y.sparse$yCombined[16,1, ]
     # s.init[16, ,3] <-  c(18.9,46.34)
     # tmp <- trunc(s.init[16, ,3]) + 1
-    # habitat$localObjects$habitatGrid[tmp[2],tmp[1]]
+    # detectors$localObjects$habitatGrid[tmp[2],tmp[1]]
     #
     # dist[222, ]
     # y.sparse$yCombined[222,1, ]
     # s.init[222, ,7] <- (s.init[222, ,8] + s.init[222, ,6])/2
     # tmp <- trunc(s.init[222, ,7]) + 1
-    # habitat$localObjects$habitatGrid[tmp[2],tmp[1]]
+    # detectors$localObjects$habitatGrid[tmp[2],tmp[1]]
     # 
     # ##-- Check AC-movement distances (again)
     # test <- s.init
@@ -1214,7 +1206,7 @@ makeRovquantData_bear <- function(
                      upperHabCoords = habitat$scaledUpperCoords, 
                      habCovs = cbind(habitat$habitat.df$dead.reco.trunc,
                                      habitat$habitat.df$skandObs.smooth),
-                     habitatGrid = habitat$localObjects$habitatGrid,
+                     habitatGrid = detectors$localObjects$habitatGrid,
                      alpha = c(1,1),
                      ones.dead = rep(1,dim(y.alive)[3]-1),
                      detCoords = detectors$scaledCoords,
