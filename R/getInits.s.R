@@ -43,6 +43,7 @@ getInits.s <- function( y,
                         detNums = NULL,
                         detIndices = NULL,
                         radius = NULL){
+  
   ## ----- 1. Function set-up -----
   
   ##-- Inner function to create equally spaced points 
@@ -190,19 +191,19 @@ getInits.s <- function( y,
           
           ##-- Check if new points are in valid habitat
           outsideHab <- apply(tmp, 2, function(p){
-            is.na(habitatGrid[trunc(p[2])+1, trunc(p[1])+1])
+            habitatGrid[trunc(p[2])+1, trunc(p[1])+1] <= 0
           })
           
           ##-- If not ...
           if(any(outsideHab)){
             ##-- Find out the closest habitat grid cell
             whichOut <- which(outsideHab)
-            closest <- RANN::nn2( data = trapCoords,
+            closest <- RANN::nn2( data = lowerCoords+0.5,
                                   query = data.frame( tmp[1,whichOut],
                                                       tmp[2,whichOut]),
                                   k = 1, 
                                   searchtype = "radius",
-                                  radius = )
+                                  radius = radius)
             
             ##-- Sample uniform AC location in closest habitat grid cell
             tmp[1,which(outsideHab)] <- runif( n = length(whichOut),
