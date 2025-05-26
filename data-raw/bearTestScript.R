@@ -90,9 +90,8 @@ for (s in c("female", "male")) {
   detsPerYear <- apply(nimData$y.alive,c(1,3), function(x){
     ifelse(x[1] > 0, sum(x[2:(x[1]+1)]), 0)
   })
-  
   numSamplesPerYear <- colSums(detsPerYear)
-  numIdsPerYear <- colSums(detsPerYear>0)
+  numIdsPerYear <- colSums(detsPerYear > 0)
   
   ##-- Build nimble model object
   model <- nimbleModel( code = modelCode,

@@ -222,21 +222,6 @@ makeRovquantData_bear <- function(
     pattern = "CleanData_bear",
     extension = ".RData")
   
-  # ##-- Define legal mortality causes
-  # MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
-  # legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
-  # legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
-  # legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
-  # legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
-  # legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
-  # legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
-  # 
-  # myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
-  #   dplyr::mutate( legal = ifelse(Death_cause %in% legalCauses, "yes", "no"))
-  # 
-  # legal.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "yes")
-  # Other.death <- dplyr::filter(myFullData.sp$dead.recovery, legal %in% "no")
-  
   ##-- Define years
   if(is.null(years)){
     years <- sort(unique(c(myFullData.sp$alive$Year,
@@ -754,7 +739,8 @@ makeRovquantData_bear <- function(
   }#t
   dev.off()
   
-
+  
+  
   ## ------     6.3. SAVE FILTERED DATA ----- 
 
   save( data.alive, data.dead,
@@ -762,7 +748,7 @@ makeRovquantData_bear <- function(
                           paste0("FilteredData_bear_", DATE, ".RData")))
   
   
-    
+  
   ## ------   7. GENERATE DETECTION HISTORY ------
   
   for(thisSex in sex){
@@ -1110,7 +1096,6 @@ makeRovquantData_bear <- function(
     
 
     
-    
     ## ------     3.4. GENERATE sxy & sxy.init ARRAYS -----
     
     ##-- Provide sxy as data for recovered individuals
@@ -1264,8 +1249,7 @@ makeRovquantData_bear <- function(
   }#thisSex
   
   
-  
-  
+
   ## ------   8. RETURN IMPORTANT INFOS FOR REPORT ------
   return(list( SPECIES = "Brown bear",
                engSpecies = "bear",
