@@ -80,11 +80,19 @@ makeRovquantData(
 ## ----- IV. CHECK OPSCR DATA ------
 
 for (s in c("female", "male")) {
-  
+
   ##-- Load first input
   input <- list.files( file.path( working.dir, "nimbleInFiles", s ),
                        full.names = TRUE)
   load(input[1])
+
+  ##-- Table of #of detections 
+  detsPerYear <- apply(nimData$y.alive,c(1,3), function(x){
+    ifelse(x[1] > 0, sum(x[2:(x[1]+1)]), 0)
+  })
+  
+  numSamplesPerYear <- colSums(detsPerYear)
+  numIdsPerYear <- colSums(detsPerYear>0)
   
   ##-- Build nimble model object
   model <- nimbleModel( code = modelCode,
@@ -92,7 +100,7 @@ for (s in c("female", "male")) {
                         inits = nimInits,
                         data = nimData,
                         check = FALSE,
-                        calculate = FALSE) 
+                        calculate = FALSE)
   model$calculate()
   # which( is.infinite(model$logProb_sxy), arr.ind = TRUE)
   # model$sxy[15, , ]
@@ -109,7 +117,7 @@ for (s in c("female", "male")) {
 ## -----   1. Females ------
 
 ##-- List all prepared input files
-inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/Hunn"),
+inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/female"),
                           full.names = T)
 
 ##-- Load the first one
@@ -139,14 +147,14 @@ Cmcmc <- compiledList$mcmc
 system.time(runMCMCbites( mcmc = Cmcmc,
                           bite.size = 100,
                           bite.number = 5,
-                          path = file.path(working.dir,"nimbleOutfiles/Hunn")))
+                          path = file.path(working.dir,"nimbleOutfiles/female")))
 
 
 
 ## -----   2. Males ------
 
 ##-- List all prepared input files
-inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/Hann"),
+inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/male"),
                          full.names = T)
 
 ##-- Load the first one
@@ -160,7 +168,8 @@ model <- nimbleModel( code = modelCode,
                       check = FALSE,
                       calculate = FALSE) 
 model$calculate()
-cmodel <- compileNimble(model)
+
+åcmodel <- compileNimble(model)
 conf <- configureMCMC(model,
                       monitors = nimParams,
                       thin = 1,
