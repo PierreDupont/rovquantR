@@ -448,14 +448,14 @@ nimData_F <- nimData
 
 This data is then formatted for use in the following Nimble model:
 
-```{r, nimble model, echo = TRUE}
+```{r, nimble model, echo = FALSE}
 modelCode
 ```
 
 
 Once formatted into individual detection histories, we can look at some summary statistics such as the number of detectors at which an individual is detected  (total), number of individual detections per individual (each year), pairwise distance between detections (in the same year ==> equivalent to sigma), distance between consecutive naive activity centers (equivalent to Tau.)
 
-```{r, nimble data, echo = TRUE}
+```{r, nimble data, echo = FALSE}
 
 # NGSCountrySEX <- matrix("", ncol = n.years*2, nrow = 4)
 # row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")

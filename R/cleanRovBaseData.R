@@ -437,25 +437,35 @@ cleanRovbaseData <- function(
                   !is.na(Year))
   
   
-  ##-- FIlter out problematic samples
-  numDupId_DR <- sum(duplicated(DR$Id))          ## number of individuals w/ multiple dead recoveries
-  numInDNA_notinDR <- sum(!DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) ## number of 'dead recovery" samples in DNA only
+  ##-- Filter out problematic samples
   
+  ##-- Duplicated dead recoveries
+  numDupId_DR <- sum(duplicated(DR$Id))  
   dupId_DR <- NULL
   if(numDupId_DR > 0){
     ##-- Identify duplicated dead recoveries
-    dupId_DR <- DR[DR$Id == DR$Id[duplicated(DR$Id)], c("DNAID", "RovbaseID", "DNAID")]
+    dupId_DR <- DR[DR$Id == DR$Id[duplicated(DR$Id)], c("DNAID", "RovbaseID", "Id")]
     ##-- Remove duplicated individuals (keeping the last occurrence)
     DR <- dplyr::filter(DR, !duplicated(Id, fromLast = T))
   }
   
-  inDNA_notinDR <- NULL
-  if(numInDNA_notinDR > 0){
+  ##-- Number of 'dead recovery" samples in DNA only: DNAID 
+  numDNAID_InDNA_notinDR <- sum(!DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
+  DNAID_inDNA_notinDR <- NULL
+  if(numDNAID_InDNA_notinDR > 0){
     ##-- Identify dead recoveries only in DNA
     tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
-    inDNA_notinDR <- tmp[!tmp$DNAID %in% DR$DNAID, c("DNAID", "RovbaseID", "Id")]
+    DNAID_inDNA_notinDR <- tmp[!tmp$DNAID %in% DR$DNAID, c("DNAID", "RovbaseID", "Id")]
   } 
   
+  ##-- Number of 'dead recovery" samples in DNA only: RovbaseID
+  numRovbaseID_InDNA_notinDR <- sum(!DNA$RovbaseID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$RovbaseID) 
+  rovbaseID_inDNA_notinDR <- NULL
+  if(numRovbaseID_InDNA_notinDR > 0){
+    ##-- Identify dead recoveries only in DNA
+    tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
+    RovbaseID_inDNA_notinDR <- tmp[!tmp$RovbaseID %in% DR$RovbaseID, c("DNAID", "RovbaseID", "Id")]
+  } 
 
   ##-- Check which data is duplicated
   duplicateData <- dplyr::inner_join( DNA, DR,
