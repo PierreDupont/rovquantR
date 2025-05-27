@@ -511,7 +511,7 @@ kable( numId_sexYear,
 numDeads_sexYear <- rbind( colSums(nimData_F$y.dead.legal),
                            colSums(nimData_F$y.dead.other),
                            colSums(nimData_M$y.dead.legal),
-                           colSums(nimData_FM$y.dead.other))
+                           colSums(nimData_M$y.dead.other))
 if(length(dim(numDeads_sexYear)) > 1){
   numDeads_sexYear <- cbind(numDeads_sexYear,rowSums(numDeads_sexYear))
   colnames(numDeads_sexYear) <- c(years,"Total")
