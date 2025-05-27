@@ -314,7 +314,7 @@ kable(sexTab, align = "lc") %>%
 
 - `r info.ls$numRovbaseID_inDNA_notinDR` samples presumably associated with a dead recovery ('RovbaseID' starting with 'M') had a 'RovbaseID' registered in the NGS data file but not in the dead recovery file. 
 
-`r if(!is.null(info.ls$rovbaseID_inDNA_notinDR)){info.ls$rovbaseID_inDNA_notinDR}`
+`r if(!is.null(info.ls$RovbaseID_inDNA_notinDR)){info.ls$RovbaseID_inDNA_notinDR}`
 
 
 - `r info.ls$numDupData` samples in the NGS data file were duplicated in the dead recovery file. `r if(info.ls$numDupData > 0) { paste0(" These samples were flagged and saved in '", engSpecies, "_DR in DNA_", years[1]," to ", years[length(years)], ".csv'") }`

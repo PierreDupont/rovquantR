@@ -460,7 +460,7 @@ cleanRovbaseData <- function(
   
   ##-- Number of 'dead recovery" samples in DNA only: RovbaseID
   numRovbaseID_inDNA_notinDR <- sum(!DNA$RovbaseID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$RovbaseID) 
-  rovbaseID_inDNA_notinDR <- NULL
+  RovbaseID_inDNA_notinDR <- NULL
   if(numRovbaseID_inDNA_notinDR > 0){
     ##-- Identify dead recoveries only in DNA
     tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
