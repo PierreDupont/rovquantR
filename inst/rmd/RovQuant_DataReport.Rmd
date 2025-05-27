@@ -193,20 +193,20 @@ if(length(dim(numDet_sexYear)) > 1){
   rownames(numDet_sexYear) <- c(sex,"Total")
 }
 
-NGSCountrySEX <- matrix("", ncol = n.years*2, nrow = 4)
-row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")
-colnames(NGSCountrySEX) <- unlist(lapply(years,function(x) c(x,x)))
-NGSCountrySEX[1,] <- rep(c("F","M"),n.years)
-sex1 <- c(0,1)
-ye <- seq(1,n.years*2,by=2)
-for(s in 1:2){
-  for(t in 1:n.years){
-    temp <- ngs[ngs$Year == years[t] & ngs$Sex==sex[s], ]
-    NGSCountrySEX["Norway",ye[t] + sex1[s] ] <- nrow(temp[temp$Country_sf %in% "(N)", ])
-    NGSCountrySEX["Sweden",ye[t] + sex1[s]] <- nrow(temp[temp$Country_sf %in% "(S)", ])
-    NGSCountrySEX["Total",ye[t] + sex1[s]] <- nrow(temp[temp$Country_sf %in% c("(S)","(N)"), ])
-  }#t
-}
+# NGSCountrySEX <- matrix("", ncol = n.years*2, nrow = 4)
+# row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")
+# colnames(NGSCountrySEX) <- unlist(lapply(years,function(x) c(x,x)))
+# NGSCountrySEX[1,] <- rep(c("F","M"),n.years)
+# sex1 <- c(0,1)
+# ye <- seq(1,n.years*2,by=2)
+# for(s in 1:2){
+#   for(t in 1:n.years){
+#     temp <- ngs[ngs$Year == years[t] & ngs$Sex==sex[s], ]
+#     NGSCountrySEX["Norway",ye[t] + sex1[s] ] <- nrow(temp[temp$Country_sf %in% "(N)", ])
+#     NGSCountrySEX["Sweden",ye[t] + sex1[s]] <- nrow(temp[temp$Country_sf %in% "(S)", ])
+#     NGSCountrySEX["Total",ye[t] + sex1[s]] <- nrow(temp[temp$Country_sf %in% c("(S)","(N)"), ])
+#   }#t
+# }
 
 
 ##-- Number of NGS samples collected per country
@@ -270,25 +270,25 @@ knitr::include_graphics(file.path(working.dir, "figures/NGS_TimeSeries.png"))
 A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. . These samples were associated with  `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. We did not include individuals with unknown sex in this analysis.
 
 ```{r, ngs data1, echo = FALSE, collapse = TRUE}
-NGSCountry_F <- NGSCountrySEX[-1,NGSCountrySEX[1, ]%in%c("F")]
+# NGSCountry_F <- NGSCountrySEX[-1,NGSCountrySEX[1, ]%in%c("F")]
   
-NGSCountry_M <- NGSCountrySEX[-1,NGSCountrySEX[1, ]%in%c("M")]
+# NGSCountry_M <- NGSCountrySEX[-1,NGSCountrySEX[1, ]%in%c("M")]
 
-kable( NGSCountry_F, 
+kable( numDet_sexYear, 
        align = "lc",
-       caption = paste0("Annual number of female non-invasive genetic samples included in the analysis. Numbers are reported by country and year. We included only samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
+       caption = paste0("Annual number of ", species," non-invasive genetic samples included in the analysis. Numbers are reported by sex and for each year. We included only samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
   kable_styling(full_width = F)
 
-kable( NGSCountry_M, 
-       align = "lc",
-       caption = paste0("Annual number of male non-invasive genetic samples included in the analysis. Numbers are reported by country and year. We included only samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
-  kable_styling(full_width = F)
+# kable( NGSCountry_M, 
+#        align = "lc",
+#        caption = paste0("Annual number of male non-invasive genetic samples included in the analysis. Numbers are reported by country and year. We included only samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
+#   kable_styling(full_width = F)
 ```
 
 ```{r, ngs data2, echo = FALSE, collapse = TRUE}
 kable( numId_sexYear,
        align = "lc",
-      caption = paste0("Annual number of individual ",species,"  detected via non-invasive genetic sampling and included in the analysis. Numbers are reported by country, for females and males, and for each year.We included only individuals associated with samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Some individuals were detected in both countries during the same year, hence the sum of the national counts can exceed the total number of unique individuals detected in Scandinavia.")) %>%
+      caption = paste0("Annual number of individual ", species,"  detected via non-invasive genetic sampling and included in the analysis. Numbers are reported by sex and for each year. We included only individuals associated with samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Some individuals were detected in both countries during the same year, hence the sum of the national counts can exceed the total number of unique individuals detected in Scandinavia.")) %>%
   kable_styling(full_width = F)
 ```
 
@@ -332,45 +332,70 @@ plot1 + plot2
 ## Dead recovery data
 
 ```{r, dead data1, echo = FALSE, collapse = TRUE}
-Dead_SEX <- matrix(0, ncol = n.years*2+1, nrow = 6)
-row.names(Dead_SEX) <- c("","other","other","legal culling","legal culling","")
-colnames(Dead_SEX) <- c("",unlist(lapply(years, function(x) c(x,x))))
-Dead_SEX[1,] <- c("",rep(c("F","M"),n.years))
-Dead_SEX[,1] <- c("","Norway","Sweden","Norway","Sweden","Total")
-sex <- c("female","male")
-sex1 <- c(0,1)
-ye <- seq(1,n.years*2, by = 2)
+# Dead_SEX <- matrix(0, ncol = n.years*2+1, nrow = 6)
+# row.names(Dead_SEX) <- c("","other","other","legal culling","legal culling","")
+# colnames(Dead_SEX) <- c("",unlist(lapply(years, function(x) c(x,x))))
+# Dead_SEX[1,] <- c("",rep(c("F","M"),n.years))
+# Dead_SEX[,1] <- c("","Norway","Sweden","Norway","Sweden","Total")
+# sex <- c("female","male")
+# sex1 <- c(0,1)
+# ye <- seq(1,n.years*2, by = 2)
+# 
+# ##-- Separate mortalities
+# cause <- c("other","legal culling")
+# for(t in 1:n.years){
+#   for(s in 1:2){
+#     for(d in 1:2){
+#       if(d==1){
+#         temp <- data.dead[data.dead$Year == years[t] & data.dead$Sex==sex[s] & data.dead$Legal == "yes", ]
+#       } else {
+#         temp <- data.dead[data.dead$Year == years[t] & data.dead$Sex==sex[s] & data.dead$Legal != "yes", ]
+#       }
+#       row <- which(rownames(Dead_SEX) == cause[d] & Dead_SEX[,1]=="Norway")
+#       Dead_SEX[row,ye[t] + sex1[s]+1 ] <- length(unique(temp$Id[temp$Country_sample %in% "(N)" ]))
+# 
+#       row <- which(rownames(Dead_SEX) == cause[d] & Dead_SEX[,1]=="Sweden" )
+#       Dead_SEX[row,ye[t] + sex1[s]+1] <- length(unique(temp$Id[temp$Country_sample %in% "(S)"]))
+#     }#t
+#     Dead_SEX[6, ye[t] + sex1[s] + 1] <- sum(as.numeric(Dead_SEX[2:6,ye[t] + sex1[s]+1]))
+#   }
+# }
 
-##-- Separate mortalities
-cause <- c("other","legal culling")
-for(t in 1:n.years){
-  for(s in 1:2){
-    for(d in 1:2){
-      if(d==1){
-        temp <- data.dead[data.dead$Year == years[t] & data.dead$Sex==sex[s] & data.dead$Legal == "yes", ]
-      } else {
-        temp <- data.dead[data.dead$Year == years[t] & data.dead$Sex==sex[s] & data.dead$Legal != "yes", ]
-      }
-      row <- which(rownames(Dead_SEX) == cause[d] & Dead_SEX[,1]=="Norway")
-      Dead_SEX[row,ye[t] + sex1[s]+1 ] <- length(unique(temp$Id[temp$Country_sample %in% "(N)" ]))
 
-      row <- which(rownames(Dead_SEX) == cause[d] & Dead_SEX[,1]=="Sweden" )
-      Dead_SEX[row,ye[t] + sex1[s]+1] <- length(unique(temp$Id[temp$Country_sample %in% "(S)"]))
-    }#t
-    Dead_SEX[6, ye[t] + sex1[s] + 1] <- sum(as.numeric(Dead_SEX[2:6,ye[t] + sex1[s]+1]))
-  }
+##-- Number of NGS samples collected per sex and per year 
+numDead_sexYear <- table(data.dead$Sex,data.dead$Year)
+if(length(dim(numDead_sexYear)) > 1){
+  numDead_sexYear <- cbind(numDead_sexYear,rowSums(numDead_sexYear))
+  colnames(numDet_sexYear) <- c(years,"Total")
+  numDead_sexYear <- rbind(numDead_sexYear,colSums(numDead_sexYear))
+  rownames(numDead_sexYear) <- c(sex,"Total")
 }
-
 
 ##-- summary
 ##-- Other causes
-numOther <- sum(as.numeric(Dead_SEX[2:3,2:ncol(Dead_SEX)]))
-numOther_F <- sum(as.numeric(Dead_SEX[2:3,which(Dead_SEX[1,]=="F")]))
-numOther_M <- sum(as.numeric(Dead_SEX[2:3,which(Dead_SEX[1,]=="M")]))
+numOther <- data.dead %>% 
+  filter(!Legal) %>%
+  nrow()
+numOther_F <- data.dead %>% 
+  filter(Sex == "female",
+         !Legal) %>%
+  nrow()
+numOther_M <- data.dead %>% 
+  filter(Sex == "male",
+         !Legal) %>%
+  nrow()
 ##-- legal
-numLegal <- sum(as.numeric(Dead_SEX[4:5,2:ncol(Dead_SEX)]))
-numLegal_F <- sum(as.numeric(Dead_SEX[4:5,which(Dead_SEX[1,]=="F")]))
-numLegal_M <- sum(as.numeric(Dead_SEX[4:5,which(Dead_SEX[1,]=="M")]))
+numLegal <- data.dead %>% 
+  filter(Legal) %>%
+  nrow()
+numLegal_F <- data.dead %>% 
+  filter(Sex == "female",
+         !Legal) %>%
+  nrow()
+numLegal_M <- data.dead %>% 
+  filter(Sex == "male",
+         !Legal) %>%
+  nrow()
 ##-- Total
 numDead <- numLegal + numOther
 numDead_F <- numLegal_F + numOther_F
@@ -409,16 +434,9 @@ knitr::include_graphics(file.path(working.dir, "figures/DEAD_TimeSeries.png"))
 ```
 
 ```{r, dead data2, echo = FALSE, collapse = TRUE}
-Dead_F <- Dead_SEX[-1,c(1,which(Dead_SEX[1,  ]%in% "F"))]
-kable( Dead_F, 
+kable( numDead_sexYear, 
        align = "lc",
-       caption = "Number of cause-specific female dead recoveries included in the OPSCR analysis. Numbers are reported by country, year, and mortality cause. Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.") %>%
-  kable_styling(full_width = F)
-
-Dead_M <- Dead_SEX[-1,c(1,which(Dead_SEX[1, ] %in% "M"))]
-kable( Dead_M, 
-       align = "lc",
-       caption = paste0("Number of cause-specific male dead recoveries included in the OPSCR analysis. Numbers are reported by country, year, and mortality cause. Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.")) %>%
+       caption = "Number of cause-specific dead recoveries included in the OPSCR analysis. Numbers are reported by sex and year. Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.") %>%
   kable_styling(full_width = F)
 ```
 
@@ -428,12 +446,10 @@ kable( Dead_M,
 # Nimble input
 
 ```{r, load input, echo = FALSE}
-load(file.path( working.dir, "nimbleInFiles", "male",
-                paste0("nimbleInput_", date, "_male_1.RData")))
+load(file.path( working.dir, "nimbleInFiles", "male", paste0("nimbleInput_", date, "_male_1.RData")))
 nimData_M <- nimData
 
-load(file.path( working.dir, "nimbleInFiles", "female",
-                paste0("nimbleInput_", date, "_female_1.RData")))
+load(file.path( working.dir, "nimbleInFiles", "female", paste0("nimbleInput_", date, "_female_1.RData")))
 nimData_F <- nimData
 ```
 
@@ -449,19 +465,60 @@ Once formatted into individual detection histories, we can look at some summary 
 
 ```{r, nimble data, echo = TRUE}
 
-  ##-- Table of #of detections 
-  detsPerYear_M <- apply(nimData_M$y.alive,c(1,3), function(x){
-    ifelse(x[1] > 0, sum(x[2:(x[1]+1)]), 0)
-  })
-  numSamplesPerYear_M  <- colSums(detsPerYear_M)
-  numIdsPerYear_M  <- colSums(detsPerYear_M > 0)
-  
-  ##-- Table of #of detections 
-  detsPerYear_F <- apply(nimData_F$y.alive,c(1,3), function(x){
-    ifelse(x[1] > 0, sum(x[2:(x[1]+1)]), 0)
-  })
-  numSamplesPerYear_F <- colSums(detsPerYear_F)
-  numIdsPerYear_F <- colSums(detsPerYear_F > 0)
+# NGSCountrySEX <- matrix("", ncol = n.years*2, nrow = 4)
+# row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")
+# colnames(NGSCountrySEX) <- unlist(lapply(years,function(x) c(x,x)))
+# NGSCountrySEX[1,] <- rep(c("F","M"),n.years)
+# sex1 <- c(0,1)
+# ye <- seq(1,n.years*2,by=2)
+# for(s in 1:2){
+#   for(t in 1:n.years){
+#     temp <- ngs[ngs$Year == years[t] & ngs$Sex==sex[s], ]
+#     NGSCountrySEX["Norway",ye[t] + sex1[s] ] <- nrow(temp[temp$Country_sf %in% "(N)", ])
+#     NGSCountrySEX["Sweden",ye[t] + sex1[s]] <- nrow(temp[temp$Country_sf %in% "(S)", ])
+#     NGSCountrySEX["Total",ye[t] + sex1[s]] <- nrow(temp[temp$Country_sf %in% c("(S)","(N)"), ])
+#   }#t
+# }
+
+
+
+##-- Number of detections used 
+detsPerYear_F <- apply(nimData_F$y.alive,c(1,3), function(x){
+  ifelse(x[1] > 0, sum(x[2:(x[1]+1)]), 0)
+})
+detsPerYear_M <- apply(nimData_M$y.alive,c(1,3), function(x){
+  ifelse(x[1] > 0, sum(x[2:(x[1]+1)]), 0)
+})
+
+##-- Number of sub-detectors "activated"
+numSamples_sexYear <- rbind(colSums(detsPerYear_F), colSums(detsPerYear_M))
+if(length(dim(numSamples_sexYear)) > 1){
+  numSamples_sexYear <- cbind(numSamples_sexYear,rowSums(numSamples_sexYear))
+  colnames(numSamples_sexYear) <- c(years,"Total")
+  numSamples_sexYear <- rbind(numSamples_sexYear,colSums(numSamples_sexYear))
+  rownames(numSamples_sexYear) <- c(sex,"Total")
+}
+
+##-- Number of individuals used 
+numIds_sexYear <- rbind(colSums(detsPerYear_F > 0), colSums(detsPerYear_M > 0))
+if(length(dim(numSamples_sexYear)) > 1){
+  numIds_sexYear <- cbind(numIds_sexYear,rowSums(numIds_sexYear))
+  colnames(numIds_sexYear) <- c(years,"Total")
+  numIds_sexYear <- rbind(numIds_sexYear,colSums(numIds_sexYear))
+  rownames(numIds_sexYear) <- c(sex,"Total")
+}
+
+
+##-- Number of dead recoveries used
+detsPerYear_ <- apply(nimData_F$,c(1,3), function(x){
+  ifelse(x[1] > 0, sum(x[2:(x[1]+1)]), 0)
+})
+numDeads_sexYear <- rbind(
+  "Female legal" = colSums(nimData_F$y.dead.legal),
+  "Female other" = colSums(nimData_F$y.dead.other),
+  "Male legal" = colSums(nimData_M$y.dead.legal),
+  "Male other" = colSums(nimData_FM$y.dead.other))
+
 
 ```
 
