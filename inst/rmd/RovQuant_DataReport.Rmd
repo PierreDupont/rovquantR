@@ -88,24 +88,24 @@ In order to better capture the distribution of individual activity centers throu
 
 ```{r, hab grid, echo = FALSE, fig.align = "center",fig.cap = "Figure 1: Habitat characteristics"}
 if(length(covNames) <= 0){
-mapview( x = habitat$grid[ ,"Habitat"],
-         legend = FALSE,
-         layer.name =  "Habitat",        
-         map.types = c( "OpenStreetMap.DE",
-                        "OpenTopoMap",
-                        "Esri.WorldShadedRelief")) 
-} else {
-mapview( x = habitat$grid[ ,"Habitat"],
-         legend = FALSE,
-         layer.name =  "Habitat",        
-         map.types = c( "OpenStreetMap.DE",
-                        "OpenTopoMap",
-                        "Esri.WorldShadedRelief")) +
-  mapview( x = habitat$grid,
-           hide = TRUE,
+  mapview( x = habitat$grid[ ,"Habitat"],
            legend = FALSE,
-           alpha.regions = 0.9,
-           zcol = c(covNames))
+           layer.name =  "Habitat",        
+           map.types = c( "OpenStreetMap.DE",
+                          "OpenTopoMap",
+                          "Esri.WorldShadedRelief")) 
+} else {
+  mapview( x = habitat$grid[ ,"Habitat"],
+           legend = FALSE,
+           layer.name =  "Habitat",        
+           map.types = c( "OpenStreetMap.DE",
+                          "OpenTopoMap",
+                          "Esri.WorldShadedRelief")) +
+    mapview( x = habitat$grid,
+             hide = TRUE,
+             legend = FALSE,
+             alpha.regions = 0.9,
+             zcol = c(covNames))
 }
 ```
 
@@ -136,25 +136,25 @@ In order to better capture the variation in detection probability throughout the
 
 ```{r, det grid, echo = FALSE, fig.align = "center", fig.cap = "Figure 2: Detector characteristics"}
 if(length(covNames) <= 0){
-mapview( x = detectors$grid[ ,"Habitat"],
-         legend = FALSE,
-         layer.name =  "Main detectors",        
-         map.types = c( "OpenStreetMap.DE",
-                        "OpenTopoMap",
-                        "Esri.WorldShadedRelief")) 
-} else {
-mapview( x = detectors$grid[ ,"Habitat"],
-         legend = FALSE,
-         layer.name =  "Main detectors",        
-         map.types = c( "OpenStreetMap.DE",
-                        "OpenTopoMap",
-                        "Esri.WorldShadedRelief"))  +
-  mapview( x = detectors$grid,
-           hide = TRUE,
+  mapview( x = detectors$grid[ ,"Habitat"],
            legend = FALSE,
-           alpha.regions = 0.9,
-           lwd = 0.2,
-           zcol = c(covNames))
+           layer.name =  "Main detectors",        
+           map.types = c( "OpenStreetMap.DE",
+                          "OpenTopoMap",
+                          "Esri.WorldShadedRelief")) 
+} else {
+  mapview( x = detectors$grid[ ,"Habitat"],
+           legend = FALSE,
+           layer.name =  "Main detectors",        
+           map.types = c( "OpenStreetMap.DE",
+                          "OpenTopoMap",
+                          "Esri.WorldShadedRelief"))  +
+    mapview( x = detectors$grid,
+             hide = TRUE,
+             legend = FALSE,
+             alpha.regions = 0.9,
+             lwd = 0.2,
+             zcol = c(covNames))
 }
 ```
 
@@ -209,7 +209,7 @@ if(length(dim(numDet_sexYear)) > 1){
 ##-- Number of NGS samples collected per country
 percCountry <- table(data.alive$data.sp$Country_sample)
 percCountry <- round(percCountry[2]/sum(percCountry)*100)
-                   
+
 ##-- Number of individuals detected per sex and per year
 numId_sexYear <- apply(table(ngs$Id,ngs$Sex,ngs$Year) > 0, c(2,3), sum)
 if(length(dim(numId_sexYear)) > 1){
@@ -225,7 +225,7 @@ df <- ngs %>%
   summarize(., 
             freq = n(),
             .by = c(Id,Sex,Year))
-                 
+
 mu <- summarize( df, 
                  grp.mean = mean(freq),
                  .by = Sex)
@@ -280,7 +280,7 @@ kable( numDet_sexYear,
 ```{r, ngs data2, echo = FALSE, collapse = TRUE}
 kable( numId_sexYear,
        align = "lc",
-      caption = paste0("Annual number of individual ", species,"  detected via non-invasive genetic sampling and included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only individuals associated with samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Some individuals were detected in both countries during the same year, hence the sum of the national counts can exceed the total number of unique individuals detected in Scandinavia.")) %>%
+       caption = paste0("Annual number of individual ", species,"  detected via non-invasive genetic sampling and included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only individuals associated with samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Some individuals were detected in both countries during the same year, hence the sum of the national counts can exceed the total number of unique individuals detected in Scandinavia.")) %>%
   kable_styling(full_width = F)
 ```
 
@@ -428,7 +428,7 @@ knitr::include_graphics(file.path(working.dir, "figures/DEAD_TimeSeries.png"))
 ```{r, dead data2, echo = FALSE, collapse = TRUE}
 kable( numDead_sexYear, 
        align = "lc",
-       caption = "Annual number of ", species," dead recoveries included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only dead recoveries collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.") %>%
+       caption =  paste0("Annual number of ", species, " dead recoveries included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only dead recoveries collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.")) %>%
   kable_styling(full_width = F)
 ```
 
@@ -503,7 +503,7 @@ if(length(dim(numSamples_sexYear)) > 1){
 }
 kable( numId_sexYear,
        align = "lc",
-      caption = paste0("Annual number of individual ", species,"  detected via non-invasive genetic sampling and included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only individuals associated with samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
+       caption = paste0("Annual number of individual ", species,"  detected via non-invasive genetic sampling and included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only individuals associated with samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
   kable_styling(full_width = F)
 
 
@@ -520,9 +520,8 @@ if(length(dim(numDeads_sexYear)) > 1){
 }
 kable( numDeads_sexYear, 
        align = "lc",
-       caption = "Annual number of cause-specific ", species," dead recoveries included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only dead recoveries collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.") %>%
+       caption = paste0("Annual number of cause-specific ", species," dead recoveries included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only dead recoveries collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.")) %>%
   kable_styling(full_width = F)
-
 ```
 
 
