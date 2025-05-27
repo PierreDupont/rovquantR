@@ -439,16 +439,6 @@ cleanRovbaseData <- function(
   
   ##-- Filter out problematic samples
   
-  ##-- Duplicated dead recoveries
-  numDupId_DR <- sum(duplicated(DR$Id))  
-  dupId_DR <- NULL
-  if(numDupId_DR > 0){
-    ##-- Identify duplicated dead recoveries
-    dupId_DR <- DR[DR$Id == DR$Id[duplicated(DR$Id)], c("DNAID", "RovbaseID", "Id")]
-    ##-- Remove duplicated individuals (keeping the last occurrence)
-    DR <- dplyr::filter(DR, !duplicated(Id, fromLast = T))
-  }
-  
   ##-- Number of 'dead recovery" samples in DNA only: DNAID 
   numDNAID_inDNA_notinDR <- sum(!DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
   DNAID_inDNA_notinDR <- NULL
@@ -467,6 +457,16 @@ cleanRovbaseData <- function(
     RovbaseID_inDNA_notinDR <- tmp[!tmp$RovbaseID %in% DR$RovbaseID, c("DNAID", "RovbaseID", "Id")]
   } 
 
+  ##-- Duplicated dead recoveries
+  numDupId_DR <- sum(duplicated(DR$Id))  
+  dupId_DR <- NULL
+  if(numDupId_DR > 0){
+    ##-- Identify duplicated dead recoveries
+    dupId_DR <- DR[DR$Id == DR$Id[duplicated(DR$Id)], c("DNAID", "RovbaseID", "Id")]
+    ##-- Remove duplicated individuals (keeping the last occurrence)
+    DR <- dplyr::filter(DR, !duplicated(Id, fromLast = T))
+  }
+  
   ##-- Check which data is duplicated
   duplicateData <- dplyr::inner_join( DNA, DR,
                                       by = c("Id","RovbaseID","DNAID","Species","Sex",
