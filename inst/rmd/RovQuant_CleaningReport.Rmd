@@ -310,7 +310,8 @@ kable(sexTab, align = "lc") %>%
 
 - `r info.ls$numDNAID_inDNA_notinDR` samples presumably associated with a dead recovery ('RovbaseID' starting with 'M') had a 'DNAID' registered in the NGS data file but not in the dead recovery file. 
 
-`r if(!is.null(info.ls$DNAID_inDNA_notinDR)){info.ls$DNAID_inDNA_notinDR}`
+`r if(!is.null(info.ls$DNAID_inDNA_notinDR)){kable(info.ls$DNAID_inDNA_notinDR, align = "lc") %>% kable_styling(full_width = F)}`
+
 
 - `r info.ls$numRovbaseID_inDNA_notinDR` samples presumably associated with a dead recovery ('RovbaseID' starting with 'M') had a 'RovbaseID' registered in the NGS data file but not in the dead recovery file. 
 
@@ -330,7 +331,7 @@ kable(sexTab, align = "lc") %>%
 
 ## Number of samples
 
-After this clean-up, we are left with `r paste0(samples["Total","Total"],"(NOR = ",samples["(N)","Total"]," ; SWE = ",samples["(S)","Total"], ")")` NGS samples and `r paste0(deadSamples["Total","Total"], "(NOR = ",deadSamples["(N)","Total"]," ; SWE = ",deadSamples["(S)","Total"], ")")` dead recoveries.
+After this clean-up, we are left with `r paste0(samples["Total","Total"]," (NOR = ",samples["(N)","Total"]," ; SWE = ",samples["(S)","Total"], ")")` NGS samples and `r paste0(deadSamples["Total","Total"], " (NOR = ",deadSamples["(N)","Total"]," ; SWE = ",deadSamples["(S)","Total"], ")")` dead recoveries.
 
 ```{r, clean data samples timeSeries, fig.align = "center", fig.cap = paste0("Figure 1: Numbers of ", engSpecies, " non-invasive genetic samples and dead recoveries per month between ", years[1], " and ", years[length(years)], ". Presented are the number of samples that were available in Rovbase and useable for the OPSCR analysis, i.e. with the individual ID, engSpecies, date and coordinates succesfully identified."), echo = FALSE}
 knitr::include_graphics(file.path( working.dir, "figures",
@@ -407,6 +408,7 @@ knitr::include_graphics(file.path( working.dir, "figures",
 
 ------------------------------------------------------------------------
 
+
 # Save clean data
 
 ```{r, save data, echo = F}
@@ -417,9 +419,11 @@ Finally, we save the cleaned **alive** and **dead.recovery** sf objects as a .RD
 
 ------------------------------------------------------------------------
 
+
 # References
 
 ------------------------------------------------------------------------
+
 
 # Metadata
 ```{r, metadata, echo = F}

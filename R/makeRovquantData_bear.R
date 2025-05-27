@@ -600,7 +600,7 @@ makeRovquantData_bear <- function(
   detectors$localObjects <- getLocalObjects(
     habitatMask = habitat$habitat.mx,
     coords = detectors$scaledCoords,
-    dmax = detectors$maxDist/detectors$resolution,
+    dmax = detectors$maxDist/habitat$resolution,
     plot.check = F)
   
   
