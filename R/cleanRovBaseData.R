@@ -1053,7 +1053,7 @@ cleanRovbaseData <- function(
     info.ls$numDupId_DR <- numDupId_DR
     info.ls$dupId_DR <- dupId_DR
     info.ls$numRovbaseID_inDNA_notinDR <- numRovbaseID_inDNA_notinDR
-    info.ls$rovbaseID_inDNA_notinDR <- rovbaseID_inDNA_notinDR
+    info.ls$RovbaseID_inDNA_notinDR <- RovbaseID_inDNA_notinDR
     info.ls$numDNAID_inDNA_notinDR <- numDNAID_inDNA_notinDR 
     info.ls$DNAID_inDNA_notinDR <- DNAID_inDNA_notinDR
     info.ls$numDupData <- numDupData
