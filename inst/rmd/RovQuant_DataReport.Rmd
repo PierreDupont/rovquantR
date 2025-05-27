@@ -181,7 +181,6 @@ We included data from multiple sources, the primary one being the Scandinavian l
 ## Non-invasive genetic samples 
 
 ```{r, ngs data, echo = FALSE, collapse = TRUE}
-
 ngs <- data.alive$data.sp
 
 ##-- Number of NGS samples collected per sex and per year 
@@ -192,7 +191,6 @@ if(length(dim(numDet_sexYear)) > 1){
   numDet_sexYear <- rbind(numDet_sexYear,colSums(numDet_sexYear))
   rownames(numDet_sexYear) <- c(sex,"Total")
 }
-
 # NGSCountrySEX <- matrix("", ncol = n.years*2, nrow = 4)
 # row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")
 # colnames(NGSCountrySEX) <- unlist(lapply(years,function(x) c(x,x)))
@@ -208,12 +206,10 @@ if(length(dim(numDet_sexYear)) > 1){
 #   }#t
 # }
 
-
 ##-- Number of NGS samples collected per country
 percCountry <- table(data.alive$data.sp$Country_sample)
 percCountry <- round(percCountry[2]/sum(percCountry)*100)
                    
-
 ##-- Number of individuals detected per sex and per year
 numId_sexYear <- apply(table(ngs$Id,ngs$Sex,ngs$Year) > 0, c(2,3), sum)
 if(length(dim(numId_sexYear)) > 1){
@@ -222,7 +218,6 @@ if(length(dim(numId_sexYear)) > 1){
   numId_sexYear <- rbind(numId_sexYear,colSums(numId_sexYear))
   rownames(numId_sexYear) <- c(sex,"Total")
 }
-
 
 ##-- Number of NGS samples per individual per year
 df <- ngs %>%
@@ -234,7 +229,6 @@ df <- ngs %>%
 mu <- summarize( df, 
                  grp.mean = mean(freq),
                  .by = Sex)
-
 
 ##-- Distance between the centroid and all detections per id and year 
 IDs <- unique(ngs$Id)
@@ -271,9 +265,7 @@ A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Tota
 
 ```{r, ngs data1, echo = FALSE, collapse = TRUE}
 # NGSCountry_F <- NGSCountrySEX[-1,NGSCountrySEX[1, ]%in%c("F")]
-  
 # NGSCountry_M <- NGSCountrySEX[-1,NGSCountrySEX[1, ]%in%c("M")]
-
 kable( numDet_sexYear, 
        align = "lc",
        caption = paste0("Annual number of ", species," non-invasive genetic samples included in the analysis. Numbers are reported by sex and for each year. We included only samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
@@ -288,7 +280,7 @@ kable( numDet_sexYear,
 ```{r, ngs data2, echo = FALSE, collapse = TRUE}
 kable( numId_sexYear,
        align = "lc",
-      caption = paste0("Annual number of individual ", species,"  detected via non-invasive genetic sampling and included in the analysis. Numbers are reported by sex and for each year. We included only individuals associated with samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Some individuals were detected in both countries during the same year, hence the sum of the national counts can exceed the total number of unique individuals detected in Scandinavia.")) %>%
+      caption = paste0("Annual number of individual ", species,"  detected via non-invasive genetic sampling and included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only individuals associated with samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Some individuals were detected in both countries during the same year, hence the sum of the national counts can exceed the total number of unique individuals detected in Scandinavia.")) %>%
   kable_styling(full_width = F)
 ```
 
@@ -436,7 +428,7 @@ knitr::include_graphics(file.path(working.dir, "figures/DEAD_TimeSeries.png"))
 ```{r, dead data2, echo = FALSE, collapse = TRUE}
 kable( numDead_sexYear, 
        align = "lc",
-       caption = "Number of cause-specific dead recoveries included in the OPSCR analysis. Numbers are reported by sex and year. Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.") %>%
+       caption = "Annual number of ", species," dead recoveries included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only dead recoveries collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.") %>%
   kable_styling(full_width = F)
 ```
 
@@ -479,9 +471,6 @@ Once formatted into individual detection histories, we can look at some summary 
 #     NGSCountrySEX["Total",ye[t] + sex1[s]] <- nrow(temp[temp$Country_sf %in% c("(S)","(N)"), ])
 #   }#t
 # }
-
-
-
 ##-- Number of detections used 
 detsPerYear_F <- apply(nimData_F$y.alive,c(1,3), function(x){
   ifelse(x[1] > 0, sum(x[2:(x[1]+1)]), 0)
@@ -498,6 +487,11 @@ if(length(dim(numSamples_sexYear)) > 1){
   numSamples_sexYear <- rbind(numSamples_sexYear,colSums(numSamples_sexYear))
   rownames(numSamples_sexYear) <- c(sex,"Total")
 }
+kable( numSamples_sexYear, 
+       align = "lc",
+       caption = paste0("Annual number of ", species," individual detections included in the analysis. Numbers are reported by sex and for each year. One detection consists in at least one NGS detection of a given individual in a sub-detector grid cell and may thus correspond to multiple DNA samples collected. We included only samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
+  kable_styling(full_width = F)
+
 
 ##-- Number of individuals used 
 numIds_sexYear <- rbind(colSums(detsPerYear_F > 0), colSums(detsPerYear_M > 0))
@@ -507,18 +501,27 @@ if(length(dim(numSamples_sexYear)) > 1){
   numIds_sexYear <- rbind(numIds_sexYear,colSums(numIds_sexYear))
   rownames(numIds_sexYear) <- c(sex,"Total")
 }
+kable( numId_sexYear,
+       align = "lc",
+      caption = paste0("Annual number of individual ", species,"  detected via non-invasive genetic sampling and included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only individuals associated with samples collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ".")) %>%
+  kable_styling(full_width = F)
 
 
 ##-- Number of dead recoveries used
-detsPerYear_ <- apply(nimData_F$,c(1,3), function(x){
-  ifelse(x[1] > 0, sum(x[2:(x[1]+1)]), 0)
-})
-numDeads_sexYear <- rbind(
-  "Female legal" = colSums(nimData_F$y.dead.legal),
-  "Female other" = colSums(nimData_F$y.dead.other),
-  "Male legal" = colSums(nimData_M$y.dead.legal),
-  "Male other" = colSums(nimData_FM$y.dead.other))
-
+numDeads_sexYear <- rbind( colSums(nimData_F$y.dead.legal),
+                           colSums(nimData_F$y.dead.other),
+                           colSums(nimData_M$y.dead.legal),
+                           colSums(nimData_FM$y.dead.other))
+if(length(dim(numDeads_sexYear)) > 1){
+  numDeads_sexYear <- cbind(numDeads_sexYear,rowSums(numDeads_sexYear))
+  colnames(numDeads_sexYear) <- c(years,"Total")
+  numDeads_sexYear <- rbind(numDeads_sexYear,colSums(numDeads_sexYear))
+  rownames(numDeads_sexYear) <- c("Female legal","Female other","Male legal", "Male other","Total")
+}
+kable( numDeads_sexYear, 
+       align = "lc",
+       caption = "Annual number of cause-specific ", species," dead recoveries included in the OPSCR analysis. Numbers are reported by sex and for each year. We included only dead recoveries collected within the study area during the primary monitoring period between ", years[1], " and ", years[length(years)], ". Note that dead recovery data from the final season were not used in this analysis because survival is modeled as part of the transition from one season to the next.") %>%
+  kable_styling(full_width = F)
 
 ```
 
