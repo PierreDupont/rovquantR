@@ -438,18 +438,37 @@ cleanRovbaseData <- function(
       !is.na(Year))
   
   
-  ##-- FIlter out problematic samples
-  numDupId_DR <- sum(duplicated(DR$Id))          ## number of individuals w/ multiple dead recoveries
-  numInDNA_notinDR <- sum(!DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) ## number of 'dead recovery" samples in DNA only
+  ##-- Filter out problematic samples
   
+  ##-- Number of 'dead recovery" samples in DNA only: DNAID 
+  numDNAID_inDNA_notinDR <- sum(!DNA$DNAID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$DNAID) 
+  DNAID_inDNA_notinDR <- NULL
+  if(numDNAID_inDNA_notinDR > 0){
+    ##-- Identify dead recoveries only in DNA
+    tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
+    DNAID_inDNA_notinDR <- tmp[!tmp$DNAID %in% DR$DNAID, c("DNAID", "RovbaseID", "Id")]
+  } 
+  
+  ##-- Number of 'dead recovery" samples in DNA only: RovbaseID
+  numRovbaseID_inDNA_notinDR <- sum(!DNA$RovbaseID[substr(DNA$RovbaseID,1,1) %in% "M"] %in% DR$RovbaseID) 
+  RovbaseID_inDNA_notinDR <- NULL
+  if(numRovbaseID_inDNA_notinDR > 0){
+    ##-- Identify dead recoveries only in DNA
+    tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
+    RovbaseID_inDNA_notinDR <- tmp[!tmp$RovbaseID %in% DR$RovbaseID, c("DNAID", "RovbaseID", "Id")]
+  } 
+
+  ##-- Duplicated dead recoveries
+  numDupId_DR <- sum(duplicated(DR$Id))  
   dupId_DR <- NULL
   if(numDupId_DR > 0){
     ##-- Identify duplicated dead recoveries
-    dupId_DR <- DR[DR$Id == DR$Id[duplicated(DR$Id)], c("DNAID", "RovbaseID", "DNAID")]
+    dupId_DR <- DR[DR$Id == DR$Id[duplicated(DR$Id)], c("DNAID", "RovbaseID", "Id")]
     ##-- Remove duplicated individuals (keeping the last occurrence)
     DR <- dplyr::filter(DR, !duplicated(Id, fromLast = T))
   }
   
+<<<<<<< HEAD
   inDNA_notinDR <- NULL
   if(numInDNA_notinDR > 0){
     ##-- Identify dead recoveries only in DNA
@@ -458,6 +477,8 @@ cleanRovbaseData <- function(
   } 
   
   
+=======
+>>>>>>> 06433200abfb1736293c7b424c64ecaee6035c5f
   ##-- Check which data is duplicated
   duplicateData <- dplyr::inner_join( DNA, DR,
                                       by = c("Id","RovbaseID","DNAID","Species","Sex",
@@ -1134,8 +1155,10 @@ cleanRovbaseData <- function(
     info.ls$numNoCoords_DR <- numNoCoords_DR
     info.ls$numDupId_DR <- numDupId_DR
     info.ls$dupId_DR <- dupId_DR
-    info.ls$numInDNA_notinDR <- numInDNA_notinDR
-    info.ls$inDNA_notinDR <- inDNA_notinDR
+    info.ls$numRovbaseID_inDNA_notinDR <- numRovbaseID_inDNA_notinDR
+    info.ls$RovbaseID_inDNA_notinDR <- RovbaseID_inDNA_notinDR
+    info.ls$numDNAID_inDNA_notinDR <- numDNAID_inDNA_notinDR 
+    info.ls$DNAID_inDNA_notinDR <- DNAID_inDNA_notinDR
     info.ls$numDupData <- numDupData
     info.ls$samples.to.remove <- samples.to.remove
     if (engSpecies == "bear") {

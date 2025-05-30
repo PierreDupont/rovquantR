@@ -24,15 +24,21 @@
 ## This is based on 'rovquantR' beta version 0.2
 ##   
 ##------------------------------------------------------------------------------
+
+## ------ CLEAR-UP ENVIRONMENT ------
+
 rm(list = ls())
 gc()
 
 
-## ------ IMPORT REQUIRED LIBRARIES ------
+## ------ INSTALL 'rovquantR' FROM GITHUB ------
 
 devtools::install_github("PierreDupont/rovquantR")
 
 ## Ctrl + Shift + F10 (to restart R session)
+
+
+## ------ LOAD REQUIRED LIBRARIES ------
 
 library(rovquantR)
 library(nimbleSCR)
@@ -70,7 +76,6 @@ cleanRovbaseData(
 
 makeRovquantData(    
   species = "bear",
-  # years = 2020:2024,
   data.dir = data.dir,
   working.dir = working.dir)
 
