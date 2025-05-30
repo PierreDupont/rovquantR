@@ -468,17 +468,14 @@ cleanRovbaseData <- function(
     DR <- dplyr::filter(DR, !duplicated(Id, fromLast = T))
   }
   
-<<<<<<< HEAD
-  inDNA_notinDR <- NULL
-  if(numInDNA_notinDR > 0){
-    ##-- Identify dead recoveries only in DNA
-    tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
-    inDNA_notinDR <- tmp[!tmp$DNAID %in% DR$DNAID, c("DNAID", "RovbaseID", "Id")]
-  } 
+  # inDNA_notinDR <- NULL
+  # if(numInDNA_notinDR > 0){
+  #   ##-- Identify dead recoveries only in DNA
+  #   tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
+  #   inDNA_notinDR <- tmp[!tmp$DNAID %in% DR$DNAID, c("DNAID", "RovbaseID", "Id")]
+  # } 
   
-  
-=======
->>>>>>> 06433200abfb1736293c7b424c64ecaee6035c5f
+
   ##-- Check which data is duplicated
   duplicateData <- dplyr::inner_join( DNA, DR,
                                       by = c("Id","RovbaseID","DNAID","Species","Sex",
@@ -681,6 +678,9 @@ cleanRovbaseData <- function(
       DATA$Sex[DATA$IdSimplified %in% Pack_ID2025$IndividID[i]] <- Pack_ID2025$Sex[i]
     }#i
   }
+  
+  
+  
   ##-----   2.6. SPLIT DATA -----
   
   ##-- Split DATA into alive and dead.recovery datasets
