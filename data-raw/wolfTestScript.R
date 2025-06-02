@@ -51,10 +51,10 @@ library(nimbleSCR)
 ##-- DATA DIRECTORY
 ##-- Directory containing the raw data necessary for the analysis
 ##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
-data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Data"
+data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2024/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Analysis"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2024/Analysis"
 
 
 
@@ -62,7 +62,7 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/A
 ## ----- II. CLEAN NGS DATA -----
 
 cleanRovbaseData( 
-  species = "bear",
+  species = "wolf",
   years = 2012:2025,
   data.dir = data.dir,
   working.dir = working.dir,
@@ -75,7 +75,7 @@ cleanRovbaseData(
 ## ----- III. PREPARE OPSCR DATA ------
 
 makeRovquantData(    
-  species = "bear",
+  species = "wolf",
   data.dir = data.dir,
   working.dir = working.dir)
 
@@ -85,12 +85,12 @@ y##-----------------------------------------------------------------------------
 ## ----- IV. CHECK OPSCR DATA ------
 
 for (s in c("female", "male")) {
-
+  
   ##-- Load first input
   input <- list.files( file.path( working.dir, "nimbleInFiles", s ),
                        full.names = TRUE)
   load(input[1])
-
+  
   ##-- Table of #of detections 
   detsPerYear <- apply(nimData$y.alive,c(1,3), function(x){
     ifelse(x[1] > 0, sum(x[2:(x[1]+1)]), 0)
@@ -159,7 +159,7 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 
 ##-- List all prepared input files
 inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/male"),
-                         full.names = T)
+                          full.names = T)
 
 ##-- Load the first one
 load(inputFiles[1]) 
