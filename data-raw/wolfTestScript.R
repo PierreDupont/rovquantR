@@ -1,10 +1,10 @@
 ##------------------------------------------------------------------------------
 ##
-## Script name: RovQuant BEAR OPSCR analysis 
+## Script name: RovQuant WOLF OPSCR analysis 
 ##
 ## Purpose of script: 
 ## This R script performs:
-## 1. the initial cleaning of the Brown bear NGS data downloaded from RovBase.3.0
+## 1. the initial cleaning of the gray wolf NGS data downloaded from RovBase.3.0
 ## 2. the data preparation for the RovQuant OPSCR analysis with the 'nimbleSCR' package
 ## 3. the model fitting using 'nimble' and 'nimbleSCR'
 ## 4. the post-processing of the MCMC output
@@ -44,8 +44,8 @@ library(rovquantR)
 library(nimbleSCR)
 
 
-
 ##------------------------------------------------------------------------------
+
 ## ------ I. SET-UP WORKING ENVIRONMENT ------
 
 ##-- DATA DIRECTORY
@@ -54,11 +54,12 @@ library(nimbleSCR)
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2024/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2024/Analysis"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2024/Test"
 
 
 
 ##------------------------------------------------------------------------------
+
 ## ----- II. CLEAN NGS DATA -----
 
 cleanRovbaseData( 
@@ -72,16 +73,19 @@ cleanRovbaseData(
 
 
 ##------------------------------------------------------------------------------
+
 ## ----- III. PREPARE OPSCR DATA ------
 
 makeRovquantData(    
   species = "wolf",
+  # years = 2020:2024,
   data.dir = data.dir,
   working.dir = working.dir)
 
 
 
-y##------------------------------------------------------------------------------
+##------------------------------------------------------------------------------
+
 ## ----- IV. CHECK OPSCR DATA ------
 
 for (s in c("female", "male")) {
@@ -197,7 +201,7 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 ## ----- V. PROCESS ROVQUANT OUTPUT ------
 
 processRovquantOutput(   
-  species = "bear",
+  species = "wolf",
   data.dir = data.dir,
   working.dir = working.dir)
 
