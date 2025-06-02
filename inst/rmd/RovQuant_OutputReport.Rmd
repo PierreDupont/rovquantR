@@ -86,7 +86,7 @@ COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), 
 
 
 ```{r, summary figure, fig.align = "center", fig.cap = paste0("Density map and ranges of abundance estimated for ", species, " in ",  years[length(years)], "."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/UD_DensityMaps.png"))
+knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
 ```
 
 
