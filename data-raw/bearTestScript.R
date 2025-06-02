@@ -33,16 +33,14 @@ gc()
 
 ## ------ INSTALL 'rovquantR' FROM GITHUB ------
 
-devtools::install_github("PierreDupont/rovquantR")
-
 ## Ctrl + Shift + F10 (to restart R session)
+devtools::install_github("PierreDupont/rovquantR")
 
 
 ## ------ LOAD REQUIRED LIBRARIES ------
 
 library(rovquantR)
 library(nimbleSCR)
-
 
 
 ##------------------------------------------------------------------------------
@@ -54,8 +52,7 @@ library(nimbleSCR)
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Analysis"
-
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Analysis_report"
 
 
 ##------------------------------------------------------------------------------
@@ -63,12 +60,11 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/A
 
 cleanRovbaseData( 
   species = "bear",
-  years = 2012:2025,
+  years = 2015:2025,
   data.dir = data.dir,
   working.dir = working.dir,
   two.sex = TRUE,
   print.report = TRUE)
-
 
 
 ##------------------------------------------------------------------------------
@@ -80,8 +76,7 @@ makeRovquantData(
   working.dir = working.dir)
 
 
-
-y##------------------------------------------------------------------------------
+##------------------------------------------------------------------------------
 ## ----- IV. CHECK OPSCR DATA ------
 
 for (s in c("female", "male")) {
