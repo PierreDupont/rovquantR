@@ -572,22 +572,28 @@ cleanRovbaseData <- function(
       dplyr::mutate(across(where(is.factor), as.character)) %>%
       ##-- Add some columns
       dplyr::mutate( 
-        ##-- Fix unknown "Id"
-        Id = ifelse(Id %in% "", NA, Id),
-        ##-- Fix unknown "Sex"
         Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
         Sex = ifelse(is.na(Sex), "unknown", Sex),
         Sex = ifelse(Sex %in% "Hona", "female", Sex),
         Sex = ifelse(Sex %in% "Hane", "male", Sex))  
     
+    
+    
+    ############################################################################
+    
+    ### CHECK ###
+    
     ##-- Overwrite gender from Micke's data when available
-    micke.sex <- as.character(unlist(lapply(DATA$Id,
-                                            function(i){ 
-                                              INDIVIDUAL_ID[as.character(INDIVIDUAL_ID$`Individ (Rovbase)`) %in% i,"Sex"][1]
-                                            })))
+    micke.sex <- unlist(lapply(DATA$Id,
+                               function(i){ 
+                                 INDIVIDUAL_ID[INDIVIDUAL_ID$`Individ (Rovbase)` %in% i, "Sex"][1]
+                               }))
     DATA$Sex <- ifelse(!is.na(micke.sex), micke.sex, DATA$Sex)
     
     numOverwiteSex <- sum(unique(INDIVIDUAL_ID$`Individ (Rovbase)`) %in% DATA$Id)
+    ############################################################################
+    
+    
     
     
     ##-- THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2022/23.
