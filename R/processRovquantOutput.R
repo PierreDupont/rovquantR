@@ -45,7 +45,7 @@ processRovquantOutput <- function(
   
   ##-- MCMC processing
   species = c("bear","wolf","wolverine"),
-  nburnin = 0,
+  nburnin = 5,
   
   ##-- Density extraction
   niter = 100,
