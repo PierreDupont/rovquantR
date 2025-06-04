@@ -32,19 +32,23 @@ species <- params$species
 working.dir <- params$working.dir
 date <- params$date
 
+##-- Species
 if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
   engSpecies <- "bear"
   norSpecies <- "Bjørn"
+  latSpecies <- "Ursus arctos"
   species <- "Brown bear"
 }
 if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
   engSpecies <- "wolf"
   norSpecies <- "Ulv"
+  latSpecies <- "Canis lupus"
   species <- "Gray wolf"
 }
 if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
   engSpecies <- "wolverine"
   norSpecies <- "Jerv"
+  latSpecies <- "Gulo gulo"
   species <- "Wolverine"
 }
 
