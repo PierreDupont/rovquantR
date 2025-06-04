@@ -116,7 +116,7 @@ RovQuant reported abundance estimates for wolverines and wolves (Canis lupus) on
 
 -   Annual estimates of survival, cause-specific mortality, recruitment, and population growth rate (with credible intervals).
 
-cEstimated proportion of individuals detected through non-invasive genetic sampling (with credible intervals).
+-   Estimated proportion of individuals detected through non-invasive genetic sampling (with credible intervals).
 
 `r if(engSpecies == “bear”){ paste(“Although RovQuant aims to provide comprehensive analyses of large carnivore populations throughout their entire range in Norway and Sweden, we only analyzed and present results for the Norwegian monitoring data in this report. Previous analyses revealed multiple difficulties related to the Swedish brown bear non-invasive genetic monitoring data (Dupont et al., 2023a; Milleret et al., 2024a), leading among other things to inconsistent results across model permutations when the Scandinavian brown bear monitoring data were analyzed jointly for Norway and Sweden (Dupont et al., 2023b).”)}` 
 

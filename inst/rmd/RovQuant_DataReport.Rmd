@@ -175,7 +175,7 @@ load(file.path( working.dir, "data",
 
 ```
 
-We included data from multiple sources, the primary one being the Scandinavian large carnivore database [RovBase 3.0](https://rovbase.no/) (rovbase.se and rovbase.no; last extraction: `r extractDate`). This database is used jointly by Norway and Sweden to record detailed information associated with large carnivore monitoring, including, but not limited to, non-invasive genetic sampling (NGS) data and dead recoveries. In the following sections, we describe the various types of data used in the analysis. We used data collected during during ten consecutive monitoring seasons from `r years[1]` to `r years[length(years)]`.
+We included data from multiple sources, the primary one being the Scandinavian large carnivore database [RovBase 3.0](https://rovbase.no/) (rovbase.se and rovbase.no; last extraction: `r extractDate`). This database is used jointly by Norway and Sweden to record detailed information associated with large carnivore monitoring, including, but not limited to, non-invasive genetic sampling (NGS) data and dead recoveries. In the following sections, we describe the various types of data used in the analysis. We used data collected during `r length(years)` consecutive monitoring seasons from `r years[1]` to `r years[length(years)]`.
 
 
 ## Non-invasive genetic samples 
