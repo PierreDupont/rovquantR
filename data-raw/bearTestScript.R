@@ -189,10 +189,10 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 
 
 ##------------------------------------------------------------------------------
-## ----- V. PROCESS ROVQUANT OUTPUT ------
+## ----- VI. PROCESS ROVQUANT OUTPUT ------
 
 processRovquantOutput(   
-  species = "bear",
+  species = "Brown bear",
   data.dir = data.dir,
   working.dir = working.dir)
 

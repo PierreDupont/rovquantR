@@ -208,9 +208,9 @@ getMostRecent <- function(
                 pattern, "' was found in the specified directory: \n",  path))
   }
   
-  dirTest |>
-    file.mtime() |>
-    max() |>
+  dirTest %>%
+    file.mtime() %>%
+    max() %>%
     as.Date()
 }
 
