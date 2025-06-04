@@ -1,6 +1,6 @@
 ---
 params:
-  species: "bear"
+  species: "Brown bear"
   years: !r 2012:as.numeric(format(Sys.Date(), "%Y"))
   sex: !r c("female","male") 
   date: !r Sys.Date()   

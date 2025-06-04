@@ -1,13 +1,12 @@
 ---
 params:
-  species: "bear"
-  years: 2012:2024
+  species: "Brown bear"
+  years: !r 2012:2024
   date: !r Sys.Date()   
   working.dir: !r getwd()
 title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
 subtitle : "RovQuant - OPSCR Results"
 output:
-  pdf_document: default
   html_document: 
     theme: "cerulean" 
     toc_depth: 2
@@ -16,17 +15,13 @@ output:
     df_print: kable
     #css: bootstrap.css
     highlight: zenburn
-    #fig_caption: true
+  pdf_document: default
   word_document: default
 ---
 
 
 ```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
-years <- if(is.null(params$years)){ 
-  2012:as.numeric(format(Sys.Date(), "%Y"))
-} else { 
-  params$years
-}
+years <- params$years
 n.years <- length(years)
 species <- params$species
 working.dir <- params$working.dir
@@ -58,13 +53,13 @@ months = c("January","February","March","April","May","June",
 
 ##-- load libraries
 library(kableExtra)
-library(ggplot2)
-library(sf)
-library(ggmap)
-library(patchwork)
+library(rovquantR)
+#library(ggplot2)
+#library(sf)
+#library(ggmap)
+#library(patchwork)
 # library(mapview)
 # mapviewOptions(fgb = FALSE)
-library(rovquantR)
 #library(magick)
 
 ##-- Load pre-processed habitat shapefiles
@@ -81,12 +76,14 @@ extractDate <- sub("^.*_(.*)\\.RData$", "\\1",  fileName)
 ##-- Load detectors
 load(file.path( working.dir, "data", paste0("Detectors_", engSpecies, "_", date, ".RData")))
 
-##-- Load density
-load(file.path( working.dir, "data", paste0("Density_", engSpecies,"_", date, ".RData")))
-
 ##-- Load results tables
-N_LastYear <- read.csv(file.path( working.dir, "tables/Abundance_LastYearPerSex.csv"))
-N_All <- read.csv(file.path( working.dir, "tables/Abundance_AllYears.csv"))
+N_LastYear <- read.csv(file.path( working.dir, "tables/Abundance_LastYearPerSex.csv"), check.names = F, row.names = 1)
+N_All <- read.csv(file.path( working.dir, "tables/Abundance_AllYears.csv"),check.names = F, row.names = 1)
+
+##-- Extract abundances for the last year
+CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Total"]), "-")[[1]])
+CI_F <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Females"]), "-")[[1]])
+CI_M <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Males"]), "-")[[1]])
 ```
 
 ### `r Sys.Date()`
@@ -94,13 +91,13 @@ N_All <- read.csv(file.path( working.dir, "tables/Abundance_AllYears.csv"))
 
 # Introduction
 
-Non-invasive genetic sampling (NGS) and dead recoveries are a centerpiece of national and regional large carnivore monitoring in Norway and Sweden. Accordingly, the Scandinavian `r species` (*`r latSpecies`*) population is monitored annually using non-invasive genetic sampling (NGS) and recovery of dead individuals and both countries have collected an extensive individual-based data set publicly available and stored in the Scandinavian large carnivore database Rovbase ([rovbase.no](https://www.rovbase.no/), [rovbase.se]( https://www.rovbase.se/)).
+Non-invasive genetic sampling (NGS) and dead recoveries are a centerpiece of national and regional large carnivore monitoring in Norway and Sweden. Accordingly, the Scandinavian `r species` (*`r latSpecies`*) population is monitored annually using non-invasive genetic sampling (NGS) and recovery of dead individuals and both countries have collected an extensive individual-based data set publicly available and stored in the Scandinavian large carnivore database Rovbase ([rovbase.no](https://www.rovbase.no/), [rovbase.se](https://www.rovbase.se/)).
 
 Since 2017, project [RovQuant](https://www.nmbu.no/en/projects/rovquant), from the Norwegian University of Life Sciences (NMBU), has been developing statistical methods to exploit the potential of this database and allow a comprehensive assessment of the population status and dynamics of three large carnivore species, namely the brown bear (*Ursus arctos*), wolf (*Canis lupus*), and wolverine (*Gulo gulo*). 
 
 At the core of this analytical framework (Bischof et al., 2019b, 2020a) are Bayesian spatial capture-recapture (SCR) and open-population spatial capture-recapture (OPSCR) models (Ergon and Gardner, 2014; Bischof et al., 2016; Chandler et al., 2018; Dupont et al., 2021). These models use the spatial and temporal information contained in the repeated genetic detections of individuals to estimate various population parameters, including spatially explicit abundance and vital rates. In addition, OPSCR models use the temporal information contained in data collected over multiple years to also estimate recruitment and survival probabilities, as well as inter-annual movements. Importantly, the approach accounts for imperfect detection during sampling (i.e., the fact that some individuals are not detected at all) and animal movement (i.e., the fact that individuals may use and be detected in multiple management units or countries). The OPSCR method brings along several advantages, including the ability to map density, derive jurisdiction-specific abundance, estimate survival and recruitment (which are needed for making population projections), and yield tractable measures of uncertainty (Bischof et al., 2019a, 2020b).
 
-RovQuant reported abundance estimates for wolverines and wolves (Canis lupus) on an annual basis since 2019 (Bischof et al., 2019a,b, 2020b; Milleret et al., 2022d,c,e; Flagstad et al.,2021; Milleret et al., 2023b,a) and for brown bears (Ursus arctos) in Norway since 2022 (Dupont et al., 2022, 2023). During these and other analyses (Milleret et al., 2018, 2019; Bischof et al.,2020a; Dupont et al., 2021; Turek et al., 2021; Dey et al., 2022), RovQuant has continuously improved the performance of the OPSCR models.
+RovQuant reported abundance estimates for wolverines and wolves on an annual basis since 2019 (Bischof et al., 2019a,b, 2020b; Milleret et al., 2022d,c,e; Flagstad et al.,2021; Milleret et al., 2023b,a) and for brown bears (Ursus arctos) in Norway since 2022 (Dupont et al., 2022, 2023). During these and other analyses (Milleret et al., 2018, 2019; Bischof et al.,2020a; Dupont et al., 2021; Turek et al., 2021; Dey et al., 2022), RovQuant has continuously improved the performance of the OPSCR models.
 
 This document summarizes the results of the analysis of a `r length(years)`-year time-series (`r years[1]`- `r years[length(years)]`) of the latest available `r engSpecies` monitoring data and the most recent version of the OPSCR model. 
 
@@ -110,7 +107,7 @@ This document summarizes the results of the analysis of a `r length(years)`-year
 # Population density
 
 
-```{r, density lastYear, fig.align = "center", fig.cap = paste0("Figure 1: ", engSpecies, " density in ", years[length(years)], ". Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between ", years[1], " and ", years[length(years)],"."), echo = FALSE}
+```{r, density lastYear, fig.align = "center", fig.cap = paste0("Figure 1: ", engSpecies, " density in ", years[n.years], ". Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between ", years[1], " and ", years[n.years],"."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
 ```
 
@@ -125,26 +122,24 @@ knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.pn
 
 # Population abundance
 
-Within its primary range (`r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r DensityCountriesRegions[[n.years]]$summary["Total","95%CILow"]` and `r DensityCountriesRegions[[n.years]]$summary["Total","95%CIHigh"]` in `r years[n.years]`.
-
-
 ```{r, abundance, include = TRUE, fig.align = "center", fig.cap = "Figure 3: Total (black) and sex-specific (blue: males, red: females) annual bear population size estimates", echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
 ```
 
+Within its primary range (`r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals in `r years[n.years]`, with an estimated `r CI_F[1]` to `r CI_F[2]` females and `r CI_M[1]` to `r CI_M[2]` males.
 
 ```{r, abundance last year, echo = FALSE, collapse = TRUE}
 kable( N_LastYear, 
        align = "lc",
-       caption =  paste0(engSpecies, " population size estimates in ", years[n.years]," by sex and large carnivore management region within the main population range. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
-  kable_styling(full_width = F)
+       caption = paste0("Table 1. ", engSpecies, " population size estimates in ", years[n.years]," by sex and large carnivore management region within the main population range. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
+  kable_styling(full_width = T)
 ```
 
 ```{r, abundance all years, echo = FALSE, collapse = TRUE}
 kable( N_All, 
        align = "lc",
-       caption =  paste0("Annual abundance estimates by large carnivore management regions. Estimates are based on activity center locations estimated by the open-population spatial capture-recapture (OPSCR) model. Credible intervals (95%) are shown in parentheses. Small deviations between the total estimate and the sum of abundance estimates from the constituent subregions may arise due to rounding.")) %>%
-  kable_styling(full_width = F)
+       caption =  paste0("Table 2. Annual abundance estimates by large carnivore management regions. Estimates are based on activity center locations estimated by the open-population spatial capture-recapture (OPSCR) model. Credible intervals (95%) are shown in parentheses. Small deviations between the total estimate and the sum of abundance estimates from the constituent subregions may arise due to rounding.")) %>%
+  kable_styling(full_width = T)
 ```
 
 
