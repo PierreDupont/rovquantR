@@ -1,11 +1,10 @@
 ---
 params:
-  species: "bear"
-  years: 2012:2024
+  species: "Brown bear"
+  years: !r 2012:2024
   date: !r Sys.Date()   
   working.dir: !r getwd()
 title: "`r paste('Estimates of', params$species, 'density, abundance, and population dynamics in Scandinavia,', params$years[1], '-', params$years[length(params$years)]')`"
-subtitle : "RovQuant - OPSCR Results"
 output:
   pdf_document: default
   html_document: 
@@ -21,13 +20,8 @@ output:
 output: html_document
 ---
 
-```{r, enviro, echo = FALSE, warning = FALSE, message = FALSE}
-##-- Parameters
-years <- if(is.null(params$years)){ 
-  2012:as.numeric(format(Sys.Date(), "%Y"))
-} else { 
-  params$years
-}
+```{r, setup, echo = FALSE, warning = FALSE, message = FALSE}
+years <- params$years
 n.years <- length(years)
 species <- params$species
 working.dir <- params$working.dir
@@ -36,48 +30,52 @@ date <- params$date
 ##-- Species
 if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, ignore.case = T))>0){
   engSpecies <- "bear"
-  norSpecies <- "Bjørn"
   latSpecies <- "Ursus arctos"
   species <- "Brown bear"
 }
 if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
   engSpecies <- "wolf"
-  norSpecies <- "Ulv"
   latSpecies <- "Canis lupus"
   species <- "Gray wolf"
 }
 if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
   engSpecies <- "wolverine"
-  norSpecies <- "Jerv"
   latSpecies <- "Gulo gulo"
   species <- "Wolverine"
 }
 
-##-- Months
 months = c("January","February","March","April","May","June",
            "July","August","September","October","November","December")
 
 ##-- load libraries
 library(kableExtra)
 library(rovquantR)
+```
 
+
+```{r, data, echo = FALSE}
 ##-- Load pre-processed habitat shapefiles
 data(COUNTRIESWaterHumans, envir = environment()) 
 COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
   dplyr::group_by(ISO) %>%
   dplyr::summarise()
-```
 
+##-- Get extraction date
+fileList <- list.files(file.path(working.dir, "data")) 
+fileName <- fileList[grep(paste0("CleanData_",engSpecies,"_"), fileList)]
+extractDate <- sub("^.*_(.*)\\.RData$", "\\1",  fileName)
 
-```{r, data, echo = FALSE}
-# load(file.path( working.dir, "data",
-#                 paste0("FilteredData_", engSpecies, "_", date, ".RData")))
+##-- Load detectors
+load(file.path( working.dir, "data", paste0("Detectors_", engSpecies, "_", date, ".RData")))
 
-# load(file.path( working.dir, "data",
-#                 paste0("MCMC", engSpecies, "_", date, ".RData")))
+##-- Load results tables
+N_LastYear <- read.csv(file.path( working.dir, "tables/Abundance_LastYearPerSex.csv"), check.names = F, row.names = 1)
+N_All <- read.csv(file.path( working.dir, "tables/Abundance_AllYears.csv"),check.names = F, row.names = 1)
 
-# load(file.path( working.dir, "data",
-#                 paste0("Density", engSpecies, "_", date, ".RData")))
+##-- Extract abundances for the last year
+CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Total"]), "-")[[1]])
+CI_F <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Females"]), "-")[[1]])
+CI_M <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Males"]), "-")[[1]])
 ```
 
 
@@ -91,7 +89,7 @@ COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), 
 
 **Approach** Using the Bayesian open-population spatial capture-recapture (OPSCR) model developed by [RovQuant] (https://www.nmbu.no/en/research/projects/rovquant), we estimated the status and dynamics of the Scandinavian `r engSpecies` population between `r years[1]` to `r years[length(years)]`. We provide annual density maps, as well as estimates of jurisdiction-specific population sizes, cause-specific survival, recruitment, and detection probabilities. Associated uncertainties are reported with all estimates.
 
-**Results** We estimated that, within its primary range (`r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$), the Norwegian brown bear population was likely (95% credible interval) made up of between `r XXX` and `r XXX` in `r years[length(years)]`. Each year, a large proportion of bears detected in Norway can be attributed to neighbouring countries. Specifically, in `r years[length(years)]`, between  `r XXX` and `r XXX` (95% credible interval) of the individuals detected in Norway were attributed to neighbouring countries (Sweden = `r XXX` to `r XXX` , Finland =  `r XXX` to `r XXX` , Russia =  `r XXX` to `r XXX`). The OPSCR results also highlight the ongoing recovery of the brown bear population in Norway, with an overall increase in population size, mostly driven by a comparatively steeper growth in the female portion of the population in recent years.
+**Results** We estimated that, within its primary range (`r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$), the Norwegian brown bear population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males. Each year, a large proportion of the population is detected during annual large carnivore monitoring. Specifically, in `r years[length(years)]`, between  `r XXX`% and `r XXX`% of the population were detected during non-invasive genetic sampling.
 
 
 ```{r, summary figure, fig.align = "center", fig.cap = paste0("Density map and ranges of abundance estimated for ", species, " in ",  years[length(years)], "."), echo = FALSE}
@@ -116,7 +114,7 @@ RovQuant reported abundance estimates for wolverines and wolves (Canis lupus) on
 
 -   Annual estimates of survival, cause-specific mortality, recruitment, and population growth rate (with credible intervals).
 
-cEstimated proportion of individuals detected through non-invasive genetic sampling (with credible intervals).
+-   Estimated proportion of individuals detected through non-invasive genetic sampling (with credible intervals).
 
 `r if(engSpecies == “bear”){ paste(“Although RovQuant aims to provide comprehensive analyses of large carnivore populations throughout their entire range in Norway and Sweden, we only analyzed and present results for the Norwegian monitoring data in this report. Previous analyses revealed multiple difficulties related to the Swedish brown bear non-invasive genetic monitoring data (Dupont et al., 2023a; Milleret et al., 2024a), leading among other things to inconsistent results across model permutations when the Scandinavian brown bear monitoring data were analyzed jointly for Norway and Sweden (Dupont et al., 2023b).”)}` 
 

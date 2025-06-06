@@ -119,9 +119,9 @@ processRovquantOutput_bear <- function(
   message("## Processing model MCMC outputs...")
   
   ##-- Check that a file with that name does not already exist to avoid overwriting
-  if (!overwrite) {
-    fileName <- paste0("MCMC_bear_", DATE, ".RData")
-    if (file.exists(file.path(working.dir, "data", fileName))) {
+  fileName <- paste0("MCMC_bear_", DATE, ".RData")
+  
+  if (!overwrite && file.exists(file.path(working.dir, "data", fileName))) {
       message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
                      file.path(working.dir, "data")))
       message("Are you sure you want to proceed and overwrite existing processed MCMC output file? (y/n) ")
@@ -132,8 +132,95 @@ processRovquantOutput_bear <- function(
         load(file.path(working.dir, "data", fileName))
       } else {
         message(paste0("Now overwriting '", fileName,"'.\n"))
+
+        ## ------   2.1. FEMALES -----
+        ##-- Compile MCMC bites
+        nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
+                                         burnin = nburnin)
+        
+        ##-- Traceplots
+        grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
+        plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
+        grDevices::dev.off()
+        
+        ##-- Process MCMC output
+        results_F <- ProcessCodaOutput( nimOutput_F$samples,
+                                        params.omit = c("sxy","z"))
+        resultsSXYZ_F <- ProcessCodaOutput(nimOutput_F$samples2)
+        
+        ##-- Rescale sxy to the original coordinate system
+        dimnames(resultsSXYZ_F$sims.list$sxy)[[3]] <- c("x","y")
+        resultsSXYZ_F$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
+          coordsData = resultsSXYZ_F$sims.list$sxy,
+          coordsHabitatGridCenter = habitat$habitat.xy,
+          scaleToGrid = FALSE)$coordsDataScaled
+        
+        ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+        results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
+        results_F$sims.list$tau <- results_F$sims.list$tau * raster::res(habitat$habitat.r)[1]
+        
+        
+        
+        ## ------   2.2. MALES -----
+        ##-- Compile MCMC bites
+        nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/male"),
+                                         burnin = nburnin)
+        
+        ##-- Traceplots
+        grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
+        plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
+        dev.off()
+        
+        ##-- Process MCMC output
+        results_M <- ProcessCodaOutput( nimOutput_M$samples,
+                                        params.omit = c("sxy","z"))
+        resultsSXYZ_M <- ProcessCodaOutput(nimOutput_M$samples2)
+        
+        ##-- RESCALE SXY TO THE ORIGINAL COORDINATE SYSTEM
+        dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
+        resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
+          coordsData = resultsSXYZ_M$sims.list$sxy,
+          coordsHabitatGridCenter = habitat$habitat.df,
+          scaleToGrid = FALSE)$coordsDataScaled
+        
+        ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+        results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
+        results_M$sims.list$tau <- results_M$sims.list$tau * raster::res(habitat$habitat.r)[1]
+        
+        
+        
+        ## ------   2.3. COMBINE MALES & FEMALES -----
+        resultsSXYZ_MF <- resultsSXYZ_M
+        
+        ##-- Get minimum number of iterations between model F and M
+        minIter <- min(dim(resultsSXYZ_F$sims.list$sxy)[1],
+                       dim(resultsSXYZ_M$sims.list$sxy)[1])
+        
+        ##-- sxy
+        resultsSXYZ_MF$sims.list$sxy <- abind::abind(resultsSXYZ_M$sims.list$sxy[1:minIter, , , ],
+                                                     resultsSXYZ_F$sims.list$sxy[1:minIter, , , ],
+                                                     along = 2)
+        dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x","y")
+        
+        ##-- z
+        resultsSXYZ_MF$sims.list$z <- abind::abind(resultsSXYZ_M$sims.list$z[1:minIter, , ],
+                                                   resultsSXYZ_F$sims.list$z[1:minIter, , ],
+                                                   along = 2)
+        
+        ##-- sigma
+        resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter],
+                                                results_F$sims.list$sigma[1:minIter])
+        dimnames(resultsSXYZ_MF$sims.list$sigma)[[2]] <- c("M","F")
+        
+        ##-- sex
+        resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
+                                            c(dim(resultsSXYZ_M$sims.list$sxy)[2],
+                                              dim(resultsSXYZ_F$sims.list$sxy)[2]))
+        
+        ##-- SAVE AND LOAD DATA
+        save( results_F, results_M, resultsSXYZ_MF,
+              file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
       }
-    }
   } else {
     ## ------   2.1. FEMALES -----
     ##-- Compile MCMC bites
