@@ -34,6 +34,7 @@ plotDensityMaps <- function(
     background = NULL,
     type = c("all"),# "last.year", "time.series"),
     path = file.path(getwd(), "figures"),
+    image = NULL,
     name = "UD_Density")
 {
   
@@ -215,4 +216,81 @@ plotDensityMaps <- function(
     #                          side = 2, font = 1, line = 0, cex = 1.2))
     dev.off()
   }
+  
+  
+  ##-- Summary density map
+  if(type %in% c("summary","all")){
+    
+     grDevices::png(filename = file.path(path, paste0(name,"_Summary.png")),
+                   width = 8, height = 8, units = "in", pointsize = 12,
+                   res = 300, bg = NA)
+    
+    t <- length(density)
+    
+    graphics::par(mar = c(0,0,0,0))
+    plot(sf::st_geometry(background), border = NA, col = "gray80")
+    raster::image( density[[t]], add = TRUE,
+                   breaks = c(cuts, max(cuts)+1000),
+                   col = col, legend = FALSE)
+    plot( sf::st_geometry(background),
+          border = "gray40", col = NA, add = TRUE)
+    
+
+    
+    ##-- If species is specified; insert the corresponding image file
+    if(!is.null(species)){
+      
+    ##-- Add year if available
+    if(!is.null(names(estimates))){
+      mtext(text = paste0("Density map and ranges of abundance /nestimated for ", species," in " names(estimates)[t]), 
+            side = 1, line =  -25,
+            adj = 0.25, cex = 3, font = 2)
+    }
+    
+    
+      myImage <- system.file("extdata", "file.csv", package = "mypackage")
+    }
+    
+    
+    ##-- Add legend
+    legend.x <- raster::extent(background)[1] + 0.8*diff(raster::extent(background)[1:2])
+    legend.y <- raster::extent(background)[3] + 0.3* diff(raster::extent(background)[3:4])
+    
+    graphics::segments(
+      x0 = legend.x, x1 = legend.x,
+      y0 = legend.y-250000, y1 = legend.y + 250000,
+      col = "gray30", lwd = 4, lend = 2)
+    graphics::text(
+      x = legend.x-0.05*diff(raster::extent(background)[1:2]),
+      y = legend.y,
+      labels = "500 km", srt = 90, cex = 1.4)
+    
+    raster::plot( density[[t]],
+                  legend.only = T, breaks = cuts,
+                  col = col, legend.width = 2,
+                  axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
+                                    labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
+                                    cex.axis = 1.2),
+                  smallplot = c(0.85, 0.88, 0.2, 0.4),
+                  legend.args = list(text = paste0("Individuals/", unit, " km2"),
+                                     side = 2, font = 1, line = 0, cex = 1))
+    ######----- NEED TO FIX LEGEND TEXT 
+    # graphics::segments(x0 = 800000, x1 = 800000,
+    #          y0 = 6650000, y1 = 6650000 + 500000,
+    #          col = "gray30", lwd = 4, lend = 2)
+    # graphics::text(760000, 6650000+500000/2, labels = "500 km", srt = 90, cex = 1.2)
+    # raster::plot( density[[t]],
+    #       legend.only = T,
+    #       breaks = cuts,
+    #       col = col,
+    #       legend.width = 2,
+    #       axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
+    #                        labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
+    #                        cex.axis = 1.2),
+    #       smallplot = c(0.75, 0.78, 0.2, 0.4),
+    #       legend.args = list(text = expression(paste("Individuals/100 km"^ 2)),
+    #                          side = 2, font = 1, line = 0, cex = 1.2))
+    dev.off()
+  }
+  
 }

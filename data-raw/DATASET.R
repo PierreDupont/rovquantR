@@ -57,7 +57,6 @@ library(raster)
 ##-- during package development ; Only done once when creating the package
 #usethis::use_data_raw()
 
-
 ##-- Load and prepare translation data 
 ##-- This is saved in R/sysdata.rda as it is only used inside the 'translateForeignCharacters' function.
 load(file.path(dir.git, "Analyses/CharacterTranslation.RData"))
@@ -66,14 +65,10 @@ head(fromto)
 
 ##-- Load and prepare spatial data (COUNTRIES and COUNTIES maps in our case)
 ##-- These are saved in ./data 
-#load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat_shp.RData"))
 GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
   filter(.,
-         area > 80000000,
-         ISO %in% c("SWE","NOR")) %>%
-  st_crop(., st_bbox(extent(c(-70000,1200000,5100000,8080000)))) 
-# GLOBALMAP <- GLOBALMAP[GLOBALMAP$area > 80000000, ]
-# GLOBALMAP <- st_crop(GLOBALMAP, st_bbox(extent(c(-70000,1200000,5100000,8080000))))
+         area > 80000000) %>%
+  st_crop(., st_bbox(raster::extent(c(-70000,1200000,5100000,8080000)))) 
 
 
 ##-- POLYGONS OF SWEDEN & NORWAY
@@ -83,23 +78,35 @@ COUNTRIES <- GLOBALMAP %>%
   summarize()
 
 
-##-- POLYGONS OF COUNTIES IN SWEDEN & NORWAY
+##-- POLYGONS OF COMMUNES IN SWEDEN & NORWAY (OLD)
 ##-- Simplification at the end is needed because of large size otherwise
-COUNTIES <- rbind(
+COUNTIES_OLD <- rbind(
   st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")),
   st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))) %>%
-  group_by(NAME_1) %>%
-  summarize() %>%
-  ## Simplification because of large size otherwise (from 13.4 MB to 400 KB)
-  st_simplify(., dTolerance = 500) %>%
   ##-- Check for non-ASCII characters
   ##-- Use encoding() to learn the current encoding of the elements in a 
   ##-- character vector and functions such as enc2utf8() or iconv() to convert 
   ##-- between encodings.
-  mutate(.,NAME_1 = stri_trans_general(NAME_1, "Latin-ASCII"))
-## Check encoding of county names
-stri_enc_isutf8(COUNTIES$NAME_1)
+  mutate(.,NAME_1 = stri_trans_general(NAME_1, "Latin-ASCII")) %>%
+  ##-- Aggregate by county
+  group_by(NAME_1) %>%
+  summarise(ISO = unique(ISO, na.rm = TRUE)) %>%
+  ##-- Simplification because of large size otherwise (from 13.4 MB to 400 KB)
+  st_simplify(., dTolerance = 500) 
 
+
+##-- POLYGONS OF COMMUNES IN SWEDEN & NORWAY
+##-- Simplification at the end is needed because of large size otherwise
+COUNTIES <- COUNTIES_OLD %>%
+  mutate(county = ifelse(NAME_1 %in% c("Hedmark","Oppland"), "Innlandet", NAME_1),
+         county = ifelse(NAME_1 %in% c("Nord-Trondelag","Sor-Trondelag"), "Trondelag", NAME_1),
+         county = ifelse(NAME_1 %in% c("Sogn og Fjordane","Hordaland"), "Vestfold", NAME_1),
+         county = ifelse(NAME_1 %in% c("Sogn og Fjordane","Oppland"), "Trøndelag", NAME_1))%>%
+  group_by(county) %>%
+  summarise(country = unique(ISO, na.rm = TRUE)) 
+
+
+REGIONS <- 
 
 
 ##-- HABITAT RASTERS AT DIFFERENT RESOLUTIONS (REFERENCE RASTERS)
@@ -107,16 +114,14 @@ load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20kmNewNorCountie
 load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNewNorCounties.RData"))
 
 
-
 ##-- Save necessary data in the right folder (./data)
 use_data(fromto, internal = TRUE, overwrite = TRUE)
 use_data(COUNTIES, overwrite = TRUE)
 use_data(COUNTRIES, overwrite = TRUE)
-#u se_data(COUNTRIESWaterHumans, overwrite = TRUE)
 use_data(GLOBALMAP, overwrite = TRUE)
 use_data(habitatRasterResolution, overwrite = TRUE)
 use_data(habitatRasters, overwrite = TRUE)
-
+# use_data(COUNTRIESWaterHumans, overwrite = TRUE)
 
 
 
@@ -140,7 +145,7 @@ REGIONS <- REGIONS %>%
 
 REGIONS <- st_simplify(st_as_sf(REGIONS), preserveTopology = T, dTolerance = 500)
 REGIONS$region <- 1:8
-REGIONS$name <- c("Region 1","Region 2","Region 3","Region 4","Region 5","Region 6","Region 7", "Region 8")
+REGIONS$name <- c("Region 1","Region 2","Region 3","Region 4","Region 5","Region 6","Region 7","Region 8")
 
 
 

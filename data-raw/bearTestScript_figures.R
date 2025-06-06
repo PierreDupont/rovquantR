@@ -1,15 +1,9 @@
-# 
-# source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")             
-# 
-# sourceDirectory(dir.function, modifiedOnly = FALSE)
-# sourceCpp(file.path(dir.rovquant, "Temp/PD/FUNCTIONS/FunctionScripts/cpp/GetTransitions.cpp"))
-# sourceCpp(file.path(dir.rovquant, "Temp/PD/FUNCTIONS/FunctionScripts/cpp/GetDetectability.cpp"))
+library(rovquantR)
+library(nimbleSCR)
 
 
-
-## -----------------------------------------------------------------------------
-
-## ------ I. GENERAL VARIABLES DECLARATION -----
+##------------------------------------------------------------------------------
+## ------ I. SET-UP WORKING ENVIRONMENT ------
 
 data.dir = "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Data"
 working.dir = "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Analysis_report"
@@ -30,29 +24,83 @@ YEARS <- lapply(years, function(x)c(x,x+1))
 
 
 ## -----------------------------------------------------------------------------
+## ------ 0. BASIC SET-UP ------
+
+if(is.null(working.dir)){working.dir <- getwd()}
+
+##-- Extract date from the last cleaned data file
+DATE <- getMostRecent( 
+  path = file.path(working.dir, "data"),
+  pattern = "CleanData_bear")
+
+##-- Initialize output list
+out <- list( SPECIES = "Brown bear",
+             engSpecies = "bear",
+             DATE = DATE)
+
+
+
+## ------ 1. LOAD NECESSARY INPUTS -----
+
+##-- Females
+load(list.files(file.path(working.dir, "nimbleInFiles/female"), full.names = T)[1])
+nimDataF <- nimData
+nimInitsF <- nimInits
+
+##-- Males
+load(list.files(file.path(working.dir, "nimbleInFiles/male"), full.names = T)[1])
+nimDataM <- nimData
+nimInitsM <- nimInits
+
+##-- Habitat
+load(file.path( working.dir, "data",
+                paste0("Habitat_bear_", DATE, ".RData")))
+
+##-- Detectors
+load(file.path( working.dir, "data",
+                paste0("Detectors_bear_", DATE, ".RData")))
+
+##-- Habitat Rasters
+if(extraction.res <= 1000){
+  data(habitatRasterResolution, envir = environment()) 
+  extraction.raster <- habitatRasterResolution$'1km'
+  extraction.res <- 1000
+} else {
+  if(extraction.res <= 2000){
+    data(habitatRasterResolution, envir = environment()) 
+    extraction.raster <- habitatRasterResolution$'2km'
+    extraction.res <- 2000
+  } else {
+    if(extraction.res <= 5000){
+      data(habitatRasterResolution, envir = environment()) 
+      extraction.raster <- habitatRasterResolution$'5km'
+      extraction.res <- 5000
+    } else {
+      if(extraction.res <= 10000){
+        data(habitatRasterResolution, envir = environment()) 
+        extraction.raster <- habitatRasterResolution$'10km'
+        extraction.res <- 10000
+      } else {
+        data(habitatRasters, envir = environment()) 
+        extraction.raster <- habitatRasters
+        extraction.res <- 20000
+      }}}}
+
+
+years <- as.numeric(dimnames(detectors$covariates)[[3]])
+n.years <- length(years) 
+
+
 
 ## ------ II. DATA CHARACTERISTICS -----
 
 myFullData.sp <- readMostRecent( path = file.path(dir.dropbox,"DATA/RovbaseData_clean/bear"),
                                  extension = ".RData")
-##-- POLYGONS OF THE REGION
-GLOBALMAP <- read_sf(file.path(dir.dropbox,"DATA/GISData/Vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
-  filter(.,area > 80000000) %>%
-  st_crop(., extent(c(-70000,1200000,5100000,8080000)))
 
-##-- POLYGONS OF SWEDEN & NORWAY
-COUNTRIES <- GLOBALMAP[GLOBALMAP$ISO %in% c("SWE","NOR"), ] %>%
-  as_Spatial(.) %>%
-  raster::aggregate(., by = "ISO")
 
 ##-- Simplify for easier plotting
 COUNTRIESsimpFig <- st_simplify(st_as_sf(COUNTRIES), preserveTopology = F, dTolerance = 400)
 
-##-- POLYGONS OF COMMUNES IN NORWAY
-COMMUNES <- read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) 
-
-##-- POLYGONS OF COUNTIES IN NORWAY
-COUNTIES <- raster::aggregate(x = as_Spatial(COMMUNES), by = "NAME_1")
 
 ##-- MERGE SOME NORWEGIAN COUNTIES
 COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c("Sør-Trøndelag",
@@ -65,6 +113,11 @@ COUNTIES$NAME_1[!COUNTIES$NAME_1 %in% c("Finnmark",
                                         "Nordland", 
                                         "Nord-Trøndelag")] <- "Hedmark"
 COUNTIES <- raster::aggregate(x = COUNTIES, by = "NAME_1")
+
+COUNTIES <- COUNTIES %>%
+  group_by(NAME_1) %>%
+  summarize()
+
 
 ##-- SIMPLIFY COUNTIES
 COUNTIES_s <- st_simplify(st_as_sf(COUNTIES), preserveTopology = T, dTolerance = 500)
