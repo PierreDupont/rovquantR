@@ -48,6 +48,7 @@ processRovquantOutput_bear <- function(
   overwrite = FALSE
 ){
   ## ------ 0. BASIC SET-UP ------
+  
   if(is.null(working.dir)){working.dir <- getwd()}
   
   ##-- Extract date from the last cleaned data file
@@ -63,6 +64,7 @@ processRovquantOutput_bear <- function(
   
   
   ## ------ 1. LOAD NECESSARY INPUTS -----
+  
   ##-- Females
   load(list.files(file.path(working.dir, "nimbleInFiles/female"), full.names = T)[1])
   nimDataF <- nimData
@@ -74,12 +76,10 @@ processRovquantOutput_bear <- function(
   nimInitsM <- nimInits
   
   ##-- Habitat
-  ##-- WE MAY WANT TO ADD WARNINGS HERE ???
   load(file.path( working.dir, "data",
                   paste0("Habitat_bear_", DATE, ".RData")))
   
   ##-- Detectors
-  ##-- WE MAY WANT TO ADD WARNINGS HERE ???
   load(file.path( working.dir, "data",
                   paste0("Detectors_bear_", DATE, ".RData")))
   
@@ -114,27 +114,27 @@ processRovquantOutput_bear <- function(
   
   
   
-  
   ## ------ 2. PROCESS MCMC SAMPLES -----
+  
   message("## Processing model MCMC outputs...")
   
-    ##-- Check that a file with that name does not already exist to avoid overwriting
-    if (!overwrite) {
-      fileName <- paste0("MCMC_bear_", DATE, ".RData")
-      if (file.exists(file.path(working.dir, "data", fileName))) {
-        message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
-                       file.path(working.dir, "data")))
-        message("Are you sure you want to proceed and overwrite existing processed MCMC output file? (y/n) ")
-        question1 <- readLines(n = 1)
-        if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
-          message("Not overwriting existing files...")
-          message(paste0("Loading '", fileName, "' instead..."))
-          load(file.path(working.dir, "data", fileName))
-          } else {
-          message(paste0("Now overwriting '", fileName,"'.\n"))
-        }
+  ##-- Check that a file with that name does not already exist to avoid overwriting
+  if (!overwrite) {
+    fileName <- paste0("MCMC_bear_", DATE, ".RData")
+    if (file.exists(file.path(working.dir, "data", fileName))) {
+      message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
+                     file.path(working.dir, "data")))
+      message("Are you sure you want to proceed and overwrite existing processed MCMC output file? (y/n) ")
+      question1 <- readLines(n = 1)
+      if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
+        message("Not overwriting existing files...")
+        message(paste0("Loading '", fileName, "' instead..."))
+        load(file.path(working.dir, "data", fileName))
+      } else {
+        message(paste0("Now overwriting '", fileName,"'.\n"))
       }
-    } else {
+    }
+  } else {
     ## ------   2.1. FEMALES -----
     ##-- Compile MCMC bites
     nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
@@ -227,6 +227,7 @@ processRovquantOutput_bear <- function(
   
   
   ## ------ 3. EXTRACT DENSITY -----
+  
   message("## Processing density outputs...")
   
   ##-- Names of regions to extract density for
@@ -306,9 +307,9 @@ processRovquantOutput_bear <- function(
     
     ## ------   1. AC-BASED DENSITY (5km) ------
     ## ------     1.1. MALE & FEMALES -----
-    DensityCountriesRegions <- list()
+    ACdensity <- list()
     for(t in 1:n.years){
-      DensityCountriesRegions[[t]] <- GetDensity(
+      ACdensity[[t]] <- GetDensity(
         sx = densityInputRegions$sx[iter, ,t],
         sy = densityInputRegions$sy[iter, ,t],
         z = resultsSXYZ_MF$sims.list$z[iter, ,t],
@@ -317,15 +318,15 @@ processRovquantOutput_bear <- function(
         regionID = regionID,
         returnPosteriorCells = F)
     }#t
-    
+    names(ACdensity) <- years
     
     
     ## ------     1.2. MALE -----
     IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
     
-    DensityCountriesRegionsM <- list()
+    ACdensityM <- list()
     for(t in 1:n.years){
-      DensityCountriesRegionsM[[t]] <- GetDensity(
+      ACdensityM[[t]] <- GetDensity(
         sx = densityInputRegions$sx[iter,IDMales,t],
         sy =  densityInputRegions$sy[iter,IDMales,t],
         z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
@@ -334,15 +335,16 @@ processRovquantOutput_bear <- function(
         regionID = regionID,
         returnPosteriorCells = F)
     }#t
+    names(ACdensityM) <- years
     
     
     
     ## ------     1.3. FEMALE -----
     IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
     
-    DensityCountriesRegionsF <- list()
+    ACdensityF <- list()
     for(t in 1:n.years){
-      DensityCountriesRegionsF[[t]] <- GetDensity(
+      ACdensityF[[t]] <- GetDensity(
         sx = densityInputRegions$sx[iter,IDFemales,t],
         sy = densityInputRegions$sy[iter,IDFemales,t],
         z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
@@ -351,6 +353,7 @@ processRovquantOutput_bear <- function(
         regionID = regionID,
         returnPosteriorCells = F)
     }
+    names(ACdensityF) <- years
     
     
     
@@ -373,9 +376,9 @@ processRovquantOutput_bear <- function(
     ## ------     2.1. MALE -----
     IDMales <- which(resultsSXYZ_MF$sims.list$sex=="M")
     
-    spaceUSEDM <- list()
+    UDdensityM <- list()
     for(t in 1:n.years){
-      spaceUSEDM[[t]] <- GetSpaceUse(
+      UDdensityM[[t]] <- GetSpaceUse(
         sx = densityInputRegions$sx[iter,IDMales,t],
         sy = densityInputRegions$sy[iter,IDMales,t],
         z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
@@ -386,15 +389,16 @@ processRovquantOutput_bear <- function(
         display_progress = T,
         returnPosteriorCells = T)
     }#t
+    names(UDdensityM) <- years
     
     
     
     ## ------     2.2. FEMALE -----
     IDFemales <- which(resultsSXYZ_MF$sims.list$sex=="F")
     
-    spaceUSEDF <- list()
+    UDdensityF <- list()
     for(t in 1:n.years){
-      spaceUSEDF[[t]] <- GetSpaceUse(
+      UDdensityF[[t]] <- GetSpaceUse(
         sx = densityInputRegions$sx[iter,IDFemales,t],
         sy = densityInputRegions$sy[iter,IDFemales,t],
         z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
@@ -405,13 +409,14 @@ processRovquantOutput_bear <- function(
         display_progress = T,
         returnPosteriorCells = T)
     }#t
+    names(UDdensityF) <- years
     
     
     
     ## ------     2.3. MALE & FEMALES -----
-    spaceUSED <- list()
+    UDdensity <- list()
     for(t in 1:n.years){
-      spaceUSED[[t]] <- GetSpaceUse(
+      UDdensity[[t]] <- GetSpaceUse(
         sx = densityInputRegions$sx[iter, ,t],
         sy = densityInputRegions$sy[iter, ,t],
         z = resultsSXYZ_MF$sims.list$z[iter, ,t],
@@ -422,16 +427,18 @@ processRovquantOutput_bear <- function(
         display_progress = T,
         returnPosteriorCells = T)
     }#t
+    names(UDdensity) <- years
     
     
     
     ## ------   3. SAVE DENSITY OBJECTS ------
-    save( DensityCountriesRegions,
-          DensityCountriesRegionsF,
-          DensityCountriesRegionsM,
-          spaceUSED,
-          spaceUSEDF,
-          spaceUSEDM,
+    
+    save( ACdensity,
+          ACdensityF,
+          ACdensityM,
+          UDdensity,
+          UDdensityF,
+          UDdensityM,
           file = file.path( working.dir, "data", paste0("Density_bear_", DATE, ".RData")))
   }
   
@@ -440,6 +447,7 @@ processRovquantOutput_bear <- function(
   ## ------ 4. FIGURES -----
   
   ## ------   4.1. DENSITY MAPS -----
+  
   message("## Plotting population density maps...") 
   
   ##-- Create 5km raster for plotting
@@ -452,29 +460,29 @@ processRovquantOutput_bear <- function(
   ##-- AC-density maps
   plotDensityMaps( 
     input = densityInputRegions,
-    estimates = DensityCountriesRegions,
+    estimates = ACdensity,
     unit = 100,
     mask = rrCombined,
-    background = COUNTRIES[1,],
-    type = c("all"),# "last.year", "time.series"),
+    background = COUNTRIES[1, ],
+    type = c("all"),
     path = file.path(working.dir, "figures"),
     name = "AC_Density")
   
   ##-- UD-density maps
   plotDensityMaps( 
     input = densityInputRegions,
-    estimates = spaceUSED,
+    estimates = UDdensity,
     unit = 100,
     mask = rrCombined,
-    background = COUNTRIES[1,],
+    background = COUNTRIES[1, ],
     type = c("all"),
     path = file.path(working.dir, "figures"),
     name = "UD_Density")
   
   
   
-  
   ## ------   4.2. ABUNDANCE TIME SERIES ------
+  
   message("## Plotting abundance...")
   
   ##-- Extract number of individuals detected
@@ -496,28 +504,28 @@ processRovquantOutput_bear <- function(
   graphics::par(mar = c(5,5,1,1))
   plot(-1000,
        xlim = c(0.5, n.years + 0.5),
-       ylim = c(0,180),
+       ylim = c(0,190),
        xlab = "", ylab = paste("Number of bears"),
        xaxt = "n", axes = F, cex.lab = 1.6)
   graphics::axis(1, at = c(1:n.years), labels = years, cex.axis = 1.6)
-  graphics::axis(2, at = seq(0,170,20), labels = seq(0,170,20), cex.axis = 1.6)
+  graphics::axis(2, at = seq(0,180,20), labels = seq(0,180,20), cex.axis = 1.6)
   graphics::abline(v = (0:n.years)+0.5, lty = 2)
-  graphics::abline(h = seq(0,170, by = 10), lty = 2, col = "gray90")
+  graphics::abline(h = seq(0,180, by = 10), lty = 2, col = "gray90")
   
   for(t in 1:n.years){
     ##-- FEMALES
-    plotQuantiles(x = colSums(DensityCountriesRegionsF[[t]]$PosteriorAllRegions),
+    plotQuantiles(x = colSums(ACdensityF[[t]]$PosteriorAllRegions),
                   at = t - diffSex,
                   width = 0.18,
                   col = colSex[1])
     
     ##-- MALES
-    plotQuantiles(x = colSums(DensityCountriesRegionsM[[t]]$PosteriorAllRegions),
+    plotQuantiles(x = colSums(ACdensityM[[t]]$PosteriorAllRegions),
                   at = t + diffSex,
                   width = 0.18,
                   col = colSex[2])
     ##-- TOTAL
-    plotQuantiles(x = colSums(DensityCountriesRegions[[t]]$PosteriorAllRegions),
+    plotQuantiles(x = colSums(ACdensity[[t]]$PosteriorAllRegions),
                   at = t,
                   width = 0.4,
                   col = colSex[3])
@@ -554,11 +562,89 @@ processRovquantOutput_bear <- function(
   
   
   
+  ## ------   4.3. ABUNDANCE per REGION ------
+
+    grDevices::png(filename = file.path(working.dir, "figures/Abundance_Regions.png"),
+                 width = 8, height = 15, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  
+  nf <- layout(rbind(c(1,2),
+                     c(3,4),
+                     c(5,6),
+                     c(7,8),
+                     c(9,10)),
+               widths = c(1,0.5),
+               heights = 1)
+  
+  for(cc in c(8,7,6,5,3)){
+    par(mar = c(2,5,2,0), tck = 0, mgp = c(2,0.2,0))
+    plot(-1000,
+         xlim = c(0.5, n.years + 0.5), ylim = c(0,60),
+         xlab = "", ylab = paste("Number of bears"),
+         xaxt = "n", axes = F, cex.lab = 1.6)
+    axis(1, at = c(1:n.years), labels = years, cex.axis = 1.15)
+    axis(2, at = seq(0,60,10), labels = seq(0,60,10),
+         cex.axis = 1.2, las = 1)
+    abline(v = (0:n.years)+0.5, lty = 2)
+    abline(h = seq(0,60, by = 10), lty = 2, col = "gray60")
+    mtext(text = REGIONS$name[REGIONS$region == cc], side = 3, font = 2, line = 0.5)
+    
+    for(t in 1:n.years){
+      ##-- TOTAL 
+      plotQuantiles(x = ACdensity[[t+2]]$PosteriorRegions[cc-1, ],
+                    at = t,
+                    width = 0.4,
+                    col = colSex[3])
+      
+      ##-- FEMALES 
+      plotQuantiles(x = ACdensityF[[t+2]]$PosteriorRegions[cc-1, ],
+                    at = t - diffSex,
+                    width = 0.18,
+                    col = colSex[1])
+      
+      ##-- MALES 
+      plotQuantiles(x = ACdensityM[[t+2]]$PosteriorRegions[cc-1, ],
+                    at = t + diffSex,
+                    width = 0.18,
+                    col = colSex[2])
+      
+    }#t
+    ##-- legend
+    if(cc %in% 3){
+      par(xpd = TRUE)
+      xx <- c(1.1,3.2,5)
+      yy <- c(50,50,50)
+      labs <- c("Females", "Males", "Total")
+      polygon(x = c(0.6,6.4,6.4,0.6),
+              y = c(50-7,50-7,50+7,50+7),
+              col = adjustcolor("white", alpha.f = 0.9),
+              border = "gray60")
+      
+      points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 3.5, col = colSex)
+      points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 1.5, col = colSex)
+      text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
+    }
+    box()
+    
+    ##-- Map insert
+    par(mar = c(5,0,4,5))
+    plot(st_geometry(REGIONS), border = grey(0.5), col = grey(0.5), lwd = 0.1)
+    plot(st_geometry(REGIONS[REGIONS$region == cc, ]),
+         add = T, col = adjustcolor("red",0.5), border = "red")
+  }#c
+  dev.off()
+  
+  
+  
+  
+  
   ## ------ 5. TABLES -----
   gc()
   ## ------   5.1. ABUNDANCE -----
+  
   ## ------     5.1.1. ALL YEARS, BOTH SEX -----
-  idcounty <- row.names(DensityCountriesRegions[[1]]$summary)
+  
+  idcounty <- row.names(ACdensity[[1]]$summary)
   
   ##-- Remove Finland, Norway, Russia, Sweden
   idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
@@ -577,11 +663,11 @@ processRovquantOutput_bear <- function(
   for(t in 1:n.years){
     for(i in 1:length(idcountyTable)){
       NCarRegionEstimates[idcountyTable[i],t] <-
-        paste0(round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"],digits = 1), " (",
-               round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-               round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+        paste0(round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1), " (",
+               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
       
-      NCarRegionMean[idcountyTable[i],t] <- round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"])
+      NCarRegionMean[idcountyTable[i],t] <- round(ACdensity[[t]]$summary[idcountyTable[i],"mean"])
     }#i
   }#t
   
@@ -608,6 +694,7 @@ processRovquantOutput_bear <- function(
   
   
   ## ------     5.1.2. LAST YEAR N PER SEX PER COUNTY -----
+  
   NCountyEstimatesLastRegions <- matrix("", ncol = 3, nrow = length(idcountyTable))
   row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
   colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total")
@@ -615,21 +702,21 @@ processRovquantOutput_bear <- function(
   for(i in 1:length(idcountyTable)){
     ##-- FEMALES
     NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <-
-      paste0(round(DensityCountriesRegionsF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(DensityCountriesRegionsF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(DensityCountriesRegionsF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      paste0(round(ACdensityF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
     
     ##-- MALES
     NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <-
-      paste0(round(DensityCountriesRegionsM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(DensityCountriesRegionsM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(DensityCountriesRegionsM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      paste0(round(ACdensityM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
     
     ##-- BOTH SEXES
     NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <-
-      paste0(round(DensityCountriesRegions[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(DensityCountriesRegions[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(DensityCountriesRegions[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      paste0(round(ACdensity[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }#i
   
   ##-- ADJUST NAMES
@@ -660,21 +747,21 @@ processRovquantOutput_bear <- function(
   for(i in 1:length(idcountyTable)){
     ##-- FEMALES
     NCountyEstimatesLastRegions_UD[idcountyTable[i],"Females"] <-
-      paste0(round(spaceUSEDF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(spaceUSEDF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(spaceUSEDF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      paste0(round(UDdensityF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(UDdensityF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(UDdensityF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
     
     ##-- MALES
     NCountyEstimatesLastRegions_UD[idcountyTable[i],"Males"] <-
-      paste0(round(spaceUSEDM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(spaceUSEDM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(spaceUSEDM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      paste0(round(UDdensityM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(UDdensityM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(UDdensityM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
     
     ##-- BOTH SEXES
     NCountyEstimatesLastRegions_UD[idcountyTable[i],"Total"] <-
-      paste0(round(spaceUSED[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(spaceUSED[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(spaceUSED[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      paste0(round(UDdensity[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+             round(UDdensity[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+             round(UDdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }#i
   
   
@@ -700,6 +787,7 @@ processRovquantOutput_bear <- function(
   
   
   ## ------     5.1.3. ALL YEARS N PER SEX PER COUNTY ------
+  
   NCountyEstimatesAllSexRegions <- matrix("", ncol = n.years*3, nrow = length(idcountyTable)+1)
   row.names(NCountyEstimatesAllSexRegions) <- c("", idcountyTable)
   colnames(NCountyEstimatesAllSexRegions) <- rep(years, each = 3)
@@ -712,23 +800,23 @@ processRovquantOutput_bear <- function(
       ##-- FEMALES
       colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Females")
       NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
-        paste(round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-              round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-              round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+        paste(round(ACdensityF[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+              round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+              round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
       
       ##-- MALES
       colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Males")
       NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
-        paste(round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-              round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-              round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+        paste(round(ACdensityM[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+              round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+              round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
       
       ##-- TOTAL
       colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Total")
       NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
-        paste(round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-              round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-              round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+        paste(round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+              round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+              round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
     }#i
   }#t
   

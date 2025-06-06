@@ -2,7 +2,7 @@
 ##
 ## Script name: 'rovquantR' dataset preparation.
 ##
-## Purpose of script: This R script loads and clean data for internal use in 'rovquantR'.
+## Purpose of script: This R script loads and cleans data for internal use in 'rovquantR'.
 ##
 ## Author: Pierre Dupont
 ## Email: pierre.dupont@nmbu.no
@@ -18,6 +18,7 @@
 ## Notes: this script is for internal use only!
 ##   
 ## -----------------------------------------------------------------------------
+
 rm(list = ls())
 gc()
 
@@ -49,9 +50,10 @@ library(usethis)
 library(stringi)
 library(dplyr)
 library(sf)
+library(raster)
 
 
-##-- Cresfheaders##-- Create a folder to contain this script, as well as other R scripts used 
+##-- Create a folder to contain this script, as well as other R scripts used 
 ##-- during package development ; Only done once when creating the package
 #usethis::use_data_raw()
 
@@ -99,17 +101,47 @@ COUNTIES <- rbind(
 stri_enc_isutf8(COUNTIES$NAME_1)
 
 
+
 ##-- HABITAT RASTERS AT DIFFERENT RESOLUTIONS (REFERENCE RASTERS)
 load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20kmNewNorCounties.RData"))
 load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNewNorCounties.RData"))
+
 
 
 ##-- Save necessary data in the right folder (./data)
 use_data(fromto, internal = TRUE, overwrite = TRUE)
 use_data(COUNTIES, overwrite = TRUE)
 use_data(COUNTRIES, overwrite = TRUE)
-#use_data(COUNTRIESWaterHumans, overwrite = TRUE)
+#u se_data(COUNTRIESWaterHumans, overwrite = TRUE)
 use_data(GLOBALMAP, overwrite = TRUE)
 use_data(habitatRasterResolution, overwrite = TRUE)
 use_data(habitatRasters, overwrite = TRUE)
 
+
+
+
+##------------------------------------------------------------------------------
+
+##-- Needs fixing!!!!!!
+
+##-- LARGE CARNIVORE MANAGEMENT REGIONS POLYGONS
+REGIONS <- COUNTIES 
+REGIONS$NAME_1[REGIONS$NAME_1 %in% c("Troms","Finnmark")] <- "Region 8"
+REGIONS$NAME_1[REGIONS$NAME_1 %in% c("Nordland")] <- "Region 7"
+REGIONS$NAME_1[REGIONS$NAME_1 %in% c("Sør-Trøndelag","Nord-Trøndelag","Møre og Romsdal")] <- "Region 6"
+REGIONS$NAME_1[REGIONS$NAME_1 %in% c("Hedmark")] <- "Region 5"
+REGIONS$NAME_1[REGIONS$NAME_1 %in% c("Akershus","Ãstfold","Oslo")] <- "Region 4"
+REGIONS$NAME_1[REGIONS$NAME_1 %in% c("Oppland")] <- "Region 3"
+REGIONS$NAME_1[REGIONS$NAME_1 %in% c("Vestfold","Telemark","Buskerud","Aust-Agder")] <- "Region 2"
+REGIONS$NAME_1[REGIONS$NAME_1 %in% c("Hordaland","Sogn og Fjordane","Rogaland","Vest-Agder")] <- "Region 1"
+REGIONS <- REGIONS %>%
+  group_by(NAME_1) %>%
+  summarize()
+
+REGIONS <- st_simplify(st_as_sf(REGIONS), preserveTopology = T, dTolerance = 500)
+REGIONS$region <- 1:8
+REGIONS$name <- c("Region 1","Region 2","Region 3","Region 4","Region 5","Region 6","Region 7", "Region 8")
+
+
+
+##------------------------------------------------------------------------------
