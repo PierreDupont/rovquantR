@@ -98,15 +98,29 @@ COUNTIES_OLD <- rbind(
 ##-- POLYGONS OF COMMUNES IN SWEDEN & NORWAY
 ##-- Simplification at the end is needed because of large size otherwise
 COUNTIES <- COUNTIES_OLD %>%
-  mutate(county = ifelse(NAME_1 %in% c("Hedmark","Oppland"), "Innlandet", NAME_1),
-         county = ifelse(NAME_1 %in% c("Nord-Trondelag","Sor-Trondelag"), "Trondelag", NAME_1),
-         county = ifelse(NAME_1 %in% c("Sogn og Fjordane","Hordaland"), "Vestfold", NAME_1),
-         county = ifelse(NAME_1 %in% c("Sogn og Fjordane","Oppland"), "Trøndelag", NAME_1))%>%
+  mutate(county = case_when(
+    NAME_1 %in% c("Hedmark","Oppland") ~"Innlandet",
+    NAME_1 %in% c("Nord-Trondelag","Sor-Trondelag") ~ "Trondelag",
+    NAME_1 %in% c("Sogn og Fjordane","Hordaland") ~ "Vestland",
+    NAME_1 %in% c("Vest-Agder", "Aust-Agder") ~ "Agder",
+    TRUE ~ NAME_1)) %>%
   group_by(county) %>%
   summarise(country = unique(ISO, na.rm = TRUE)) 
 
 
-REGIONS <- 
+REGIONS <- COUNTIES_OLD %>%
+  mutate(region = case_when(
+    NAME_1 %in% c("Troms","Finnmark") ~"Region 8",
+    NAME_1 %in% c("Nordland") ~ "Region 7",
+    NAME_1 %in% c("Sor-Trondelag","Nord-Trondelag","More og Romsdal") ~ "Region 6",
+    NAME_1 %in% c("Hedmark") ~ "Region 5",
+    NAME_1 %in% c("Akershus","Astfold","Oslo") ~"Region 4",
+    NAME_1 %in% c("Oppland") ~ "Region 3",
+    NAME_1 %in% c("Vestfold","Telemark","Buskerud","Aust-Agder") ~ "Region 2",
+    NAME_1 %in% c("Hordaland","Sogn og Fjordane","Rogaland","Vest-Agder") ~ "Region 1",
+    TRUE ~ NAME_1)) %>%
+  group_by(region) %>%
+  summarise(country = unique(ISO, na.rm = TRUE)) 
 
 
 ##-- HABITAT RASTERS AT DIFFERENT RESOLUTIONS (REFERENCE RASTERS)
