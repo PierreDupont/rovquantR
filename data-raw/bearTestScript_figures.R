@@ -96,11 +96,8 @@ n.years <- length(years)
 
 myFullData.sp <- readMostRecent( path = file.path(dir.dropbox,"DATA/RovbaseData_clean/bear"),
                                  extension = ".RData")
-
-
-##-- Simplify for easier plotting
-COUNTRIESsimpFig <- st_simplify(st_as_sf(COUNTRIES), preserveTopology = F, dTolerance = 400)
-
+# ##-- Simplify for easier plotting
+# COUNTRIESsimpFig <- st_simplify(st_as_sf(COUNTRIES), preserveTopology = F, dTolerance = 400)
 
 ##-- MERGE SOME NORWEGIAN COUNTIES
 COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c("Sør-Trøndelag",
@@ -112,8 +109,6 @@ COUNTIES$NAME_1[!COUNTIES$NAME_1 %in% c("Finnmark",
                                         "Troms",
                                         "Nordland", 
                                         "Nord-Trøndelag")] <- "Hedmark"
-COUNTIES <- raster::aggregate(x = COUNTIES, by = "NAME_1")
-
 COUNTIES <- COUNTIES %>%
   group_by(NAME_1) %>%
   summarize()
@@ -158,7 +153,7 @@ COUNTRIES_BG <- read_sf(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries
 ## ------   0. GENERAL SET-UP -----
 
 ##-- load Detectors
-load(file.path(working.dir, "MODELS", modelNameF,"DATA/Detectors.RData"))
+load(file.path(working.dir, "MODELS", modelNameF, "DATA/Detectors.RData"))
 
 ##-- load Habitat
 load(file.path(working.dir, "MODELS", modelNameF, "DATA/Habitat.RData"))
