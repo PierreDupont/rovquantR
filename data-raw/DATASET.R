@@ -50,6 +50,9 @@ library(stringi)
 library(dplyr)
 library(sf)
 library(raster)
+library(rmapshaper)
+
+
 
 ## -----------------------------------------------------------------------------
 
@@ -86,37 +89,29 @@ COUNTRIES <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_wa
 
 
 
-##-- POLYGONS OF COUNTIES IN SWEDEN & NORWAY 
-##-- Simplification at the end is needed because of large size otherwise
+##-- POLYGONS OF COUNTIES IN NORWAY 
 COUNTIES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/new_scandinavian_border/fylker-2024.shp")) %>%
+  st_transform(crs = st_crs(COUNTRIES)) %>%
   rename(county = fylkesnavn,
          area = SHAPE_Area) %>%
-  #select(county, area) %>%
   mutate(county = stri_trans_general(county, "Latin-ASCII"),
          country = "NOR")
+COUNTIES_NOR <- COUNTIES_NOR[ ,c("county", "area")]
 
+##-- POLYGONS OF COUNTIES IN SWEDEN 
 COUNTIES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/rk_lan_07_WGS84.shp")) %>%
   rename(county = LANSNAMN,
          area = AREA_METER) %>%
-  #select(county) %>%
   mutate(county = stri_trans_general(county, "Latin-ASCII"),
          country = "SWE")
+COUNTIES_SWE <- COUNTIES_SWE[ ,c("county", "area")]
 
+##-- JOIN COUNTY POLYGONS
+##-- Simplification is needed because of size for the package
 COUNTIES <- rbind(COUNTIES_NOR, COUNTIES_SWE) %>% 
-  st_simplify(., dTolerance = 500) 
-# COUNTIES_OLD <- rbind(
-#   st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")),
-#   st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))) %>%
-#   ##-- Check for non-ASCII characters
-#   ##-- Use encoding() to learn the current encoding of the elements in a 
-#   ##-- character vector and functions such as enc2utf8() or iconv() to convert 
-#   ##-- between encodings.
-#   mutate(.,NAME_1 = stri_trans_general(NAME_1, "Latin-ASCII")) %>%
-#   ##-- Aggregate by county
-#   group_by(NAME_1) %>%
-#   summarise(ISO = unique(ISO, na.rm = TRUE)) %>%
-#   ##-- Simplification because of large size otherwise (from 13.4 MB to 400 KB)
-#   st_simplify(., dTolerance = 500) 
+  ms_simplify( .,
+               keep = 1,
+               keep_shapes = FALSE)
 
 
 

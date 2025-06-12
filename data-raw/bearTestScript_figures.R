@@ -17,7 +17,7 @@ output.dir = NULL
 overwrite = FALSE
 
 sex <- c("female","male")
-years <- 2014:2023 
+years <- 2015:2024 
 n.years <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
 
@@ -94,7 +94,8 @@ n.years <- length(years)
 
 ## ------ II. DATA CHARACTERISTICS -----
 
-myFullData.sp <- readMostRecent( path = file.path(dir.dropbox,"DATA/RovbaseData_clean/bear"),
+myFullData.sp <- readMostRecent( path = file.path(working.dir,"data"),
+                                 pattern = "Clean",
                                  extension = ".RData")
 # ##-- Simplify for easier plotting
 # COUNTRIESsimpFig <- st_simplify(st_as_sf(COUNTRIES), preserveTopology = F, dTolerance = 400)
