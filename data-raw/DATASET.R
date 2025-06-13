@@ -135,7 +135,7 @@ REGIONS <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/N
   group_by(name) %>%
   summarise(country = unique(ISO, na.rm = TRUE)) 
 ##-- SIMPLIFY COUNTIES
-REGIONS <- sf::st_simplify(REGIONS, preserveTopology = T, dTolerance = 500)
+REGIONS <- sf::st_simplify(REGIONS, preserveTopology = F, dTolerance = 500)
 REGIONS$region <- 1:8
 
 # plot(st_geometry(REGIONS2))
