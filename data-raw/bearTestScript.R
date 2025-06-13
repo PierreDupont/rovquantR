@@ -192,9 +192,26 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 ## ----- VI. PROCESS ROVQUANT OUTPUT ------
 
 processRovquantOutput(   
-  species = "Brown bear",
-  data.dir = data.dir,
-  working.dir = working.dir)
+  species = "Brown bear"
+  ,
+  data.dir = data.dir
+  ,
+  working.dir = working.dir
+  ,
+  nburnin = 5
+  ,
+  niter = 100
+  ,
+  extraction.res = 5000
+  ,
+  print.report = TRUE
+  ,
+  Rmd.template = NULL
+  ,
+  output.dir = NULL
+  ,
+  overwrite = FALSE
+  )
 
 
 ##------------------------------------------------------------------------------

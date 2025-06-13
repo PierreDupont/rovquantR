@@ -10,6 +10,7 @@ source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
 
 data.dir = "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Data"
 working.dir = "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Analysis_report"
+dir.dropbox <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant"
 
 species = "bbear"
 nburnin = 5
@@ -125,8 +126,8 @@ COUNTIES_s$Name <- c("NO1","NO3","NO2")
 
 ##-- POLYGONS OF COUNTIES IN NORWAY
 ##-- POLYGONS OF COMMUNES IN NORWAY
-COMMUNES <- read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) 
-REGIONS <- raster::aggregate(x = as_Spatial(COMMUNES), by = "NAME_1")
+COMMUNES <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) 
+REGIONS <- raster::aggregate(x = sf::as_Spatial(COMMUNES), by = "NAME_1")
 
 ##-- LARGE CARNIVORE MANAGEMENT REGIONS
 REGIONS$NAME_1[REGIONS$NAME_1 %in% c("Troms","Finnmark")] <- "Region 8"
@@ -140,7 +141,7 @@ REGIONS$NAME_1[REGIONS$NAME_1 %in% c("Hordaland","Sogn og Fjordane","Rogaland","
 REGIONS <- raster::aggregate(x = REGIONS, by = "NAME_1")
 
 ##-- SIMPLIFY COUNTIES
-REGIONS <- st_simplify(st_as_sf(REGIONS), preserveTopology = T, dTolerance = 500)
+REGIONS <- sf::st_simplify(sf::st_as_sf(REGIONS), preserveTopology = T, dTolerance = 500)
 REGIONS$region <- 1:8
 REGIONS$name <- c("Region 1","Region 2","Region 3","Region 4","Region 5","Region 6","Region 7", "Region 8")
 

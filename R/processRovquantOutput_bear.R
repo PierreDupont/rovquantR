@@ -36,7 +36,7 @@
 #' @rdname processRovquantOutput_bear
 #' @export
 processRovquantOutput_bear <- function(
-    ##-- paths
+  ##-- paths
   data.dir = getwd(),
   working.dir = NULL,
   ##-- MCMC
@@ -108,9 +108,24 @@ processRovquantOutput_bear <- function(
           extraction.raster <- habitatRasters
           extraction.res <- 20000
         }}}}
-  
   years <- as.numeric(dimnames(detectors$covariates)[[3]])
   n.years <- length(years) 
+  
+  ##-- MERGE & SIMPLIFY SOME NORWEGIAN COUNTIES
+  COUNTIES_s <- COUNTIES[COUNTIES$country %in% "NOR", ] %>% st_intersection(COUNTRIES)
+  COUNTIES_s$county[COUNTIES_s$county %in% c("Trondelag - Troondelage",
+                                         "Nordland - Nordlannda")] <- "Trondelag"
+  COUNTIES_s$county[COUNTIES_s$county %in% c("Troms - Romsa - Tromssa",
+                                         "Finnmark - Finnmarku - Finmarkku")] <- "Finnmark"
+  COUNTIES_s$county[!COUNTIES_s$county %in% c("Finnmark",
+                                          "Trondelag")] <- "Hedmark"
+  COUNTIES_s <- COUNTIES_s %>%
+    group_by(county) %>%
+    summarize() 
+
+  COUNTIES_s <- sf::st_simplify(sf::st_as_sf(COUNTIES_s), preserveTopology = T, dTolerance = 500)
+  COUNTIES_s$index <- c(1,3,2)
+  COUNTIES_s$Name <- c("NO1","NO3","NO2")
   
   
   
@@ -734,10 +749,9 @@ processRovquantOutput_bear <- function(
   
   
   
-  ## ---------------------------------------------------------------------------
   ## ------   4.4. VITAL RATES ------
   
-  print("## plotting vital rates")
+  print("## Plotting vital rates...")
   
   n.iter <- dim(resultsSXYZ_MF$sims.list$z)[1]
   
@@ -877,9 +891,9 @@ processRovquantOutput_bear <- function(
   
   for(t in 1:(n.years-1)){
     ##-- Number of recruits at t ==> ids with state 1 at t and 2 at t+1 
-    n.recruit <- apply(resultsSXYZ_MF$sims.list$z[ , ,c(t+2,t+3)], 1, function(x) sum(x[ ,1]%in%1 & x[ ,2]%in%2))
+    n.recruit <- apply(resultsSXYZ_MF$sims.list$z[ , ,c(t,t+1)], 1, function(x) sum(x[ ,1]%in%1 & x[ ,2]%in%2))
     ##-- Number of reproducing ids at t ==> ids with state 2 at t
-    alivetminus1 <- apply(resultsSXYZ_MF$sims.list$z[ , ,t+2], 1, function(x)sum(x %in% 2))
+    alivetminus1 <- apply(resultsSXYZ_MF$sims.list$z[ , ,t], 1, function(x)sum(x %in% 2))
     ##-- Plot quantiles
     plotQuantiles(x = n.recruit/alivetminus1,
                   at = t, 
@@ -892,6 +906,16 @@ processRovquantOutput_bear <- function(
   
   ## ------       4.4.3.2. PLOT NUMBER OF RECRUITS ----
   
+  ##-- Identify individual sex
+  isFemale <- resultsSXYZ_MF$sims.list$sex == "F"
+  isMale <- resultsSXYZ_MF$sims.list$sex == "M"
+  
+  ##-- Identify individual status
+  isAvail <- resultsSXYZ_MF$sims.list$z == 1 
+  isAlive <- resultsSXYZ_MF$sims.list$z == 2 
+  isDead <- resultsSXYZ_MF$sims.list$z >= 3
+  
+  
   N_recruit <- N_recruit_F <- N_recruit_M <- matrix(NA, n.iter, n.years-1)
   for(t in 1:(n.years-1)){
     for(iter in 1:n.iter){
@@ -899,7 +923,7 @@ processRovquantOutput_bear <- function(
       N_recruit_M[iter,t] <- sum(isAvail[iter, ,t] & isAlive[iter, ,t+1] & isMale)
       N_recruit[iter,t] <- N_recruit_F[iter,t] + N_recruit_M[iter,t]
     }#iter
-    print(t)
+    #print(t)
   }#t
   
   
@@ -949,15 +973,7 @@ processRovquantOutput_bear <- function(
   
   ## ------   4.5. POPULATION FLUXES IN/OUT NORWAY -----
   
-  ##-- Identify individual sex
-  isFemale <- resultsSXYZ_MF$sims.list$sex == "F"
-  isMale <- resultsSXYZ_MF$sims.list$sex == "M"
-  
-  ##-- Identify individual status
-  isAvail <- resultsSXYZ_MF$sims.list$z == 1 
-  isAlive <- resultsSXYZ_MF$sims.list$z == 2 
-  isDead <- resultsSXYZ_MF$sims.list$z >= 3
-  
+  message("## Plotting population fluxes...") 
   
   norRaster <- habitatRasterResolution$`5km`[["Countries"]]
   norRaster[norRaster[] != 2] <- NA
@@ -989,7 +1005,7 @@ processRovquantOutput_bear <- function(
       N_surv_M[iter,t] <- sum(isAlive[iter, ,t] & isAlive[iter, ,t+1] & (!wasOut) & (!isOut) & isMale)
       N_surv[iter,t] <- N_surv_F[iter,t] + N_surv_M[iter,t]
     }#iter
-    print(t)
+    #print(t)
   }#t
   
   
@@ -1360,7 +1376,7 @@ processRovquantOutput_bear <- function(
   
   ## ------   4.6. p0 ------
   
-  print("## plotting p0...")
+  message("## Plotting detectability...")
   
   ## ------     4.6.1. p0 bars ------
   
@@ -1462,17 +1478,17 @@ processRovquantOutput_bear <- function(
   ## ------     4.6.3. p0 betas ------
   
   pdf(file = file.path(working.dir, "figures", paste0("p0_beta.pdf")),
-      width = 8, height = 4)
+      width = 6, height = 4)
   
   nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),
                widths = c(0.05,1,0.30),
                heights = c(0.15,1))
-  
+
   ##-- PLOT BETAS
   par(mar = c(5,4.5,0.5,0.5), tck = 0, xaxs = "i", cex.axis = 1.3, cex.lab = 1.6)
   plot( 10, xlim = c(0.5, 2.5), ylim = c(-5,5),
         type = "n", xaxt = "n", xlab = "Years", ylab = "beta")
-  axis(1, c(1,2), labels =  c("distance \nto roads","presence of \nother obs."))
+  axis(1, c(1,2), labels =  c("distance \nto roads","presence of \nother obs."), padj = 0.5)
   axis(2, tck = -0.02)
   abline(v = 1.5, lty = 2)
   abline(h = 0, lty = 1)
@@ -1490,12 +1506,13 @@ processRovquantOutput_bear <- function(
   plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
   points(c(4,4), c(4,3), pch = 15, cex = 5.5, col = colSex)
   points(c(4,4), c(4,3), pch = 15, cex = 3, col = colSex)
-  text(c(5.3,5.3), c(4,3),  c("Females", "Males"), cex = 3, pos = 4)
+  text(c(5.3,5.3), c(4,3),  c("Females", "Males"), cex = 1.5, pos = 4)
   dev.off()
   
   
   
   
+  ## ---------------------------------------------------------------------------
   # ## ------   4.7. DETECTABILITY ------
   # 
   # ## ------     4.7.1. SET-UP ------
@@ -2082,25 +2099,15 @@ processRovquantOutput_bear <- function(
   sex1 <- c(0,1)
   ye <- seq(1,n.years*2,by=2)
   
-  ##-- Define legal mortality causes
-  MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
-  legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
-  legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
-  legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
-  MortalityNames[!MortalityNames %in% legalCauses]
-  
   ##-- Separate mortalities
   cause <- c("other","legal culling")
   for(t in 1:n.years){
     for(s in 1:2){
       for(d in 1:2){
         if(d==1){
-          temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & !(dead$Death_cause %in% legalCauses), ]
+          temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & !dead$Legal, ]
         } else {
-          temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & dead$Death_cause %in% legalCauses, ]
+          temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & dead$Legal, ]
         }
         row <- which(rownames(Dead_SEX)==cause[d] & Dead_SEX[,1]=="Norway")
         Dead_SEX[row,ye[t] + sex1[s]+1 ] <- length(unique(temp$Id[temp$Country_sample %in% "(N)" ]))
@@ -2145,7 +2152,7 @@ processRovquantOutput_bear <- function(
   multirowadd <- matrix(c("",multirow[1],"",multirow[2],"","{\\textbf{TOTAL}}"), ncol = 1)
   Dead_SEX <- data.frame(cbind(multirowadd,Dead_SEX))
   
-  print(xtable(Dead_SEX, type = "latex",
+  print(xtable::xtable(Dead_SEX, type = "latex",
                align = rep("c", ncol(Dead_SEX)+1)),
         floating = FALSE,
         add.to.row = addtorow,
