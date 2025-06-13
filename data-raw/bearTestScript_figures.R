@@ -1,12 +1,16 @@
 library(rovquantR)
 library(nimbleSCR)
-
+library(dplyr)
+library(sf)
 
 ##------------------------------------------------------------------------------
 ## ------ I. SET-UP WORKING ENVIRONMENT ------
 
+source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")             
+
 data.dir = "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Data"
 working.dir = "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Analysis_report"
+
 species = "bbear"
 nburnin = 5
 niter = 100
@@ -20,7 +24,6 @@ sex <- c("female","male")
 years <- 2015:2024 
 n.years <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
-
 
 
 ## -----------------------------------------------------------------------------
@@ -46,11 +49,14 @@ out <- list( SPECIES = "Brown bear",
 load(list.files(file.path(working.dir, "nimbleInFiles/female"), full.names = T)[1])
 nimDataF <- nimData
 nimInitsF <- nimInits
+y.deadF <- nimData$y.dead
 
 ##-- Males
 load(list.files(file.path(working.dir, "nimbleInFiles/male"), full.names = T)[1])
 nimDataM <- nimData
 nimInitsM <- nimInits
+y.deadM <- nimData$y.dead
+y.deadMF <- rbind(y.deadM, y.deadF)
 
 ##-- Habitat
 load(file.path( working.dir, "data",
@@ -87,8 +93,7 @@ if(extraction.res <= 1000){
       }}}}
 
 
-years <- as.numeric(dimnames(detectors$covariates)[[3]])
-n.years <- length(years) 
+
 
 
 
@@ -97,8 +102,6 @@ n.years <- length(years)
 myFullData.sp <- readMostRecent( path = file.path(working.dir,"data"),
                                  pattern = "Clean",
                                  extension = ".RData")
-# ##-- Simplify for easier plotting
-# COUNTRIESsimpFig <- st_simplify(st_as_sf(COUNTRIES), preserveTopology = F, dTolerance = 400)
 
 ##-- MERGE SOME NORWEGIAN COUNTIES
 COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c("Sør-Trøndelag",
@@ -116,11 +119,13 @@ COUNTIES <- COUNTIES %>%
 
 
 ##-- SIMPLIFY COUNTIES
-COUNTIES_s <- st_simplify(st_as_sf(COUNTIES), preserveTopology = T, dTolerance = 500)
+COUNTIES_s <- sf::st_simplify(sf::st_as_sf(COUNTIES), preserveTopology = T, dTolerance = 500)
 COUNTIES_s$index <- c(1,3,2)
 COUNTIES_s$Name <- c("NO1","NO3","NO2")
 
 ##-- POLYGONS OF COUNTIES IN NORWAY
+##-- POLYGONS OF COMMUNES IN NORWAY
+COMMUNES <- read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) 
 REGIONS <- raster::aggregate(x = as_Spatial(COMMUNES), by = "NAME_1")
 
 ##-- LARGE CARNIVORE MANAGEMENT REGIONS
@@ -153,30 +158,11 @@ COUNTRIES_BG <- read_sf(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries
 
 ## ------   0. GENERAL SET-UP -----
 
-##-- load Detectors
-load(file.path(working.dir, "MODELS", modelNameF, "DATA/Detectors.RData"))
-
-##-- load Habitat
-load(file.path(working.dir, "MODELS", modelNameF, "DATA/Habitat.RData"))
-
-##-- load female model input
-load(file.path(working.dir, "MODELS", modelNameF, "NimbleInFiles",
-               paste0(modelNameF, "_input_1.RData")))
-nimDataF <- nimData
-y.deadF <- nimData$y.dead
-
-##-- load male model input
-load(file.path(working.dir, "MODELS", modelNameM, "NimbleInFiles",
-               paste0(modelNameM, "_input_1.RData")))
-nimDataM <- nimData
-y.deadM <- nimData$y.dead
-y.deadMF <- rbind(y.deadM, y.deadF)
-
 ##-- load processed density
-load(file.path(working.dir, "FIGURES", modelName, "classic", paste0("Density5km.RData")))
+load(file.path(working.dir, "data", "Density5km.RData")))
 
 ##-- load processed MCMC outputs
-load(file.path(working.dir, "RESULTS", paste0(modelName, "_MCMC.RData")))
+load(file.path(working.dir, "data", "_MCMC.RData")))
 
 ##-- Create 5km raster for plotting
 rrNorway <- habitatRasterResolution$`5km`[["Countries"]]
@@ -203,8 +189,7 @@ n.iter <- dim(myResultsSXYZ_MF$sims.list$z)[1]
 ##-- Plot parameters
 diffSex <- 0.2
 colSex <- adjustcolor(c("firebrick3", "deepskyblue2", "black"),0.5)
-colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
-
+colCause  <- adjustcolor(c("#E69F00","#009E73"), 0.5)
 
 
 
@@ -285,9 +270,6 @@ for(t in 1:length(years)){
   
   proj4string(ACCropped[[t]]) <- proj4string(ACCropped[[t]]) <- st_crs(myHabitat$habitat.poly)
 }#t
-
-
-
 
 
 
