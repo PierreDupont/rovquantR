@@ -465,6 +465,7 @@ processRovquantOutput_bear <- function(
     
     
     ## ------   2. UD-BASED DENSITY (5km) ------
+    
     ##--  Combine male and female sigma
     sigma <- do.call(cbind,lapply(resultsSXYZ_MF$sims.list$sex,
                                   function(x){
@@ -751,7 +752,7 @@ processRovquantOutput_bear <- function(
   
   ## ------   4.4. VITAL RATES ------
   
-  print("## Plotting vital rates...")
+  message("## Plotting vital rates...")
   
   n.iter <- dim(resultsSXYZ_MF$sims.list$z)[1]
   
