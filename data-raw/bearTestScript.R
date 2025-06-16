@@ -30,7 +30,7 @@
 rm(list = ls())
 gc()
 
-
+ 
 ## ------ INSTALL 'rovquantR' FROM GITHUB ------
 
 ## Ctrl + Shift + F10 (to restart R session)
@@ -212,7 +212,6 @@ processRovquantOutput(
   ,
   overwrite = FALSE
   )
-
 
 
 ##------------------------------------------------------------------------------
