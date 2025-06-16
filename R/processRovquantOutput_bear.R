@@ -936,8 +936,10 @@ processRovquantOutput_bear <- function(
   
   par(mar = c(4.5,4.5,1,1), xaxs = "i", cex.axis = 1.3, cex.lab = 1.6)
   
+  ymax <- 10*(trunc(max(N_recruit)/10)+1)
+  
   plot(10,
-       xlim = c(0.5, n.years-0.5), ylim = c(0,100),
+       xlim = c(0.5, n.years-0.5), ylim = c(0,ymax),
        type ="n", xaxt = "n",
        xlab = "Years", ylab = "Number of recruits")
   axis(2, tck = -0.02)
@@ -1014,14 +1016,15 @@ processRovquantOutput_bear <- function(
   
   pdf(file = file.path(working.dir, "figures", paste0("NumRecruits_bars.pdf")),
       width = 12, height = 8.5)
+  ymax <- 10*(trunc(max(N_recruit)/10)+1)
   par(mar = c(5,5,1,1))
   plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,60),
+       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
        xlab = "", ylab = paste("Number of bears recruited"), xaxt = "n", axes = F, cex.lab = 1.6)
   axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,60,10), labels = seq(0,60,10), cex.axis = 1.6)
+  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
   abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,60, by = 5), lty = 2, col = "gray60")
+  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
   
   for(t in 1:(n.years-1)){
     ##-- TOTAL 
@@ -1060,9 +1063,7 @@ processRovquantOutput_bear <- function(
   text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
   
   dev.off()
-  
-  
-  
+
   
   
   
@@ -1070,14 +1071,15 @@ processRovquantOutput_bear <- function(
   
   pdf(file = file.path(working.dir, "figures", paste0("NumSurvival_bars.pdf")),
       width = 12, height = 8.5)
+  ymax <- 10*(trunc(max(N_surv)/10)+1)
   par(mar = c(5,5,1,1))
   plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,120),
+       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
        xlab = "", ylab = paste("Number of surviving bears"), xaxt = "n", axes = F, cex.lab = 1.6)
   axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,120,20), labels = seq(0,120,20), cex.axis = 1.6)
+  axis(2, at = seq(0,ymax,20), labels = seq(0,ymax,20), cex.axis = 1.6)
   abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,120, by = 10), lty = 2, col = "gray60")
+  abline(h = seq(0,ymax, by = 10), lty = 2, col = "gray60")
   
   for(t in 1:(n.years-1)){
     ##-- TOTAL 
@@ -1119,22 +1121,19 @@ processRovquantOutput_bear <- function(
   
   
   
-  
-  
-  
-  
   ## ------     4.5.3. PLOT IMMIGRANTS -----
   
   pdf(file = file.path(working.dir, "figures", paste0("NumImmigrants_bars.pdf")),
       width = 12, height = 8.5)
   par(mar = c(5,5,1,1))
+  ymax <- 10*(trunc(max(N_immig)/10)+1)
   plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,60),
+       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
        xlab = "", ylab = paste("Number of immigrant bears"), xaxt = "n", axes = F, cex.lab = 1.6)
   axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,60,10), labels = seq(0,60,10), cex.axis = 1.6)
+  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
   abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,60, by = 5), lty = 2, col = "gray60")
+  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
   
   for(t in 1:(n.years-1)){
     ##-- TOTAL 
@@ -1180,14 +1179,15 @@ processRovquantOutput_bear <- function(
   
   pdf(file = file.path(working.dir, "figures", paste0("NumEmigrants_bars.pdf")),
       width = 12, height = 8.5)
+  ymax <- 10*(trunc(max(N_emig)/10)+1)
   par(mar = c(5,5,1,1))
   plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,60),
+       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
        xlab = "", ylab = paste("Number of emigrant bears"), xaxt = "n", axes = F, cex.lab = 1.6)
   axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,60,10), labels = seq(0,60,10), cex.axis = 1.6)
+  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
   abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,60, by = 5), lty = 2, col = "gray60")
+  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
   
   for(t in 1:(n.years-1)){
     ##-- TOTAL 
@@ -1228,24 +1228,21 @@ processRovquantOutput_bear <- function(
   dev.off()
   
   
-  
-  
-  
-  
-  
+
   ## ------     4.5.5. PLOT ALL -----
   
   pdf(file = file.path(working.dir, "figures", paste0("NumFluxes_bars.pdf")),
       width = 12, height = 8.5)
-  par(mfrow = c(2,2))
-  par(mar = c(5,5,1,1))
+  par(mfrow = c(2,2), mar = c(5,5,1,1))
+  
+  ymax <- 10*(trunc(max(N_recruit)/10)+1)
   plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,60),
+       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
        xlab = "", ylab = paste("Number of bears recruited"), xaxt = "n", axes = F, cex.lab = 1.6)
   axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,60,10), labels = seq(0,60,10), cex.axis = 1.6)
+  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
   abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,60, by = 5), lty = 2, col = "gray60")
+  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
   for(t in 1:(n.years-1)){
     ##-- TOTAL 
     plotQuantiles(x = N_recruit[ ,t],
@@ -1268,13 +1265,14 @@ processRovquantOutput_bear <- function(
   box()
   
   
+  ymax <- 10*(trunc(max(N_surv)/10)+1)
   plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,120),
+       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
        xlab = "", ylab = paste("Number of surviving bears"), xaxt = "n", axes = F, cex.lab = 1.6)
   axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,120,20), labels = seq(0,120,20), cex.axis = 1.6)
+  axis(2, at = seq(0,ymax,20), labels = seq(0,ymax,20), cex.axis = 1.6)
   abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,120, by = 10), lty = 2, col = "gray60")
+  abline(h = seq(0,ymax, by = 10), lty = 2, col = "gray60")
   for(t in 1:(n.years-1)){
     ##-- TOTAL 
     plotQuantiles(x = N_surv[ ,t],
@@ -1298,13 +1296,14 @@ processRovquantOutput_bear <- function(
   box()
   
   
+  ymax <- 10*(trunc(max(N_immig)/10)+1)
   plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,60),
+       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
        xlab = "", ylab = paste("Number of immigrant bears"), xaxt = "n", axes = F, cex.lab = 1.6)
   axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,60,10), labels = seq(0,60,10), cex.axis = 1.6)
+  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
   abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,60, by = 5), lty = 2, col = "gray60")
+  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
   for(t in 1:(n.years-1)){
     ##-- TOTAL 
     plotQuantiles(x = N_immig[ ,t],
@@ -1326,14 +1325,14 @@ processRovquantOutput_bear <- function(
   }#t
   box()
   
-  
+  ymax <- 10*(trunc(max(N_emig)/10)+1)
   plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,60),
+       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
        xlab = "", ylab = paste("Number of emigrant bears"), xaxt = "n", axes = F, cex.lab = 1.6)
   axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,60,10), labels = seq(0,60,10), cex.axis = 1.6)
+  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
   abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,60, by = 5), lty = 2, col = "gray60")
+  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
   for(t in 1:(n.years-1)){
     ##-- TOTAL 
     plotQuantiles(x = N_emig[ ,t],
@@ -1359,7 +1358,7 @@ processRovquantOutput_bear <- function(
   ##-- legend
   par(xpd = TRUE)
   xx <- c(1,2.5,4)
-  yy <- c(55,55,55)
+  yy <- c(0.8*ymax,0.8*ymax,0.8*ymax)
   labs <- c("Females", "Males", "Total")
   polygon(x = c(min(xx)-0.5,max(xx)+1.5,max(xx)+1.5,min(xx)-0.5),
           y = c(min(yy)-5,min(yy)-5,min(yy)+5,min(yy)+5),
@@ -1646,8 +1645,8 @@ processRovquantOutput_bear <- function(
   # # abline(v = (0:n.years)+0.5, lty = 2)
   # abline(h = 0.5, lty = 2, col = "gray60")
   # for(t in 1:n.years){
-  #   plotQuantiles(x = colSums(ACdensityF[[t+2]]$PosteriorAllRegions)/
-  #                   colSums(ACdensity[[t+2]]$PosteriorAllRegions),
+  #   plotQuantiles(x = colSums(ACdensityF[[t]]$PosteriorAllRegions)/
+  #                   colSums(ACdensity[[t]]$PosteriorAllRegions),
   #                 at = t - diffSex,
   #                 width = 0.18,
   #                 col = colSex[3])
@@ -1667,7 +1666,7 @@ processRovquantOutput_bear <- function(
   # ##-- Convert densities from 25km2 (5*5 raster) to 100km2
   # SexRatio <- list()
   # for(t in 1:length(years)){
-  #   SexRatio[[t]] <- ACdensityF[[t+2]]$MeanCell/ACdensity[[t+2]]$MeanCell
+  #   SexRatio[[t]] <- ACdensityF[[t]]$MeanCell/ACdensity[[t]]$MeanCell
   # }
   # 
   # ##-- Crop density maps to Norway
@@ -2178,11 +2177,11 @@ processRovquantOutput_bear <- function(
   row.names(propDetected) <- c("F","M","Total")
   colnames(propDetected) <- years
   for(t in 1:n.years){
-    propDetected["F",t] <- getCleanEstimates(n.detected_F[t+2]/colSums(ACdensityF[[t+2]]$PosteriorRegions))
-    propDetected["M",t] <- getCleanEstimates(n.detected_M[t+2]/colSums(ACdensityM[[t+2]]$PosteriorRegions))
-    propDetected["Total",t] <- getCleanEstimates((n.detected_F[t+2]+n.detected_M[t+2])/
-                                                   (colSums(ACdensityF[[t+2]]$PosteriorRegions)+
-                                                      colSums(ACdensityM[[t+2]]$PosteriorRegions)))
+    propDetected["F",t] <- getCleanEstimates(n.detected_F[t]/colSums(ACdensityF[[t]]$PosteriorRegions))
+    propDetected["M",t] <- getCleanEstimates(n.detected_M[t]/colSums(ACdensityM[[t]]$PosteriorRegions))
+    propDetected["Total",t] <- getCleanEstimates((n.detected_F[t]+n.detected_M[t])/
+                                                   (colSums(ACdensityF[[t]]$PosteriorRegions)+
+                                                      colSums(ACdensityM[[t]]$PosteriorRegions)))
   }#t
   
   ##-- print .csv
@@ -2215,27 +2214,27 @@ processRovquantOutput_bear <- function(
     N_out_F <- N_out_M <- N_out <- rep(NA,n.iter)
     for(iter in 1:n.iter){
       
-      country <- countryRaster[cellFromXY(norRaster,myResultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t+2])]
+      country <- countryRaster[raster::cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
       isFin <- country %in% 1
       isNor <- country %in% 2
       isRus <- country %in% 3
       isSwe <- country %in% 4
       
       ##-- Detected individuals
-      N_fin_F[iter] <- sum(isDetected[ ,t+2] & isAlive[iter, ,t+2] & isFin & isFemale)
-      N_fin_M[iter] <- sum(isDetected[ ,t+2] & isAlive[iter, ,t+2] & isFin & isMale)
+      N_fin_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isFemale)
+      N_fin_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isMale)
       N_fin[iter] <- N_fin_F[iter] + N_fin_M[iter]
       
-      N_nor_F[iter] <- sum(isDetected[ ,t+2] & isAlive[iter, ,t+2] & isNor & isFemale)
-      N_nor_M[iter] <- sum(isDetected[ ,t+2] & isAlive[iter, ,t+2] & isNor & isMale)
+      N_nor_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isFemale)
+      N_nor_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isMale)
       N_nor[iter] <- N_nor_F[iter] + N_nor_M[iter]
       
-      N_rus_F[iter] <- sum(isDetected[ ,t+2] & isAlive[iter, ,t] & isRus & isFemale)
-      N_rus_M[iter] <- sum(isDetected[ ,t+2] & isAlive[iter, ,t] & isRus & isMale)
+      N_rus_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isFemale)
+      N_rus_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isMale)
       N_rus[iter] <- N_rus_F[iter] + N_rus_M[iter]
       
-      N_swe_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t+2] & isSwe & isFemale)
-      N_swe_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t+2] & isSwe & isMale)
+      N_swe_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isFemale)
+      N_swe_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isMale)
       N_swe[iter] <- N_swe_F[iter] + N_swe_M[iter]
       
       N_out_F[iter] <- N_fin_F[iter] + N_rus_F[iter] + N_swe_F[iter]
@@ -2262,14 +2261,14 @@ processRovquantOutput_bear <- function(
   for(t in 1:n.years){
     N_det <- N_undet <- N_tot <- rep(NA,n.iter)
     for(iter in 1:n.iter){
-      country <- countryRaster[cellFromXY(norRaster,myResultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t+2])]
+      country <- countryRaster[raster::cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
       isNor <- country %in% 2
       
       ##-- Detected individuals
-      N_det[iter] <- sum(isDetected[ ,t+2] & isAlive[iter, ,t+2] & isNor)
+      N_det[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor)
       
       ##-- Undetected individuals
-      N_undet[iter] <- sum(!isDetected[ ,t+2] & isAlive[iter, ,t+2] & isNor)
+      N_undet[iter] <- sum(!isDetected[ ,t] & isAlive[iter, ,t] & isNor)
       
       ##-- Total Norway
       N_tot[iter] <- N_det[iter] + N_undet[iter]
@@ -2293,17 +2292,17 @@ processRovquantOutput_bear <- function(
   for(t in 1:n.years){
     prop_F <- prop_M <- prop_tot <- rep(NA,n.iter)
     for(iter in 1:n.iter){
-      country <- countryRaster[cellFromXY(norRaster,myResultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t+2])]
+      country <- countryRaster[raster::cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
       isNor <- country %in% 2
       
       ##-- Detected female
-      N_F <- sum(isAlive[iter, ,t+2] & isNor & isFemale)
-      N_det_F <- sum(isDetected[ ,t+2] & isAlive[iter, ,t+2] & isNor & isFemale)
+      N_F <- sum(isAlive[iter, ,t] & isNor & isFemale)
+      N_det_F <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isFemale)
       prop_F[iter] <- N_det_F / N_F 
       
       ##-- Detected male
-      N_M <- sum(isAlive[iter, ,t+2] & isNor & isMale)
-      N_det_M <- sum(isDetected[ ,t+2] & isAlive[iter, ,t+2] & isNor & isMale)
+      N_M <- sum(isAlive[iter, ,t] & isNor & isMale)
+      N_det_M <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isMale)
       prop_M[iter] <- N_det_M / N_M 
       
       ##-- Detected total
@@ -2351,14 +2350,14 @@ processRovquantOutput_bear <- function(
     } else {
       if(s == 1){
         for(t in 1:(n.years-1)){
-          n.recruits <- rowSums(isAvail[ ,isFemale,t+2] * isAlive[ ,isFemale,t+3])
-          alivetminus1 <- rowSums(isAlive[ ,isFemale,t+2])
+          n.recruits <- rowSums(isAvail[ ,isFemale,t] * isAlive[ ,isFemale,t+3])
+          alivetminus1 <- rowSums(isAlive[ ,isFemale,t])
           vitalRate["rho",col[t]] <- getCleanEstimates(n.recruits/alivetminus1, moment = "median")
         }#t
       } else {
         for(t in 1:(n.years-1)){
-          n.recruits <- rowSums(isAvail[ ,isMale,t+2] * isAlive[ ,isMale,t+3])
-          alivetminus1 <- rowSums(isAlive[ ,isMale,t+2])
+          n.recruits <- rowSums(isAvail[ ,isMale,t] * isAlive[ ,isMale,t+3])
+          alivetminus1 <- rowSums(isAlive[ ,isMale,t])
           vitalRate["rho",col[t]] <- getCleanEstimates(n.recruits/alivetminus1, moment = "median")
         }#t
       }
@@ -2379,10 +2378,10 @@ processRovquantOutput_bear <- function(
     } else {
       if(s == 1){
         y.dead <- y.deadF[ ,3:12]
-        z <- myResultsSXYZ_MF$sims.list$z[ ,isFemale,3:12] 
+        z <- resultsSXYZ_MF$sims.list$z[ ,isFemale,3:12] 
       } else {
         y.dead <- y.deadM[ ,3:12]
-        z <- myResultsSXYZ_MF$sims.list$z[ ,isMale,3:12] 
+        z <- resultsSXYZ_MF$sims.list$z[ ,isMale,3:12] 
       }
       
       ##-- Extract survival from posteriors
@@ -2430,9 +2429,9 @@ processRovquantOutput_bear <- function(
   ##-- REGION-SPECIFIC PROPORTION OF FEMALES
   PropFemale_regions <- list()
   for(t in 1:n.years){
-    PropFemale_regions[[t]] <- ACdensityF[[t+2]]$PosteriorRegions/
-      (ACdensityM[[t+2]]$PosteriorRegions +
-         ACdensityF[[t+2]]$PosteriorRegions)
+    PropFemale_regions[[t]] <- ACdensityF[[t]]$PosteriorRegions/
+      (ACdensityM[[t]]$PosteriorRegions +
+         ACdensityF[[t]]$PosteriorRegions)
     print(rowMeans(PropFemale_regions[[t]],na.rm = T))
   }#t
   
@@ -2440,9 +2439,9 @@ processRovquantOutput_bear <- function(
   ##-- OVERALL PROPORTION OF FEMALES
   PropFemale <- list()
   for(t in 1:n.years){
-    PropFemale[[t]] <- colSums(ACdensityF[[t+2]]$PosteriorAllRegions)/
-      (colSums(ACdensityM[[t+2]]$PosteriorAllRegions) +
-         colSums(ACdensityF[[t+2]]$PosteriorAllRegions))
+    PropFemale[[t]] <- colSums(ACdensityF[[t]]$PosteriorAllRegions)/
+      (colSums(ACdensityM[[t]]$PosteriorAllRegions) +
+         colSums(ACdensityF[[t]]$PosteriorAllRegions))
   }#t
   
   
@@ -2496,11 +2495,11 @@ processRovquantOutput_bear <- function(
   row.names(propDetected) <- c("F","M","Total")
   colnames(propDetected) <- years
   for(t in 1:n.years){
-    propDetected["F",t] <- getCleanEstimates(n.detected_F[t+2]/colSums(ACdensityF[[t+2]]$PosteriorRegions))
-    propDetected["M",t] <- getCleanEstimates(n.detected_M[t+2]/colSums(ACdensityM[[t+2]]$PosteriorRegions))
-    propDetected["Total",t] <- getCleanEstimates((n.detected_F[t+2]+n.detected_M[t+2])/
-                                                   (colSums(ACdensityF[[t+2]]$PosteriorRegions)+
-                                                      colSums(ACdensityM[[t+2]]$PosteriorRegions)))
+    propDetected["F",t] <- getCleanEstimates(n.detected_F[t]/colSums(ACdensityF[[t]]$PosteriorRegions))
+    propDetected["M",t] <- getCleanEstimates(n.detected_M[t]/colSums(ACdensityM[[t]]$PosteriorRegions))
+    propDetected["Total",t] <- getCleanEstimates((n.detected_F[t]+n.detected_M[t])/
+                                                   (colSums(ACdensityF[[t]]$PosteriorRegions)+
+                                                      colSums(ACdensityM[[t]]$PosteriorRegions)))
   }#t
   
   ##-- print .csv
@@ -2521,7 +2520,7 @@ processRovquantOutput_bear <- function(
   growthRate <- list()
   for(t in 1:(n.years-1)){
     growthRate[[t]] <- colSums(ACdensity[[t+3]]$PosteriorAllRegions)/
-      colSums(ACdensity[[t+2]]$PosteriorAllRegions) 
+      colSums(ACdensity[[t]]$PosteriorAllRegions) 
   }#t
   
   ##-- Put in a table format
