@@ -83,6 +83,10 @@ processRovquantOutput_bear <- function(
   load(file.path( working.dir, "data",
                   paste0("Detectors_bear_", DATE, ".RData")))
   
+  ##-- Load filtered data
+  load(file.path( working.dir, "data",
+                  paste0("FilteredData_bear_", DATE, ".RData")))
+  
   ##-- Habitat Rasters
   if(extraction.res <= 1000){
     data(habitatRasterResolution, envir = environment()) 
@@ -689,16 +693,19 @@ processRovquantOutput_bear <- function(
                heights = 1)
   
   for(cc in c(8,7,6,5,3)){
+    
+    ymax <- 10*(trunc(max(ACdensity[[t]]$PosteriorRegions[cc-1, ])/10)+1)
+    
     par(mar = c(2,5,2,0), tck = 0, mgp = c(2,0.2,0))
     plot(-1000,
-         xlim = c(0.5, n.years + 0.5), ylim = c(0,60),
+         xlim = c(0.5, n.years + 0.5), ylim = c(0,ymax),
          xlab = "", ylab = paste("Number of bears"),
          xaxt = "n", axes = F, cex.lab = 1.6)
     axis(1, at = c(1:n.years), labels = years, cex.axis = 1.15)
-    axis(2, at = seq(0,60,10), labels = seq(0,60,10),
+    axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10),
          cex.axis = 1.2, las = 1)
     abline(v = (0:n.years)+0.5, lty = 2)
-    abline(h = seq(0,60, by = 10), lty = 2, col = "gray60")
+    abline(h = seq(0,ymax, by = 10), lty = 2, col = "gray60")
     mtext(text = REGIONS$name[REGIONS$region == cc], side = 3, font = 2, line = 0.5)
     
     for(t in 1:n.years){
@@ -725,7 +732,7 @@ processRovquantOutput_bear <- function(
     if(cc %in% 3){
       par(xpd = TRUE)
       xx <- c(1.1,3.2,5)
-      yy <- c(50,50,50)
+      yy <- c(0.9*ymax,0.9*ymax,0.9*ymax)
       labs <- c("Females", "Males", "Total")
       polygon(x = c(0.6,6.4,6.4,0.6),
               y = c(50-7,50-7,50+7,50+7),
@@ -1520,6 +1527,79 @@ processRovquantOutput_bear <- function(
   text(c(5.3,5.3), c(4,3),  c("Females", "Males"), cex = 1.5, pos = 4)
   dev.off()
   
+  
+  
+  
+  ## ------       1.1.1. NGS, Dead recoveries & Carnivore obs ------
+
+  ##-- Plot NGS & Dead recovery maps
+  pdf(file = file.path(working.dir, "figures", "NGS_DR_maps.pdf"),
+      width = 18, height = 12)
+  
+  ##-- layout
+  mx <- rbind(c(1,rep(1:5, each = 2)),
+              c(rep(1:5, each = 2), 5))
+  mx <- rbind(mx, mx + 5)
+  nf <- layout(mx,
+               widths = c(rep(1,ncol(mx))),
+               heights = rep(1,2))
+  par(mar = c(0,0,0,0))
+  for(t in 1:length(years)){
+    plot(st_geometry(COUNTIES_s), border = NA, col = "gray80")
+    points(data.alive$data.sp[data.alive$data.sp$Year == years[t], ],
+           pch = 3, col = "orange", lwd = 0.7)
+    points(data.dead[data.dead$Year == years[t], ],
+           pch = 3, col = "slateblue", lwd = 0.7)
+    mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
+    
+    if(t == n.years){
+      segments(x0 = 830000, x1 = 830000,
+               y0 = 6730000, y1 = 6730000 + 500000,
+               col = grey(0.3), lwd = 4, lend = 2)
+      text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
+      
+      ##-- LEGEND
+      par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
+      plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
+      points(c(3,3), c(2.6,1.8), pch = 3, lwd = 1.5, cex = 3, col = c("orange","slateblue"))
+      text(c(3.5,3.5), c(2.55,1.75),  c("NGS samples", "Dead recoveries"), cex = 2, pos = 4)
+    }#if
+  }#t
+  dev.off()
+  
+  
+  
+  # ##-- Plot Carnivore observations maps
+  # pdf(file = file.path(WDFigures, paste0("CarnivoreObs_maps_classic.pdf")),
+  #     width = 18, height = 12)
+  # 
+  # ##-- layout
+  # mx <- rbind(c(1,rep(1:5, each = 2)),
+  #             c(rep(1:5, each = 2), 5))
+  # mx <- rbind(mx, mx + 5)
+  # nf <- layout(mx,
+  #              widths = c(rep(1,ncol(mx))),
+  #              heights = rep(1,2))
+  # par(mar = c(0,0,0,0))
+  # for(t in 1:length(years)){
+  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
+  #   image(mask(ds.brickCont[[t]],COUNTRIESsimpFig[1,]), add = TRUE, col = c("white","forestgreen"), legend = FALSE)
+  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = "gray80", col = NA, add = TRUE)
+  #   
+  #   mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
+  #   
+  #   if(t == n.years){
+  #     segments(x0 = 830000, x1 = 830000,
+  #              y0 = 6730000, y1 = 6730000 + 500000,
+  #              col = grey(0.3), lwd = 4, lend = 2)
+  #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
+  #     
+  #     ##-- LEGEND
+  #     par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
+  #     plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
+  #   }#if
+  # }#t
+  # dev.off()
   
   
   
