@@ -2341,7 +2341,7 @@ processRovquantOutput_bear <- function(
   vitalRate[1, ] <- c(rep(sex,(n.years-1)) )
   
   for(s in 1:2){
-    if(s == 1){results <- myResults_F} else {results <- myResults_M}
+    if(s == 1){results <- results_F} else {results <- results_M}
     
     col <- which(vitalRate[1, ] == sex[s])
     
@@ -2568,7 +2568,7 @@ processRovquantOutput_bear <- function(
                         "$\\beta_{roads}$","$\\beta_{obs}$")
   
   for(s in 1:2){
-    if(s == 1){results <- myResults_F} else {results <- myResults_M}
+    if(s == 1){results <- results_F} else {results <- results_M}
     TableOthers["tau",sex[s]] <- getCleanEstimates(results$sims.list$tau/1000, moment = "median")
     TableOthers[which(parameters == "betaDead"),sex[s]] <- apply(results$sims.list$betaDens[,1,], 2,
                                                                  function(x) getCleanEstimates(x,moment = "median"))
