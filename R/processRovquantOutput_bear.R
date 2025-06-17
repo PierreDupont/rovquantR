@@ -2351,13 +2351,13 @@ processRovquantOutput_bear <- function(
     } else {
       if(s == 1){
         for(t in 1:(n.years-1)){
-          n.recruits <- rowSums(isAvail[ ,isFemale,t] * isAlive[ ,isFemale,t+3])
+          n.recruits <- rowSums(isAvail[ ,isFemale,t] * isAlive[ ,isFemale,t+1])
           alivetminus1 <- rowSums(isAlive[ ,isFemale,t])
           vitalRate["rho",col[t]] <- getCleanEstimates(n.recruits/alivetminus1, moment = "median")
         }#t
       } else {
         for(t in 1:(n.years-1)){
-          n.recruits <- rowSums(isAvail[ ,isMale,t] * isAlive[ ,isMale,t+3])
+          n.recruits <- rowSums(isAvail[ ,isMale,t] * isAlive[ ,isMale,t+1])
           alivetminus1 <- rowSums(isAlive[ ,isMale,t])
           vitalRate["rho",col[t]] <- getCleanEstimates(n.recruits/alivetminus1, moment = "median")
         }#t
@@ -2520,7 +2520,7 @@ processRovquantOutput_bear <- function(
   
   growthRate <- list()
   for(t in 1:(n.years-1)){
-    growthRate[[t]] <- colSums(ACdensity[[t+3]]$PosteriorAllRegions)/
+    growthRate[[t]] <- colSums(ACdensity[[t+1]]$PosteriorAllRegions)/
       colSums(ACdensity[[t]]$PosteriorAllRegions) 
   }#t
   
