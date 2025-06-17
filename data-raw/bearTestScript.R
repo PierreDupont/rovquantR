@@ -211,7 +211,7 @@ processRovquantOutput(
   output.dir = NULL
   ,
   overwrite = FALSE
-  )
+)
 
 
 ##------------------------------------------------------------------------------

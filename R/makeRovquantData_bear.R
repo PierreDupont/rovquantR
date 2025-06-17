@@ -355,6 +355,10 @@ makeRovquantData_bear <- function(
   
   
   
+  ## ------       1.2.3. PLOTS -----
+  
+ 
+  
   ## ------   2. GENERATE DETECTORS -----
   
   message("Preparing detectors characteristics... ")
@@ -440,9 +444,6 @@ makeRovquantData_bear <- function(
   
   ##-- Put into "nimble2SCR" format
   detectors$detectors.df$roads <- c(detRoads)
-  
-  # ##-- CHECK IF CONTAINS NAs
-  # if(any(is.na(detRoads)))print("WARNINGS!!!!!!! ONE OF THE DETECTOR MATRIX CONTAINS NA")
   
   
   
@@ -567,6 +568,56 @@ makeRovquantData_bear <- function(
     x = detectors$grid,
     y = detectors$detectors.df,
     by = "id")
+  
+
+    
+  ## ------       2.2.5. PLOTS -----
+
+  ##-- Plot Carnivore observations maps
+  pdf(file = file.path(working.dir, "figures", "CarnivoreObs.pdf"),
+      width = 18, height = 12)
+  ##-- layout
+  mx <- rbind(c(1,rep(1:5, each = 2)),
+              c(rep(1:5, each = 2), 5))
+  mx <- rbind(mx, mx + 5)
+  nf <- layout(mx,
+               widths = c(rep(1,ncol(mx))),
+               heights = rep(1,2))
+  par(mar = c(0,0,0,0))
+  for(t in 1:length(years)){
+    plot(st_geometry(COUNTRIES[1,]), border = NA, col = "gray80")
+    plot(detectors$grid[, paste0("detOtherSamples.",years[t])],  border = NA, add = TRUE, legend = FALSE)
+
+    mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
+    
+    if(t == n.years){
+      segments(x0 = 830000, x1 = 830000,
+               y0 = 6730000, y1 = 6730000 + 500000,
+               col = grey(0.3), lwd = 4, lend = 2)
+      text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
+      
+      ##-- LEGEND
+      par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
+      plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
+    }#if
+  }#t
+  dev.off()
+  
+  
+  
+  ##-- Plot Carnivore observations maps
+  pdf(file = file.path(working.dir, "figures", "DistanceToRoads.pdf"),
+      width = 18, height = 12)
+  par(mar = c(0,0,0,0))
+  plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
+  plot(detectors$grid[, "roads"], add = T, border = NA,)
+  segments(x0 = 830000, x1 = 830000,
+           y0 = 6730000, y1 = 6730000 + 500000,
+           col = grey(0.3), lwd = 4, lend = 2)
+  text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
+  par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
+  plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
+  dev.off()  
   
   
   
