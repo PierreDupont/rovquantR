@@ -587,7 +587,8 @@ processRovquantOutput_bear <- function(
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES[1, ],
-    type = c("all"),
+    type = c("summary"),
+    species = "bear",
     path = file.path(working.dir, "figures"),
     name = "UD_Density")
   

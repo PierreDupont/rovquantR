@@ -24,7 +24,8 @@ getCleanEstimates <- function(x,
            format(round(quantile(x, probs = quantiles[1]), digits = 2),nsmall = 2), "-",
            format(round(quantile(x, probs = quantiles[2]), digits = 2),nsmall = 2), ")")
   } else {
-    paste0(format(round(median(x), digits = 2),nsmall = 2)," (",
+    paste0(format(round(median(x), digits = 2),
+                  nsmall = 2)," (",
            format(round(quantile(x, probs = quantiles[1]), digits = 2),nsmall = 2), "-",
            format(round(quantile(x, probs = quantiles[2]), digits = 2),nsmall = 2), ")")
   }# else
