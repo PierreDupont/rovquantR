@@ -17,8 +17,8 @@ output:
     highlight: zenburn
   pdf_document: default
   word_document: default
+bibliography: references.bib
 ---
-
 
 ```{r, setup, echo = FALSE, warning = FALSE, message = FALSE}
 years <- params$years
@@ -52,7 +52,6 @@ library(kableExtra)
 library(rovquantR)
 ```
 
-
 ```{r, data, echo = FALSE}
 ##-- Load pre-processed habitat shapefiles
 data(COUNTRIESWaterHumans, envir = environment()) 
@@ -78,28 +77,23 @@ CI_F <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Fem
 CI_M <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Males"]), "-")[[1]])
 ```
 
-
-
 ### `r Sys.Date()`
-
 
 # Introduction
 
 Non-invasive genetic sampling (NGS) and dead recoveries are a centerpiece of national and regional large carnivore monitoring in Norway and Sweden. Accordingly, the Scandinavian `r species` (*`r latSpecies`*) population is monitored annually using non-invasive genetic sampling (NGS) and recovery of dead individuals and both countries have collected an extensive individual-based data set publicly available and stored in the Scandinavian large carnivore database Rovbase ([rovbase.no](https://www.rovbase.no/), [rovbase.se](https://www.rovbase.se/)).
 
-Since 2017, project [RovQuant](https://www.nmbu.no/en/projects/rovquant), from the Norwegian University of Life Sciences (NMBU), has been developing statistical methods to exploit the potential of this database and allow a comprehensive assessment of the population status and dynamics of three large carnivore species, namely the brown bear (*Ursus arctos*), wolf (*Canis lupus*), and wolverine (*Gulo gulo*). 
+Since 2017, project [RovQuant](https://www.nmbu.no/en/projects/rovquant), from the Norwegian University of Life Sciences (NMBU), has been developing statistical methods to exploit the potential of this database and allow a comprehensive assessment of the population status and dynamics of three large carnivore species, namely the brown bear (*Ursus arctos*), wolf (*Canis lupus*), and wolverine (*Gulo gulo*).
 
-At the core of this analytical framework (Bischof et al., 2019b, 2020a) are Bayesian spatial capture-recapture (SCR) and open-population spatial capture-recapture (OPSCR) models (Ergon and Gardner, 2014; Bischof et al., 2016; Chandler et al., 2018; Dupont et al., 2021). These models use the spatial and temporal information contained in the repeated genetic detections of individuals to estimate various population parameters, including spatially explicit abundance and vital rates. In addition, OPSCR models use the temporal information contained in data collected over multiple years to also estimate recruitment and survival probabilities, as well as inter-annual movements. Importantly, the approach accounts for imperfect detection during sampling (i.e., the fact that some individuals are not detected at all) and animal movement (i.e., the fact that individuals may use and be detected in multiple management units or countries). The OPSCR method brings along several advantages, including the ability to map density, derive jurisdiction-specific abundance, estimate survival and recruitment (which are needed for making population projections), and yield tractable measures of uncertainty (Bischof et al., 2019a, 2020b).
+At the core of this analytical framework (@Bischof2019rovquant, @Bischof2020estimating) are Bayesian spatial capture-recapture (SCR) and open-population spatial capture-recapture (OPSCR) models (@Ergon2014separating, @Bischof2016, @chandler2018characterizing, @Dupont2021deadreco). These models use the spatial and temporal information contained in the repeated genetic detections of individuals to estimate various population parameters, including spatially explicit abundance and vital rates. In addition, OPSCR models use the temporal information contained in data collected over multiple years to also estimate recruitment and survival probabilities, as well as inter-annual movements. Importantly, the approach accounts for imperfect detection during sampling (i.e., the fact that some individuals are not detected at all) and animal movement (i.e., the fact that individuals may use and be detected in multiple management units or countries). The OPSCR method brings along several advantages, including the ability to map density, derive jurisdiction-specific abundance, estimate survival and recruitment (which are needed for making population projections), and yield tractable measures of uncertainty (@Bischof2019rovquant, @Bischof2020estimating).
 
-RovQuant reported abundance estimates for wolverines and wolves on an annual basis since 2019 (Bischof et al., 2019a,b, 2020b; Milleret et al., 2022d,c,e; Flagstad et al.,2021; Milleret et al., 2023b,a) and for brown bears (Ursus arctos) in Norway since 2022 (Dupont et al., 2022, 2023). During these and other analyses (Milleret et al., 2018, 2019; Bischof et al.,2020a; Dupont et al., 2021; Turek et al., 2021; Dey et al., 2022), RovQuant has continuously improved the performance of the OPSCR models.
+RovQuant reported abundance estimates for wolverines and wolves on an annual basis since 2019 (@Bischof2019rovquant, @bischof2019, @Milleret2021wolf, @Milleret2022wolf,) and for brown bears (*Ursus arctos*) in Norway since 2022 (Dupont et al., 2022, 2023). During these and other analyses (Milleret et al., 2018, 2019; Bischof et al.,2020a; Dupont et al., 2021; Turek et al., 2021; Dey et al., 2022), RovQuant has continuously improved the performance of the OPSCR models.
 
-This document summarizes the results of the analysis of a `r length(years)`-year time-series (`r years[1]`- `r years[length(years)]`) of the latest available `r engSpecies` monitoring data and the most recent version of the OPSCR model. 
+This document summarizes the results of the analysis of a `r length(years)`-year time-series (`r years[1]`- `r years[length(years)]`) of the latest available `r engSpecies` monitoring data and the most recent version of the OPSCR model.
 
 ------------------------------------------------------------------------
 
-
 # Population density
-
 
 ```{r, density lastYear, fig.align = "center", fig.cap = paste0("Figure 1: ", engSpecies, " density in ", years[n.years], ". Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between ", years[1], " and ", years[n.years],"."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
@@ -112,7 +106,6 @@ knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.pn
 ```
 
 ------------------------------------------------------------------------
-
 
 # Population abundance
 
@@ -144,6 +137,12 @@ N_All %>%
 
 ------------------------------------------------------------------------
 
+# References
+
+::: {#refs}
+:::
+
+------------------------------------------------------------------------
 
 # Metadata
 
