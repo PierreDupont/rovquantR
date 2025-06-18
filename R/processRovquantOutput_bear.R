@@ -83,6 +83,10 @@ processRovquantOutput_bear <- function(
   load(file.path( working.dir, "data",
                   paste0("Detectors_bear_", DATE, ".RData")))
   
+  ##-- Load filtered data
+  load(file.path( working.dir, "data",
+                  paste0("FilteredData_bear_", DATE, ".RData")))
+  
   ##-- Habitat Rasters
   if(extraction.res <= 1000){
     data(habitatRasterResolution, envir = environment()) 
@@ -371,7 +375,7 @@ processRovquantOutput_bear <- function(
   ##-- Calculate area of extraction
   #sum(colSums(regionID)>0)
   
-  ##-- Select n.iter iterations randomly
+  ##-- Select niter iterations randomly
   if(dim(densityInputRegions$sy)[1] >= niter){
     iter <- seq(1, dim(densityInputRegions$sy)[1], length.out = niter)
   } else {
@@ -689,16 +693,19 @@ processRovquantOutput_bear <- function(
                heights = 1)
   
   for(cc in c(8,7,6,5,3)){
+    
+    ymax <- 10*(trunc(max(ACdensity[[t]]$PosteriorRegions[cc-1, ])/10)+1)
+    
     par(mar = c(2,5,2,0), tck = 0, mgp = c(2,0.2,0))
     plot(-1000,
-         xlim = c(0.5, n.years + 0.5), ylim = c(0,60),
+         xlim = c(0.5, n.years + 0.5), ylim = c(0,ymax),
          xlab = "", ylab = paste("Number of bears"),
          xaxt = "n", axes = F, cex.lab = 1.6)
     axis(1, at = c(1:n.years), labels = years, cex.axis = 1.15)
-    axis(2, at = seq(0,60,10), labels = seq(0,60,10),
+    axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10),
          cex.axis = 1.2, las = 1)
     abline(v = (0:n.years)+0.5, lty = 2)
-    abline(h = seq(0,60, by = 10), lty = 2, col = "gray60")
+    abline(h = seq(0,ymax, by = 10), lty = 2, col = "gray60")
     mtext(text = REGIONS$name[REGIONS$region == cc], side = 3, font = 2, line = 0.5)
     
     for(t in 1:n.years){
@@ -725,7 +732,7 @@ processRovquantOutput_bear <- function(
     if(cc %in% 3){
       par(xpd = TRUE)
       xx <- c(1.1,3.2,5)
-      yy <- c(50,50,50)
+      yy <- c(0.9*ymax,0.9*ymax,0.9*ymax)
       labs <- c("Females", "Males", "Total")
       polygon(x = c(0.6,6.4,6.4,0.6),
               y = c(50-7,50-7,50+7,50+7),
@@ -773,6 +780,17 @@ processRovquantOutput_bear <- function(
     results_M$sims.list$w <- (1-exp(-(mhH1+mhW1))) * (mhW1/(mhH1+mhW1))
     results_M$sims.list$phi <- 1 - results_M$sims.list$h - results_M$sims.list$w
   }
+  
+  # if(!"rho" %in% names(results_M$sims.list)){
+  #   results_M$sims.list$rho <- array(NA, c())
+  #   for(t in 1:(n.years-1)){
+  #     ##-- Number of recruits at t ==> ids with state 1 at t and 2 at t+1 
+  #     n.recruit <- apply(resultsSXYZ_MF$sims.list$z[ , ,c(t,t+1)], 1, function(x) sum(x[ ,1]%in%1 & x[ ,2]%in%2))
+  #     ##-- Number of reproducing ids at t ==> ids with state 2 at t
+  #     alivetminus1 <- apply(resultsSXYZ_MF$sims.list$z[ , ,t], 1, function(x)sum(x %in% 2))
+  #     ##-- Store per-capita recruitment rate in the results 
+  #   }#t
+  # }
   
   
   
@@ -1512,6 +1530,79 @@ processRovquantOutput_bear <- function(
   
   
   
+  ## ------       1.1.1. NGS, Dead recoveries & Carnivore obs ------
+
+  ##-- Plot NGS & Dead recovery maps
+  pdf(file = file.path(working.dir, "figures", "NGS_DR_maps.pdf"),
+      width = 18, height = 12)
+  
+  ##-- layout
+  mx <- rbind(c(1,rep(1:5, each = 2)),
+              c(rep(1:5, each = 2), 5))
+  mx <- rbind(mx, mx + 5)
+  nf <- layout(mx,
+               widths = c(rep(1,ncol(mx))),
+               heights = rep(1,2))
+  par(mar = c(0,0,0,0))
+  for(t in 1:length(years)){
+    plot(st_geometry(COUNTIES_s), border = NA, col = "gray80")
+    points(data.alive$data.sp[data.alive$data.sp$Year == years[t], ],
+           pch = 3, col = "orange", lwd = 0.7)
+    points(data.dead[data.dead$Year == years[t], ],
+           pch = 3, col = "slateblue", lwd = 0.7)
+    mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
+    
+    if(t == n.years){
+      segments(x0 = 830000, x1 = 830000,
+               y0 = 6730000, y1 = 6730000 + 500000,
+               col = grey(0.3), lwd = 4, lend = 2)
+      text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
+      
+      ##-- LEGEND
+      par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
+      plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
+      points(c(3,3), c(2.6,1.8), pch = 3, lwd = 1.5, cex = 3, col = c("orange","slateblue"))
+      text(c(3.5,3.5), c(2.55,1.75),  c("NGS samples", "Dead recoveries"), cex = 2, pos = 4)
+    }#if
+  }#t
+  dev.off()
+  
+  
+  
+  # ##-- Plot Carnivore observations maps
+  # pdf(file = file.path(WDFigures, paste0("CarnivoreObs_maps_classic.pdf")),
+  #     width = 18, height = 12)
+  # 
+  # ##-- layout
+  # mx <- rbind(c(1,rep(1:5, each = 2)),
+  #             c(rep(1:5, each = 2), 5))
+  # mx <- rbind(mx, mx + 5)
+  # nf <- layout(mx,
+  #              widths = c(rep(1,ncol(mx))),
+  #              heights = rep(1,2))
+  # par(mar = c(0,0,0,0))
+  # for(t in 1:length(years)){
+  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
+  #   image(mask(ds.brickCont[[t]],COUNTRIESsimpFig[1,]), add = TRUE, col = c("white","forestgreen"), legend = FALSE)
+  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = "gray80", col = NA, add = TRUE)
+  #   
+  #   mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
+  #   
+  #   if(t == n.years){
+  #     segments(x0 = 830000, x1 = 830000,
+  #              y0 = 6730000, y1 = 6730000 + 500000,
+  #              col = grey(0.3), lwd = 4, lend = 2)
+  #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
+  #     
+  #     ##-- LEGEND
+  #     par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
+  #     plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
+  #   }#if
+  # }#t
+  # dev.off()
+  
+  
+  
   ## ---------------------------------------------------------------------------
   # ## ------   4.7. DETECTABILITY ------
   # 
@@ -1812,8 +1903,8 @@ processRovquantOutput_bear <- function(
   
   ##-- Remove Finland, Norway, Russia, Sweden
   idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
-  idcounty <- unique(idcounty)
-  
+  idcounty <- sort(unique(idcounty))
+
   ##-- Get names of Norwegian carnivore regions
   idcountyNOR <- idcounty[grep("Region",idcounty)]
   idcountyTable <- c(idcountyNOR, "Total")
@@ -2203,86 +2294,86 @@ processRovquantOutput_bear <- function(
   ##-- Prepare raster of countries
   countryRaster <- habitatRasterResolution$`5km`[["Countries"]]
   
-  ##-- Calculate number of individuals alive with their AC in each country each year
-  N_det_by_country <- matrix(NA,5,n.years)
-  dimnames(N_det_by_country) <- list("Countries" = c("Norway","Sweden","Finland","Russia","Out"),
-                                     "Years" = c(years))
-  for(t in 1:n.years){
-    N_fin_F <- N_fin_M <- N_fin <- rep(NA,n.iter)
-    N_nor_F <- N_nor_M <- N_nor <- rep(NA,n.iter)
-    N_rus_F <- N_rus_M <- N_rus <- rep(NA,n.iter)
-    N_swe_F <- N_swe_M <- N_swe <- rep(NA,n.iter)
-    N_out_F <- N_out_M <- N_out <- rep(NA,n.iter)
-    for(iter in 1:n.iter){
-      
-      country <- countryRaster[raster::cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
-      isFin <- country %in% 1
-      isNor <- country %in% 2
-      isRus <- country %in% 3
-      isSwe <- country %in% 4
-      
-      ##-- Detected individuals
-      N_fin_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isFemale)
-      N_fin_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isMale)
-      N_fin[iter] <- N_fin_F[iter] + N_fin_M[iter]
-      
-      N_nor_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isFemale)
-      N_nor_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isMale)
-      N_nor[iter] <- N_nor_F[iter] + N_nor_M[iter]
-      
-      N_rus_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isFemale)
-      N_rus_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isMale)
-      N_rus[iter] <- N_rus_F[iter] + N_rus_M[iter]
-      
-      N_swe_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isFemale)
-      N_swe_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isMale)
-      N_swe[iter] <- N_swe_F[iter] + N_swe_M[iter]
-      
-      N_out_F[iter] <- N_fin_F[iter] + N_rus_F[iter] + N_swe_F[iter]
-      N_out_M[iter] <- N_fin_M[iter] + N_rus_M[iter] + N_swe_M[iter]
-      N_out[iter] <- N_out_F[iter] + N_out_M[iter]
-    }#iter
-    
-    N_det_by_country["Norway",t] <- getCleanEstimates(N_nor)
-    N_det_by_country["Sweden",t] <- getCleanEstimates(N_swe)
-    N_det_by_country["Finland",t] <- getCleanEstimates(N_fin)
-    N_det_by_country["Russia",t] <- getCleanEstimates(N_rus)
-    N_det_by_country["Out",t] <- getCleanEstimates(N_out)
-    
-    print(t)
-  }#t
-  ##-- Print number of individuals detected per country
-  print(N_det_by_country)
+  # ##-- Calculate number of individuals alive with their AC in each country each year
+  # N_det_by_country <- matrix(NA,5,n.years)
+  # dimnames(N_det_by_country) <- list("Countries" = c("Norway","Sweden","Finland","Russia","Out"),
+  #                                    "Years" = c(years))
+  # for(t in 1:n.years){
+  #   N_fin_F <- N_fin_M <- N_fin <- rep(NA,n.iter)
+  #   N_nor_F <- N_nor_M <- N_nor <- rep(NA,n.iter)
+  #   N_rus_F <- N_rus_M <- N_rus <- rep(NA,n.iter)
+  #   N_swe_F <- N_swe_M <- N_swe <- rep(NA,n.iter)
+  #   N_out_F <- N_out_M <- N_out <- rep(NA,n.iter)
+  #   for(iter in 1:n.iter){
+  #     
+  #     country <- countryRaster[raster::cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
+  #     isFin <- country %in% 1
+  #     isNor <- country %in% 2
+  #     isRus <- country %in% 3
+  #     isSwe <- country %in% 4
+  #     
+  #     ##-- Detected individuals
+  #     N_fin_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isFemale)
+  #     N_fin_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isMale)
+  #     N_fin[iter] <- N_fin_F[iter] + N_fin_M[iter]
+  #     
+  #     N_nor_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isFemale)
+  #     N_nor_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isMale)
+  #     N_nor[iter] <- N_nor_F[iter] + N_nor_M[iter]
+  #     
+  #     N_rus_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isFemale)
+  #     N_rus_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isMale)
+  #     N_rus[iter] <- N_rus_F[iter] + N_rus_M[iter]
+  #     
+  #     N_swe_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isFemale)
+  #     N_swe_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isMale)
+  #     N_swe[iter] <- N_swe_F[iter] + N_swe_M[iter]
+  #     
+  #     N_out_F[iter] <- N_fin_F[iter] + N_rus_F[iter] + N_swe_F[iter]
+  #     N_out_M[iter] <- N_fin_M[iter] + N_rus_M[iter] + N_swe_M[iter]
+  #     N_out[iter] <- N_out_F[iter] + N_out_M[iter]
+  #   }#iter
+  #   
+  #   N_det_by_country["Norway",t] <- getCleanEstimates(N_nor)
+  #   N_det_by_country["Sweden",t] <- getCleanEstimates(N_swe)
+  #   N_det_by_country["Finland",t] <- getCleanEstimates(N_fin)
+  #   N_det_by_country["Russia",t] <- getCleanEstimates(N_rus)
+  #   N_det_by_country["Out",t] <- getCleanEstimates(N_out)
+  #   
+  #   print(t)
+  # }#t
+  # ##-- Print number of individuals detected per country
+  # print(N_det_by_country)
   
   
-  ##-- Calculate number of individuals detected/undetected in Norway
-  N_NOR <- matrix(NA,4,n.years)
-  dimnames(N_NOR) <- list("#individuals" = c("Detected","Undetected","Total","%"),
-                          "Years" = c(years))
-  for(t in 1:n.years){
-    N_det <- N_undet <- N_tot <- rep(NA,n.iter)
-    for(iter in 1:n.iter){
-      country <- countryRaster[raster::cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
-      isNor <- country %in% 2
-      
-      ##-- Detected individuals
-      N_det[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor)
-      
-      ##-- Undetected individuals
-      N_undet[iter] <- sum(!isDetected[ ,t] & isAlive[iter, ,t] & isNor)
-      
-      ##-- Total Norway
-      N_tot[iter] <- N_det[iter] + N_undet[iter]
-    }#iter
-    
-    N_NOR["Detected",t] <- getCleanEstimates(N_det)
-    N_NOR["Undetected",t] <- getCleanEstimates(N_undet)
-    N_NOR["Total",t] <- getCleanEstimates(N_tot)
-    
-    print(t)
-  }#t
-  ##-- Print number of individuals with AC in Norway
-  print(N_NOR)
+  # ##-- Calculate number of individuals detected/undetected in Norway
+  # N_NOR <- matrix(NA,4,n.years)
+  # dimnames(N_NOR) <- list("#individuals" = c("Detected","Undetected","Total","%"),
+  #                         "Years" = c(years))
+  # for(t in 1:n.years){
+  #   N_det <- N_undet <- N_tot <- rep(NA,n.iter)
+  #   for(iter in 1:n.iter){
+  #     country <- countryRaster[raster::cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
+  #     isNor <- country %in% 2
+  #     
+  #     ##-- Detected individuals
+  #     N_det[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor)
+  #     
+  #     ##-- Undetected individuals
+  #     N_undet[iter] <- sum(!isDetected[ ,t] & isAlive[iter, ,t] & isNor)
+  #     
+  #     ##-- Total Norway
+  #     N_tot[iter] <- N_det[iter] + N_undet[iter]
+  #   }#iter
+  #   
+  #   N_NOR["Detected",t] <- getCleanEstimates(N_det)
+  #   N_NOR["Undetected",t] <- getCleanEstimates(N_undet)
+  #   N_NOR["Total",t] <- getCleanEstimates(N_tot)
+  #   
+  #   print(t)
+  # }#t
+  # ##-- Print number of individuals with AC in Norway
+  # print(N_NOR)
   
   
   
@@ -2314,10 +2405,10 @@ processRovquantOutput_bear <- function(
     prop["M",t] <- getCleanEstimates(prop_M)
     prop["Total",t] <- getCleanEstimates(prop_tot)
     
-    print(t)
+    #print(t)
   }#t
   ##-- Print number of individuals with AC in Norway
-  print(prop)
+  #print(prop)
   
   ##-- print .csv
   write.csv(prop,
@@ -2333,7 +2424,7 @@ processRovquantOutput_bear <- function(
   
   ## ------   5.3. VITAL RATES ------
   
-  parameters <- c("rho","phi", "h", "w")
+  parameters <- c("rho","phi", "h", "w", "r")
   sex <- c("F", "M")
   vitalRate <- matrix(NA, nrow = length(parameters)+1, ncol = (n.years)*2-2)
   rownames(vitalRate) <- c("", unlist(lapply(as.list(parameters), function(x)rep(x,1))))
@@ -2377,26 +2468,31 @@ processRovquantOutput_bear <- function(
       vitalRate["h",col] <- apply(h, 2, function(x) getCleanEstimates(x, moment = "median"))
       vitalRate["w",col] <- apply(w, 2, function(x) getCleanEstimates(x, moment = "median"))
     } else {
-      if(s == 1){
-        y.dead <- y.deadF[ ,3:12]
-        z <- resultsSXYZ_MF$sims.list$z[ ,isFemale,3:12] 
-      } else {
-        y.dead <- y.deadM[ ,3:12]
-        z <- resultsSXYZ_MF$sims.list$z[ ,isMale,3:12] 
-      }
       
       ##-- Extract survival from posteriors
-      vitalRate["phi",col] <- apply(results$sims.list$phi, 2, 
-                                    function(x) getCleanEstimates(x, moment = "median"))
+      vitalRate["phi",col] <- apply(results$sims.list$phi, 2, function(x) getCleanEstimates(x, moment = "median"))
+      vitalRate["r",col] <- apply(results$sims.list$r, 2, function(x) getCleanEstimates(x, moment = "median"))
       
-      ##-- Derive mortality from posterior z and dead recoveries 
-      isDead <- apply((z[ , ,1:(n.years-1)] == 2)*(z[ , ,2:n.years] == 3), c(1,3), sum)
-      wasAlive <- apply(z[ , ,1:(n.years-1)] == 2, c(1,3), sum)
-      mortality <- isDead / wasAlive
-      h <- sapply(1:(n.years-1), function(t)sum(y.dead[ ,t+1])/wasAlive[ ,t])
-      w <- mortality - h
-      vitalRate["h",col] <- apply(h, 2, function(x) getCleanEstimates(x, moment = "median"))
-      vitalRate["w",col] <- apply(w, 2, function(x) getCleanEstimates(x, moment = "median"))
+      if("h" %in% names(results$sims.list)) {
+        vitalRate["h",col] <- apply(results$sims.list$h, 2, function(x) getCleanEstimates(x, moment = "median"))
+        vitalRate["w",col] <- apply(results$sims.list$w, 2, function(x) getCleanEstimates(x, moment = "median"))
+      } else {
+        if(s == 1){
+          y.dead <- nimDataF$y.dead
+          z <- resultsSXYZ_MF$sims.list$z[ ,isFemale, ] 
+        } else {
+          y.dead <- nimDataM$y.dead
+          z <- resultsSXYZ_MF$sims.list$z[ ,isMale, ] 
+        }
+        ##-- Derive mortality from posterior z and dead recoveries 
+        isDead <- apply((z[ , ,1:(n.years-1)] == 2)*(z[ , ,2:n.years] == 3), c(1,3), sum)
+        wasAlive <- apply(z[ , ,1:(n.years-1)] == 2, c(1,3), sum)
+        mortality <- isDead / wasAlive
+        h <- sapply(1:(n.years-1), function(t)sum(y.dead[ ,t+1])/wasAlive[ ,t])
+        w <- mortality - h
+        vitalRate["h",col] <- apply(h, 2, function(x) getCleanEstimates(x, moment = "median"))
+        vitalRate["w",col] <- apply(w, 2, function(x) getCleanEstimates(x, moment = "median"))
+      }#else
     }#else
   }#s
   
@@ -2410,7 +2506,7 @@ processRovquantOutput_bear <- function(
   addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(vitalRate))),
                                       '}', collapse = ''), '\\\\'), rep("\\rowcolor[gray]{.95}",1))
   colnames(vitalRate) <- rep("", ncol(vitalRate))
-  rownames(vitalRate)[2:5] <- c("$\\rho$","$\\phi$","h","w")
+  rownames(vitalRate)[2:6] <- c("$\\rho$","$\\phi$","h","w", "r")
   
   print(xtable(vitalRate, type = "latex",
                align = paste(rep("c", ncol(vitalRate)+1),collapse = "")),
@@ -2421,8 +2517,7 @@ processRovquantOutput_bear <- function(
         file = file.path(working.dir, "tables", "VitalRates.tex"))
   
   
-  
-  
+
   ## ------   5.4. DERIVED PARAMETERS FROM ABUNDANCE ------
   
   ## ------     5.4.1. DERIVE SEX-RATIO ------
@@ -2433,9 +2528,8 @@ processRovquantOutput_bear <- function(
     PropFemale_regions[[t]] <- ACdensityF[[t]]$PosteriorRegions/
       (ACdensityM[[t]]$PosteriorRegions +
          ACdensityF[[t]]$PosteriorRegions)
-    print(rowMeans(PropFemale_regions[[t]],na.rm = T))
+    #print(rowMeans(PropFemale_regions[[t]], na.rm = T))
   }#t
-  
   
   ##-- OVERALL PROPORTION OF FEMALES
   PropFemale <- list()
@@ -2444,19 +2538,17 @@ processRovquantOutput_bear <- function(
       (colSums(ACdensityM[[t]]$PosteriorAllRegions) +
          colSums(ACdensityF[[t]]$PosteriorAllRegions))
   }#t
-  
-  
+
   ##-- Format table
   propFemale_tab <- matrix(0, ncol = n.years, nrow = 8)
   row.names(propFemale_tab) <- idcountyTable
   colnames(propFemale_tab) <- years
   for(t in 1:n.years){
     for(c in 1:7){
-      propFemale_tab[c,t] <- getCleanEstimates(na.omit(PropFemale_regions[[t]][c, ])) 
+      propFemale_tab[idcountyTable[c],t] <- getCleanEstimates(na.omit(PropFemale_regions[[t]][idcountyTable[c], ])) 
     }#c
-    propFemale_tab[8,t] <- getCleanEstimates(PropFemale[[t]] ) 
+    propFemale_tab[8,t] <- getCleanEstimates(PropFemale[[t]]) 
   }#t
-  
   
   ##-- print .tex
   row.names(propFemale_tab) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
@@ -2479,44 +2571,13 @@ processRovquantOutput_bear <- function(
   areaSqKm <- sum(na.omit(habbRCarRegionsTRY[ ] > 0)) * 25
   
   ##-- Multiplied by 100 to get per 100km2
-  ACdensity[[12]]$summary["Total","mean"]/areaSqKm*100
-  ACdensity[[12]]$summary["Total","95%CILow"]/areaSqKm*100
-  ACdensity[[12]]$summary["Total","95%CIHigh"]/areaSqKm*100
+  ACdensity[[n.years]]$summary["Total","mean"]/areaSqKm*100
+  ACdensity[[n.years]]$summary["Total","95%CILow"]/areaSqKm*100
+  ACdensity[[n.years]]$summary["Total","95%CIHigh"]/areaSqKm*100
   
+
   
-  
-  
-  ## ------     5.4.3. PROPORTION OF INDIVIDUALS DETECTED ------
-  
-  ##-- Get the number of individuals detected each year
-  n.detected_F <- apply(nimDataF$y.alive[ ,1, ], 2, function(x)sum(x>0))
-  n.detected_M <- apply(nimDataM$y.alive[ ,1, ], 2, function(x)sum(x>0))
-  
-  propDetected <- matrix("", ncol = n.years, nrow = 3)
-  row.names(propDetected) <- c("F","M","Total")
-  colnames(propDetected) <- years
-  for(t in 1:n.years){
-    propDetected["F",t] <- getCleanEstimates(n.detected_F[t]/colSums(ACdensityF[[t]]$PosteriorRegions))
-    propDetected["M",t] <- getCleanEstimates(n.detected_M[t]/colSums(ACdensityM[[t]]$PosteriorRegions))
-    propDetected["Total",t] <- getCleanEstimates((n.detected_F[t]+n.detected_M[t])/
-                                                   (colSums(ACdensityF[[t]]$PosteriorRegions)+
-                                                      colSums(ACdensityM[[t]]$PosteriorRegions)))
-  }#t
-  
-  ##-- print .csv
-  write.csv(propDetected,
-            file = file.path(working.dir, "tables", "PropDetectedIds.csv"))
-  
-  ##-- print .tex
-  print(xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDetected))),collapse = "")),
-        floating = FALSE, sanitize.text.function=function(x){x},
-        add.to.row = list(list(seq(1,nrow(propDetected), by = 2)),"\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables", "PropDetectedIds.tex"))
-  
-  
-  
-  
-  ## ------     5.4.4. GROWTH RATE ------
+  ## ------     5.4.3. GROWTH RATE ------
   
   growthRate <- list()
   for(t in 1:(n.years-1)){
