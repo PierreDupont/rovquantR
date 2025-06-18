@@ -23,6 +23,7 @@
 #' @importFrom graphics plot layout par segments mtext text 
 #' @importFrom sf st_geometry 
 #' @importFrom grDevices png colorRampPalette
+#' @importFrom png readPNG
 #'
 #' @rdname plotDensityMaps
 #' @export
@@ -248,7 +249,7 @@ plotDensityMaps <- function(
                                          side = 2, font = 1, line = 0, cex = 1))
         
         ##-- Add bear silhouette 
-        picSpecies <- readPNG( system.file("images", "bear.png", package = "rovquantR"))
+        picSpecies <- png::readPNG( system.file("images", "bear.png", package = "rovquantR"))
         picSize <- dim(picSpecies)
         xPos <- legend.x + 0.01 * xRange
         xSize <- 0.25 * xRange
@@ -261,8 +262,8 @@ plotDensityMaps <- function(
                      ytop = yPos + ySize)
         
         ##-- Add Norwegian flag 
-        #norFlag <- readPNG( system.file("images", "nor.png", package = "rovquantR"))
-        norFlag <- readPNG( "C:/My_documents/rovquantR/inst/images/nor.png")
+        #norFlag <- png::readPNG( system.file("images", "nor.png", package = "rovquantR"))
+        norFlag <- png::readPNG( "C:/My_documents/rovquantR/inst/images/nor.png")
         norSize <- dim(norFlag)
         xPos <- xLims[1] + 0.05 * xRange
         xSize <- 0.1 * xRange
@@ -312,7 +313,7 @@ plotDensityMaps <- function(
                                          side = 2, font = 1, line = 0, cex = 1))
         
         ##-- Add bear silhouette 
-        picSpecies <- readPNG( system.file("images", "bear.png", package = "rovquantR"))
+        picSpecies <- png::readPNG( system.file("images", "bear.png", package = "rovquantR"))
         picSize <- dim(picSpecies)
         xPos <- legend.x + 0.02 * xRange
         xSize <- 0.25 * xRange
@@ -325,8 +326,8 @@ plotDensityMaps <- function(
                      ytop = yPos + ySize)
         
         ##-- Add Norwegian flag 
-        norFlag <- readPNG( system.file("images", "nor.png", package = "rovquantR"))
-        norFlag <- readPNG( "C:/My_documents/rovquantR/inst/images/nor.png")
+        norFlag <- png::readPNG( system.file("images", "nor.png", package = "rovquantR"))
+        #norFlag <- png::readPNG( "C:/My_documents/rovquantR/inst/images/nor.png")
         
         norSize <- dim(norFlag)
         xPos <- xLims[1] + 0.05 * xRange
