@@ -70,9 +70,6 @@ plotDensityMaps <- function(
           }}}}
     ncols <- ceiling(L/nrows)
     
-    # grDevices::pdf(file = file.path(path, paste0(name,"_TimeSeries.pdf")),
-    #                width = ncols*2, height = nrows*4)
-    
     grDevices::png(filename = file.path(path, paste0(name,"_TimeSeries.png")),
                    width = ncols*2, height = nrows*4,
                    units = "in", pointsize = 12,
@@ -152,9 +149,6 @@ plotDensityMaps <- function(
   ##-- Last year's density map
   if(type %in% c("last.year","all")){
     
-    # grDevices::pdf(file = file.path(path, paste0(name,"_LastYear.pdf")),
-    #                width = 8, height = 8)
-    
     grDevices::png(filename = file.path(path, paste0(name,"_LastYear.png")),
         width = 8, height = 8, units = "in", pointsize = 12,
         res = 300, bg = NA)
@@ -177,7 +171,7 @@ plotDensityMaps <- function(
     }
     
     ##-- Add legend
-    legend.x <- raster::extent(background)[1] + 0.8*diff(raster::extent(background)[1:2])
+    legend.x <- raster::extent(background)[1] + 0.83*diff(raster::extent(background)[1:2])
     legend.y <- raster::extent(background)[3] + 0.3* diff(raster::extent(background)[3:4])
     
     graphics::segments(
@@ -185,7 +179,7 @@ plotDensityMaps <- function(
       y0 = legend.y-250000, y1 = legend.y + 250000,
       col = "gray30", lwd = 4, lend = 2)
     graphics::text(
-      x = legend.x-0.05*diff(raster::extent(background)[1:2]),
+      x = legend.x - 0.05*diff(raster::extent(background)[1:2]),
       y = legend.y,
       labels = "500 km", srt = 90, cex = 1.4)
     
@@ -198,6 +192,7 @@ plotDensityMaps <- function(
                   smallplot = c(0.85, 0.88, 0.2, 0.4),
                   legend.args = list(text = paste0("Individuals/", unit, " km2"),
                                      side = 2, font = 1, line = 0, cex = 1))
+    
     ######----- NEED TO FIX LEGEND TEXT 
     # graphics::segments(x0 = 800000, x1 = 800000,
     #          y0 = 6650000, y1 = 6650000 + 500000,
