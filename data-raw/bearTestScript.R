@@ -214,4 +214,10 @@ processRovquantOutput(
 )
 
 
+## TODAY, I NEED TO:
+## - Fix references (use [XX;XX]  to put multiple refs together in parentheses)
+## - Add the summary figure to the full report
+## - Add the norwegian summary to the full report?
+## - Add other tables to the full report
+## - Check numbers in the overleaf report
 ##------------------------------------------------------------------------------
