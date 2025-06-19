@@ -111,7 +111,17 @@ A total of 20 171 (8 828 female; 11 343 male) genotyped wolf genetic samples wer
 
 Wolf abundance for the entire study area (322 400 km2, excluding the buffer area) was likely (95% credible interval) between 414 and 470 individuals in 2023/2024 (Table 1, Figure 1). Estimates refer to the status of the population at the start of the annual sampling period (Oct. 1). The proportion of females in the Scandinavian wolf population was likely between 48% and 54% in 2023/2024. Based on the model-predicted location of ACs, we estimated that in 2023/2024, between 353 to 403 individuals could be attributed to Sweden and 56 to 73 to Norway (Table 1). See Table 1 for total and sex-specific abundance estimates for each country and management area. See Table A.5 for annual wolf abundance estimates for all of Scandinavia and by region between 2014/2015 and 2023/2024. During the past three years, the wolf population experienced a steady decrease from 494-525 in 2021/2022 to 414-470 in 2023/2024 (Figure 2, Table A.5). Note that estimates for different years (Figure 2) shown here differ slightly from those provided in Bischof et al. (2020), Milleret et al. (2021), Milleret et al. (2022c), and Milleret et al. (2023). This is due to the use of an updated OPSCR model and the inclusion of additional years of data. The analysis yielded annual density maps, which illustrate changes in the distribution of wolves over time (Figure A.3).
 
-Table 1: Wolf population size estimates in 2023/2024 within the study area by sex at several spatial scales: the entire study area, by country, by management unit (carnivore management regions in Norway and "Rovdjursförvaltningsområden" in Sweden), and counties (“Län” in Sweden); see also Figure A.2. Only counties and management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses, as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated activity center locations of wolves. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions. Note that the numbers reported here are predictions from a statistical model which always represents an oversimplification of reality and is based on available data (NGS and dead recoveries). As a consequence, especially at the local scale, the model-estimated number of wolves based on DNA sampling can deviate from the number of wolves inferred from ancillary observations (e.g., camera traps).
+```{r, Tab1, echo = FALSE, collapse = TRUE}
+N_LastYear %>%
+  kable( format = "html",
+         align = "ccc",
+         table.attr = "style='width:100%;'",
+         caption = paste0("Table 1. ", engSpecies, " population size estimates in ", years[n.years]," within the study area by sex and large carnivore management region. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
+  kable_classic(full_width = T, html_font = "Cambria") %>%
+    row_spec(c(0,nrow(N_All)), bold = T)
+```
+
+<!-- Table 1: Wolf population size estimates in 2023/2024 within the study area by sex at several spatial scales: the entire study area, by country, by management unit (carnivore management regions in Norway and "Rovdjursförvaltningsområden" in Sweden), and counties (“Län” in Sweden); see also Figure A.2. Only counties and management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses, as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated activity center locations of wolves. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions. Note that the numbers reported here are predictions from a statistical model which always represents an oversimplification of reality and is based on available data (NGS and dead recoveries). As a consequence, especially at the local scale, the model-estimated number of wolves based on DNA sampling can deviate from the number of wolves inferred from ancillary observations (e.g., camera traps). -->
 
 ```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is freely available as a geo-referenced raster file from the GitHub repository of project RovQuant https://github.com/richbi/RovQuantPublic"), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
@@ -121,7 +131,7 @@ knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"
 knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
 ```
 
-```{r, density timeSeries, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " density in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+```{r, Fig3, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " density in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
 ```
 
@@ -151,37 +161,28 @@ RovQuant continues to work on improving the functionality and efficiency of OPSC
 
 4.  Account for spatial variation in vital rates (i.e., survival, recruitment; @milleret2022estimating ).
 
-# Population density
+<!-- # Population density -->
 
-```{r, density lastYear, fig.align = "center", fig.cap = paste0("Figure 1: ", engSpecies, " density in ", years[n.years], ". Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between ", years[1], " and ", years[n.years],"."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
-```
+<!-- ```{r, density lastYear, fig.align = "center", fig.cap = paste0("Figure 1: ", engSpecies, " density in ", years[n.years], ". Density was estimated with an open-population spatial-capture recapture model fitted to NGS and dead recovery data collected between ", years[1], " and ", years[n.years],"."), echo = FALSE} -->
+<!-- knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png")) -->
+<!-- ``` -->
 
-The OPSCR model also produces population density maps. In `r years[length(years)]`, the population density of `r species`
+<!-- The OPSCR model also produces population density maps. In `r years[length(years)]`, the population density of `r species` -->
 
-```{r, density timeSeries, fig.align = "center", fig.cap = paste0("Figure 2: ", engSpecies, " density between ", years[1], " and ", years[length(years)], " as estimated by the OPSCR model."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
-```
+<!-- ```{r, density timeSeries, fig.align = "center", fig.cap = paste0("Figure 2: ", engSpecies, " density between ", years[1], " and ", years[length(years)], " as estimated by the OPSCR model."), echo = FALSE} -->
+<!-- knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png")) -->
+<!-- ``` -->
 
 ------------------------------------------------------------------------
 
-# Population abundance
+# Appendices
 
-```{r, abundance, include = TRUE, fig.align = "center", fig.cap = "Figure 3: Total (black) and sex-specific (blue: males, red: females) annual bear population size estimates", echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
-```
+<!-- ```{r, abundance, include = TRUE, fig.align = "center", fig.cap = "Figure 3: Total (black) and sex-specific (blue: males, red: females) annual bear population size estimates", echo = FALSE} -->
+<!-- knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png")) -->
+<!-- ``` -->
 
-Within its primary range (`r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals in `r years[n.years]`, with an estimated `r CI_F[1]` to `r CI_F[2]` females and `r CI_M[1]` to `r CI_M[2]` males.
+<!-- Within its primary range (`r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals in `r years[n.years]`, with an estimated `r CI_F[1]` to `r CI_F[2]` females and `r CI_M[1]` to `r CI_M[2]` males. -->
 
-```{r, abundance last year, echo = FALSE, collapse = TRUE}
-N_LastYear %>%
-  kable( format = "html",
-         align = "ccc",
-         table.attr = "style='width:100%;'",
-         caption = paste0("Table 1. ", engSpecies, " population size estimates in ", years[n.years]," by sex and large carnivore management region within the main population range. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
-  kable_classic(full_width = T, html_font = "Cambria") %>%
-    row_spec(c(0,nrow(N_All)), bold = T)
-```
 
 ```{r, abundance all years, echo = FALSE, collapse = TRUE}
 N_All %>%
