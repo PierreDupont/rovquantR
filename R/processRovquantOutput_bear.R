@@ -799,7 +799,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("Survival.pdf")),
   #     width = 10, height = 6)
   grDevices::png(filename = file.path(working.dir, "figures/Survival.png"),
-      width = 10, height = 6)
+      width = 10, height = 6, units = "in", pointsize = 12,
+      res = 300, bg = NA)
   
   nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),
                widths = c(0.05,1,0.30),
@@ -843,7 +844,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("Mortality.pdf")),
   #     width = 10, height = 9)
   grDevices::png(filename = file.path(working.dir, "figures/Mortality.png"),
-                 width = 10, height = 9)
+                 width = 10, height = 9, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
   
   nf <- layout(rbind(c(3,7,6),
                      c(4,1,6),
@@ -901,7 +903,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path( working.dir, "figures",
   #                       paste0("PerCapita.pdf")), width = 10, height = 8)
   grDevices::png(filename = file.path( working.dir, "figures/PerCapita.png"),
-                 width = 10, height = 8)
+                 width = 10, height = 8, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
   
   ##-- PER CAPITA RECRUITMENT 
   par(mar = c(4.5,4.5,1,1), xaxs = "i", cex.axis = 1.3, cex.lab = 1.6)
@@ -955,7 +958,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("NumRecruitTotal.pdf")),
   #     width = 10, height = 6)
   grDevices::png(filename = file.path(working.dir, "figures/NumRecruitTotal.png"),
-                 width = 10, height = 6)
+                 width = 10, height = 6, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
   
   nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),
                widths = c(0.05,1,0.30),
@@ -1044,7 +1048,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("NumRecruits_bars.pdf")),
   #     width = 12, height = 8.5)
   grDevices::png(filename = file.path(working.dir, "figures/NumRecruits_bars.png"),
-                 width = 12, height = 8.5)
+                 width = 12, height = 8.5, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
   
   ymax <- 10*(trunc(max(N_recruit)/10)+1)
   par(mar = c(5,5,1,1))
@@ -1102,7 +1107,9 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("NumSurvival_bars.pdf")),
   #     width = 12, height = 8.5)
   grDevices::png(filename = file.path(working.dir, "figures/NumSurvival_bars.png"),
-                 width = 12, height = 8.5)
+                 width = 12, height = 8.5, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  
   ymax <- 10*(trunc(max(N_surv)/10)+1)
   par(mar = c(5,5,1,1))
   plot(-1000,
@@ -1158,7 +1165,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("NumImmigrants_bars.pdf")),
   #     width = 12, height = 8.5)
   grDevices::png(filename = file.path( working.dir, "figures/NumImmigrants_bars.png"),
-                 width = 12, height = 8.5)
+                 width = 12, height = 8.5, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
   
   par(mar = c(5,5,1,1))
   ymax <- 10*(trunc(max(N_immig)/10)+1)
@@ -1215,7 +1223,9 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("NumEmigrants_bars.pdf")),
   #     width = 12, height = 8.5)
   grDevices::png(filename = file.path(working.dir, "figures/NumEmigrants_bars.png"),
-                 width = 12, height = 8.5)
+                 width = 12, height = 8.5, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  
   ymax <- 10*(trunc(max(N_emig)/10)+1)
   par(mar = c(5,5,1,1))
   plot(-1000,
@@ -1271,7 +1281,9 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("NumFluxes_bars.pdf")),
   #     width = 12, height = 8.5)
   grDevices::png(filename = file.path(working.dir, "figures/NumFluxes_bars.png"),
-                 width = 12, height = 8.5)
+                 width = 12, height = 8.5, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  
   par(mfrow = c(2,2), mar = c(5,5,1,1))
   
   ymax <- 10*(trunc(max(N_recruit)/10)+1)
@@ -1421,7 +1433,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("p0_bars.pdf")),
   #     width = 8, height = 12)
   grDevices::png(filename = file.path(working.dir, "figures/p0_bars.png"),
-                 width = 8, height = 12)
+                 width = 8, height = 12, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
   
   nf <- layout(rbind(c(1,2),
                      c(3,4),
@@ -1479,7 +1492,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("p0_maps.pdf")),
   #     width = 10, height = 6)
   grDevices::png(filename = file.path(working.dir, "figures/p0_maps.png"),
-                 width = 10, height = 6)
+                 width = 10, height = 6, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
   
   for(t in 1:n.years){
     par(mfrow = c(1,2))
@@ -1523,7 +1537,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("p0_beta.pdf")),
   #     width = 6, height = 4)
   grDevices::png(filename = file.path(working.dir, "figures/p0_beta.png"),
-                 width = 6, height = 4)
+                 width = 6, height = 4, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
   
   nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),
                widths = c(0.05,1,0.30),
@@ -1563,7 +1578,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", "NGS_DR_maps.pdf"),
   #     width = 18, height = 12)
   grDevices::png(filename = file.path(working.dir, "figures/NGS_DR_maps.png"),
-                 width = 18, height = 12)
+                 width = 18, height = 12, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
   
   ##-- layout
   mx <- rbind(c(1,rep(1:5, each = 2)),
@@ -1602,7 +1618,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("CarnivoreObs_maps_classic.pdf")),
   #     width = 18, height = 12)
   # grDevices::png(filename = file.path(working.dir, "figures/CarnivoreObs_maps_classic.png"),
-  #     width = 18, height = 12)
+  #     width = 18, height = 12, units = "in", pointsize = 12,
+  #     res = 300, bg = NA)
   #
   # ##-- layout
   # mx <- rbind(c(1,rep(1:5, each = 2)),
@@ -1675,7 +1692,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures/Detectability_maps.pdf"),
   #     width = 10, height = 6)
   # grDevices::png(filename = file.path(working.dir, "figures/Detectability_maps.png"),
-  #     width = 10, height = 6)
+  #     width = 10, height = 6, units = "in", pointsize = 12,
+  #     res = 300, bg = NA)
   #
   # ##-- Set color scale
   # max <- max(c(unlist(lapply( DetectabilityRegionsM[[t]]$MeanCell,
@@ -1762,7 +1780,9 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures/SexRatio_bars.pdf"),
   #     width = 12, height = 8.5)
   # grDevices::png(filename = file.path(working.dir, "figures/SexRatio_bars.png"),
-  #     width = 12, height = 8.5)
+  #     width = 12, height = 8.5, units = "in", pointsize = 12,
+  #     res = 300, bg = NA)
+  #
   # par(mar = c(5,5,1,1))
   # plot(-1000,
   #      xlim = c(0.5, n.years + 0.5), ylim = c(0.2,0.8),
@@ -1812,7 +1832,8 @@ processRovquantOutput_bear <- function(
   # # pdf(file = file.path(working.dir, "figures/SexRatio_Maps.pdf"),
   # #    width = 12, height = 8)
   # grDevices::png(filename = file.path(working.dir, "figures/SexRatio_Maps.png"), 
-  #     width = 12, height = 8)
+  #     width = 12, height = 8, units = "in", pointsize = 12,
+  #     res = 300, bg = NA)
   # 
   # ##-- Set color scale
   # max <- 1
@@ -1879,7 +1900,8 @@ processRovquantOutput_bear <- function(
   # # pdf(file = file.path(working.dir, "figures", paste0("SexRatio_Maps_smooth_",SF,".pdf")), 
   # #      width = 12, height = 8)
   #   grDevices::png(filename = file.path(working.dir, "figures", paste0("SexRatio_Maps_smooth_",SF,".png")), 
-  #       width = 12, height = 8)
+  #       width = 12, height = 8, units = "in", pointsize = 12,
+  #       res = 300, bg = NA)
   #   
   #   ##-- Set color scale
   #   max <- 1
