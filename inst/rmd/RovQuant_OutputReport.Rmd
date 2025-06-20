@@ -97,7 +97,7 @@ RovQuant reported abundance estimates for wolverines and wolves on an annual bas
 
 -   Estimated proportion of individuals detected through non-invasive genetic sampling (with credible intervals).
 
-`r if(engSpecies == “bear”){ paste(“Although RovQuant aims to provide comprehensive analyses of large carnivore populations throughout their entire range in Norway and Sweden, we only analyzed and present results for the Norwegian monitoring data in this report. Previous analyses revealed multiple difficulties related to the Swedish brown bear non-invasive genetic monitoring data (Dupont et al., 2023a; Milleret et al., 2024a), leading among other things to inconsistent results across model permutations when the Scandinavian brown bear monitoring data were analyzed jointly for Norway and Sweden (Dupont et al., 2023b).”)}`
+`r if(engSpecies==“bear”){paste(“Although RovQuant aims to provide comprehensive analyses of large carnivore populations throughout their entire range in Norway and Sweden, we only analyzed and present results for the Norwegian monitoring data in this report. Previous analyses revealed multiple difficulties related to the Swedish brown bear non-invasive genetic monitoring data (Dupont et al., 2023a; Milleret et al., 2024a), leading among other things to inconsistent results across model permutations when the Scandinavian brown bear monitoring data were analyzed jointly for Norway and Sweden (Dupont et al., 2023b).”)}`
 
 ------------------------------------------------------------------------
 
@@ -106,6 +106,11 @@ RovQuant reported abundance estimates for wolverines and wolves on an annual bas
 ## Non-invasive genetic samples and dead recoveries
 
 A total of 20 171 (8 828 female; 11 343 male) genotyped wolf genetic samples were included in the analysis, of which 76% originated from Sweden. These samples were associated with 1 838 (846 female; 992 male) individuals. We did not include individuals with unknown sex in this analysis. Among all genotyped samples, 8 803 (3660 female; 5143 male) were assigned to the structured sampling and 11 368 (5168 female; 6200 male) to the unstructured sampling. We also used 721 (324 female; 397 male) dead recoveries of wolves in the OPSCR model, of which 601 (267 female; 334 male) were due to legal culling and 120 (57 female; 63 male) due to other causes of mortality. The majority of dead recoveries (68%) originated from Sweden. Annual total and country-specific tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis are provided in the Appendices (NGS samples: Table A.2 and Table A.1, NGS individuals: Table A.3, dead recoveries: Table A.4)
+
+```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: Annual distribution of ", engSpecies, " non-invasive genetic samples (NGS, yellow crosses) and dead recoveries (purple crosses) between ", years[1], " and ", years[n.years], " and included in the OPSCR analyses. We included only samples collected within the study area during the primary monitoring period."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/NGS_DR_maps.png"))
+```
+
 
 ## Density and abundance
 
@@ -123,17 +128,14 @@ N_LastYear %>%
 
 <!-- Table 1: Wolf population size estimates in 2023/2024 within the study area by sex at several spatial scales: the entire study area, by country, by management unit (carnivore management regions in Norway and "Rovdjursförvaltningsområden" in Sweden), and counties (“Län” in Sweden); see also Figure A.2. Only counties and management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses, as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated activity center locations of wolves. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions. Note that the numbers reported here are predictions from a statistical model which always represents an oversimplification of reality and is based on available data (NGS and dead recoveries). As a consequence, especially at the local scale, the model-estimated number of wolves based on DNA sampling can deviate from the number of wolves inferred from ancillary observations (e.g., camera traps). -->
 
-```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is freely available as a geo-referenced raster file from the GitHub repository of project RovQuant https://github.com/richbi/RovQuantPublic"), echo = FALSE}
+```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is freely available as a geo-referenced raster file from the GitHub repository of project RovQuant https://github.com/richbi/RovQuantPublic"), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
 ```
 
-```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = "Figure 2: Wolf population size estimates within the study area by country (blue: Sweden, red: Norway), and total (black) between 2014/2015 and 2023/2024. Darker and lighter bars show the 50% and 95% credible intervals, respectively. Credible intervals indicate uncertainty in estimates given the model and data used to generate the estimates. Light grey bars in the background show the total number of individuals detected within the entire study area. Changes in the model and the data can result in different estimates and associated uncertainty compared with estimates provided in previous reports by RovQuant. Note the higher precision (lower uncertainty) in the three monitoring seasons (2016/17, 2017/18, 2019/20) with higher sampling intensity in Sweden.", echo = FALSE}
+```{r, Fig3, include = TRUE, fig.align = "center", fig.cap = "Figure 2: Wolf population size estimates within the study area by country (blue: Sweden, red: Norway), and total (black) between 2014/2015 and 2023/2024. Darker and lighter bars show the 50% and 95% credible intervals, respectively. Credible intervals indicate uncertainty in estimates given the model and data used to generate the estimates. Light grey bars in the background show the total number of individuals detected within the entire study area. Changes in the model and the data can result in different estimates and associated uncertainty compared with estimates provided in previous reports by RovQuant. Note the higher precision (lower uncertainty) in the three monitoring seasons (2016/17, 2017/18, 2019/20) with higher sampling intensity in Sweden.", echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
 ```
 
-```{r, Fig3, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " density in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
-```
 
 ## Vital rates
 
@@ -193,6 +195,11 @@ N_All %>%
   kable_classic(full_width = T, html_font = "Cambria") %>%
   kable_styling(font_size = 8) %>%
   row_spec(c(0,nrow(N_All)), bold = T)
+```
+
+
+```{r, FigS1, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " density in Norway between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
 ```
 
 ------------------------------------------------------------------------
