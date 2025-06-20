@@ -576,7 +576,7 @@ processRovquantOutput_bear <- function(
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES[1, ],
-    type = c("all"),
+    type = c("time.series", "last.year", "summary"),
     path = file.path(working.dir, "figures"),
     name = "AC_Density")
   
@@ -587,7 +587,7 @@ processRovquantOutput_bear <- function(
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES[1, ],
-    type = c("summary"),
+    type = c("time.series", "last.year", "summary"),
     species = "bear",
     path = file.path(working.dir, "figures"),
     name = "UD_Density")
