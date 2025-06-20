@@ -48,10 +48,11 @@ if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, 
   species <- "Wolverine"
 }
 
+##-- Months list
 months = c("January","February","March","April","May","June",
            "July","August","September","October","November","December")
 
-##-- load libraries
+##-- Libraries
 library(kableExtra)
 library(rovquantR)
 ```
@@ -91,9 +92,11 @@ CI_M <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Mal
 
 **Results** We estimated that, within its primary range (`r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$), the Norwegian brown bear population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males. Each year, a large proportion of the population is detected during annual large carnivore monitoring. Specifically, in `r years[length(years)]`, between `r XXX`% and `r XXX`% of the population were detected during non-invasive genetic sampling.
 
-```{r, summary figure, fig.align = "center", fig.cap = paste0("Density map and ranges of abundance estimated for ", species, " in ",  years[length(years)], "."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
+```{r, summary figure, fig.align = "center", echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/UD_Density_summary.png"))
 ```
+
+------------------------------------------------------------------------
 
 # Introduction
 

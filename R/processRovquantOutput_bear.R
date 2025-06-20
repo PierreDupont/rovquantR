@@ -1572,7 +1572,7 @@ processRovquantOutput_bear <- function(
   
   
   
-  ## ------       1.1.1. NGS, Dead recoveries & Carnivore obs ------
+  ## ------   4.7. NGS, Dead recoveries & Carnivore obs ------
 
   ##-- Plot NGS & Dead recovery maps
   # pdf(file = file.path(working.dir, "figures", "NGS_DR_maps.pdf"),
@@ -1611,7 +1611,6 @@ processRovquantOutput_bear <- function(
     }#if
   }#t
   dev.off()
-  
   
   
   # ##-- Plot Carnivore observations maps

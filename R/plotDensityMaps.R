@@ -208,8 +208,12 @@ plotDensityMaps <- function(
       message("You must provide one of 'bear', 'wolf' or 'wolverine' as the 'species' argument to be able plot the density map summary figure!")
     } else {
       ##-- Plot last year's density map
-      grDevices::pdf(file = file.path(path, paste0(name,"_Summary.pdf")),
-                     width = 8, height = 8, pointsize = 12)
+      # grDevices::pdf(file = file.path(path, paste0(name,"_Summary.pdf")),
+      #                width = 8, height = 8, pointsize = 12)
+      
+      grDevices::png(filename = file.path(path, paste0(name,"_Summary.png")),
+                     width = 8, height = 8, units = "in", pointsize = 12,
+                     res = 300, bg = NA)
       
       graphics::par(mar = c(5,0,0,0))
       plot(sf::st_geometry(background), border = NA, col = "gray80")
