@@ -17,7 +17,6 @@ output:
     highlight: zenburn
     #fig_caption: true
   word_document: default
-output: html_document
 bibliography: references.bib
 ---
 
@@ -215,9 +214,9 @@ Within its primary range (`r detectors$n.detectors*(detectors$resolution/1000)^2
 
 Table 1: Wolf population size estimates in 2023/2024 within the study area by sex at several spatial scales: the entire study area, by country, by management unit (carnivore management regions in Norway and "Rovdjursförvaltningsområden" in Sweden), and counties (“Län” in Sweden); see also Figure A.2. Only counties and management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses, as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated activity center locations of wolves. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions. Note that the numbers reported here are predictions from a statistical model which always represents an oversimplification of reality and is based on available data (NGS and dead recoveries). As a consequence, especially at the local scale, the model-estimated number of wolves based on DNA sampling can deviate from the number of wolves inferred from ancillary observations (e.g., camera traps).
 
-```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is freely available as a geo-referenced raster file from the GitHub repository of project RovQuant https://github.com/richbi/RovQuantPublic", echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
-```
+# ```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background).", echo = FALSE}
+# knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
+# ```
 
 ```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = "Figure 2: Wolf population size estimates within the study area by country (blue: Sweden, red: Norway), and total (black) between 2014/2015 and 2023/2024. Darker and lighter bars show the 50% and 95% credible intervals, respectively. Credible intervals indicate uncertainty in estimates given the model and data used to generate the estimates. Light grey bars in the background show the total number of individuals detected within the entire study area. Changes in the model and the data can result in different estimates and associated uncertainty compared with estimates provided in previous reports by RovQuant. Note the higher precision (lower uncertainty) in the three monitoring seasons (2016/17, 2017/18, 2019/20) with higher sampling intensity in Sweden.", echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))

@@ -191,6 +191,9 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 ##------------------------------------------------------------------------------
 ## ----- VI. PROCESS ROVQUANT OUTPUT ------
 
+Rmd.template <- system.file("rmd", "RovQuant_FullReport.Rmd", package = "rovquantR")
+
+
 processRovquantOutput(   
   species = "Brown bear"
   ,
@@ -206,9 +209,9 @@ processRovquantOutput(
   ,
   print.report = TRUE
   ,
-  Rmd.template = NULL
+  Rmd.template = Rmd.template
   ,
-  output.dir = NULL
+  output.dir = working.dir
   ,
   overwrite = FALSE
 )
