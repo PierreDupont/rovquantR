@@ -36,6 +36,7 @@ plotDensityMaps <- function(
     type = c("time.series", "last.year", "summary"),
     path = file.path(getwd(), "figures"),
     species = NULL,
+    q95 = NULL,
     name = "UD_Density")
 {
   
@@ -210,7 +211,6 @@ plotDensityMaps <- function(
       ##-- Plot last year's density map
       # grDevices::pdf(file = file.path(path, paste0(name,"_Summary.pdf")),
       #                width = 8, height = 8, pointsize = 12)
-      
       grDevices::png(filename = file.path(path, paste0(name,"_Summary.png")),
                      width = 8, height = 8, units = "in", pointsize = 12,
                      res = 300, bg = NA)
@@ -266,8 +266,7 @@ plotDensityMaps <- function(
                      ytop = yPos + ySize)
         
         ##-- Add Norwegian flag 
-        #norFlag <- png::readPNG( system.file("images", "nor.png", package = "rovquantR"))
-        norFlag <- png::readPNG( "C:/My_documents/rovquantR/inst/images/nor.png")
+        norFlag <- png::readPNG( system.file("images", "nor.png", package = "rovquantR"))
         norSize <- dim(norFlag)
         xPos <- xLims[1] + 0.05 * xRange
         xSize <- 0.1 * xRange
@@ -282,8 +281,7 @@ plotDensityMaps <- function(
         ##-- Add abundance estimate
         text(x = xPos + xSize + 0.1 * xRange,
              y = yPos + ySize/2, 
-             labels = paste0(round(estimates[[length(estimates)]]$summary["Total","95%CILow"]), "-",
-                           round(estimates[[length(estimates)]]$summary["Total","95%CIHigh"])),
+             labels = paste0(round(q95[1]), "-", round(q95[2])),
               cex = 1.2, font = 2)
         
         ##-- Add caption

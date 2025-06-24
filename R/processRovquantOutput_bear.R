@@ -612,10 +612,11 @@ processRovquantOutput_bear <- function(
     background = COUNTRIES[1, ],
     type = c("time.series", "last.year", "summary"),
     species = "bear",
+    q95 = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")],
     path = file.path(working.dir, "figures"),
     name = "UD_Density")
   
-  
+
   
   ## ------   4.2. ABUNDANCE TIME SERIES ------
   
