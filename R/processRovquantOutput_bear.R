@@ -36,7 +36,7 @@
 #' @rdname processRovquantOutput_bear
 #' @export
 processRovquantOutput_bear <- function(
-  ##-- paths
+    ##-- paths
   data.dir = getwd(),
   working.dir = NULL,
   ##-- MCMC
@@ -118,35 +118,18 @@ processRovquantOutput_bear <- function(
   ##-- MERGE & SIMPLIFY SOME NORWEGIAN COUNTIES
   COUNTIES_s <- COUNTIES[COUNTIES$country %in% "NOR", ] %>% sf::st_intersection(COUNTRIES)
   COUNTIES_s$county[COUNTIES_s$county %in% c("Trondelag - Troondelage",
-                                         "Nordland - Nordlannda")] <- "Trondelag"
+                                             "Nordland - Nordlannda")] <- "Trondelag"
   COUNTIES_s$county[COUNTIES_s$county %in% c("Troms - Romsa - Tromssa",
-                                         "Finnmark - Finnmarku - Finmarkku")] <- "Finnmark"
+                                             "Finnmark - Finnmarku - Finmarkku")] <- "Finnmark"
   COUNTIES_s$county[!COUNTIES_s$county %in% c("Finnmark",
-                                          "Trondelag")] <- "Hedmark"
+                                              "Trondelag")] <- "Hedmark"
   COUNTIES_s <- COUNTIES_s %>%
     group_by(county) %>%
     summarize() 
-
+  
   COUNTIES_s <- sf::st_simplify(sf::st_as_sf(COUNTIES_s), preserveTopology = T, dTolerance = 500)
   COUNTIES_s$index <- c(1,3,2)
   COUNTIES_s$Name <- c("NO1","NO3","NO2")
-  
-  
-  ##-- Extract number of individuals detected
-  isDetected <- rbind(nimDataM$y.alive[ ,1, ],nimDataF$y.alive[ ,1, ]) > 0
-  n.detected <- apply(isDetected, 2, sum)
-  
-  ##-- Identify individual sex
-  isFemale <- resultsSXYZ_MF$sims.list$sex == "F"
-  isMale <- resultsSXYZ_MF$sims.list$sex == "M"
-  
-  ##-- Identify individual status
-  isAvail <- resultsSXYZ_MF$sims.list$z == 1 
-  isAlive <- resultsSXYZ_MF$sims.list$z == 2 
-  isDead <- resultsSXYZ_MF$sims.list$z >= 3
-  
-  ##-- Number of MCMC samples
-  n.mcmc <- dim(resultsSXYZ_MF$sims.list$z)[1]
   
   
   
@@ -350,6 +333,22 @@ processRovquantOutput_bear <- function(
     save( results_F, results_M, resultsSXYZ_MF,
           file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
   }
+  
+  ##-- Extract number of individuals detected
+  isDetected <- rbind(nimDataM$y.alive[ ,1, ],nimDataF$y.alive[ ,1, ]) > 0
+  n.detected <- apply(isDetected, 2, sum)
+  
+  ##-- Identify individual sex
+  isFemale <- resultsSXYZ_MF$sims.list$sex == "F"
+  isMale <- resultsSXYZ_MF$sims.list$sex == "M"
+  
+  ##-- Identify individual status
+  isAvail <- resultsSXYZ_MF$sims.list$z == 1 
+  isAlive <- resultsSXYZ_MF$sims.list$z == 2 
+  isDead <- resultsSXYZ_MF$sims.list$z >= 3
+  
+  ##-- Number of MCMC samples
+  n.mcmc <- dim(resultsSXYZ_MF$sims.list$z)[1]
   
   
   
@@ -813,8 +812,8 @@ processRovquantOutput_bear <- function(
   # pdf(file = file.path(working.dir, "figures", paste0("Survival.pdf")),
   #     width = 10, height = 6)
   grDevices::png(filename = file.path(working.dir, "figures/Survival.png"),
-      width = 10, height = 6, units = "in", pointsize = 12,
-      res = 300, bg = NA)
+                 width = 10, height = 6, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
   
   nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),
                widths = c(0.05,1,0.30),
@@ -947,7 +946,7 @@ processRovquantOutput_bear <- function(
   
   
   ## ------       4.4.3.2. PLOT NUMBER OF RECRUITS ----
-
+  
   N_recruit <- N_recruit_F <- N_recruit_M <- matrix(NA, n.mcmc, n.years-1)
   for(t in 1:(n.years-1)){
     for(iter in 1:n.mcmc){
@@ -1102,7 +1101,7 @@ processRovquantOutput_bear <- function(
   text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
   
   dev.off()
-
+  
   
   
   
@@ -1279,7 +1278,7 @@ processRovquantOutput_bear <- function(
   dev.off()
   
   
-
+  
   ## ------     4.5.5. PLOT ALL -----
   
   # pdf(file = file.path(working.dir, "figures", paste0("NumFluxes_bars.pdf")),
@@ -1547,7 +1546,7 @@ processRovquantOutput_bear <- function(
   nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),
                widths = c(0.05,1,0.30),
                heights = c(0.15,1))
-
+  
   ##-- PLOT BETAS
   par(mar = c(5,4.5,0.5,0.5), tck = 0, xaxs = "i", cex.axis = 1.3, cex.lab = 1.6)
   plot( 10, xlim = c(0.5, 2.5), ylim = c(-5,5),
@@ -1577,7 +1576,7 @@ processRovquantOutput_bear <- function(
   
   
   ## ------   4.7. NGS, Dead recoveries & Carnivore obs ------
-
+  
   ##-- Plot NGS & Dead recovery maps
   # pdf(file = file.path(working.dir, "figures", "NGS_DR_maps.pdf"),
   #     width = 18, height = 12)
@@ -1617,7 +1616,7 @@ processRovquantOutput_bear <- function(
       text(x = c(xLeg-150000,xLeg-150000),
            y = c(yLeg-100000,yLeg-180000),
            c("NGS samples", "Dead recoveries"), cex = 2, pos = 4)
-          }#if
+    }#if
   }#t
   dev.off()
   
@@ -1971,7 +1970,7 @@ processRovquantOutput_bear <- function(
   ##-- Remove Finland, Norway, Russia, Sweden
   idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
   idcounty <- sort(unique(idcounty))
-
+  
   ##-- Get names of Norwegian carnivore regions
   idcountyNOR <- idcounty[grep("Region",idcounty)]
   idcountyTable <- c(idcountyNOR, "Total")
@@ -2169,7 +2168,7 @@ processRovquantOutput_bear <- function(
   ##-- Load filtered datasets
   load(file.path(working.dir, "data", paste0("FilteredData_bear_", DATE, ".RData")))
   
-
+  
   ##-- SOME TALLIES TO CHECK THINGS
   ##-- NGS
   NGS <- data.alive$data.sp
@@ -2230,7 +2229,7 @@ processRovquantOutput_bear <- function(
                                       '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
   colnames(NGS_SEX) <- rep("", ncol(NGS_SEX))
   print(xtable::xtable(NGS_SEX, type = "latex",
-               align = paste(c("l",rep("c",ncol(NGS_SEX))), collapse = "")),
+                       align = paste(c("l",rep("c",ncol(NGS_SEX))), collapse = "")),
         floating = FALSE, include.colnames = FALSE,
         add.to.row = addtorow,
         file = file.path(working.dir, "tables", paste0("NGS_SEX.tex")))
@@ -2303,7 +2302,7 @@ processRovquantOutput_bear <- function(
   Dead_SEX <- data.frame(cbind(multirowadd,Dead_SEX))
   
   print(xtable::xtable(Dead_SEX, type = "latex",
-               align = rep("c", ncol(Dead_SEX)+1)),
+                       align = rep("c", ncol(Dead_SEX)+1)),
         floating = FALSE,
         add.to.row = addtorow,
         include.colnames = FALSE,
@@ -2407,44 +2406,44 @@ processRovquantOutput_bear <- function(
     N_swe_F <- N_swe_M <- N_swe <- rep(NA,n.mcmc)
     N_out_F <- N_out_M <- N_out <- rep(NA,n.mcmc)
     for(iter in 1:n.mcmc){
-
+      
       country <- countryRaster[raster::cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
       isFin <- country %in% 1
       isNor <- country %in% 2
       isRus <- country %in% 3
       isSwe <- country %in% 4
-
+      
       ##-- Detected individuals
       N_fin_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isFemale)
       N_fin_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isFin & isMale)
       N_fin[iter] <- N_fin_F[iter] + N_fin_M[iter]
-
+      
       N_nor_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isFemale)
       N_nor_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isNor & isMale)
       N_nor[iter] <- N_nor_F[iter] + N_nor_M[iter]
-
+      
       N_rus_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isFemale)
       N_rus_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isRus & isMale)
       N_rus[iter] <- N_rus_F[iter] + N_rus_M[iter]
-
+      
       N_swe_F[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isFemale)
       N_swe_M[iter] <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isSwe & isMale)
       N_swe[iter] <- N_swe_F[iter] + N_swe_M[iter]
-
+      
       N_out_F[iter] <- N_fin_F[iter] + N_rus_F[iter] + N_swe_F[iter]
       N_out_M[iter] <- N_fin_M[iter] + N_rus_M[iter] + N_swe_M[iter]
       N_out[iter] <- N_out_F[iter] + N_out_M[iter]
     }#iter
-
+    
     N_det_by_country["Norway",t] <- getCleanEstimates(N_nor)
     N_det_by_country["Sweden",t] <- getCleanEstimates(N_swe)
     N_det_by_country["Finland",t] <- getCleanEstimates(N_fin)
     N_det_by_country["Russia",t] <- getCleanEstimates(N_rus)
     N_det_by_country["Out",t] <- getCleanEstimates(N_out)
-
+    
     print(t)
   }#t
-
+  
   ##-- print .csv
   write.csv(N_det_by_country,
             file = file.path(working.dir, "tables", "NumDetectedIds_country.csv"))
@@ -2575,7 +2574,7 @@ processRovquantOutput_bear <- function(
         file = file.path(working.dir, "tables", "VitalRates.tex"))
   
   
-
+  
   ## ------   5.4. DERIVED PARAMETERS FROM ABUNDANCE ------
   
   ## ------     5.4.1. DERIVE SEX-RATIO ------
@@ -2596,7 +2595,7 @@ processRovquantOutput_bear <- function(
       (colSums(ACdensityM[[t]]$PosteriorAllRegions) +
          colSums(ACdensityF[[t]]$PosteriorAllRegions))
   }#t
-
+  
   ##-- Format table
   propFemale_tab <- matrix(0, ncol = n.years, nrow = 8)
   row.names(propFemale_tab) <- idcountyTable
@@ -2633,7 +2632,7 @@ processRovquantOutput_bear <- function(
   ACdensity[[n.years]]$summary["Total","95%CILow"]/areaSqKm*100
   ACdensity[[n.years]]$summary["Total","95%CIHigh"]/areaSqKm*100
   
-
+  
   
   ## ------     5.4.3. GROWTH RATE ------
   
