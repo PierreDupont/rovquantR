@@ -94,7 +94,7 @@ COUNTIES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/new_scandinavian_bor
   st_transform(crs = st_crs(COUNTRIES)) %>%
   rename(county = fylkesnavn,
          area = SHAPE_Area) %>%
-  mutate(county = stri_trans_general(county, "Latin-ASCII"),
+  mutate(county = unlist(lapply(strsplit(county, " - "), function(x)x[1])),
          country = "NOR")
 COUNTIES_NOR <- COUNTIES_NOR[ ,c("county","country","area")]
 
@@ -102,7 +102,7 @@ COUNTIES_NOR <- COUNTIES_NOR[ ,c("county","country","area")]
 COUNTIES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/rk_lan_07_WGS84.shp")) %>%
   rename(county = LANSNAMN,
          area = AREA_METER) %>%
-  mutate(county = stri_trans_general(county, "Latin-ASCII"),
+  mutate(county = unlist(lapply(strsplit(county, " "), function(x)x[1])),
          country = "SWE")
 COUNTIES_SWE <- COUNTIES_SWE[ ,c("county","country","area")]
 
@@ -112,8 +112,6 @@ COUNTIES <- rbind(COUNTIES_NOR, COUNTIES_SWE) %>%
   ms_simplify( .,
                keep = 0.1,
                keep_shapes = FALSE)
-
-
 
 ##-- POLYGONS OF CARNIVORE MANAGEMENT REGIONS IN SWEDEN & NORWAY 
 ##-- Simplification at the end is needed because of large size otherwise

@@ -117,12 +117,9 @@ processRovquantOutput_bear <- function(
   
   ##-- MERGE & SIMPLIFY SOME NORWEGIAN COUNTIES
   COUNTIES_s <- COUNTIES[COUNTIES$country %in% "NOR", ] %>% sf::st_intersection(COUNTRIES)
-  COUNTIES_s$county[COUNTIES_s$county %in% c("Trondelag - Troondelage",
-                                             "Nordland - Nordlannda")] <- "Trondelag"
-  COUNTIES_s$county[COUNTIES_s$county %in% c("Troms - Romsa - Tromssa",
-                                             "Finnmark - Finnmarku - Finmarkku")] <- "Finnmark"
-  COUNTIES_s$county[!COUNTIES_s$county %in% c("Finnmark",
-                                              "Trondelag")] <- "Hedmark"
+  COUNTIES_s$county[COUNTIES_s$county %in% c("Trøndelag","Nordland")] <- "Trøndelag"
+  COUNTIES_s$county[COUNTIES_s$county %in% c("Troms","Finnmark")] <- "Finnmark"
+  COUNTIES_s$county[!COUNTIES_s$county %in% c("Finnmark","Trøndelag")] <- "Innlandet"
   COUNTIES_s <- COUNTIES_s %>%
     group_by(county) %>%
     summarize() 
@@ -357,8 +354,6 @@ processRovquantOutput_bear <- function(
   message("## Processing density outputs...")
   
   ##-- Names of regions to extract density for
-  regions.names <- c("Region 1","Region 2","Region 3","Region 4",
-                     "Region 5","Region 6","Region 7","Region 8")
   
   ##-- Remove buffer from the habitat
   habitat.rWthBuffer <- habitat$habitat.rWthBuffer
@@ -371,25 +366,42 @@ processRovquantOutput_bear <- function(
   habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
                                      habitat$habitat.r)
   
-  ##-- Create 5km raster for extraction
+  ##-- Create 5km raster of carnivore regions for extraction
   rrRegions <- extraction.raster$Regions
   rrRegions <- raster::mask(rrRegions, habitat$habitat.poly)
   rrRegions <- raster::crop(rrRegions, habitat$habitat.r)
-  
   ##-- Get the objects to run the density function
   densityInputRegions <- suppressWarnings(getDensityInput(
     regions = rrRegions,
     habitat = habitatPolygon5km,
     s = resultsSXYZ_MF$sims.list$sxy,
     plot.check = F))
-  
   ##-- Subset to regions of interest
+  regions.names <- c("Region 1","Region 2","Region 3","Region 4","Region 5","Region 6","Region 7","Region 8")
   regionID <- densityInputRegions$regions.rgmx
   row.names(regionID) <- row.names(densityInputRegions$regions.rgmx)
   regionID <- as.matrix(regionID[row.names(regionID) %in% regions.names, ])
   
+  
+  ##-- Create 5km raster for extraction
+  rrCounties <- extraction.raster$Counties
+  rrCounties <- raster::mask(rrCounties, habitat$habitat.poly)
+  rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
+  ##-- Get the objects to run the density function
+  densityInputCounties <- suppressWarnings(getDensityInput(
+    regions = rrCounties,
+    habitat = habitatPolygon5km,
+    s = resultsSXYZ_MF$sims.list$sxy,
+    plot.check = F))
+  ##-- Subset to Counties of interest
+  county.names <- COUNTIES$county[COUNTIES$country == "NOR"]
+  countyID <- densityInputCounties$regions.rgmx
+  row.names(countyID) <- row.names(densityInputCounties$regions.rgmx)
+  countyID <- as.matrix(countyID[row.names(countyID) %in% county.names, ])
+  
   ##-- Calculate area of extraction
-  #sum(colSums(regionID)>0) 
+  # sum(colSums(regionID)>0) 
+  # sum(colSums(countyID)>0)
   
   ##-- Select niter iterations randomly
   if(dim(densityInputRegions$sy)[1] >= niter){
@@ -433,7 +445,9 @@ processRovquantOutput_bear <- function(
     
     ## ------   1. AC-BASED DENSITY (5km) ------
     
-    ## ------     1.1. MALE & FEMALES -----
+    ## ------     1.1. LARGE CARNIVORE REGIONS ------
+    
+    ## ------       1.1.1. MALE & FEMALES -----
     ACdensity <- list()
     for(t in 1:n.years){
       ACdensity[[t]] <- GetDensity(
@@ -442,13 +456,13 @@ processRovquantOutput_bear <- function(
         z = resultsSXYZ_MF$sims.list$z[iter, ,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
-        regionID = regionID,
+        regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }#t
     names(ACdensity) <- years
     
     
-    ## ------     1.2. MALE -----
+    ## ------       1.1.2. MALE -----
     IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
     
     ACdensityM <- list()
@@ -466,7 +480,61 @@ processRovquantOutput_bear <- function(
     
     
     
-    ## ------     1.3. FEMALE -----
+    ## ------       1.1.3. FEMALE -----
+    IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
+    
+    ACdensityF <- list()
+    for(t in 1:n.years){
+      ACdensityF[[t]] <- GetDensity(
+        sx = densityInputRegions$sx[iter,IDFemales,t],
+        sy = densityInputRegions$sy[iter,IDFemales,t],
+        z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
+        IDmx = densityInputRegions$habitat.id,
+        aliveStates = 2,
+        regionID = regionID,
+        returnPosteriorCells = F)
+    }
+    names(ACdensityF) <- years
+    
+    
+    
+    ## ------     1.2. COUNTIES ------
+    
+    ## ------       1.2.1. MALE & FEMALES -----
+    
+    ACdensity_counties <- list()
+    for(t in 1:n.years){
+      ACdensity_counties[[t]] <- GetDensity(
+        sx = densityInputRegions$sx[iter, ,t],
+        sy = densityInputRegions$sy[iter, ,t],
+        z = resultsSXYZ_MF$sims.list$z[iter, ,t],
+        IDmx = densityInputRegions$habitat.id,
+        aliveStates = 2,
+        regionID = regionID,
+        returnPosteriorCells = F)
+    }#t
+    names(ACdensity_counties) <- years
+    
+    
+    ## ------       1.2.2. MALE -----
+    IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
+    
+    ACdensity_countiesM <- list()
+    for(t in 1:n.years){
+      ACdensityM[[t]] <- GetDensity(
+        sx = densityInputRegions$sx[iter,IDMales,t],
+        sy =  densityInputRegions$sy[iter,IDMales,t],
+        z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
+        IDmx = densityInputRegions$habitat.id,
+        aliveStates = 2,
+        regionID = regionID,
+        returnPosteriorCells = F)
+    }#t
+    names(ACdensityM) <- years
+    
+    
+    
+    ## ------       1.2.3. FEMALE -----
     IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
     
     ACdensityF <- list()
