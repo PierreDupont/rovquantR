@@ -116,7 +116,7 @@ processRovquantOutput_bear <- function(
   n.years <- length(years) 
   
   ##-- MERGE & SIMPLIFY SOME NORWEGIAN COUNTIES
-  COUNTIES_s <- COUNTIES[COUNTIES$country %in% "NOR", ] %>% st_intersection(COUNTRIES)
+  COUNTIES_s <- COUNTIES[COUNTIES$country %in% "NOR", ] %>% sf::st_intersection(COUNTRIES)
   COUNTIES_s$county[COUNTIES_s$county %in% c("Trondelag - Troondelage",
                                          "Nordland - Nordlannda")] <- "Trondelag"
   COUNTIES_s$county[COUNTIES_s$county %in% c("Troms - Romsa - Tromssa",
@@ -576,7 +576,7 @@ processRovquantOutput_bear <- function(
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES[1, ],
-    type = c("time.series", "last.year", "summary"),
+    type = c("time.series", "last.year"),
     path = file.path(working.dir, "figures"),
     name = "AC_Density")
   
