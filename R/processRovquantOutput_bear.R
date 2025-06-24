@@ -135,20 +135,26 @@ processRovquantOutput_bear <- function(
   message("## Processing model MCMC outputs...")
   
   ##-- Check that a file with that name does not already exist to avoid overwriting
-  fileName <- paste0("MCMC_bear_", DATE, ".RData")
+  mcmcTest <- TRUE
+  if (!overwrite) {
+    fileName <- paste0("MCMC_bear_", DATE, ".RData")
+    if (file.exists(file.path(working.dir, "data", fileName))) {
+      message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
+                     file.path(working.dir, "data")))
+      message("Do you want to proceed and overwrite the existing processed MCMC output file? (y/n) ")
+      question1 <- readLines(n = 1)
+      if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
+        message("Not overwriting existing files...")
+        message(paste0("Loading '", fileName, "' instead..."))
+        load(file.path(working.dir, "data", fileName))
+        mcmcTest <- FALSE
+      } else {
+        message(paste0("Now overwriting '", fileName,"'.\n"))
+      }
+    }
+  } 
   
-  if (!overwrite && file.exists(file.path(working.dir, "data", fileName))) {
-    message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
-                   file.path(working.dir, "data")))
-    message("Are you sure you want to proceed and overwrite existing processed MCMC output file? (y/n) ")
-    question1 <- readLines(n = 1)
-    if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
-      message("Not overwriting existing files...")
-      message(paste0("Loading '", fileName, "' instead..."))
-      load(file.path(working.dir, "data", fileName))
-    } else {
-      message(paste0("Now overwriting '", fileName,"'.\n"))
-      
+  if (mcmcTest) {
       ## ------   2.1. FEMALES -----
       ##-- Compile MCMC bites
       nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
@@ -237,99 +243,7 @@ processRovquantOutput_bear <- function(
       save( results_F, results_M, resultsSXYZ_MF,
             file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
     }
-  } else {
-    
-    ## ------   2.1. FEMALES -----
-    
-    ##-- Compile MCMC bites
-    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
-                                     burnin = nburnin)
-    
-    ##-- Traceplots
-    grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
-    plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
-    grDevices::dev.off()
-    
-    ##-- Process MCMC output
-    results_F <- ProcessCodaOutput( nimOutput_F$samples,
-                                    params.omit = c("sxy","z"))
-    resultsSXYZ_F <- ProcessCodaOutput(nimOutput_F$samples2)
-    
-    ##-- Rescale sxy to the original coordinate system
-    dimnames(resultsSXYZ_F$sims.list$sxy)[[3]] <- c("x","y")
-    resultsSXYZ_F$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
-      coordsData = resultsSXYZ_F$sims.list$sxy,
-      coordsHabitatGridCenter = habitat$habitat.xy,
-      scaleToGrid = FALSE)$coordsDataScaled
-    
-    ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
-    results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
-    results_F$sims.list$tau <- results_F$sims.list$tau * raster::res(habitat$habitat.r)[1]
-    
-    
-    
-    ## ------   2.2. MALES -----
-    
-    ##-- Compile MCMC bites
-    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/male"),
-                                     burnin = nburnin)
-    
-    ##-- Traceplots
-    grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
-    plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
-    dev.off()
-    
-    ##-- Process MCMC output
-    results_M <- ProcessCodaOutput( nimOutput_M$samples,
-                                    params.omit = c("sxy","z"))
-    resultsSXYZ_M <- ProcessCodaOutput(nimOutput_M$samples2)
-    
-    ##-- RESCALE SXY TO THE ORIGINAL COORDINATE SYSTEM
-    dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
-    resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
-      coordsData = resultsSXYZ_M$sims.list$sxy,
-      coordsHabitatGridCenter = habitat$habitat.df,
-      scaleToGrid = FALSE)$coordsDataScaled
-    
-    ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
-    results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
-    results_M$sims.list$tau <- results_M$sims.list$tau * raster::res(habitat$habitat.r)[1]
-    
-    
-    
-    ## ------   2.3. COMBINE MALES & FEMALES -----
-    
-    resultsSXYZ_MF <- resultsSXYZ_M
-    
-    ##-- Get minimum number of iterations between model F and M
-    minIter <- min(dim(resultsSXYZ_F$sims.list$sxy)[1],
-                   dim(resultsSXYZ_M$sims.list$sxy)[1])
-    
-    ##-- sxy
-    resultsSXYZ_MF$sims.list$sxy <- abind::abind(resultsSXYZ_M$sims.list$sxy[1:minIter, , , ],
-                                                 resultsSXYZ_F$sims.list$sxy[1:minIter, , , ],
-                                                 along = 2)
-    dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x","y")
-    
-    ##-- z
-    resultsSXYZ_MF$sims.list$z <- abind::abind(resultsSXYZ_M$sims.list$z[1:minIter, , ],
-                                               resultsSXYZ_F$sims.list$z[1:minIter, , ],
-                                               along = 2)
-    
-    ##-- sigma
-    resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter],
-                                            results_F$sims.list$sigma[1:minIter])
-    dimnames(resultsSXYZ_MF$sims.list$sigma)[[2]] <- c("M","F")
-    
-    ##-- sex
-    resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
-                                        c(dim(resultsSXYZ_M$sims.list$sxy)[2],
-                                          dim(resultsSXYZ_F$sims.list$sxy)[2]))
-    
-    ##-- SAVE AND LOAD DATA
-    save( results_F, results_M, resultsSXYZ_MF,
-          file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
-  }
+  
   
   ##-- Extract number of individuals detected
   isDetected <- rbind(nimDataM$y.alive[ ,1, ],nimDataF$y.alive[ ,1, ]) > 0
@@ -416,6 +330,7 @@ processRovquantOutput_bear <- function(
   
   ##-- Calculate density only if necessary
   ##-- Check that a file with that name does not already exist to avoid overwriting
+  densTest <- TRUE
   if (!overwrite) {
     fileName <- paste0("Density_bear_", DATE, ".RData")
     if (file.exists(file.path(working.dir, "data", fileName))) {
@@ -427,19 +342,14 @@ processRovquantOutput_bear <- function(
         message("Not overwriting existing files...")
         message(paste0("Loading '", fileName, "' instead..."))
         load(file.path(working.dir, "data", fileName))
+        densTest <- FALSE
       } else {
         message(paste0("Now overwriting '", fileName,"'.\n"))
       }
     }
   } 
   
-  if(file.exists(file.path(working.dir, "data", paste0("Density_bear_", DATE, ".RData")))){
-    
-    message("## Loading pre-processed population density...")
-    
-    load(file.path( working.dir, "data", paste0("Density_bear_", DATE, ".RData")))
-    
-  } else {
+  if(densTest){
     
     message("## Extracting population density... \n## This might take a while...")
     
@@ -498,60 +408,60 @@ processRovquantOutput_bear <- function(
     
     
     
-    ## ------     1.2. COUNTIES ------
-    
-    ## ------       1.2.1. MALE & FEMALES -----
-    
-    ACdensity_counties <- list()
-    for(t in 1:n.years){
-      ACdensity_counties[[t]] <- GetDensity(
-        sx = densityInputRegions$sx[iter, ,t],
-        sy = densityInputRegions$sy[iter, ,t],
-        z = resultsSXYZ_MF$sims.list$z[iter, ,t],
-        IDmx = densityInputRegions$habitat.id,
-        aliveStates = 2,
-        regionID = regionID,
-        returnPosteriorCells = F)
-    }#t
-    names(ACdensity_counties) <- years
-    
-    
-    ## ------       1.2.2. MALE -----
-    IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
-    
-    ACdensity_countiesM <- list()
-    for(t in 1:n.years){
-      ACdensityM[[t]] <- GetDensity(
-        sx = densityInputRegions$sx[iter,IDMales,t],
-        sy =  densityInputRegions$sy[iter,IDMales,t],
-        z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
-        IDmx = densityInputRegions$habitat.id,
-        aliveStates = 2,
-        regionID = regionID,
-        returnPosteriorCells = F)
-    }#t
-    names(ACdensityM) <- years
-    
-    
-    
-    ## ------       1.2.3. FEMALE -----
-    IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
-    
-    ACdensityF <- list()
-    for(t in 1:n.years){
-      ACdensityF[[t]] <- GetDensity(
-        sx = densityInputRegions$sx[iter,IDFemales,t],
-        sy = densityInputRegions$sy[iter,IDFemales,t],
-        z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
-        IDmx = densityInputRegions$habitat.id,
-        aliveStates = 2,
-        regionID = regionID,
-        returnPosteriorCells = F)
-    }
-    names(ACdensityF) <- years
-    
-    
-    
+    # ## ------     1.2. COUNTIES ------
+    # 
+    # ## ------       1.2.1. MALE & FEMALES -----
+    # 
+    # ACdensity_counties <- list()
+    # for(t in 1:n.years){
+    #   ACdensity_counties[[t]] <- GetDensity(
+    #     sx = densityInputRegions$sx[iter, ,t],
+    #     sy = densityInputRegions$sy[iter, ,t],
+    #     z = resultsSXYZ_MF$sims.list$z[iter, ,t],
+    #     IDmx = densityInputRegions$habitat.id,
+    #     aliveStates = 2,
+    #     regionID = regionID,
+    #     returnPosteriorCells = F)
+    # }#t
+    # names(ACdensity_counties) <- years
+    # 
+    # 
+    # ## ------       1.2.2. MALE -----
+    # IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
+    # 
+    # ACdensity_countiesM <- list()
+    # for(t in 1:n.years){
+    #   ACdensityM[[t]] <- GetDensity(
+    #     sx = densityInputRegions$sx[iter,IDMales,t],
+    #     sy =  densityInputRegions$sy[iter,IDMales,t],
+    #     z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
+    #     IDmx = densityInputRegions$habitat.id,
+    #     aliveStates = 2,
+    #     regionID = regionID,
+    #     returnPosteriorCells = F)
+    # }#t
+    # names(ACdensityM) <- years
+    # 
+    # 
+    # 
+    # ## ------       1.2.3. FEMALE -----
+    # IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
+    # 
+    # ACdensityF <- list()
+    # for(t in 1:n.years){
+    #   ACdensityF[[t]] <- GetDensity(
+    #     sx = densityInputRegions$sx[iter,IDFemales,t],
+    #     sy = densityInputRegions$sy[iter,IDFemales,t],
+    #     z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
+    #     IDmx = densityInputRegions$habitat.id,
+    #     aliveStates = 2,
+    #     regionID = regionID,
+    #     returnPosteriorCells = F)
+    # }
+    # names(ACdensityF) <- years
+    # 
+    # 
+    # 
     ## ------   2. UD-BASED DENSITY (5km) ------
     
     ##--  Combine male and female sigma
@@ -570,6 +480,7 @@ processRovquantOutput_bear <- function(
     
     
     ## ------     2.1. MALE -----
+    
     IDMales <- which(resultsSXYZ_MF$sims.list$sex=="M")
     
     UDdensityM <- list()
@@ -583,13 +494,14 @@ processRovquantOutput_bear <- function(
         aliveStates = 2,
         regionID = regionID,
         display_progress = T,
-        returnPosteriorCells = T)
+        returnPosteriorCells = F)
     }#t
     names(UDdensityM) <- years
     
     
     
     ## ------     2.2. FEMALE -----
+    
     IDFemales <- which(resultsSXYZ_MF$sims.list$sex=="F")
     
     UDdensityF <- list()
@@ -603,13 +515,14 @@ processRovquantOutput_bear <- function(
         aliveStates = 2,
         regionID = regionID,
         display_progress = T,
-        returnPosteriorCells = T)
+        returnPosteriorCells = F)
     }#t
     names(UDdensityF) <- years
     
     
     
     ## ------     2.3. MALE & FEMALES -----
+    
     UDdensity <- list()
     for(t in 1:n.years){
       UDdensity[[t]] <- GetSpaceUse(
@@ -621,7 +534,7 @@ processRovquantOutput_bear <- function(
         aliveStates = 2,
         regionID = regionID,
         display_progress = T,
-        returnPosteriorCells = T)
+        returnPosteriorCells = F)
     }#t
     names(UDdensity) <- years
     
