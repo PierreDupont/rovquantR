@@ -2423,7 +2423,7 @@ processRovquantOutput_bear <- function(
         include.colnames = FALSE,
         include.rownames = FALSE,
         sanitize.text.function = function(x){x},
-        file = file.path(working.dir, "tables", "DeadidCountrySEX.tex"))
+        file = file.path(working.dir, "tables/DeadidCountrySEX.tex"))
   
   
   
@@ -2451,13 +2451,13 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv(propDetected,
-            file = file.path(working.dir, "tables", "PropDetectedIds.csv"))
+            file = file.path(working.dir, "tables/PropDetectedIds.csv"))
   
   ##-- print .tex
   print(xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDetected))),collapse = "")),
         floating = FALSE, sanitize.text.function=function(x){x},
         add.to.row = list(list(seq(1,nrow(propDetected), by = 2)),"\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables", "PropDetectedIds.tex"))
+        file = file.path(working.dir, "tables/PropDetectedIds.tex"))
   
   
   
@@ -2571,7 +2571,7 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv(N_det_by_country,
-            file = file.path(working.dir, "tables", "NumDetectedIds_country.csv"))
+            file = file.path(working.dir, "tables/NumDetectedIds_country.csv"))
   
   # ##-- Calculate number of individuals detected/undetected in Norway
   # N_NOR <- matrix(NA,4,n.years)
@@ -2680,7 +2680,7 @@ processRovquantOutput_bear <- function(
   
   ##-- Print .csv
   write.csv( vitalRate,
-             file = file.path(working.dir, "tables", "VitalRates.csv"))
+             file = file.path(working.dir, "tables/VitalRates.csv"))
   
   ##-- Print .tex (print two separate tables to put in the overleaf document)
   #colnames(vitalRate) <- rep("", ncol)
@@ -2697,7 +2697,7 @@ processRovquantOutput_bear <- function(
         add.to.row = addtorow,
         include.colnames = F,
         sanitize.text.function = function(x){x},
-        file = file.path(working.dir, "tables", "VitalRates_1.tex"))
+        file = file.path(working.dir, "tables/VitalRates_1.tex"))
   
   ##-- Table Vital Rates #2
   addtorow <- list()
@@ -2710,7 +2710,7 @@ processRovquantOutput_bear <- function(
         add.to.row = addtorow,
         include.colnames = F,
         sanitize.text.function = function(x){x},
-        file = file.path(working.dir, "tables", "VitalRates_2.tex"))
+        file = file.path(working.dir, "tables/VitalRates_2.tex"))
   
   
   
@@ -2754,7 +2754,7 @@ processRovquantOutput_bear <- function(
         floating = FALSE,
         sanitize.text.function = function(x){x},
         add.to.row = list(list(seq(1, nrow(propFemale_tab), by = 2)), "\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables", "propFemale.tex"))
+        file = file.path(working.dir, "tables/propFemale.tex"))
   
   
   
@@ -2802,7 +2802,7 @@ processRovquantOutput_bear <- function(
         add.to.row = addtorow,
         include.colnames = F,
         sanitize.text.function = function(x){x},
-        file = file.path(working.dir, "tables", "GrowthRates.tex"))
+        file = file.path(working.dir, "tables/GrowthRates.tex"))
   
   
   
@@ -2819,8 +2819,8 @@ processRovquantOutput_bear <- function(
   rownames(TableOthers) <- parameters
   colnames(TableOthers) <- c("", sex)
   TableOthers[ ,1] <- c("$\\tau$",
-                        "$\\beta_{dead}_{1}$","$\\beta_{skandobs}_{1}$",
-                        "$\\beta_{dead}_{2}$","$\\beta_{skandobs}_{2}$",
+                        "$\\beta_{dead_1}$","$\\beta_{skandobs_1}$",
+                        "$\\beta_{dead_2}$","$\\beta_{skandobs_2}$",
                         "$\\sigma$",
                         "$\\beta_{roads}$","$\\beta_{obs}$")
   
@@ -2860,7 +2860,7 @@ processRovquantOutput_bear <- function(
         include.rownames = FALSE,
         include.colnames = FALSE,
         add.to.row = addtorow,
-        file = file.path(working.dir, "tables", "TableParametersOthers.tex"))
+        file = file.path(working.dir, "tables/TableParametersOthers.tex"))
   
   
   
