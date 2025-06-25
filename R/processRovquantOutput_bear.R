@@ -76,16 +76,13 @@ processRovquantOutput_bear <- function(
   nimInitsM <- nimInits
   
   ##-- Habitat
-  load(file.path( working.dir, "data",
-                  paste0("Habitat_bear_", DATE, ".RData")))
+  load(file.path( working.dir, "data", paste0("Habitat_bear_", DATE, ".RData")))
   
   ##-- Detectors
-  load(file.path( working.dir, "data",
-                  paste0("Detectors_bear_", DATE, ".RData")))
+  load(file.path( working.dir, "data", paste0("Detectors_bear_", DATE, ".RData")))
   
   ##-- Load filtered data
-  load(file.path( working.dir, "data",
-                  paste0("FilteredData_bear_", DATE, ".RData")))
+  load(file.path( working.dir, "data", paste0("FilteredData_bear_", DATE, ".RData")))
   
   ##-- Habitat Rasters
   if(extraction.res <= 1000){
@@ -154,95 +151,98 @@ processRovquantOutput_bear <- function(
     }
   } 
   
-  if (mcmcTest) {
-      ## ------   2.1. FEMALES -----
-      ##-- Compile MCMC bites
-      nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
-                                       burnin = nburnin)
-      
-      ##-- Traceplots
-      grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
-      plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
-      grDevices::dev.off()
-      
-      ##-- Process MCMC output
-      results_F <- ProcessCodaOutput( nimOutput_F$samples,
-                                      params.omit = c("sxy","z"))
-      resultsSXYZ_F <- ProcessCodaOutput(nimOutput_F$samples2)
-      
-      ##-- Rescale sxy to the original coordinate system
-      dimnames(resultsSXYZ_F$sims.list$sxy)[[3]] <- c("x","y")
-      resultsSXYZ_F$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
-        coordsData = resultsSXYZ_F$sims.list$sxy,
-        coordsHabitatGridCenter = habitat$habitat.xy,
-        scaleToGrid = FALSE)$coordsDataScaled
-      
-      ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
-      results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
-      results_F$sims.list$tau <- results_F$sims.list$tau * raster::res(habitat$habitat.r)[1]
-      
-      
-      
-      ## ------   2.2. MALES -----
-      ##-- Compile MCMC bites
-      nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/male"),
-                                       burnin = nburnin)
-      
-      ##-- Traceplots
-      grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
-      plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
-      dev.off()
-      
-      ##-- Process MCMC output
-      results_M <- ProcessCodaOutput( nimOutput_M$samples,
-                                      params.omit = c("sxy","z"))
-      resultsSXYZ_M <- ProcessCodaOutput(nimOutput_M$samples2)
-      
-      ##-- RESCALE SXY TO THE ORIGINAL COORDINATE SYSTEM
-      dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
-      resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
-        coordsData = resultsSXYZ_M$sims.list$sxy,
-        coordsHabitatGridCenter = habitat$habitat.df,
-        scaleToGrid = FALSE)$coordsDataScaled
-      
-      ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
-      results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
-      results_M$sims.list$tau <- results_M$sims.list$tau * raster::res(habitat$habitat.r)[1]
-      
-      
-      
-      ## ------   2.3. COMBINE MALES & FEMALES -----
-      resultsSXYZ_MF <- resultsSXYZ_M
-      
-      ##-- Get minimum number of iterations between model F and M
-      minIter <- min(dim(resultsSXYZ_F$sims.list$sxy)[1],
-                     dim(resultsSXYZ_M$sims.list$sxy)[1])
-      
-      ##-- sxy
-      resultsSXYZ_MF$sims.list$sxy <- abind::abind(resultsSXYZ_M$sims.list$sxy[1:minIter, , , ],
-                                                   resultsSXYZ_F$sims.list$sxy[1:minIter, , , ],
-                                                   along = 2)
-      dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x","y")
-      
-      ##-- z
-      resultsSXYZ_MF$sims.list$z <- abind::abind(resultsSXYZ_M$sims.list$z[1:minIter, , ],
-                                                 resultsSXYZ_F$sims.list$z[1:minIter, , ],
+  if(mcmcTest){
+    ## ------   2.1. FEMALES -----
+    
+    ##-- Compile MCMC bites
+    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
+                                     burnin = nburnin)
+    
+    ##-- Traceplots
+    grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
+    plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
+    grDevices::dev.off()
+    
+    ##-- Process MCMC output
+    results_F <- ProcessCodaOutput( nimOutput_F$samples,
+                                    params.omit = c("sxy","z"))
+    resultsSXYZ_F <- ProcessCodaOutput(nimOutput_F$samples2)
+    
+    ##-- Rescale sxy to the original coordinate system
+    dimnames(resultsSXYZ_F$sims.list$sxy)[[3]] <- c("x","y")
+    resultsSXYZ_F$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
+      coordsData = resultsSXYZ_F$sims.list$sxy,
+      coordsHabitatGridCenter = habitat$habitat.xy,
+      scaleToGrid = FALSE)$coordsDataScaled
+    
+    ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+    results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
+    results_F$sims.list$tau <- results_F$sims.list$tau * raster::res(habitat$habitat.r)[1]
+    
+    
+    
+    ## ------   2.2. MALES -----
+    
+    ##-- Compile MCMC bites
+    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/male"),
+                                     burnin = nburnin)
+    
+    ##-- Traceplots
+    grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
+    plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
+    dev.off()
+    
+    ##-- Process MCMC output
+    results_M <- ProcessCodaOutput( nimOutput_M$samples,
+                                    params.omit = c("sxy","z"))
+    resultsSXYZ_M <- ProcessCodaOutput(nimOutput_M$samples2)
+    
+    ##-- RESCALE SXY TO THE ORIGINAL COORDINATE SYSTEM
+    dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
+    resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
+      coordsData = resultsSXYZ_M$sims.list$sxy,
+      coordsHabitatGridCenter = habitat$habitat.df,
+      scaleToGrid = FALSE)$coordsDataScaled
+    
+    ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+    results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
+    results_M$sims.list$tau <- results_M$sims.list$tau * raster::res(habitat$habitat.r)[1]
+    
+    
+    
+    ## ------   2.3. COMBINE MALES & FEMALES -----
+    
+    resultsSXYZ_MF <- resultsSXYZ_M
+    
+    ##-- Get minimum number of iterations between model F and M
+    minIter <- min(dim(resultsSXYZ_F$sims.list$sxy)[1],
+                   dim(resultsSXYZ_M$sims.list$sxy)[1])
+    
+    ##-- sxy
+    resultsSXYZ_MF$sims.list$sxy <- abind::abind(resultsSXYZ_M$sims.list$sxy[1:minIter, , , ],
+                                                 resultsSXYZ_F$sims.list$sxy[1:minIter, , , ],
                                                  along = 2)
-      
-      ##-- sigma
-      resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter],
-                                              results_F$sims.list$sigma[1:minIter])
-      dimnames(resultsSXYZ_MF$sims.list$sigma)[[2]] <- c("M","F")
-      
-      ##-- sex
-      resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
-                                          c(dim(resultsSXYZ_M$sims.list$sxy)[2],
-                                            dim(resultsSXYZ_F$sims.list$sxy)[2]))
-      
-      ##-- SAVE AND LOAD DATA
-      save( results_F, results_M, resultsSXYZ_MF,
-            file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
-    }
+    dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x","y")
+    
+    ##-- z
+    resultsSXYZ_MF$sims.list$z <- abind::abind(resultsSXYZ_M$sims.list$z[1:minIter, , ],
+                                               resultsSXYZ_F$sims.list$z[1:minIter, , ],
+                                               along = 2)
+    
+    ##-- sigma
+    resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter],
+                                            results_F$sims.list$sigma[1:minIter])
+    dimnames(resultsSXYZ_MF$sims.list$sigma)[[2]] <- c("M","F")
+    
+    ##-- sex
+    resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
+                                        c(dim(resultsSXYZ_M$sims.list$sxy)[2],
+                                          dim(resultsSXYZ_F$sims.list$sxy)[2]))
+    
+    ##-- SAVE AND LOAD DATA
+    save( results_F, results_M, resultsSXYZ_MF,
+          file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
+  }
   
   
   ##-- Extract number of individuals detected
@@ -267,14 +267,15 @@ processRovquantOutput_bear <- function(
   
   message("## Processing density outputs...")
   
-  ##-- Names of regions to extract density for
   
   ##-- Remove buffer from the habitat
-  habitat.rWthBuffer <- habitat$habitat.rWthBuffer
-  habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
-  searchedPolygon <- raster::rasterToPolygons( habitat.rWthBuffer,
-                                               dissolve = T,
-                                               function(x) x == 1)
+  ## [PD] maybe remove?
+  # habitat.rWthBuffer <- habitat$habitat.rWthBuffer
+  # habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
+  # searchedPolygon <- raster::rasterToPolygons( habitat.rWthBuffer,
+  #                                              dissolve = T,
+  #                                              function(x) x == 1)
+  
   
   ##-- Habitat raster with extent used in the model
   habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
@@ -313,9 +314,12 @@ processRovquantOutput_bear <- function(
   row.names(countyID) <- row.names(densityInputCounties$regions.rgmx)
   countyID <- as.matrix(countyID[row.names(countyID) %in% county.names, ])
   
+  
+  ## [PD] maybe remove?
   ##-- Calculate area of extraction
   # sum(colSums(regionID)>0) 
   # sum(colSums(countyID)>0)
+  
   
   ##-- Select niter iterations randomly
   if(dim(densityInputRegions$sy)[1] >= niter){
@@ -331,7 +335,7 @@ processRovquantOutput_bear <- function(
   ##-- Calculate density only if necessary
   ##-- Check that a file with that name does not already exist to avoid overwriting
   densTest <- TRUE
-  if (!overwrite) {
+  if(!overwrite){
     fileName <- paste0("Density_bear_", DATE, ".RData")
     if (file.exists(file.path(working.dir, "data", fileName))) {
       message(paste0("A density output file named '", fileName, "' already exists in: \n",
@@ -355,9 +359,8 @@ processRovquantOutput_bear <- function(
     
     ## ------   1. AC-BASED DENSITY (5km) ------
     
-    ## ------     1.1. LARGE CARNIVORE REGIONS ------
+    ## ------     1.1. MALE & FEMALES -----
     
-    ## ------       1.1.1. MALE & FEMALES -----
     ACdensity <- list()
     for(t in 1:n.years){
       ACdensity[[t]] <- GetDensity(
@@ -372,7 +375,9 @@ processRovquantOutput_bear <- function(
     names(ACdensity) <- years
     
     
-    ## ------       1.1.2. MALE -----
+    
+    ## ------     1.2. MALE -----
+    
     IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
     
     ACdensityM <- list()
@@ -383,14 +388,15 @@ processRovquantOutput_bear <- function(
         z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
-        regionID = regionID,
+        regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }#t
     names(ACdensityM) <- years
     
     
     
-    ## ------       1.1.3. FEMALE -----
+    ## ------     1.3. FEMALE -----
+    
     IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
     
     ACdensityF <- list()
@@ -401,70 +407,16 @@ processRovquantOutput_bear <- function(
         z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
-        regionID = regionID,
+        regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }
     names(ACdensityF) <- years
     
     
     
-    # ## ------     1.2. COUNTIES ------
-    # 
-    # ## ------       1.2.1. MALE & FEMALES -----
-    # 
-    # ACdensity_counties <- list()
-    # for(t in 1:n.years){
-    #   ACdensity_counties[[t]] <- GetDensity(
-    #     sx = densityInputRegions$sx[iter, ,t],
-    #     sy = densityInputRegions$sy[iter, ,t],
-    #     z = resultsSXYZ_MF$sims.list$z[iter, ,t],
-    #     IDmx = densityInputRegions$habitat.id,
-    #     aliveStates = 2,
-    #     regionID = regionID,
-    #     returnPosteriorCells = F)
-    # }#t
-    # names(ACdensity_counties) <- years
-    # 
-    # 
-    # ## ------       1.2.2. MALE -----
-    # IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
-    # 
-    # ACdensity_countiesM <- list()
-    # for(t in 1:n.years){
-    #   ACdensityM[[t]] <- GetDensity(
-    #     sx = densityInputRegions$sx[iter,IDMales,t],
-    #     sy =  densityInputRegions$sy[iter,IDMales,t],
-    #     z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
-    #     IDmx = densityInputRegions$habitat.id,
-    #     aliveStates = 2,
-    #     regionID = regionID,
-    #     returnPosteriorCells = F)
-    # }#t
-    # names(ACdensityM) <- years
-    # 
-    # 
-    # 
-    # ## ------       1.2.3. FEMALE -----
-    # IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
-    # 
-    # ACdensityF <- list()
-    # for(t in 1:n.years){
-    #   ACdensityF[[t]] <- GetDensity(
-    #     sx = densityInputRegions$sx[iter,IDFemales,t],
-    #     sy = densityInputRegions$sy[iter,IDFemales,t],
-    #     z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
-    #     IDmx = densityInputRegions$habitat.id,
-    #     aliveStates = 2,
-    #     regionID = regionID,
-    #     returnPosteriorCells = F)
-    # }
-    # names(ACdensityF) <- years
-    # 
-    # 
-    # 
     ## ------   2. UD-BASED DENSITY (5km) ------
     
-    ##--  Combine male and female sigma
+    ##-- Combine male and female sigma
     sigma <- do.call(cbind,lapply(resultsSXYZ_MF$sims.list$sex,
                                   function(x){
                                     if(x == "M"){
@@ -548,7 +500,7 @@ processRovquantOutput_bear <- function(
           UDdensity,
           UDdensityF,
           UDdensityM,
-          file = file.path( working.dir, "data", paste0("Density_bear_", DATE, ".RData")))
+          file = file.path(working.dir,"data",paste0("Density_bear_",DATE,".RData")))
   }
   
   
@@ -597,7 +549,7 @@ processRovquantOutput_bear <- function(
     path = file.path(working.dir, "figures"),
     name = "UD_Density")
   
-
+  
   
   ## ------   4.2. ABUNDANCE TIME SERIES ------
   
@@ -606,12 +558,11 @@ processRovquantOutput_bear <- function(
   ##-- Plot N  
   # pdf(file = file.path(working.dir, "figures/Abundance_TimeSeries.pdf"),
   #     width = 12, height = 8.5)
-  grDevices::png(filename = file.path(working.dir, "figures/Abundance_TimeSeries.png"),
+  grDevices::png(filename = file.path(working.dir,"figures/Abundance_TimeSeries.png"),
                  width = 12, height = 8.5, units = "in", pointsize = 12,
                  res = 300, bg = NA)
   
   graphics::par(mar = c(5,5,1,1))
-  
   
   ymax <- 10*(trunc(max(c(unlist(lapply(ACdensity, function(x)max(colSums(x$PosteriorAllRegions)))), n.detected))/10)+1)
   
@@ -652,8 +603,6 @@ processRovquantOutput_bear <- function(
   
   ##-- legend
   par(xpd = TRUE)
-  
-  
   xx <- c(0.6*n.years,0.72*n.years,0.82*n.years,0.92*n.years)#c(6.1,7.6,8.8,10) 
   yy <- c(5,5,5,5)
   labs <- c("Females", "Males", "Total", "Detected")
@@ -677,7 +626,9 @@ processRovquantOutput_bear <- function(
   
   ## ------   4.3. ABUNDANCE per REGION ------
   
-  grDevices::png(filename = file.path(working.dir, "figures/Abundance_Regions.png"),
+  regPlotNames <- c("Region 8","Region 7","Region 6","Region 5","Region 3")
+  
+  grDevices::png(filename = file.path(working.dir,"figures/Abundance_Regions.png"),
                  width = 8, height = 15, units = "in", pointsize = 12,
                  res = 300, bg = NA)
   
@@ -689,9 +640,10 @@ processRovquantOutput_bear <- function(
                widths = c(1,0.5),
                heights = 1)
   
-  for(cc in c(8,7,6,5,3)){
+  for(cc in regPlotNames){
     
-    ymax <- 10*(trunc(max(ACdensity[[t]]$PosteriorRegions[cc-1, ])/10)+1)
+    ymax <- max(c(10*(trunc(max(ACdensity[[n.years]]$PosteriorRegions[cc, ])/10)+1),
+                60))
     
     par(mar = c(2,5,2,0), tck = 0, mgp = c(2,0.2,0))
     plot(-1000,
@@ -703,54 +655,52 @@ processRovquantOutput_bear <- function(
          cex.axis = 1.2, las = 1)
     abline(v = (0:n.years)+0.5, lty = 2)
     abline(h = seq(0,ymax, by = 10), lty = 2, col = "gray60")
-    mtext(text = REGIONS$name[REGIONS$region == cc], side = 3, font = 2, line = 0.5)
+    mtext(text = cc, side = 3, font = 2, line = 0.5)
     
     for(t in 1:n.years){
       ##-- TOTAL 
-      plotQuantiles(x = ACdensity[[t]]$PosteriorRegions[cc-1, ],
+      plotQuantiles(x = ACdensity[[t]]$PosteriorRegions[cc, ],
                     at = t,
                     width = 0.4,
                     col = colSex[3])
       
       ##-- FEMALES 
-      plotQuantiles(x = ACdensityF[[t]]$PosteriorRegions[cc-1, ],
+      plotQuantiles(x = ACdensityF[[t]]$PosteriorRegions[cc, ],
                     at = t - diffSex,
                     width = 0.18,
                     col = colSex[1])
       
       ##-- MALES 
-      plotQuantiles(x = ACdensityM[[t]]$PosteriorRegions[cc-1, ],
+      plotQuantiles(x = ACdensityM[[t]]$PosteriorRegions[cc, ],
                     at = t + diffSex,
                     width = 0.18,
                     col = colSex[2])
-      
     }#t
+    
     ##-- legend
-    if(cc %in% 3){
+    if(cc == "Region 3"){
       par(xpd = TRUE)
       xx <- c(1.1,3.2,5)
-      yy <- c(0.9*ymax,0.9*ymax,0.9*ymax)
+      yy <- 0.9*ymax
       labs <- c("Females", "Males", "Total")
       polygon(x = c(0.6,6.4,6.4,0.6),
-              y = c(50-7,50-7,50+7,50+7),
+              y = c(yy-5,yy-5,yy+5,yy+5),
               col = adjustcolor("white", alpha.f = 0.9),
               border = "gray60")
       
-      points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 3.5, col = colSex)
-      points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 1.5, col = colSex)
-      text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
+      points(x = xx, y = rep(yy,3),  pch = 15, cex = 3.5, col = colSex)
+      points(x = xx, y = rep(yy,3),  pch = 15, cex = 1.5, col = colSex)
+      text(x = xx + 0.1, y = rep(yy,3), labels = labs, cex = 1.4, pos = 4)
     }
     box()
     
     ##-- Map insert
     par(mar = c(5,0,4,5))
     plot(st_geometry(REGIONS), border = grey(0.5), col = grey(0.5), lwd = 0.1)
-    plot(st_geometry(REGIONS[REGIONS$region == cc, ]),
+    plot(st_geometry(REGIONS[REGIONS$name == cc, ]),
          add = T, col = adjustcolor("red",0.5), border = "red")
   }#c
   dev.off()
-  
-  
   
   
   
@@ -758,9 +708,7 @@ processRovquantOutput_bear <- function(
   
   message("## Plotting vital rates...")
   
-  
   ##-- Calculate mortality from estimated hazard rates (mhH and mhW) if necessary
-  
   if("mhH" %in% names(results_F$sims.list)){
     mhH1 <- exp(results_F$sims.list$mhH)
     mhW1 <- exp(results_F$sims.list$mhW)
@@ -791,9 +739,10 @@ processRovquantOutput_bear <- function(
   
   
   ## ------     4.4.1. SURVIVAL ------
+  
   # pdf(file = file.path(working.dir, "figures", paste0("Survival.pdf")),
   #     width = 10, height = 6)
-  grDevices::png(filename = file.path(working.dir, "figures/Survival.png"),
+  grDevices::png(filename = file.path(working.dir,"figures/Survival.png"),
                  width = 10, height = 6, units = "in", pointsize = 12,
                  res = 300, bg = NA)
   
@@ -828,9 +777,8 @@ processRovquantOutput_bear <- function(
   plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
   points(c(4,4), c(4,3), pch = 15, cex = 5.5, col = colSex)
   points(c(4,4), c(4,3), pch = 15, cex = 3, col = colSex)
-  text(c(5.3,5.3), c(4,3),  c("Females", "Males"), cex = 2, pos = 4)
+  text(c(5.3,5.3), c(4,3), c("Females", "Males"), cex = 2, pos = 4)
   dev.off()
-  
   
   
   
@@ -895,8 +843,7 @@ processRovquantOutput_bear <- function(
   
   ## ------       4.4.3.1. PLOT PER CAPITA RECRUITMENT -----
   
-  # pdf(file = file.path( working.dir, "figures",
-  #                       paste0("PerCapita.pdf")), width = 10, height = 8)
+  # pdf(file = file.path(working.dir,"figures/erCapita.pdf"),width = 10,height = 8)
   grDevices::png(filename = file.path( working.dir, "figures/PerCapita.png"),
                  width = 10, height = 8, units = "in", pointsize = 12,
                  res = 300, bg = NA)
@@ -936,15 +883,13 @@ processRovquantOutput_bear <- function(
       N_recruit_M[iter,t] <- sum(isAvail[iter, ,t] & isAlive[iter, ,t+1] & isMale)
       N_recruit[iter,t] <- N_recruit_F[iter,t] + N_recruit_M[iter,t]
     }#iter
-    #print(t)
   }#t
   
   
-  # pdf(file = file.path(working.dir, "figures", paste0("NumRecruitTotal.pdf")),
-  #     width = 10, height = 6)
-  grDevices::png(filename = file.path(working.dir, "figures/NumRecruitTotal.png"),
-                 width = 10, height = 6, units = "in", pointsize = 12,
-                 res = 300, bg = NA)
+  # pdf(file = file.path(working.dir,"figures/NumRecruitTotal.pdf"),width = 10,height = 6)
+  grDevices::png( filename = file.path(working.dir, "figures/NumRecruitTotal.png"),
+                  width = 10, height = 6, units = "in", pointsize = 12,
+                  res = 300, bg = NA)
   
   nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),
                widths = c(0.05,1,0.30),
@@ -1981,17 +1926,17 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv(NCarRegionEstimates,
-            file = file.path(working.dir, "tables/Abundance_AllYears.csv"))
+            file = file.path(working.dir, "tables/N_AllYears_region.csv"))
   
   ##-- print .tex
   row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
   print(xtable::xtable( NCarRegionEstimates,
                         type = "latex",
-                        align = paste(c("l",rep("c",ncol(NCarRegionEstimates))),collapse = "")),
+                        align = paste(c("l",rep("c",ncol(NCarRegionEstimates))), collapse = "")),
         floating = FALSE,
         sanitize.text.function = function(x){x},
         add.to.row = list(list(seq(1, nrow(NCarRegionEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables/Abundance_AllYears.tex"))
+        file = file.path(working.dir, "tables/N_AllYears_region.tex"))
   
   
   
@@ -2029,7 +1974,7 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv( NCarRegionEstimatesLast,
-             file = file.path(working.dir, "tables/Abundance_LastYearPerSex.csv"))
+             file = file.path(working.dir, "tables/N_LastYearPerSex_region.csv"))
   
   ##-- print .tex
   row.names(NCarRegionEstimatesLast) <- c(paste0("\\hspace{0.1cm} ",idregionNOR),"TOTAL")
@@ -2038,7 +1983,7 @@ processRovquantOutput_bear <- function(
         sanitize.text.function=function(x){x},
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/Abundance_LastYearPerSex.tex"))
+        file = file.path(working.dir, "tables/N_LastYearPerSex_region.tex"))
   
   
   
@@ -2067,7 +2012,6 @@ processRovquantOutput_bear <- function(
              round(UDdensity[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
   }#i
   
-  
   ##-- ADJUST NAMES
   idregion1 <- idregionTable
   idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
@@ -2075,7 +2019,7 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv( NCarRegionEstimatesLast_UD,
-             file = file.path(working.dir, "tables/Abundance_LastYearPerSex_UD.csv"))
+             file = file.path(working.dir, "tables/N_LastYearPerSex_region_UD.csv"))
   
   ##-- print .tex
   row.names(NCarRegionEstimatesLast_UD) <- c(paste0("\\hspace{0.1cm} ",idregionNOR),"TOTAL")
@@ -2084,7 +2028,7 @@ processRovquantOutput_bear <- function(
         sanitize.text.function=function(x){x},
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast_UD),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/Abundance_LastYearPerSex_UD.tex"))
+        file = file.path(working.dir, "tables/N_LastYearPerSex_region_UD.tex"))
   
   
   
@@ -2130,7 +2074,7 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv(NCarRegionEstimatesAllSex,
-            file = file.path(working.dir, "tables/Abundance_AllYearsPerSex.csv"))
+            file = file.path(working.dir, "tables/N_AllYearsPerSex_region.csv"))
   
   
   ##-- print .tex
@@ -2141,7 +2085,7 @@ processRovquantOutput_bear <- function(
         sanitize.text.function = function(x){x},
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/Abundance_AllYearsPerSex.tex"))
+        file = file.path(working.dir, "tables/N_AllYearsPerSex_region.tex"))
   
   
   
@@ -2154,7 +2098,7 @@ processRovquantOutput_bear <- function(
   idcounty <- sort(unique(idcounty))
   
   ##-- Get names of Norwegian counties
-  idcountyNOR <- idcounty[!grep("Region",idcounty)]
+  idcountyNOR <- idcounty[-grep("Region",idcounty)]
   idcountyTable <- c(idcountyNOR, "Total")
   
   ##-- Create table to store N estimates (and CI)
@@ -2181,7 +2125,7 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv(NCountyEstimates,
-            file = file.path(working.dir, "tables/Abundance_AllYears_county.csv"))
+            file = file.path(working.dir, "tables/N_AllYears_county.csv"))
   
   ##-- print .tex
   row.names(NCountyEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
@@ -2191,13 +2135,13 @@ processRovquantOutput_bear <- function(
         floating = FALSE,
         sanitize.text.function = function(x){x},
         add.to.row = list(list(seq(1, nrow(NCountyEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables/Abundance_AllYears_county.tex"))
-  
+        file = file.path(working.dir, "tables/N_AllYears_county.tex"))
   
   
   
   ## ------     5.1.5. LAST YEAR, PER SEX, PER COUNTY -----
   
+  ##-- AC-Density
   NCountyEstimatesLastRegions <- matrix("", ncol = 3, nrow = length(idcountyTable))
   row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
   colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total")
@@ -2229,7 +2173,7 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv( NCountyEstimatesLastRegions,
-             file = file.path(working.dir, "tables/Abundance_LastYearPerSex.csv"))
+             file = file.path(working.dir, "tables/N_LastYearPerSex_county.csv"))
   
   ##-- print .tex
   row.names(NCountyEstimatesLastRegions) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
@@ -2238,7 +2182,7 @@ processRovquantOutput_bear <- function(
         sanitize.text.function=function(x){x},
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/Abundance_LastYearPerSex.tex"))
+        file = file.path(working.dir, "tables/N_LastYearPerSex_county.tex"))
   
   
   
@@ -2267,7 +2211,6 @@ processRovquantOutput_bear <- function(
              round(UDdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }#i
   
-  
   ##-- ADJUST NAMES
   idcounty1 <- idcountyTable
   idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
@@ -2275,7 +2218,7 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv( NCountyEstimatesLastRegions_UD,
-             file = file.path(working.dir, "tables/Abundance_LastYearPerSex_UD.csv"))
+             file = file.path(working.dir, "tables/N_LastYearPerSex_county_UD.csv"))
   
   ##-- print .tex
   row.names(NCountyEstimatesLastRegions_UD) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
@@ -2284,8 +2227,7 @@ processRovquantOutput_bear <- function(
         sanitize.text.function=function(x){x},
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions_UD),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/Abundance_LastYearPerSex_UD.tex"))
-  
+        file = file.path(working.dir, "tables/N_LastYearPerSex_county_UD.tex"))
   
   
   
@@ -2308,14 +2250,14 @@ processRovquantOutput_bear <- function(
               round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
       
       ##-- MALES
-      colss <-  which(NCountyEstimatesAllSex[1,cols] %in% "Males")
+      colss <- which(NCountyEstimatesAllSex[1,cols] %in% "Males")
       NCountyEstimatesAllSex[idcountyTable[i],cols[colss]] <-
         paste(round(ACdensityM[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
               round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
               round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
       
       ##-- TOTAL
-      colss <-  which(NCountyEstimatesAllSex[1,cols] %in% "Total")
+      colss <- which(NCountyEstimatesAllSex[1,cols] %in% "Total")
       NCountyEstimatesAllSex[idcountyTable[i],cols[colss]] <-
         paste(round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
@@ -2330,8 +2272,7 @@ processRovquantOutput_bear <- function(
   
   ##-- print .csv
   write.csv(NCountyEstimatesAllSex,
-            file = file.path(working.dir, "tables/Abundance_AllYearsPerSex.csv"))
-  
+            file = file.path(working.dir, "tables/N_AllYearsPerSex_county.csv"))
   
   ##-- print .tex
   row.names(NCountyEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
@@ -2341,40 +2282,32 @@ processRovquantOutput_bear <- function(
         sanitize.text.function = function(x){x},
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/Abundance_AllYearsPerSex.tex"))
+        file = file.path(working.dir, "tables/N_AllYearsPerSex_county.tex"))
   
   
   
   ## ------   5.2. NUMBER OF NGS SAMPLES, IDs & DEAD RECOVERIES ------
-  
-  ##-- Load filtered datasets
-  load(file.path(working.dir, "data", paste0("FilteredData_bear_", DATE, ".RData")))
-  
-  
+
   ##-- SOME TALLIES TO CHECK THINGS
   ##-- NGS
   NGS <- data.alive$data.sp
-  table(NGS$Year)
-  nrow(NGS)
+  dead <- data.dead
   
   ##-- FOR REPORT SUMMARY
-  length(NGS$Id)
-  length(NGS$Id[NGS$Sex=="female"])
-  length(NGS$Id[NGS$Sex=="male"])
-  length(NGS$Id[NGS$Country=="(S)"])/nrow(NGS)
-  length(unique(NGS$Id))
-  length(unique(NGS$Id[NGS$Sex=="female"]))
-  length(unique(NGS$Id[NGS$Sex=="male"]))
-  
-  ##-- DEAD RECOVERY
-  dead <-  data.dead#rbind(myData.dead_F, myData.dead_M)
-  table(dead$Year)
-  nrow(dead)
-  dead <- dead[dead$Sex %in% c("female","male"), ]
-  table(dead$Year)
-  length(dead)
-  length(unique(dead$Id[dead$Sex=="female"]))
-  length(unique(dead$Id[dead$Sex=="male"]))
+  dataSummary <- cbind.data.frame(
+    "female" = c(length(NGS$Id[NGS$Sex=="female"]),
+                 length(unique(dead$Id[dead$Sex=="female"])),
+                 length(unique(c(NGS$Id[NGS$Sex=="female"],dead$Id[dead$Sex=="female"])))),
+    "male" = c(length(NGS$Id[NGS$Sex=="male"]),
+               length(unique(dead$Id[dead$Sex=="male"])),
+               length(unique(c(NGS$Id[NGS$Sex=="male"],dead$Id[dead$Sex=="male"])))),
+    "Total" = c(length(NGS$Id),
+                length(dead$Id),
+                length(unique(c(NGS$Id,dead$Id)))))
+  row.names(dataSummary) <- c("N_NGS", "N_DR", "N_IDs")
+  ##-- print .csv
+  write.csv(dataSummary, file = file.path(working.dir, "tables/dataSummary.csv"))
+
   
   ##-- Prepare raster of countries
   countryRaster <- habitatRasterResolution$`5km`[["Countries"]]
@@ -2440,7 +2373,7 @@ processRovquantOutput_bear <- function(
         } else {
           temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & dead$Legal, ]
         }
-        row <- which(rownames(Dead_SEX)==cause[d] & Dead_SEX[,1]=="Norway")
+        row <- which(rownames(Dead_SEX)==cause[d] & Dead_SEX[ ,1]=="Norway")
         Dead_SEX[row,ye[t] + sex1[s]+1 ] <- length(unique(temp$Id[temp$Country_sample %in% "(N)" ]))
         
         row <- which(rownames(Dead_SEX)==cause[d] & Dead_SEX[,1]=="Sweden" )
@@ -2556,22 +2489,32 @@ processRovquantOutput_bear <- function(
     prop["F",t] <- getCleanEstimates(prop_F)
     prop["M",t] <- getCleanEstimates(prop_M)
     prop["Total",t] <- getCleanEstimates(prop_tot)
-    
-    #print(t)
-  }#t
-  ##-- Print number of individuals with AC in Norway
-  #print(prop)
+    }#t
+  
   
   ##-- print .csv
   write.csv(prop,
-            file = file.path(working.dir, "tables", "PropDetectedNorway.csv"))
+            file = file.path(working.dir, "tables/PropDetectedNorway.csv"))
   
-  ##-- print .tex
-  print(xtable(prop, type = "latex", align=paste(c("l",rep("c",ncol(prop))),collapse = "")),
-        floating = FALSE, sanitize.text.function=function(x){x},
-        add.to.row = list(list(seq(1,nrow(prop), by = 2)),"\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables", "PropDetectedNorway.tex"))
-  
+  ##-- Print .tex (split in two tables to print in the overleaf document)
+  splitProp <- rbind( colnames(prop[ ,1:5]), prop[ ,1:5],
+                      colnames(prop[ ,6:10]), prop[ ,6:10])
+  splitProp <- cbind(c("","F","M","Total","","F","M","Total"), splitProp)
+  addtorow <- list()
+  addtorow$pos <- list(2,4,6)
+  addtorow$command <- c("\\rowcolor[gray]{.95}", 
+                        "\\hline \\\\",
+                        "\\rowcolor[gray]{.95}")
+  print(xtable( splitProp,
+                type = "latex",
+                align = paste(c("l",rep("c", ncol(splitProp))), collapse = "")),
+        floating = FALSE,
+        sanitize.text.function = function(x){x},
+        include.colnames = FALSE,
+        include.rownames = FALSE,
+        hline.after = c(0,1,4,5, nrow(splitProp)),
+        add.to.row = addtorow,
+        file = file.path(working.dir, "tables/PropDetectedNorway.tex"))
   
   
   
@@ -2739,21 +2682,35 @@ processRovquantOutput_bear <- function(
   write.csv( vitalRate,
              file = file.path(working.dir, "tables", "VitalRates.csv"))
   
-  ##-- Print .tex
-  addtorow <- list()
-  addtorow$pos <- list(c(0),0)
-  addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(vitalRate))),
-                                      '}', collapse = ''), '\\\\'), rep("\\rowcolor[gray]{.95}",1))
-  colnames(vitalRate) <- rep("", ncol(vitalRate))
+  ##-- Print .tex (print two separate tables to put in the overleaf document)
+  #colnames(vitalRate) <- rep("", ncol)
   rownames(vitalRate)[2:6] <- c("$\\rho$","$\\phi$","h","w", "r")
   
-  print(xtable(vitalRate, type = "latex",
-               align = paste(rep("c", ncol(vitalRate)+1),collapse = "")),
+  ##-- Table Vital Rates #1
+  addtorow <- list()
+  addtorow$pos <- list(0,0)
+  addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(vitalRate)))[1:5],'}', collapse = ''), '\\\\'),
+                        "\\rowcolor[gray]{.95}")
+  print(xtable(vitalRate[,1:10], type = "latex",
+               align = paste(rep("c", 11),collapse = "")),
         floating = FALSE,
         add.to.row = addtorow,
         include.colnames = F,
         sanitize.text.function = function(x){x},
-        file = file.path(working.dir, "tables", "VitalRates.tex"))
+        file = file.path(working.dir, "tables", "VitalRates_1.tex"))
+  
+  ##-- Table Vital Rates #2
+  addtorow <- list()
+  addtorow$pos <- list(0,0)
+  addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(vitalRate)))[6:9],'}', collapse = ''), '\\\\'),
+                        "\\rowcolor[gray]{.95}")
+  print(xtable(vitalRate[,11:18], type = "latex",
+               align = paste(rep("c", 9),collapse = "")),
+        floating = FALSE,
+        add.to.row = addtorow,
+        include.colnames = F,
+        sanitize.text.function = function(x){x},
+        file = file.path(working.dir, "tables", "VitalRates_2.tex"))
   
   
   

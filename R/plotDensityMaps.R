@@ -100,7 +100,7 @@ plotDensityMaps <- function(
                            heights = rep(1,2))
     
     ##-- legend coordinates
-    legend.x <- xLims[1] + 0.77 * xRange
+    legend.x <- xLims[1] + 0.7 * xRange
     legend.y <- yLims[1] + 0.40 * yRange
     
     ##-- Plot density maps
@@ -138,7 +138,7 @@ plotDensityMaps <- function(
                       axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                         labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                         cex.axis = 1.2),
-                      smallplot = c(0.85, 0.9, 0.2, 0.6), 
+                      smallplot = c(0.8, 0.85, 0.2, 0.6), 
                       legend.args = list(text = paste0("Individuals/", unit, " km2"),
                                          side = 2, font = 1, line = 0, cex = 1))
         ######----- NEED TO FIX LEGEND TEXT 
