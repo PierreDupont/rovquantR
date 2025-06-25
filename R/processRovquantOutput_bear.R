@@ -1945,46 +1945,46 @@ processRovquantOutput_bear <- function(
   
   ## ------   5.1. ABUNDANCE -----
   
-  ## ------     5.1.1. ALL YEARS, BOTH SEX -----
+  ## ------     5.1.1. ALL YEARS, BOTH SEX, PER REGION -----
   
-  idcounty <- row.names(ACdensity[[1]]$summary)
+  idregion <- row.names(ACdensity[[1]]$summary)
   
   ##-- Remove Finland, Norway, Russia, Sweden
-  idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
-  idcounty <- sort(unique(idcounty))
+  idregion <- idregion[-which(idregion %in% c("Finland","Norway","Russia","Sweden","Total"))]
+  idregion <- sort(unique(idregion))
   
   ##-- Get names of Norwegian carnivore regions
-  idcountyNOR <- idcounty[grep("Region",idcounty)]
-  idcountyTable <- c(idcountyNOR, "Total")
+  idregionNOR <- idregion[grep("Region",idregion)]
+  idregionTable <- c(idregionNOR, "Total")
   
   ##-- Create table to store N estimates (and CI)
-  NCarRegionEstimates <- NCarRegionMean <- matrix("", ncol = n.years, nrow = length(idcountyTable))
-  row.names(NCarRegionEstimates) <- row.names(NCarRegionMean) <- c(idcountyTable)
-  colnames(NCarRegionEstimates) <- colnames(NCarRegionMean) <- years
+  NCarRegionEstimates <- NCountyMean <- matrix("", ncol = n.years, nrow = length(idregionTable))
+  row.names(NCarRegionEstimates) <- row.names(NCountyMean) <- c(idregionTable)
+  colnames(NCarRegionEstimates) <- colnames(NCountyMean) <- years
   
   ##-- Fill-in the table
   for(t in 1:n.years){
-    for(i in 1:length(idcountyTable)){
-      NCarRegionEstimates[idcountyTable[i],t] <-
-        paste0(round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1), " (",
-               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+    for(i in 1:length(idregionTable)){
+      NCarRegionEstimates[idregionTable[i],t] <-
+        paste0(round(ACdensity[[t]]$summary[idregionTable[i],"mean"],digits = 1), " (",
+               round(ACdensity[[t]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+               round(ACdensity[[t]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
       
-      NCarRegionMean[idcountyTable[i],t] <- round(ACdensity[[t]]$summary[idcountyTable[i],"mean"])
+      NCountyMean[idregionTable[i],t] <- round(ACdensity[[t]]$summary[idregionTable[i],"mean"])
     }#i
   }#t
   
   ##-- Adjust names
-  idcounty1 <- idcountyTable
-  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  row.names(NCarRegionEstimates) <- idcounty1
+  idregion1 <- idregionTable
+  idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
+  row.names(NCarRegionEstimates) <- idregion1
   
   ##-- print .csv
   write.csv(NCarRegionEstimates,
             file = file.path(working.dir, "tables/Abundance_AllYears.csv"))
   
   ##-- print .tex
-  row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
+  row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
   print(xtable::xtable( NCarRegionEstimates,
                         type = "latex",
                         align = paste(c("l",rep("c",ncol(NCarRegionEstimates))),collapse = "")),
@@ -1996,7 +1996,207 @@ processRovquantOutput_bear <- function(
   
   
   
-  ## ------     5.1.2. LAST YEAR N PER SEX PER COUNTY -----
+  ## ------     5.1.2. LAST YEAR, PER SEX, PER REGION -----
+  
+  NCarRegionEstimatesLast <- matrix("", ncol = 3, nrow = length(idregionTable))
+  row.names(NCarRegionEstimatesLast) <- c(idregionTable)
+  colnames(NCarRegionEstimatesLast) <- c("Females","Males","Total")
+  
+  for(i in 1:length(idregionTable)){
+    ##-- FEMALES
+    NCarRegionEstimatesLast[idregionTable[i],"Females"] <-
+      paste0(round(ACdensityF[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+             round(ACdensityF[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+             round(ACdensityF[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
+    
+    ##-- MALES
+    NCarRegionEstimatesLast[idregionTable[i],"Males"] <-
+      paste0(round(ACdensityM[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+             round(ACdensityM[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+             round(ACdensityM[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
+    
+    ##-- BOTH SEXES
+    NCarRegionEstimatesLast[idregionTable[i],"Total"] <-
+      paste0(round(ACdensity[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+             round(ACdensity[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+             round(ACdensity[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
+  }#i
+  
+  ##-- ADJUST NAMES
+  idregion1 <- idregionTable
+  idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
+  row.names(NCarRegionEstimates) <- idregion1
+  
+  ##-- print .csv
+  write.csv( NCarRegionEstimatesLast,
+             file = file.path(working.dir, "tables/Abundance_LastYearPerSex.csv"))
+  
+  ##-- print .tex
+  row.names(NCarRegionEstimatesLast) <- c(paste0("\\hspace{0.1cm} ",idregionNOR),"TOTAL")
+  print(xtable::xtable(NCarRegionEstimatesLast, type = "latex",
+                       align = paste(c("l",rep("c",ncol(NCarRegionEstimatesLast))), collapse = "")),
+        sanitize.text.function=function(x){x},
+        floating = FALSE,
+        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables/Abundance_LastYearPerSex.tex"))
+  
+  
+  
+  ##-- UD-Density
+  NCarRegionEstimatesLast_UD <- matrix("", ncol = 3, nrow = length(idregionTable))
+  row.names(NCarRegionEstimatesLast_UD) <- c(idregionTable)
+  colnames(NCarRegionEstimatesLast_UD) <- c("Females","Males","Total")
+  
+  for(i in 1:length(idregionTable)){
+    ##-- FEMALES
+    NCarRegionEstimatesLast_UD[idregionTable[i],"Females"] <-
+      paste0(round(UDdensityF[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+             round(UDdensityF[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+             round(UDdensityF[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
+    
+    ##-- MALES
+    NCarRegionEstimatesLast_UD[idregionTable[i],"Males"] <-
+      paste0(round(UDdensityM[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+             round(UDdensityM[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+             round(UDdensityM[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
+    
+    ##-- BOTH SEXES
+    NCarRegionEstimatesLast_UD[idregionTable[i],"Total"] <-
+      paste0(round(UDdensity[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+             round(UDdensity[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+             round(UDdensity[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
+  }#i
+  
+  
+  ##-- ADJUST NAMES
+  idregion1 <- idregionTable
+  idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
+  row.names(NCarRegionEstimates) <- idregion1
+  
+  ##-- print .csv
+  write.csv( NCarRegionEstimatesLast_UD,
+             file = file.path(working.dir, "tables/Abundance_LastYearPerSex_UD.csv"))
+  
+  ##-- print .tex
+  row.names(NCarRegionEstimatesLast_UD) <- c(paste0("\\hspace{0.1cm} ",idregionNOR),"TOTAL")
+  print(xtable::xtable(NCarRegionEstimatesLast_UD, type = "latex",
+                       align = paste(c("l",rep("c",ncol(NCarRegionEstimatesLast_UD))), collapse = "")),
+        sanitize.text.function=function(x){x},
+        floating = FALSE,
+        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast_UD),by=2)),"\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables/Abundance_LastYearPerSex_UD.tex"))
+  
+  
+  
+  
+  ## ------     5.1.3. ALL YEARS, PER SEX, PER REGION ------
+  
+  NCarRegionEstimatesAllSex <- matrix("", ncol = n.years*3, nrow = length(idregionTable)+1)
+  row.names(NCarRegionEstimatesAllSex) <- c("", idregionTable)
+  colnames(NCarRegionEstimatesAllSex) <- rep(years, each = 3)
+  NCarRegionEstimatesAllSex[1, ] <- rep(c("Females","Males","Total"), n.years)
+  
+  ##-- Fill-in table
+  for(t in 1:n.years){
+    cols <- which(colnames(NCarRegionEstimatesAllSex) %in% years[t])
+    for( i in 1:length(idregionTable)){
+      ##-- FEMALES
+      colss <- which(NCarRegionEstimatesAllSex[1,cols] %in% "Females")
+      NCarRegionEstimatesAllSex[idregionTable[i],cols[colss]] <-
+        paste(round(ACdensityF[[t]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+              round(ACdensityF[[t]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+              round(ACdensityF[[t]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")",sep="")
+      
+      ##-- MALES
+      colss <-  which(NCarRegionEstimatesAllSex[1,cols] %in% "Males")
+      NCarRegionEstimatesAllSex[idregionTable[i],cols[colss]] <-
+        paste(round(ACdensityM[[t]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+              round(ACdensityM[[t]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+              round(ACdensityM[[t]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")",sep="")
+      
+      ##-- TOTAL
+      colss <-  which(NCarRegionEstimatesAllSex[1,cols] %in% "Total")
+      NCarRegionEstimatesAllSex[idregionTable[i],cols[colss]] <-
+        paste(round(ACdensity[[t]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+              round(ACdensity[[t]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+              round(ACdensity[[t]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")",sep="")
+    }#i
+  }#t
+  
+  ##-- ADJUST NAMES
+  idregion1 <- idregionTable
+  idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
+  row.names(NCarRegionEstimatesAllSex) <- c("", idregion1)
+  
+  ##-- print .csv
+  write.csv(NCarRegionEstimatesAllSex,
+            file = file.path(working.dir, "tables/Abundance_AllYearsPerSex.csv"))
+  
+  
+  ##-- print .tex
+  row.names(NCarRegionEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
+  
+  print(xtable::xtable(NCarRegionEstimatesAllSex, type = "latex",
+                       align = paste(c("l",rep("c",ncol(NCarRegionEstimatesAllSex))),collapse = "")),
+        sanitize.text.function = function(x){x},
+        floating = FALSE,
+        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables/Abundance_AllYearsPerSex.tex"))
+  
+  
+  
+  ## ------     5.1.4. ALL YEARS, BOTH SEX, PER COUNTY -----
+  
+  idcounty <- row.names(ACdensity[[1]]$summary)
+  
+  ##-- Remove Finland, Norway, Russia, Sweden
+  idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
+  idcounty <- sort(unique(idcounty))
+  
+  ##-- Get names of Norwegian counties
+  idcountyNOR <- idcounty[!grep("Region",idcounty)]
+  idcountyTable <- c(idcountyNOR, "Total")
+  
+  ##-- Create table to store N estimates (and CI)
+  NCountyEstimates <- NCountyMean <- matrix("", ncol = n.years, nrow = length(idcountyTable))
+  row.names(NCountyEstimates) <- row.names(NCountyMean) <- c(idcountyTable)
+  colnames(NCountyEstimates) <- colnames(NCountyMean) <- years
+  
+  ##-- Fill-in the table
+  for(t in 1:n.years){
+    for(i in 1:length(idcountyTable)){
+      NCountyEstimates[idcountyTable[i],t] <-
+        paste0(round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1), " (",
+               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      
+      NCountyMean[idcountyTable[i],t] <- round(ACdensity[[t]]$summary[idcountyTable[i],"mean"])
+    }#i
+  }#t
+  
+  ##-- Adjust names
+  idcounty1 <- idcountyTable
+  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  row.names(NCountyEstimates) <- idcounty1
+  
+  ##-- print .csv
+  write.csv(NCountyEstimates,
+            file = file.path(working.dir, "tables/Abundance_AllYears_county.csv"))
+  
+  ##-- print .tex
+  row.names(NCountyEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
+  print(xtable::xtable( NCountyEstimates,
+                        type = "latex",
+                        align = paste(c("l",rep("c",ncol(NCountyEstimates))),collapse = "")),
+        floating = FALSE,
+        sanitize.text.function = function(x){x},
+        add.to.row = list(list(seq(1, nrow(NCountyEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
+        file = file.path(working.dir, "tables/Abundance_AllYears_county.tex"))
+  
+  
+  
+  
+  ## ------     5.1.5. LAST YEAR, PER SEX, PER COUNTY -----
   
   NCountyEstimatesLastRegions <- matrix("", ncol = 3, nrow = length(idcountyTable))
   row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
@@ -2025,7 +2225,7 @@ processRovquantOutput_bear <- function(
   ##-- ADJUST NAMES
   idcounty1 <- idcountyTable
   idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  row.names(NCarRegionEstimates) <- idcounty1
+  row.names(NCountyEstimates) <- idcounty1
   
   ##-- print .csv
   write.csv( NCountyEstimatesLastRegions,
@@ -2071,7 +2271,7 @@ processRovquantOutput_bear <- function(
   ##-- ADJUST NAMES
   idcounty1 <- idcountyTable
   idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  row.names(NCarRegionEstimates) <- idcounty1
+  row.names(NCountyEstimates) <- idcounty1
   
   ##-- print .csv
   write.csv( NCountyEstimatesLastRegions_UD,
@@ -2089,34 +2289,34 @@ processRovquantOutput_bear <- function(
   
   
   
-  ## ------     5.1.3. ALL YEARS N PER SEX PER COUNTY ------
+  ## ------     5.1.6. ALL YEARS, PER SEX, PER COUNTY ------
   
-  NCountyEstimatesAllSexRegions <- matrix("", ncol = n.years*3, nrow = length(idcountyTable)+1)
-  row.names(NCountyEstimatesAllSexRegions) <- c("", idcountyTable)
-  colnames(NCountyEstimatesAllSexRegions) <- rep(years, each = 3)
-  NCountyEstimatesAllSexRegions[1, ] <- rep(c("Females","Males","Total"), n.years)
+  NCountyEstimatesAllSex <- matrix("", ncol = n.years*3, nrow = length(idcountyTable)+1)
+  row.names(NCountyEstimatesAllSex) <- c("", idcountyTable)
+  colnames(NCountyEstimatesAllSex) <- rep(years, each = 3)
+  NCountyEstimatesAllSex[1, ] <- rep(c("Females","Males","Total"), n.years)
   
   ##-- Fill-in table
   for(t in 1:n.years){
-    cols <- which(colnames(NCountyEstimatesAllSexRegions) %in% years[t])
+    cols <- which(colnames(NCountyEstimatesAllSex) %in% years[t])
     for( i in 1:length(idcountyTable)){
       ##-- FEMALES
-      colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Females")
-      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
+      colss <- which(NCountyEstimatesAllSex[1,cols] %in% "Females")
+      NCountyEstimatesAllSex[idcountyTable[i],cols[colss]] <-
         paste(round(ACdensityF[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
               round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
               round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
       
       ##-- MALES
-      colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Males")
-      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
+      colss <-  which(NCountyEstimatesAllSex[1,cols] %in% "Males")
+      NCountyEstimatesAllSex[idcountyTable[i],cols[colss]] <-
         paste(round(ACdensityM[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
               round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
               round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
       
       ##-- TOTAL
-      colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Total")
-      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <-
+      colss <-  which(NCountyEstimatesAllSex[1,cols] %in% "Total")
+      NCountyEstimatesAllSex[idcountyTable[i],cols[colss]] <-
         paste(round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
@@ -2126,18 +2326,18 @@ processRovquantOutput_bear <- function(
   ##-- ADJUST NAMES
   idcounty1 <- idcountyTable
   idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  row.names(NCountyEstimatesAllSexRegions) <- c("", idcounty1)
+  row.names(NCountyEstimatesAllSex) <- c("", idcounty1)
   
   ##-- print .csv
-  write.csv(NCountyEstimatesAllSexRegions,
+  write.csv(NCountyEstimatesAllSex,
             file = file.path(working.dir, "tables/Abundance_AllYearsPerSex.csv"))
   
   
   ##-- print .tex
-  row.names(NCountyEstimatesAllSexRegions) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
+  row.names(NCountyEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
   
-  print(xtable::xtable(NCountyEstimatesAllSexRegions, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSexRegions))),collapse = "")),
+  print(xtable::xtable(NCountyEstimatesAllSex, type = "latex",
+                       align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSex))),collapse = "")),
         sanitize.text.function = function(x){x},
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
