@@ -340,7 +340,7 @@ processRovquantOutput_bear <- function(
     if (file.exists(file.path(working.dir, "data", fileName))) {
       message(paste0("A density output file named '", fileName, "' already exists in: \n",
                      file.path(working.dir, "data")))
-      message("Are you sure you want to proceed and overwrite existing density output file? (y/n) ")
+      message("Do you want to proceed and overwrite the existing density output file? (y/n) ")
       question1 <- readLines(n = 1)
       if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
         message("Not overwriting existing files...")
@@ -364,9 +364,9 @@ processRovquantOutput_bear <- function(
     ACdensity <- list()
     for(t in 1:n.years){
       ACdensity[[t]] <- GetDensity(
-        sx = densityInputRegions$sx[iter, ,t],
-        sy = densityInputRegions$sy[iter, ,t],
-        z = resultsSXYZ_MF$sims.list$z[iter, ,t],
+        sx = densityInputRegions$sx[ , ,t],
+        sy = densityInputRegions$sy[ , ,t],
+        z = resultsSXYZ_MF$sims.list$z[ , ,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
         regionID = rbind(regionID,countyID),
@@ -383,9 +383,9 @@ processRovquantOutput_bear <- function(
     ACdensityM <- list()
     for(t in 1:n.years){
       ACdensityM[[t]] <- GetDensity(
-        sx = densityInputRegions$sx[iter,IDMales,t],
-        sy =  densityInputRegions$sy[iter,IDMales,t],
-        z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
+        sx = densityInputRegions$sx[ ,IDMales,t],
+        sy =  densityInputRegions$sy[ ,IDMales,t],
+        z = resultsSXYZ_MF$sims.list$z[ ,IDMales,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
         regionID = rbind(regionID,countyID),
@@ -402,9 +402,9 @@ processRovquantOutput_bear <- function(
     ACdensityF <- list()
     for(t in 1:n.years){
       ACdensityF[[t]] <- GetDensity(
-        sx = densityInputRegions$sx[iter,IDFemales,t],
-        sy = densityInputRegions$sy[iter,IDFemales,t],
-        z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
+        sx = densityInputRegions$sx[ ,IDFemales,t],
+        sy = densityInputRegions$sy[ ,IDFemales,t],
+        z = resultsSXYZ_MF$sims.list$z[ ,IDFemales,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
         regionID = rbind(regionID,countyID),
