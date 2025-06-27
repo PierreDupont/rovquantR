@@ -210,7 +210,7 @@ processRovquantOutput(
   # ,
   # Rmd.template = Rmd.template
   ,
-  output.dir = working.dir
+  #output.dir = working.dir
   ,
   overwrite = FALSE
 )

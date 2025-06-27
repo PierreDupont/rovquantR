@@ -47,6 +47,7 @@ processRovquantOutput_bear <- function(
   ##-- Miscellanious
   overwrite = FALSE
 ){
+
   ## ------ 0. BASIC SET-UP ------
   
   if(is.null(working.dir)){working.dir <- getwd()}
@@ -64,7 +65,7 @@ processRovquantOutput_bear <- function(
   
   
   ## ------ 1. LOAD NECESSARY INPUTS -----
-  
+ 
   ##-- Females
   load(list.files(file.path(working.dir, "nimbleInFiles/female"), full.names = T)[1])
   nimDataF <- nimData
@@ -74,6 +75,10 @@ processRovquantOutput_bear <- function(
   load(list.files(file.path(working.dir, "nimbleInFiles/male"), full.names = T)[1])
   nimDataM <- nimData
   nimInitsM <- nimInits
+  
+  ##-- Remove unnecessary objects from memory
+  rm(list = c("nimInits", "nimData"))
+  gc(verbose = FALSE)
   
   ##-- Habitat
   load(file.path( working.dir, "data", paste0("Habitat_bear_", DATE, ".RData")))
@@ -119,8 +124,8 @@ processRovquantOutput_bear <- function(
   COUNTIES_s$county[!COUNTIES_s$county %in% c("Finnmark","Trøndelag")] <- "Innlandet"
   COUNTIES_s <- COUNTIES_s %>%
     group_by(county) %>%
-    summarize() 
-  
+    dplyr::summarize() 
+ 
   COUNTIES_s <- sf::st_simplify(sf::st_as_sf(COUNTIES_s), preserveTopology = T, dTolerance = 500)
   COUNTIES_s$index <- c(1,3,2)
   COUNTIES_s$Name <- c("NO1","NO3","NO2")
@@ -168,6 +173,10 @@ processRovquantOutput_bear <- function(
                                     params.omit = c("sxy","z"))
     resultsSXYZ_F <- ProcessCodaOutput(nimOutput_F$samples2)
     
+    ##-- Remove unnecessary objects from memory
+    rm(list = c("nimOutput_F"))
+    gc(verbose = FALSE)
+    
     ##-- Rescale sxy to the original coordinate system
     dimnames(resultsSXYZ_F$sims.list$sxy)[[3]] <- c("x","y")
     resultsSXYZ_F$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
@@ -196,6 +205,11 @@ processRovquantOutput_bear <- function(
     results_M <- ProcessCodaOutput( nimOutput_M$samples,
                                     params.omit = c("sxy","z"))
     resultsSXYZ_M <- ProcessCodaOutput(nimOutput_M$samples2)
+    
+    ##-- Remove unnecessary objects from memory
+    rm(list = c("nimOutput_M"))
+    gc(verbose = FALSE)
+    
     
     ##-- RESCALE SXY TO THE ORIGINAL COORDINATE SYSTEM
     dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
@@ -243,21 +257,7 @@ processRovquantOutput_bear <- function(
     save( results_F, results_M, resultsSXYZ_MF,
           file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
   }
-  
-  
-  ##-- Extract number of individuals detected
-  isDetected <- rbind(nimDataM$y.alive[ ,1, ],nimDataF$y.alive[ ,1, ]) > 0
-  n.detected <- apply(isDetected, 2, sum)
-  
-  ##-- Identify individual sex
-  isFemale <- resultsSXYZ_MF$sims.list$sex == "F"
-  isMale <- resultsSXYZ_MF$sims.list$sex == "M"
-  
-  ##-- Identify individual status
-  isAvail <- resultsSXYZ_MF$sims.list$z == 1 
-  isAlive <- resultsSXYZ_MF$sims.list$z == 2 
-  isDead <- resultsSXYZ_MF$sims.list$z >= 3
-  
+
   ##-- Number of MCMC samples
   n.mcmc <- dim(resultsSXYZ_MF$sims.list$z)[1]
   
@@ -267,7 +267,6 @@ processRovquantOutput_bear <- function(
   
   message("## Processing density outputs...")
   
-  
   ##-- Remove buffer from the habitat
   ## [PD] maybe remove?
   # habitat.rWthBuffer <- habitat$habitat.rWthBuffer
@@ -275,7 +274,6 @@ processRovquantOutput_bear <- function(
   # searchedPolygon <- raster::rasterToPolygons( habitat.rWthBuffer,
   #                                              dissolve = T,
   #                                              function(x) x == 1)
-  
   
   ##-- Habitat raster with extent used in the model
   habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
@@ -564,6 +562,8 @@ processRovquantOutput_bear <- function(
   
   graphics::par(mar = c(5,5,1,1))
   
+  n.detected <- apply(rbind(nimDataM$y.alive[ ,1, ],nimDataF$y.alive[ ,1, ]) > 0, 2, sum)
+  
   ymax <- 10*(trunc(max(c(unlist(lapply(ACdensity, function(x)max(colSums(x$PosteriorAllRegions)))), n.detected))/10)+1)
   
   plot(-1000,
@@ -621,6 +621,10 @@ processRovquantOutput_bear <- function(
           border = F)
   
   dev.off()
+
+  ##-- Remove unnecessary objects from memory
+  rm(list = c("n.detected"))
+  gc(verbose = FALSE)
   
   
   
@@ -876,6 +880,14 @@ processRovquantOutput_bear <- function(
   
   ## ------       4.4.3.2. PLOT NUMBER OF RECRUITS ----
   
+  ##-- Identify individual status
+  isAvail <- resultsSXYZ_MF$sims.list$z == 1 
+  isAlive <- resultsSXYZ_MF$sims.list$z == 2 
+  
+  ##-- Identify individual sex
+  isFemale <- resultsSXYZ_MF$sims.list$sex == "F"
+  isMale <- resultsSXYZ_MF$sims.list$sex == "M"
+  
   N_recruit <- N_recruit_F <- N_recruit_M <- matrix(NA, n.mcmc, n.years-1)
   for(t in 1:(n.years-1)){
     for(iter in 1:n.mcmc){
@@ -970,6 +982,10 @@ processRovquantOutput_bear <- function(
     }#iter
     #print(t)
   }#t
+  
+  ##-- Remove unnecessary objects from memory
+  rm(list = c("isMale", "isFemale","isAlive", "isAvail"))
+  gc(verbose = FALSE)
   
   
   
@@ -2186,48 +2202,48 @@ processRovquantOutput_bear <- function(
   
   
   
-  ##-- UD-Density
-  NCountyEstimatesLastRegions_UD <- matrix("", ncol = 3, nrow = length(idcountyTable))
-  row.names(NCountyEstimatesLastRegions_UD) <- c(idcountyTable)
-  colnames(NCountyEstimatesLastRegions_UD) <- c("Females","Males","Total")
-  
-  for(i in 1:length(idcountyTable)){
-    ##-- FEMALES
-    NCountyEstimatesLastRegions_UD[idcountyTable[i],"Females"] <-
-      paste0(round(UDdensityF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(UDdensityF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(UDdensityF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    
-    ##-- MALES
-    NCountyEstimatesLastRegions_UD[idcountyTable[i],"Males"] <-
-      paste0(round(UDdensityM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(UDdensityM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(UDdensityM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    
-    ##-- BOTH SEXES
-    NCountyEstimatesLastRegions_UD[idcountyTable[i],"Total"] <-
-      paste0(round(UDdensity[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(UDdensity[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(UDdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  }#i
-  
-  ##-- ADJUST NAMES
-  idcounty1 <- idcountyTable
-  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  row.names(NCountyEstimates) <- idcounty1
-  
-  ##-- print .csv
-  write.csv( NCountyEstimatesLastRegions_UD,
-             file = file.path(working.dir, "tables/N_LastYearPerSex_county_UD.csv"))
-  
-  ##-- print .tex
-  row.names(NCountyEstimatesLastRegions_UD) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
-  print(xtable::xtable(NCountyEstimatesLastRegions_UD, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions_UD))), collapse = "")),
-        sanitize.text.function=function(x){x},
-        floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions_UD),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_LastYearPerSex_county_UD.tex"))
+  # ##-- UD-Density
+  # NCountyEstimatesLastRegions_UD <- matrix("", ncol = 3, nrow = length(idcountyTable))
+  # row.names(NCountyEstimatesLastRegions_UD) <- c(idcountyTable)
+  # colnames(NCountyEstimatesLastRegions_UD) <- c("Females","Males","Total")
+  # 
+  # for(i in 1:length(idcountyTable)){
+  #   ##-- FEMALES
+  #   NCountyEstimatesLastRegions_UD[idcountyTable[i],"Females"] <-
+  #     paste0(round(UDdensityF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+  #            round(UDdensityF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+  #            round(UDdensityF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  #   
+  #   ##-- MALES
+  #   NCountyEstimatesLastRegions_UD[idcountyTable[i],"Males"] <-
+  #     paste0(round(UDdensityM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+  #            round(UDdensityM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+  #            round(UDdensityM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  #   
+  #   ##-- BOTH SEXES
+  #   NCountyEstimatesLastRegions_UD[idcountyTable[i],"Total"] <-
+  #     paste0(round(UDdensity[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
+  #            round(UDdensity[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+  #            round(UDdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  # }#i
+  # 
+  # ##-- ADJUST NAMES
+  # idcounty1 <- idcountyTable
+  # idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  # row.names(NCountyEstimates) <- idcounty1
+  # 
+  # ##-- print .csv
+  # write.csv( NCountyEstimatesLastRegions_UD,
+  #            file = file.path(working.dir, "tables/N_LastYearPerSex_county_UD.csv"))
+  # 
+  # ##-- print .tex
+  # row.names(NCountyEstimatesLastRegions_UD) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
+  # print(xtable::xtable(NCountyEstimatesLastRegions_UD, type = "latex",
+  #                      align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions_UD))), collapse = "")),
+  #       sanitize.text.function=function(x){x},
+  #       floating = FALSE,
+  #       add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions_UD),by=2)),"\\rowcolor[gray]{.95} "),
+  #       file = file.path(working.dir, "tables/N_LastYearPerSex_county_UD.tex"))
   
   
   
@@ -2427,7 +2443,7 @@ processRovquantOutput_bear <- function(
   
   
   
-  ## ------     5.2.3. PROPORTION OF INDIVIDUALS DETECTED ------
+  ## ------     5.2.3. PROPORTION OF INDIVIDUALS DETECTED OVERALL ------
   
   ##-- Get the number of individuals detected each year
   n.detected_F <- apply(nimDataF$y.alive[ ,1, ], 2, function(x)sum(x>0))
@@ -2460,6 +2476,20 @@ processRovquantOutput_bear <- function(
         file = file.path(working.dir, "tables/PropDetectedIds.tex"))
   
   
+  
+  
+  ## ------     5.2.4. PROPORTION OF THE NORWEGIAN POPULATION DETECTED ------
+  
+  ##-- Extract number of individuals detected
+  isDetected <- rbind(nimDataM$y.alive[ ,1, ],nimDataF$y.alive[ ,1, ]) > 0
+  
+  ##-- Identify individual sex
+  isFemale <- resultsSXYZ_MF$sims.list$sex == "F"
+  isMale <- resultsSXYZ_MF$sims.list$sex == "M"
+  
+  ##-- Identify individual status
+  isAvail <- resultsSXYZ_MF$sims.list$z == 1 
+  isAlive <- resultsSXYZ_MF$sims.list$z == 2 
   
   
   ##-- Calculate % of the Norwegian bear population detected 
@@ -2518,7 +2548,7 @@ processRovquantOutput_bear <- function(
   
   
   
-  ## ------     5.2.4. NUMBER OF IDs w/ ACs OUTSIDE NORWAY ------
+  ## ------     5.2.5. NUMBER OF IDs w/ ACs OUTSIDE NORWAY ------
   
   ##-- Calculate number of individuals alive with their AC in each country each year
   N_det_by_country <- matrix(NA,5,n.years)
@@ -2601,6 +2631,11 @@ processRovquantOutput_bear <- function(
   # }#t
   # ##-- Print number of individuals with AC in Norway
   # print(N_NOR)
+  
+  
+  ##-- Remove unnecessary objects from memory
+  rm(list = c("isDetected"))
+  gc(verbose = FALSE)  
   
   
   
@@ -2711,6 +2746,11 @@ processRovquantOutput_bear <- function(
         include.colnames = F,
         sanitize.text.function = function(x){x},
         file = file.path(working.dir, "tables/VitalRates_2.tex"))
+  
+  
+  ##-- Remove unnecessary objects from memory
+  rm(list = c("isMale", "isFemale","isAlive", "isAvail"))
+  gc(verbose = FALSE)
   
   
   
