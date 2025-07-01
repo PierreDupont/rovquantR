@@ -52,6 +52,9 @@ library(sf)
 library(raster)
 library(rmapshaper)
 
+library(colorspace)
+library(nngeo)
+
 
 
 ## -----------------------------------------------------------------------------
@@ -79,7 +82,6 @@ GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/Sca
   st_simplify(., dTolerance =  500)
 
 
-
 ##-- POLYGONS OF SWEDEN & NORWAY
 COUNTRIES <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
   filter(ISO %in% c("SWE","NOR"), 
@@ -88,23 +90,64 @@ COUNTRIES <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_wa
   summarize()
 
 
+##-- POLYGONS OF CARNIVORE MANAGEMENT REGIONS IN NORWAY 
+# REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))  %>%
+#   group_by(NAME_1) %>%
+#   summarise() %>%
+#   mutate(
+#     ISO = "NOR",
+#     name = case_when(
+#     NAME_1 %in% c("Troms","Finnmark") ~ "Region 8",
+#     NAME_1 %in% c("Nordland") ~ "Region 7",
+#     NAME_1 %in% c("Sør-Trøndelag","Nord-Trøndelag","Møre og Romsdal") ~ "Region 6",
+#     NAME_1 %in% c("Hedmark") ~ "Region 5",
+#     NAME_1 %in% c("Akershus", "Ãstfold", "Oslo") ~"Region 4",
+#     NAME_1 %in% c("Oppland") ~ "Region 3",
+#     NAME_1 %in% c("Vestfold","Telemark","Buskerud","Aust-Agder") ~ "Region 2",
+#     NAME_1 %in% c("Hordaland","Sogn og Fjordane","Rogaland","Vest-Agder") ~ "Region 1",
+#     TRUE ~ NAME_1)) %>%
+#   group_by(name) %>%
+#   summarise(country = unique(ISO, na.rm = TRUE)) 
+# ##-- SIMPLIFY COUNTIES
+# REGIONS <- sf::st_simplify(REGIONS, preserveTopology = F, dTolerance = 500)
+# REGIONS$region <- 1:8
+REGIONS_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/NorwegianManagementRegions/rovviltregioner2024.shp")) %>%
+  st_transform(crs = st_crs(COUNTIES_NOR)) 
 
 ##-- POLYGONS OF COUNTIES IN NORWAY 
 COUNTIES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/new_scandinavian_border/fylker-2024.shp")) %>%
   st_transform(crs = st_crs(COUNTRIES)) %>%
-  rename(county = fylkesnavn,
-         area = SHAPE_Area) %>%
-  mutate(county = unlist(lapply(strsplit(county, " - "), function(x)x[1])),
-         country = "NOR")
-COUNTIES_NOR <- COUNTIES_NOR[ ,c("county","country","area")]
+  mutate(county = unlist(lapply(strsplit(fylkesnavn, " - "), function(x)x[1])),
+         country = "NOR") %>%
+  sf::st_intersection(.,REGIONS_NOR) %>%
+  rename(area = SHAPE_Area,
+         region = Region)
+COUNTIES_NOR <- COUNTIES_NOR[ ,c("country","region","county","area")]
 
-##-- POLYGONS OF COUNTIES IN SWEDEN 
-COUNTIES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/rk_lan_07_WGS84.shp")) %>%
-  rename(county = LANSNAMN,
-         area = AREA_METER) %>%
-  mutate(county = unlist(lapply(strsplit(county, " "), function(x)x[1])),
-         country = "SWE")
-COUNTIES_SWE <- COUNTIES_SWE[ ,c("county","country","area")]
+
+
+
+##-- POLYGONS OF COUNTIES AND REGIONS IN SWEDEN 
+# COUNTIES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/rk_lan_07_WGS84.shp")) %>%
+#   rename(county = LANSNAMN,
+#          area = AREA_METER) %>%
+#   mutate(county = unlist(lapply(strsplit(county, " "), function(x)x[1])),
+#          country = "SWE") %>%
+#   select(c("county","country","area"))
+COUNTIES_SWE <- st_read(file.path(dir.dropbox,"/DATA/GISData/new_scandinavian_border/alla_lan.shp")) %>%
+  rename( county = LAN_NAMN) %>%
+  mutate( county = unlist(lapply(strsplit(county," län"), function(x)strsplit(x[1],"s$"))),
+          country = "SWE",
+          region = case_when( 
+            county %in% c("Norrbotten","Västerbotten","Västernorrland","Jämtland") ~ "Norra",
+            county %in% c("Gävleborg","Dalarna","Värmland","Uppsala","Västmanland",
+                          "Örebro","Västra Götaland") ~ "Mellersta",
+            TRUE ~ "Södra")) %>%
+  st_transform(., st_crs(COUNTIES_NOR))
+COUNTIES_SWE$area <- st_area(COUNTIES_SWE)
+COUNTIES_SWE <- COUNTIES_SWE[ ,c("country","region","county","area")]
+plot(COUNTIES_SWE)
+
 
 ##-- JOIN COUNTY POLYGONS
 ##-- Simplification is needed because of size for the package
@@ -112,34 +155,14 @@ COUNTIES <- rbind(COUNTIES_NOR, COUNTIES_SWE) %>%
   ms_simplify( .,
                keep = 0.1,
                keep_shapes = FALSE)
-
-##-- POLYGONS OF CARNIVORE MANAGEMENT REGIONS IN SWEDEN & NORWAY 
-##-- Simplification at the end is needed because of large size otherwise
-REGIONS <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))  %>%
-  group_by(NAME_1) %>%
-  summarise() %>%
-  mutate(
-    ISO = "NOR",
-    name = case_when(
-    NAME_1 %in% c("Troms","Finnmark") ~ "Region 8",
-    NAME_1 %in% c("Nordland") ~ "Region 7",
-    NAME_1 %in% c("Sør-Trøndelag","Nord-Trøndelag","Møre og Romsdal") ~ "Region 6",
-    NAME_1 %in% c("Hedmark") ~ "Region 5",
-    NAME_1 %in% c("Akershus", "Ãstfold", "Oslo") ~"Region 4",
-    NAME_1 %in% c("Oppland") ~ "Region 3",
-    NAME_1 %in% c("Vestfold","Telemark","Buskerud","Aust-Agder") ~ "Region 2",
-    NAME_1 %in% c("Hordaland","Sogn og Fjordane","Rogaland","Vest-Agder") ~ "Region 1",
-    TRUE ~ NAME_1)) %>%
-  group_by(name) %>%
-  summarise(country = unique(ISO, na.rm = TRUE)) 
-##-- SIMPLIFY COUNTIES
-REGIONS <- sf::st_simplify(REGIONS, preserveTopology = F, dTolerance = 500)
-REGIONS$region <- 1:8
-
+plot(COUNTIES)
 # plot(st_geometry(REGIONS2))
 # text(REGIONS2,labels = REGIONS2$region)
-# REGIONS_NOR <- sf::st_read(file.path( dir.dropbox,
-#                                   "DATA/GISData/NorwegianManagementRegions/rovviltregioner2024.shp"))
+# REGIONS_NOR <- sf::st_read(file.path( dir.dropbox,"DATA/GISData/NorwegianManagementRegions/rovviltregioner2024.shp"))
+# st_crs(COUNTIES_NOR)
+# st_crs(NorwayManagementRegion)
+# test <- sf::st_intersection(COUNTIES_NOR,NorwayManagementRegion)
+# plot(st_geometry(test))
 
 ##-- HABITAT RASTERS AT DIFFERENT RESOLUTIONS (REFERENCE RASTERS)
 load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20kmNewNorCounties.RData"))
