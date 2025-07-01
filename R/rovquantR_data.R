@@ -1,9 +1,9 @@
 #' COUNTIES
 #' 
 #' @description
-#' These data sets describe Scandinavian counties.
+#' These data sets describe Scandinavian administrative borders.
 #'
-#' `COUNTIES`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
+#' `COUNTIES`, `REGIONS`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
 #' `habitatRasterResolution` and `habitatRasters` are raster objects.
 #' 
 #' @name COUNTIES
@@ -15,13 +15,33 @@
 #' @examples
 #' data(COUNTIES)
 "COUNTIES"
+NULL
+
+#' COUNTIES
+#' 
+#' @description
+#' These data sets describe Scandinavian counties.
+#'
+#' `COUNTIES`, `REGIONS`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
+#' `habitatRasterResolution` and `habitatRasters` are raster objects.
+#' 
+#' @name REGIONS
+#' @keywords datasets
+#' 
+#' @format ## `REGIONS`
+#' A simple feature collection with 38 features and 4 fielsd#' 
+#' @source <https://www.nmbu.no/en/research/projects/rovquant>
+#' @examples
+#' data(REGIONS)
+"REGIONS"
+NULL 
 
 #' COUNTRIES
 #' 
 #' @description
 #' These data sets describe Scandinavian countries.
 #'
-#' `COUNTIES`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
+#' `COUNTIES`, `REGIONS`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
 #' `habitatRasterResolution` and `habitatRasters` are raster objects.
 #' 
 #' @name COUNTRIES
@@ -40,7 +60,7 @@ NULL
 #' @description
 #' These data sets describe Scandinavian borders.
 #'
-#' `COUNTIES`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
+#' `COUNTIES`, `REGIONS`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
 #' `habitatRasterResolution` and `habitatRasters` are raster objects.
 #' 
 #' @name COUNTRIESWaterHumans
@@ -59,7 +79,7 @@ NULL
 #' @description
 #' These data sets describe Scandinavian countries, counties and management regions.
 #'
-#' `COUNTIES`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
+#' `COUNTIES`, `REGIONS`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
 #' `habitatRasterResolution` and `habitatRasters` are raster objects.
 #' 
 #' @name GLOBALMAP
@@ -78,7 +98,7 @@ NULL
 #' @description
 #' These data sets describe Scandinavian countries, counties and management regions.
 #'
-#' `COUNTIES`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
+#' `COUNTIES`, `REGIONS`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
 #' `habitatRasterResolution` and `habitatRasters` are raster objects.
 #' 
 #' @name habitatRasters
@@ -97,7 +117,7 @@ NULL
 #' @description
 #' These data sets describe Scandinavian countries, counties and management regions.
 #'
-#' `COUNTIES`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
+#' `COUNTIES`, `REGIONS`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
 #' `habitatRasterResolution` and `habitatRasters` are raster objects.
 #' 
 #' @name habitatRasterResolution

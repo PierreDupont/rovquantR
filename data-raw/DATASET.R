@@ -91,7 +91,7 @@ COUNTRIES <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_wa
 
 ##-- POLYGONS OF CARNIVORE MANAGEMENT REGIONS IN NORWAY 
 REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) %>%
-  mutate(
+  mutate( 
     NAME_1 = case_when(
       NAME_2 %in% c("Lunner","Jevnaker") ~ "Akershus",
       TRUE ~ NAME_1)) %>%
@@ -123,11 +123,6 @@ REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_bord
 REGIONS_NOR$area <- as.numeric(st_area(REGIONS_NOR))
 REGIONS_NOR <- REGIONS_NOR[ ,c("country","region","county","area")]
 plot(REGIONS_NOR)
-
-
-# ##-- POLYGONS OF REGIONS IN NORWAY 
-# REGIONS_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/NorwegianManagementRegions/rovviltregioner2024.shp")) %>%
-#   st_transform(crs = st_crs(COUNTRIES)) 
 # ##-- POLYGONS OF COUNTIES IN NORWAY 
 # COUNTIES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/new_scandinavian_border/fylker-2024.shp")) %>%
 #   st_transform( crs = st_crs(COUNTRIES)) %>%
@@ -141,8 +136,7 @@ plot(REGIONS_NOR)
 
 ##-- POLYGONS OF COUNTIES AND REGIONS IN SWEDEN 
 REGIONS_SWE <- st_read(file.path(dir.dropbox,"/DATA/GISData/new_scandinavian_border/alla_lan.shp")) %>%
-  rename( county = LAN_NAMN) %>%
-  mutate( county = unlist(lapply(strsplit(county," län"), function(x)strsplit(x[1],"s$"))),
+  mutate( county = unlist(lapply(strsplit(LAN_NAMN," län"), function(x)strsplit(x[1],"s$"))),
           country = "SWE",
           region = case_when( 
             county %in% c("Norrbotten","Västerbotten","Västernorrland","Jämtland") ~ "Norra",
@@ -155,23 +149,15 @@ REGIONS_SWE <- REGIONS_SWE[ ,c("country","region","county","area")]
 plot(REGIONS_SWE)
 
 
-
 ##-- JOIN POLYGONS
 ##-- Simplification is needed because of size for the package
-COUNTIES <- rbind(REGIONS_SWE, REGIONS_NOR) %>% 
+REGIONS <- rbind(REGIONS_SWE, REGIONS_NOR) %>% 
   ms_simplify( .,
                keep = 0.1,
                keep_shapes = FALSE)
-object.size(COUNTIES)/1e6
-plot(COUNTIES)
+object.size(REGIONS)/1e6
+plot(REGIONS)
 
-# plot(st_geometry(REGIONS2))
-# text(REGIONS2,labels = REGIONS2$region)
-# REGIONS_NOR <- sf::st_read(file.path( dir.dropbox,"DATA/GISData/NorwegianManagementRegions/rovviltregioner2024.shp"))
-# st_crs(COUNTIES_NOR)
-# st_crs(NorwayManagementRegion)
-# test <- sf::st_intersection(COUNTIES_NOR,NorwayManagementRegion)
-# plot(st_geometry(test))
 
 ##-- HABITAT RASTERS AT DIFFERENT RESOLUTIONS (REFERENCE RASTERS)
 load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20kmNewNorCounties.RData"))
