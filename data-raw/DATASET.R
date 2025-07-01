@@ -99,14 +99,14 @@ REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_bord
   summarise() %>%
   mutate(
     region = case_when(
-      NAME_1 %in% c("Troms","Finnmark") ~ 8,
-      NAME_1 %in% c("Nordland") ~ 7,
-      NAME_1 %in% c("Sør-Trøndelag","Nord-Trøndelag","Møre og Romsdal") ~ 6,
-      NAME_1 %in% c("Hedmark") ~ 5,
-      NAME_1 %in% c("Akershus", "Ãstfold", "Oslo") ~ 4,
-      NAME_1 %in% c("Oppland") ~ 3,
-      NAME_1 %in% c("Vestfold","Telemark","Buskerud","Aust-Agder") ~ 2,
-      TRUE ~ 1),
+      NAME_1 %in% c("Troms","Finnmark") ~ "Region 8",
+      NAME_1 %in% c("Nordland") ~ "Region 7",
+      NAME_1 %in% c("Sør-Trøndelag","Nord-Trøndelag","Møre og Romsdal") ~ "Region 6",
+      NAME_1 %in% c("Hedmark") ~ "Region 5",
+      NAME_1 %in% c("Akershus", "Ãstfold", "Oslo") ~ "Region 4",
+      NAME_1 %in% c("Oppland") ~ "Region 3",
+      NAME_1 %in% c("Vestfold","Telemark","Buskerud","Aust-Agder") ~ "Region 2",
+      TRUE ~ "Region 1"),
     county = case_when(
       NAME_1 %in% c("Hedmark","Oppland") ~ "Innlandet",
       NAME_1 %in% c("Aust-Agder","Vest-Agder") ~ "Agder",

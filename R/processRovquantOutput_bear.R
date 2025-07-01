@@ -705,7 +705,7 @@ processRovquantOutput_bear <- function(
     ##-- Map insert
     par(mar = c(5,0,4,5))
     plot(st_geometry(REGIONS), border = grey(0.5), col = grey(0.5), lwd = 0.1)
-    plot(st_geometry(REGIONS[REGIONS$name == cc, ]),
+    plot(st_geometry(REGIONS[REGIONS$region == cc, ]),
          add = T, col = adjustcolor("red",0.5), border = "red")
   }#c
   dev.off()
