@@ -121,26 +121,25 @@ makeRovquantData_bear <- function(
     fact = raster::res(habitatRasters[["Habitat"]])/habitat.res)
   
   ##-- Merge Norwegian counties for practical reasons
-  COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c("Sor-Trondelag",
-                                         "Nord-Trondelag",
-                                         "Nordland")] <- "Nord-Trondelag"
+  COUNTIES$county[COUNTIES$county %in% c("Trøndelag",
+                                         "Nordland")] <- "Trøndelag"
   
-  COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c("Troms",
+  COUNTIES$county[COUNTIES$county %in% c("Troms",
                                          "Finnmark")] <- "Finnmark"
   
-  COUNTIES$NAME_1[COUNTIES$NAME_1 %in% c( "Akershus","Aust-Agder",
+  COUNTIES$county[COUNTIES$county %in% c( "Akershus","Agder",
                                           "Buskerud",
-                                          "Hedmark", "Hordaland",
-                                          "More og Romsdal",
+                                          "Innlandet", "Hordaland",
+                                          "Møre og Romsdal",
                                           "Oslo", "Oppland",
                                           "Rogaland",
-                                          "Sogn og Fjordane",
+                                          "Vestland",
                                           "Telemark",
-                                          "Vestfold","Vest-Agder",
-                                          "Astfold" )] <- "Hedmark"
+                                          "Vestfold",
+                                          "Østfold" )] <- "Innlandet"
   COUNTIES <- COUNTIES %>%
-    dplyr::filter( , NAME_1 %in% c("Nord-Trondelag","Hedmark","Finnmark")) %>%
-    dplyr::group_by(NAME_1) %>%
+    dplyr::filter( , county %in% c("Trøndelag","Innlandet","Finnmark")) %>%
+    dplyr::group_by(county) %>%
     dplyr::summarise() 
   
   COUNTIES$id <- as.character(1:nrow(COUNTIES))
@@ -404,7 +403,7 @@ makeRovquantData_bear <- function(
   
   ##-- Assign counties to detectors
   dist <- sf::st_distance(detectors$main.detector.sp, COUNTIES)
-  detCounties1 <- apply(dist, 1, function(x) COUNTIES$NAME_1[which.min(x)])
+  detCounties1 <- apply(dist, 1, function(x) COUNTIES$county[which.min(x)])
   
   ##-- Re-order to account for some counties being never sampled
   detCounties <- as.numeric(as.factor(detCounties1))
