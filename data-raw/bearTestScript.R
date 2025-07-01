@@ -52,7 +52,7 @@ library(nimbleSCR)
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Analysis_report"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Analysis_test"
 
 
 ##------------------------------------------------------------------------------
@@ -60,7 +60,7 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/A
 
 cleanRovbaseData( 
   species = "bear",
-  years = 2015:2025,
+  years = 2020:2025,
   data.dir = data.dir,
   working.dir = working.dir,
   two.sex = TRUE,
