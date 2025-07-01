@@ -8,7 +8,7 @@ processRovquantOutput(
   data.dir = "./Data",
   working.dir = NULL,
   species = c("bear", "wolf", "wolverine"),
-  nburnin = 0,
+  nburnin = 5,
   niter = 100,
   extraction.res = 5000,
   print.report = TRUE,

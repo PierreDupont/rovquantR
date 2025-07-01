@@ -26,5 +26,10 @@ gc()
 library(usethis)
 
 usethis::use_vignette("Bear_Vignette")
-
 devtools::build_rmd("vignettes/Bear_Vignette.Rmd")
+
+usethis::use_vignette("Wolf_Vignette")
+devtools::build_rmd("vignettes/Wolf_Vignette.Rmd")
+
+usethis::use_vignette("Wolverine_Vignette")
+devtools::build_rmd("vignettes/Wolverine_Vignette.Rmd")

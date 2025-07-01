@@ -12,9 +12,10 @@ getInits.s(
   habitatGrid,
   known.s = NULL,
   baseIntensities = NULL,
-  sd = NULL,
+  sd,
   detNums = NULL,
-  detIndices = NULL
+  detIndices = NULL,
+  radius = NULL
 )
 }
 \arguments{

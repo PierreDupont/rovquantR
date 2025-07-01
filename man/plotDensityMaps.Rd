@@ -10,13 +10,15 @@ plotDensityMaps(
   unit = 100,
   mask,
   background = NULL,
-  type = c("all"),
+  type = c("time.series", "last.year", "summary"),
   path = file.path(getwd(), "figures"),
+  species = NULL,
+  q95 = NULL,
   name = "UD_Density"
 )
 }
 \arguments{
-\item{input}{Density inuts, as prepared by the \code{getDensityInput} function.}
+\item{input}{Raster used for extraction, as prepared by the \code{getDensityInput} function.}
 
 \item{estimates}{Density estimates as provided by the \code{getDensity} or \code{getSpaceUse} functions.}
 

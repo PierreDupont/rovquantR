@@ -30,48 +30,47 @@ makeRovquantData(
 as prepared by \code{cleanRovBaseData}.}
 
 \item{working.dir}{A \code{path} to the directory for this analysis containing
-the \code{nimbleInputFiles} folder to store the prepared data.}
+the \code{nimbleInFiles} folder to store the prepared data.}
 
 \item{species}{A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.}
 
-\item{years}{A \code{list}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+\item{years}{A \code{numeric} vector denoting which years of data will be used for this analysis.}
 
-\item{sex}{A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.}
+\item{sex}{A \code{character} denoting for which sex the data should be prepared ("female", "male" or both).}
 
-\item{aug.factor}{A \code{numeric} to the directory containing the clean Rovbase data,}
+\item{aug.factor}{A \code{numeric} denoting the augmentation factor.}
 
-\item{sampling.months}{A \code{list}.}
+\item{sampling.months}{A \code{list} denoting the months of the monitoring period. Can accomodate sampling periods over two calendar years, e.g. 'list(c(10:12),c(1:3))' for a monitoring period extending from October to March (included).}
 
-\item{habitat.res}{A \code{numeric}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+\item{habitat.res}{A \code{numeric} denoting the resolution (in meters) to be used for the habitat definition.}
 
-\item{buffer.size}{A \code{numeric} denoting the species; can be any of "bear", "wolf" or "wolverine.}
+\item{buffer.size}{A \code{numeric} denoting the size (in meters) of the buffer around the searched area.}
 
-\item{max.move.dist}{A \code{numeric}.}
+\item{max.move.dist}{A \code{numeric} denoting the maximum allowed distance for inter-annual movement.}
 
-\item{detector.res}{A \code{numeric} to the directory for this analysis containing}
+\item{detector.res}{A \code{numeric} denoting the resolution (in meters) to be used for the detectors definition.}
 
-\item{subdetector.res}{A \code{numeric}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+\item{subdetector.res}{A \code{numeric} denoting the resolution (in meters) to be used for the sub-detectors.}
 
-\item{max.det.dist}{A \code{numeric} denoting the species; can be any of "bear", "wolf" or "wolverine.}
+\item{max.det.dist}{A \code{numeric} denoting the maximum allowed distance for intra-annual movement.}
 
-\item{resize.factor}{A \code{numeric}.}
+\item{resize.factor}{A \code{numeric} denoting the aggregation factor to be used for the local evaluation.}
 
-\item{print.report}{A \code{logical}.}
+\item{print.report}{A \code{logical} denoting whether to print out a \code{.html} report summarizing the data preparation process or not.}
 
-\item{Rmd.template}{A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.}
+\item{Rmd.template}{(optional) A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.}
 
-\item{output.dir}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+\item{output.dir}{(optional) A \code{path} denoting where to print the .html report. Default is in a folder named 'reports' in the working directory.}
 
 \item{overwrite}{A \code{logical} (default = FALSE) to force overwriting of previously existing data.
-If FALSE, the function checks for any pre-existing data files and ask whether to overwrite it or not.}
+If FALSE, the function checks for any pre-existing data files and asks whether to overwrite it or not.}
 }
 \value{
 This function returns:
 \enumerate{
-\item A \code{.RData} file with the clean NGS and dead recovery data objects
- for the species and period specified.
-\item A \code{.html} report summarizing the data cleaning process. 
-\item Additional \code{.png} images that can be reused somewhere else.
+\item Multiple \code{.RData} nimble input files containing the input data, model code and initial values necessary for fitting the model in nimble (one input file per MCMC chain).
+\item A \code{.html} report summarizing the data preparation process. 
+\item Additional \code{.png} images and \code{.csv} tables of the figures and tables present in the report.
 }
 }
 \description{

@@ -1,14 +1,16 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
 
-# rovquantR <a href="https://www.nmbu.no/en/research/projects/rovquant"><img src="man/figures/RovQuant.png" align="right" height="180"/></a>
+# rovquantR <a href="https://www.nmbu.no/en/research/projects/rovquant"><img src="inst/images/RovQuant.png" align="right" height="180"/></a>
 
 <h4 align="center">
 
 A user-friendly interface to reproduce RovQuant’s analyses.
 
 </h4>
+
 <!-- badges: start -->
+
 <p align="center">
 
 <a href="https://github.com/PierreDupont/rovquantR/commits/master">
@@ -19,11 +21,17 @@ A user-friendly interface to reproduce RovQuant’s analyses.
 <img src="https://img.shields.io/github/issues-pr-raw/PierreDupont/rovquantR.svg?style=flat-square&amp;logo=github&amp;logoColor=white" alt="GitHub pull requests"/>
 
 </p>
+
 <!-- badges: end -->
+
 <!-- <p align="center"> -->
+
 <!--   <a href="#installation">Installation</a> • -->
+
 <!--   <a href="#example">Example</a> • -->
+
 <!--   <a href="#goodrm">Good Readme</a>  -->
+
 <!-- </p> -->
 
 ------------------------------------------------------------------------
@@ -73,13 +81,23 @@ makeDirectories(path = working_dir)
 ```
 
 <!-- ## Good Readme -->
+
 <!-- What is special about using `README.Rmd` instead of just `README.md`? You can include R chunks like so: -->
+
 <!-- ```{r cars} -->
+
 <!-- summary(cars) -->
+
 <!-- ``` -->
+
 <!-- You'll still need to render `README.Rmd` regularly, to keep `README.md` up-to-date. `devtools::build_readme()` is handy for this. -->
+
 <!-- You can also embed plots, for example: -->
+
 <!-- ```{r pressure, echo = FALSE} -->
+
 <!-- plot(pressure) -->
+
 <!-- ``` -->
+
 <!-- In that case, don't forget to commit and push the resulting figure files, so they display on GitHub and CRAN. -->

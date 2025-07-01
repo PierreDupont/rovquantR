@@ -12,6 +12,7 @@ cleanRovbaseData(
   two.sex = TRUE,
   sampling.months = NULL,
   rename.list = NULL,
+  legal.dead = NULL,
   print.report = TRUE,
   Rmd.template = NULL,
   output.dir = NULL,
@@ -35,7 +36,7 @@ Only data for those years will be cleaned and returned.}
 
 \item{rename.list}{(Optional) A named \code{character} vector used to rename columns in the raw Rovbase files.}
 
-\item{print.report}{A \code{logical} denoting wheteher to prin t out a \code{.html} report summarizing the cleaning process or not.}
+\item{print.report}{A \code{logical} denoting whether to print out a \code{.html} report summarizing the cleaning process or not.}
 
 \item{Rmd.template}{(Optional) The \code{path} to the \code{.rmd} template to be used for cleaning the data. By default, the \code{.rmd} template provided with the \code{rovquantR} package is used.}
 

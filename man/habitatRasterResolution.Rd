@@ -17,7 +17,7 @@ habitatRasterResolution
 \description{
 These data sets describe Scandinavian countries, counties and management regions.
 
-`COUNTIES`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
+`COUNTIES`, `REGIONS`, `COUNTRIES`, `COUNTRIESWaterHumans` and `GLOBALMAP` are simple feature (sf) objects.
 `habitatRasterResolution` and `habitatRasters` are raster objects.
 }
 \examples{
