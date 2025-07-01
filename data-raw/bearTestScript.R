@@ -40,6 +40,8 @@ devtools::install_github("PierreDupont/rovquantR")
 ## ------ LOAD REQUIRED LIBRARIES ------
 
 library(rovquantR)
+?GetDensity
+
 library(nimbleSCR)
 
 

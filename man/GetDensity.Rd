@@ -10,7 +10,7 @@
 \alias{GetDetectability_normal}
 \alias{GetDetectability_mean}
 \alias{GetTransitions}
-\title{Density extraction}
+\title{MCMC output post-processing}
 \usage{
 quantileCpp(x, q)
 
@@ -104,8 +104,11 @@ GetTransitions(
 Return_Description
 }
 \description{
-The \code{getDensity}
+This set of \code{C++} functions are meant to facilitate the post-processing of SCR and OPSCR posterior samples in order to provide relevant information and derived quantities.
 }
 \details{
-The \code{getSpaceUse} function extracts density estimates for a set of grid cells based onindividual posterior space use distribution.
+The \code{GetDensity} function extracts density estimates for a set of grid cells based on individual posterior activity center locations.
+The \code{GetSpaceUse} function extracts density estimates for a set of grid cells based on individual posterior space use distribution.
+The \code{GetDetectability_normal} function calculates detectability, i.e. the probability for an individual to be detected at least once for a set of grid cells based on posterior baseline detection probabilities and scale parameters. This function assumes a half-normal detection function.
+The \code{GetDetectability_mean} function is a fast alternative of the \code{GetDetectability_normal} based on the posterior means of the parameters instead of the full posterior MCMC.
 }

@@ -49,6 +49,7 @@ document(baseDir)
 Rcpp::compileAttributes()           # this updates the Rcpp layer from C++ to R
 roxygen2::roxygenize(roclets="rd") 
 
+
 ## ------ BUILD PACKAGE ------
 system(paste0('R CMD build ', baseDir))
 
