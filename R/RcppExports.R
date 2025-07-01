@@ -2,40 +2,74 @@
 # Generator token: 10BE3573-1514-4C36-9D1C-5A225CD40393
 
 #' Density extraction 
-NULL
-
+#' 
+#' The \code{getDensity} 
+#'
+#' The \code{getSpaceUse} function extracts density estimates for a set of grid cells based onindividual posterior space use distribution.
+#' 
+#' @param sx A numeric vector whose sample quantiles are wanted.
+#' @param sy A logical, whether to remove NA values before calculation or not.
+#' @param z A logical, whether to remove NA values before calculation or not.
+#' @param sigma A logical, whether to remove NA values before calculation or not.
+#' @param habitatxy A logical, whether to remove NA values before calculation or not.
+#' @param aliveStates A logical, whether to remove NA values before calculation or not.
+#' @param regionID A logical, whether to remove NA values before calculation or not.
+#' @param probs A logical, whether to remove NA values before calculation or not.
+#' @param display_progress A logical, whether to remove NA values before calculation or not.
+#' @param returnPosteriorCells A logical, whether to remove NA values before calculation or not.
+#' 
+#' @return Return_Description
+#' 
+#' @name GetDensity
+#' @export
 quantileCpp <- function(x, q) {
     .Call('_rovquantR_quantileCpp', PACKAGE = 'rovquantR', x, q)
 }
 
+#' @rdname GetDensity
+#' @export
 fastIntMode <- function(x, narm = FALSE) {
     .Call('_rovquantR_fastIntMode', PACKAGE = 'rovquantR', x, narm)
 }
 
+#' @rdname GetDensity
+#' @export
 extractUniquePositiveValues <- function(matrix) {
     .Call('_rovquantR_extractUniquePositiveValues', PACKAGE = 'rovquantR', matrix)
 }
 
+#' @rdname GetDensity
+#' @export
 createTransitionMatrix <- function(values) {
     .Call('_rovquantR_createTransitionMatrix', PACKAGE = 'rovquantR', values)
 }
 
+#' @rdname GetDensity
+#' @export
 GetDensity <- function(sx, sy, z, IDmx, aliveStates, regionID, probs = as.numeric( c(0.025,0.975)), display_progress = TRUE, returnPosteriorCells = TRUE) {
     .Call('_rovquantR_GetDensity', PACKAGE = 'rovquantR', sx, sy, z, IDmx, aliveStates, regionID, probs, display_progress, returnPosteriorCells)
 }
 
+#' @rdname GetDensity
+#' @export
 GetSpaceUse <- function(sx, sy, z, sigma, habitatxy, aliveStates, regionID, probs = as.numeric( c(0.025,0.975)), display_progress = TRUE, returnPosteriorCells = TRUE) {
     .Call('_rovquantR_GetSpaceUse', PACKAGE = 'rovquantR', sx, sy, z, sigma, habitatxy, aliveStates, regionID, probs, display_progress, returnPosteriorCells)
 }
 
+#' @rdname GetDensity
+#' @export
 GetDetectability_normal <- function(p0, sigma, habitatxy, detectorxy, regionID, probs = as.numeric( c(0.025,0.975)), localDist = 100, display_progress = TRUE, returnPosteriorCells = FALSE) {
     .Call('_rovquantR_GetDetectability_normal', PACKAGE = 'rovquantR', p0, sigma, habitatxy, detectorxy, regionID, probs, localDist, display_progress, returnPosteriorCells)
 }
 
+#' @rdname GetDensity
+#' @export
 GetDetectability_mean <- function(p0, sigma, habitatxy, detectorxy, display_progress = TRUE) {
     .Call('_rovquantR_GetDetectability_mean', PACKAGE = 'rovquantR', p0, sigma, habitatxy, detectorxy, display_progress)
 }
 
+#' @rdname GetDensity
+#' @export
 GetTransitions <- function(sx1, sy1, z1, sx2, sy2, z2, stateFrom, stateTo, rgmx, probs = as.numeric( c(0.025,0.975)), display_progress = TRUE) {
     .Call('_rovquantR_GetTransitions', PACKAGE = 'rovquantR', sx1, sy1, z1, sx2, sy2, z2, stateFrom, stateTo, rgmx, probs, display_progress)
 }

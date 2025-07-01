@@ -11,37 +11,37 @@ using namespace arma;
 using namespace Rcpp;
 
 //' Density extraction 
- //'
- //' This set of functions is used  returns sample quantiles corresponding to the given 
- //' probabilities (\code{q}). The smallest observation corresponds to a 
- //' probability of 0 and the largest to a probability of 1.
- //'
- //' @param x A numeric vector whose sample quantiles are wanted.
- //' @param q A numeric vector of probabilities.
- //' 
- //' @return Return_Description
- //' 
- //' @export
- // [[Rcpp::export]]
- NumericVector quantileCpp(NumericVector x, NumericVector q){
+//' 
+//' The \code{getDensity} 
+//'
+//' The \code{getSpaceUse} function extracts density estimates for a set of grid cells based onindividual posterior space use distribution.
+//' 
+//' @param sx A numeric vector whose sample quantiles are wanted.
+//' @param sy A logical, whether to remove NA values before calculation or not.
+//' @param z A logical, whether to remove NA values before calculation or not.
+//' @param sigma A logical, whether to remove NA values before calculation or not.
+//' @param habitatxy A logical, whether to remove NA values before calculation or not.
+//' @param aliveStates A logical, whether to remove NA values before calculation or not.
+//' @param regionID A logical, whether to remove NA values before calculation or not.
+//' @param probs A logical, whether to remove NA values before calculation or not.
+//' @param display_progress A logical, whether to remove NA values before calculation or not.
+//' @param returnPosteriorCells A logical, whether to remove NA values before calculation or not.
+//' 
+//' @return Return_Description
+//' 
+//' @name GetDensity
+//' @export
+// [[Rcpp::export]]
+NumericVector quantileCpp(NumericVector x, NumericVector q){
    NumericVector y = clone(x);
    std::sort(y.begin(), y.end());
    return y[x.size()*(q - 0.000000001)];
  }
  
- //' @name Mode calculation 
- //'
- //' This function returns the sample mode.
- //' 
- //' @param x A numeric vector whose sample quantiles are wanted.
- //' @param narm A logical, whether to remove NA values before calculation or not.
- //' 
- //' @return Return_Description
- //' 
- //' @export
- // [[Rcpp::export]]
- int fastIntMode(NumericVector x, bool narm = false) 
- {
+//' @rdname GetDensity
+//' @export
+// [[Rcpp::export]]
+int fastIntMode(NumericVector x, bool narm = false){
    if (narm) x = x[!is_na(x)];
    int myMax = 1;
    int myMode = 0;
@@ -64,19 +64,10 @@ using namespace Rcpp;
    return myMode;
  }
  
- //' @name Extract unique positive values 
- //'
- //' This function extracts unique positive values.
- //' 
- //' @param x A numeric vector whose sample quantiles are wanted.
- //' @param narm A logical, whether to remove NA values before calculation or not.
- //' 
- //' @return Return_Description
- //' 
- //' @export
- // [[Rcpp::export]]
- NumericVector extractUniquePositiveValues(NumericMatrix matrix) 
- {
+//' @rdname GetDensity
+//' @export
+// [[Rcpp::export]]
+NumericVector extractUniquePositiveValues(NumericMatrix matrix){
    int nrow = matrix.nrow();
    int ncol = matrix.ncol();
    std::set<double> uniquePositiveValues;
@@ -91,18 +82,10 @@ using namespace Rcpp;
    return NumericVector(uniquePositiveValues.begin(), uniquePositiveValues.end());
  }
  
- //' @name Create transition matrix
- //'
- //' This function extracts unique positive values.
- //' 
- //' @param values A numeric vector whose sample quantiles are wanted.
- //' 
- //' @return Return_Description
- //' 
- //' @export
- // [[Rcpp::export]]
- NumericMatrix createTransitionMatrix(NumericVector values) 
- {
+//' @rdname GetDensity
+//' @export
+// [[Rcpp::export]]
+NumericMatrix createTransitionMatrix(NumericVector values){
    auto maxValues = std::max_element(values.begin(), values.end());
    int lengthValues = values.size();
    NumericMatrix result(*maxValues, *maxValues);
@@ -120,26 +103,10 @@ using namespace Rcpp;
    return result;
  }
  
- //' @name AC-based density extraction 
- //'
- //' This function extract density estimates for a set of grid cells based on
- //' individual posterior activty center coordinates.
- //' 
- //' @param sx A numeric vector whose sample quantiles are wanted.
- //' @param sy A logical, whether to remove NA values before calculation or not.
- //' @param z A logical, whether to remove NA values before calculation or not.
- //' @param IDmx A logical, whether to remove NA values before calculation or not.
- //' @param aliveStates A logical, whether to remove NA values before calculation or not.
- //' @param regionID A logical, whether to remove NA values before calculation or not.
- //' @param probs A logical, whether to remove NA values before calculation or not.
- //' @param display_progress A logical, whether to remove NA values before calculation or not.
- //' @param returnPosteriorCells A logical, whether to remove NA values before calculation or not.
- //' 
- //' @return Return_Description
- //' 
- //' @export
- // [[Rcpp::export]]
- List GetDensity(NumericMatrix sx,             // X COORDINATES
+//' @rdname GetDensity
+//' @export
+// [[Rcpp::export]]
+List GetDensity(NumericMatrix sx,             // X COORDINATES
                  NumericMatrix sy,                // Y COORDINATES 
                  NumericMatrix z,                 // Z STATE 
                  NumericMatrix IDmx,              // MATRIX OF CELL IDS
@@ -301,27 +268,10 @@ using namespace Rcpp;
    }
  }
  
- //' @name UD-based density extraction 
- //'
- //' This function extract density estimates for a set of grid cells based on
- //' individual posterior space use distribution.
- //' 
- //' @param sx A numeric vector whose sample quantiles are wanted.
- //' @param sy A logical, whether to remove NA values before calculation or not.
- //' @param z A logical, whether to remove NA values before calculation or not.
- //' @param sigma A logical, whether to remove NA values before calculation or not.
- //' @param habitatxy A logical, whether to remove NA values before calculation or not.
- //' @param aliveStates A logical, whether to remove NA values before calculation or not.
- //' @param regionID A logical, whether to remove NA values before calculation or not.
- //' @param probs A logical, whether to remove NA values before calculation or not.
- //' @param display_progress A logical, whether to remove NA values before calculation or not.
- //' @param returnPosteriorCells A logical, whether to remove NA values before calculation or not.
- //' 
- //' @return Return_Description
- //' 
- //' @export
- // [[Rcpp::export]]
- List GetSpaceUse(NumericMatrix sx,             // X COORDINATES 
+//' @rdname GetDensity
+//' @export
+// [[Rcpp::export]]
+List GetSpaceUse(NumericMatrix sx,             // X COORDINATES 
                   NumericMatrix sy,            // Y COORDINATES 
                   NumericMatrix z,             // Z STATE 
                   NumericMatrix sigma,         // SIGMA VALUES 
@@ -487,25 +437,10 @@ using namespace Rcpp;
  }
  
  
- //' @name Spatial detectability extraction 
- //'
- //' This function calculates detectability, i.e. the probability to detect an indiviudal at least once.
- //' 
- //' @param p0 A logical, whether to remove NA values before calculation or not.
- //' @param sigma A logical, whether to remove NA values before calculation or not.
- //' @param habitatxy A logical, whether to remove NA values before calculation or not.
- //' @param detectorxy A logical, whether to remove NA values before calculation or not.
- //' @param regionID A logical, whether to remove NA values before calculation or not.
- //' @param probs A logical, whether to remove NA values before calculation or not.
- //' @param localDist A logical, whether to remove NA values before calculation or not.
- //' @param display_progress A logical, whether to remove NA values before calculation or not.
- //' @param returnPosteriorCells A logical, whether to remove NA values before calculation or not.
- //' 
- //' @return Return_Description
- //' 
- //' @export
- // [[Rcpp::export]]
- List GetDetectability_normal( NumericMatrix p0,                 // detector-specific values of p0   
+//' @rdname GetDensity
+//' @export
+// [[Rcpp::export]]
+List GetDetectability_normal( NumericMatrix p0,                 // detector-specific values of p0   
                                NumericVector sigma,              // SIGMA VALUES 
                                NumericMatrix habitatxy,          // HABITAT COORDINATES
                                NumericMatrix detectorxy,         // DETECTOR COORDINATES
@@ -673,23 +608,10 @@ using namespace Rcpp;
    }
  }
  
- 
- 
- //' @name Mean detectability extraction 
- //'
- //' This function calculates detectability, i.e. the probability to detect an indiviudal at least once.
- //' 
- //' @param p0 A numeric vector whose sample quantiles are wanted.
- //' @param sigma A logical, whether to remove NA values before calculation or not.
- //' @param habitatxy A logical, whether to remove NA values before calculation or not.
- //' @param detectorxy A logical, whether to remove NA values before calculation or not.
- //' @param display_progress A logical, whether to remove NA values before calculation or not.
- //' 
- //' @return Return_Description
- //' 
- //' @export
- // [[Rcpp::export]]
- List GetDetectability_mean( NumericVector p0,             // detector-specific values of p0   
+//' @rdname GetDensity
+//' @export
+// [[Rcpp::export]]
+List GetDetectability_mean( NumericVector p0,             // detector-specific values of p0   
                              double sigma,                 // SIGMA VALUES 
                              NumericMatrix habitatxy,      // HABITAT COORDINATES
                              NumericMatrix detectorxy,     // DETECTOR COORDINATES
@@ -730,27 +652,10 @@ using namespace Rcpp;
    return List::create(Named("MeanCell") = pTot);
  }
  
- //' Spatial transition extraction 
- //'
- //' This function extract transitions.
- //' 
- //' @param sx1 A numeric vector whose sample quantiles are wanted.
- //' @param sy1 A logical, whether to remove NA values before calculation or not.
- //' @param z1 A logical, whether to remove NA values before calculation or not.
- //' @param sx2 A numeric vector whose sample quantiles are wanted.
- //' @param sy2 A logical, whether to remove NA values before calculation or not.
- //' @param z2 A logical, whether to remove NA values before calculation or not.
- //' @param stateFrom A logical, whether to remove NA values before calculation or not.
- //' @param stateTo A logical, whether to remove NA values before calculation or not.
- //' @param rgmx A logical, whether to remove NA values before calculation or not.
- //' @param probs A logical, whether to remove NA values before calculation or not.
- //' @param display_progress A logical, whether to remove NA values before calculation or not.
- //' 
- //' @return Return_Description
- //' 
- //' @export
- // [[Rcpp::export]]
- List GetTransitions( NumericMatrix sx1,         // X COORDINATES
+//' @rdname GetDensity
+//' @export
+// [[Rcpp::export]]
+List GetTransitions( NumericMatrix sx1,         // X COORDINATES
                       NumericMatrix sy1,        // Y COORDINATES 
                       NumericMatrix z1,         // Z STATE 
                       NumericMatrix sx2,        // X COORDINATES t+1
