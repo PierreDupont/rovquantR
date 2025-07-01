@@ -24,25 +24,21 @@
 #' @return Return_Description
 #' 
 #' @name GetDensity
-#' @export
 quantileCpp <- function(x, q) {
     .Call('_rovquantR_quantileCpp', PACKAGE = 'rovquantR', x, q)
 }
 
 #' @rdname GetDensity
-#' @export
 fastIntMode <- function(x, narm = FALSE) {
     .Call('_rovquantR_fastIntMode', PACKAGE = 'rovquantR', x, narm)
 }
 
 #' @rdname GetDensity
-#' @export
 extractUniquePositiveValues <- function(matrix) {
     .Call('_rovquantR_extractUniquePositiveValues', PACKAGE = 'rovquantR', matrix)
 }
 
 #' @rdname GetDensity
-#' @export
 createTransitionMatrix <- function(values) {
     .Call('_rovquantR_createTransitionMatrix', PACKAGE = 'rovquantR', values)
 }

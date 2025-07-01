@@ -33,7 +33,6 @@ using namespace Rcpp;
 //' @return Return_Description
 //' 
 //' @name GetDensity
-//' @export
 // [[Rcpp::export]]
 NumericVector quantileCpp(NumericVector x, NumericVector q){
    NumericVector y = clone(x);
@@ -42,7 +41,6 @@ NumericVector quantileCpp(NumericVector x, NumericVector q){
  }
  
 //' @rdname GetDensity
-//' @export
 // [[Rcpp::export]]
 int fastIntMode(NumericVector x, bool narm = false){
    if (narm) x = x[!is_na(x)];
@@ -68,7 +66,6 @@ int fastIntMode(NumericVector x, bool narm = false){
  }
  
 //' @rdname GetDensity
-//' @export
 // [[Rcpp::export]]
 NumericVector extractUniquePositiveValues(NumericMatrix matrix){
    int nrow = matrix.nrow();
@@ -84,9 +81,8 @@ NumericVector extractUniquePositiveValues(NumericMatrix matrix){
    }
    return NumericVector(uniquePositiveValues.begin(), uniquePositiveValues.end());
  }
- 
+
 //' @rdname GetDensity
-//' @export
 // [[Rcpp::export]]
 NumericMatrix createTransitionMatrix(NumericVector values){
    auto maxValues = std::max_element(values.begin(), values.end());

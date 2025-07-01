@@ -47,7 +47,7 @@ makeDirectories <- function( path = NULL,
   ##-- Display contents of directories in a tree-like format
   if (show.dir) {
     if (requireNamespace("fs", quietly = TRUE)) {
-    message("\n The following directory  structure was created for this analysis:\n")
+    message("\n The following directory structure was created for this analysis:\n")
     fs::dir_tree(path)
     } else {
       warning("The 'fs' package must be installed to use this functionality.")
