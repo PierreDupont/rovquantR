@@ -12,9 +12,9 @@
 ## Author: Pierre Dupont
 ## Email: pierre.dupont@nmbu.no
 ##
-## Date Created: `r paste(Sys.Date())`
+## Date Created: 05/04/2025
 ##
-## Copyright (c) Applied Quantitative Ecology Group (AQEG), `r paste(format(Sys.Date(), "%Y"))`
+## Copyright (c) Applied Quantitative Ecology Group (AQEG), 2025
 ## Faculty of Environmental Sciences and Natural Resource Management (MINA)
 ## Norwegian University of Life Sciences (NMBU), Ås, Norway 
 ##
@@ -219,9 +219,7 @@ processRovquantOutput(
 
 
 ## TODAY, I NEED TO:
-## - Fix references (use [XX;XX]  to put multiple refs together in parentheses)
-## - Add the summary figure to the full report
 ## - Add the norwegian summary to the full report?
-## - Add other tables to the full report
 ## - Check numbers in the overleaf report
+
 ##------------------------------------------------------------------------------
