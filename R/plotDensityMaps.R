@@ -20,7 +20,7 @@
 #' @author Pierre Dupont
 #'
 #' @importFrom raster res image extent
-#' @importFrom graphics plot layout par segments mtext text 
+#' @importFrom graphics plot layout par segments mtext text rasterImage
 #' @importFrom sf st_geometry 
 #' @importFrom grDevices png colorRampPalette
 #' @importFrom png readPNG

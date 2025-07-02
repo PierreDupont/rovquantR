@@ -4,21 +4,16 @@
 #'
 #' The \code{getSInits} function is used in advance of model building.
 #'
-#' @param AllDetections a 2- or 3-dimensional array of individual detections. 
-#' This argument can be provided in two formats: 
-#' (i) with the \emph{y} object as returned by \code{\link{getSparseY}} 
-#' (ii) with the \emph{yCombined} object as returned by \code{\link{getSparseY}}.
-#' The \emph{yCombined} object combines \emph{detNums}, \emph{y}, and \emph{detIndices} (in that order). When such consolidated 
-#' representation of the detection data x is used, \emph{detIndices} and \emph{detNums} arguments should not be specified.
-#' @param Id.vector A matrix giving the x- and y-coordinates of each trap (scaled to the habitat; see (\code{\link{scaleCoordsToHabitatGrid}}).
-#' @param idAugmented A matrix giving the x- and y-coordinates of each trap (scaled to the habitat; see (\code{\link{scaleCoordsToHabitatGrid}}).
-#' @param lowerCoords,upperCoords Matrices of lower and upper x- and y-coordinates of all habitat windows scaled to the habitat (see (\code{\link{scaleCoordsToHabitatGrid}}).
+#' @param AllDetections a dataframe. 
+#' @param Id.vector A character vector.
+#' @param idAugmented A character string.
+#' @param lowerCoords,upperCoords Matrices of lower and upper x- and y-coordinates of all habitat windows scaled to the habitat (see (\code{\link[nimbleSCR]{scaleCoordsToHabitatGrid}}).
 #' One row for each window. Each window should be of size 1x1.
 #' @param habitatGrid Matrix of habitat window indices. Cell values should correspond to the order of habitat windows in \code{lowerCoords} and \code{upperCoords}. 
 #' When the habitat grid only consists of a single row or column of windows, an additional row or column of dummy indices has to be added because the \code{nimble} model code requires a matrix.
 #' @param intensity A \code{numeric} vector.
 #' @param sd Standard deviation of the isotropic bivariate normal distribution.
-#' @param movementMethod a character denoting the nimbleSCR to be used.
+#' @param movementMethod a character denoting the nimbleSCR function to be used.
 #' 
 #' @return This function returns a 2- or 3-dimensional array of initial AC locations.
 #' 

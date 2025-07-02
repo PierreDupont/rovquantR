@@ -29,6 +29,7 @@ Imports:
     methods,
     nimbleSCR,
     patchwork,
+    png,
     RANN,
     Rcpp (>= 1.0.13),
     raster,

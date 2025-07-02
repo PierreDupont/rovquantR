@@ -30,33 +30,25 @@ getMostRecent(path, pattern)
 writeMostRecent.csv(x, file)
 }
 \arguments{
-\item{path}{Vector of individual detection frequencies.}
+\item{path}{A character string denoting the data directory path.}
 
-\item{extension}{Integer specifying the number of realizations to generate. 
-Only n = 1 is supported.}
+\item{extension}{A character string denoting the type of file to be loaded (can be one of ".csv", ".RData", "xls", "xlsx")}
 
-\item{pattern}{Vector of indices of traps where the detections in \emph{x}
-were recorded; from the \emph{detIndices} object returned by the \code{\link{getSparseY}} function.}
+\item{pattern}{(Optional) An additional character string to be matched with the file name.}
 
-\item{returnDate}{Number of traps with at least one detection recorded in 
-\emph{x}; from the \emph{detNums} object returned by the \code{\link{getSparseY}} function.}
+\item{returnDate}{Logical. Whether to return the date the loaded file was last modified.}
 
-\item{sep}{Vector of the number of trials (zero or more) for each trap (\emph{trapCoords}).}
+\item{sep}{The field separator character used when loading \code{".csv"} files. Values on each line of the file are separated by this character (default is ","),.}
 
-\item{dec}{Baseline detection probability (scalar) used in the half-normal 
-detection function. For trap-specific baseline detection probabilities use 
-argument \emph{p0Traps} (vector) instead.}
+\item{dec}{The character used in the file for decimal points.}
 
 \item{...}{additional optional parameters.}
 
-\item{fileEncoding}{Vector of baseline detection probabilities for each trap 
-used in the half-normal detection function. When \emph{p0Traps} is used, 
-\emph{p0} should not be provided.}
+\item{fileEncoding}{Character string: if non-empty declares the encoding used on a file when given as a character string (see \code{\link[utils]{read.csv}} for more details).}
 
-\item{x}{Scale parameter of the half-normal detection function.}
+\item{x}{The object to be written, preferably a matrix or data frame. If not, it is attempted to coerce x to a data frame.}
 
-\item{file}{Individual activity center x- and y-coordinates scaled to the 
-habitat (see (\code{\link{scaleCoordsToHabitatGrid}}).}
+\item{file}{Either a character string naming a file or a connection open for writing. "" indicates output to the console.}
 }
 \value{
 The data loaded

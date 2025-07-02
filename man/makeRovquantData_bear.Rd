@@ -13,7 +13,7 @@ makeRovquantData_bear(
   sampling.months = list(c(4, 5, 6, 7, 8, 9, 10, 11)),
   habitat.res = 20000,
   buffer.size = 50000,
-  max.move.dist = 300000,
+  max.move.dist = 3e+05,
   detector.res = 5000,
   subdetector.res = 1000,
   max.det.dist = 60000,

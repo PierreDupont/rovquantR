@@ -48,6 +48,8 @@
 #'  bites (and MCMC chains) and returns them in the commnonly used \code{mcmc.list}
 #'  format from the \code{coda} package.
 #'
+#' @seealso \code{\link[nimble]{runMCMC}}
+#'
 #' @author Pierre Dupont
 #' 
 #' @import nimble 

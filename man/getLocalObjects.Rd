@@ -9,7 +9,7 @@ getLocalObjects(habitatMask, coords, dmax, resizeFactor = 1, plot.check = TRUE)
 \arguments{
 \item{habitatMask}{a binary matrix object indicating which cells are considered as suitable habitat.}
 
-\item{coords}{A matrix giving the x- and y-coordinate of each object (i.e. trap). x- and y- coordinates should be scaled to the habitat (\code{\link{scaleCoordsToHabitatGrid}}).}
+\item{coords}{A matrix giving the x- and y-coordinate of each object (i.e. trap). x- and y- coordinates should be scaled to the habitat (\code{\link[nimbleSCR]{scaleCoordsToHabitatGrid}}).}
 
 \item{dmax}{The maximal radius from a habitat cell center within which detection probability is evaluated locally for each trap.}
 
@@ -30,7 +30,7 @@ Each row gives the id numbers of the local objects associated with this grid cel
 }
 \description{
 R utility function to identify all objects (e.g. traps) within a given radius dmax of each cell in a habitat mask.
-Used in the implementation of the local evaluation approach in SCR models (\code{\link{dbinomLocal_normal}};\code{\link{dpoisLocal_normal}}).
+Used in the implementation of the local evaluation approach in SCR models (\code{\link[nimbleSCR]{dbinomLocal_normal}};\code{\link[nimbleSCR]{dpoisLocal_normal}}).
 The distance to the activity center and the detection probability are then calculated for local objects only (i.e. the detection probability is assumed to be 0 
 for all other objects as they are far enough from the activity center).
 }

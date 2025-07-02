@@ -1,14 +1,14 @@
 #' Local Objects Identification
 #'
 #' R utility function to identify all objects (e.g. traps) within a given radius dmax of each cell in a habitat mask.
-#' Used in the implementation of the local evaluation approach in SCR models (\code{\link{dbinomLocal_normal}};\code{\link{dpoisLocal_normal}}).
+#' Used in the implementation of the local evaluation approach in SCR models (\code{\link[nimbleSCR]{dbinomLocal_normal}};\code{\link[nimbleSCR]{dpoisLocal_normal}}).
 #' The distance to the activity center and the detection probability are then calculated for local objects only (i.e. the detection probability is assumed to be 0 
 #' for all other objects as they are far enough from the activity center).
 #'
 #' The \code{getLocalObjects} function is used in advance of model building.
 #'
 #' @param habitatMask a binary matrix object indicating which cells are considered as suitable habitat.
-#' @param coords A matrix giving the x- and y-coordinate of each object (i.e. trap). x- and y- coordinates should be scaled to the habitat (\code{\link{scaleCoordsToHabitatGrid}}). 
+#' @param coords A matrix giving the x- and y-coordinate of each object (i.e. trap). x- and y- coordinates should be scaled to the habitat (\code{\link[nimbleSCR]{scaleCoordsToHabitatGrid}}). 
 #' @param dmax The maximal radius from a habitat cell center within which detection probability is evaluated locally for each trap.
 #' @param resizeFactor An aggregation factor to reduce the number of habitat cells to retrieve local objects for. Defaults to 1; no aggregation.
 #' @param plot.check A visualization option (if TRUE); displays which objects are considered "local objects" for a randomly chosen habitat cell.

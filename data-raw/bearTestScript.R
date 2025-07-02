@@ -37,11 +37,11 @@ gc()
 devtools::install_github("PierreDupont/rovquantR")
 
 
+
 ## ------ LOAD REQUIRED LIBRARIES ------
 
 library(rovquantR)
 ?GetDensity
-
 library(nimbleSCR)
 
 
@@ -202,7 +202,7 @@ processRovquantOutput(
   ,
   working.dir = working.dir
   ,
-  nburnin = 25
+  nburnin = 0
   ,
   niter = 500
   ,

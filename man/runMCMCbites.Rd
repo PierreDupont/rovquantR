@@ -114,6 +114,9 @@ from the same MCMC chain into a single \code{mcmc} object (as defined in the
 \code{coda} package). If multiple chains were run, MCMC bites are combined 
 chain-wise and compiled into a \code{mcmc.list} object.
 }
+\seealso{
+\code{\link[nimble]{runMCMC}}
+}
 \author{
 Pierre Dupont
 }

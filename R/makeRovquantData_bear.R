@@ -43,6 +43,7 @@
 #' @importFrom stats runif
 #' @importFrom stringi stri_trans_general 
 #' @importFrom utils data
+#' @importFrom grDevices grey
 #' 
 NULL
 #' @rdname makeRovquantData_bear

@@ -25,7 +25,7 @@
 #' @importFrom fasterize fasterize
 #' @importFrom adehabitatHR estUDm2spixdf kernelUD
 #' @importFrom stats density
-#' @importFrom grDevices adjustcolor dev.off pdf
+#' @importFrom grDevices adjustcolor dev.off pdf png grey
 #' @importFrom graphics axis abline par
 #' @importFrom stars st_as_stars
 #' @importFrom nimbleSCR scaleCoordsToHabitatGrid

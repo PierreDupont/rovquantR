@@ -11,7 +11,7 @@ getCleanEstimates(x, moment = "mean", quantiles = c(0.025, 0.975))
 
 \item{moment}{an \code{character string} denoting the type of metric to print; can be one of "mean" or "median".}
 
-\item{quantiles}{a numeric vector of length 2 denoting the boundaries of the credible interval (e.g. c(0.025,0.975), the default value for the 95% credible interval).}
+\item{quantiles}{a numeric vector of length 2 denoting the boundaries of the credible interval (e.g. c(0.025,0.975), the default value for the 95 percent credible interval).}
 }
 \value{
 A formated character string with the mean (or median) and the associated credible interval in parentheses.

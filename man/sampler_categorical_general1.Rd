@@ -33,7 +33,7 @@ This sampler is not assigned as a default sampler by \code{configureMCMC} and so
 }
 
 \seealso{
-\code{\link{configureMCMC}} \code{\link{addSampler}} \code{\link{buildMCMC}} \code{\link{runMCMC}}
+\code{\link[nimble]{configureMCMC}} \code{\link[nimble]{addSampler}} \code{\link[nimble]{buildMCMC}} \code{\link[nimble]{runMCMC}}
 }
 \author{
 Daniel Turek

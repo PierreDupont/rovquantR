@@ -21,14 +21,14 @@ getInits.s(
 \arguments{
 \item{y}{a 2- or 3-dimensional array of individual detections. 
 This argument can be provided in two formats: 
-(i) with the \emph{y} object as returned by \code{\link{getSparseY}} 
-(ii) with the \emph{yCombined} object as returned by \code{\link{getSparseY}}.
+(i) with the \emph{y} object as returned by \code{\link[nimbleSCR]{getSparseY}} 
+(ii) with the \emph{yCombined} object as returned by \code{\link[nimbleSCR]{getSparseY}}.
 The \emph{yCombined} object combines \emph{detNums}, \emph{y}, and \emph{detIndices} (in that order). When such consolidated 
 representation of the detection data x is used, \emph{detIndices} and \emph{detNums} arguments should not be specified.}
 
-\item{trapCoords}{A matrix giving the x- and y-coordinates of each trap (scaled to the habitat; see (\code{\link{scaleCoordsToHabitatGrid}}).}
+\item{trapCoords}{A matrix giving the x- and y-coordinates of each trap (scaled to the habitat; see (\code{\link[nimbleSCR]{scaleCoordsToHabitatGrid}}).}
 
-\item{lowerCoords, upperCoords}{Matrices of lower and upper x- and y-coordinates of all habitat windows scaled to the habitat (see (\code{\link{scaleCoordsToHabitatGrid}}).
+\item{lowerCoords, upperCoords}{Matrices of lower and upper x- and y-coordinates of all habitat windows scaled to the habitat (see (\code{\link[nimbleSCR]{scaleCoordsToHabitatGrid}}).
 One row for each window. Each window should be of size 1x1.}
 
 \item{habitatGrid}{Matrix of habitat window indices. Cell values should correspond to the order of habitat windows in \code{lowerCoords} and \code{upperCoords}. 

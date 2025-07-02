@@ -22,7 +22,7 @@
 #' This sampler is not assigned as a default sampler by \code{configureMCMC} and so can only be used if manually added to an MCMC configuration.
 #' 
 #' 
-#' @seealso \code{\link{configureMCMC}} \code{\link{addSampler}} \code{\link{buildMCMC}} \code{\link{runMCMC}}
+#' @seealso \code{\link[nimble]{configureMCMC}} \code{\link[nimble]{addSampler}} \code{\link[nimble]{buildMCMC}} \code{\link[nimble]{runMCMC}}
 #'
 #' @author Daniel Turek
 #'

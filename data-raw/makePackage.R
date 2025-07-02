@@ -46,8 +46,8 @@ if(Sys.info()['user'] == 'dturek') {
 
 ## ------ DOCUMENT PACKAGE ------
 document(baseDir)
-Rcpp::compileAttributes()           # this updates the Rcpp layer from C++ to R
-roxygen2::roxygenize(roclets="rd") 
+# Rcpp::compileAttributes()           # this updates the Rcpp layer from C++ to R
+# roxygen2::roxygenize(roclets="rd") 
 
 
 ## ------ BUILD PACKAGE ------

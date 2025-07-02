@@ -4,7 +4,7 @@
 #' binomial observations (\emph{x}) of a single individual over a set of detectors defined by their 
 #' coordinates (\emph{trapCoords}). The distribution assumes that an individual’s detection probability at any detector
 #' follows a half-normal function of the distance between the  individual's activity center (\emph{s}) and the detector location. 
-#' All coordinates (\emph{s} and \emph{trapCoords}) should be scaled to the habitat (see \code{\link{scaleCoordsToHabitatGrid}})
+#' All coordinates (\emph{s} and \emph{trapCoords}) should be scaled to the habitat (see \code{\link[nimbleSCR]{scaleCoordsToHabitatGrid}})
 #'
 #' The \code{dbinomLocal_normalCovs} distribution incorporates three features to increase computation efficiency (see Turek et al., 2021 <doi.org/10.1002/ecs2.3385>  for more details):
 #' \enumerate{
@@ -13,36 +13,36 @@
 #' \item An indicator (\emph{indicator}) to shortcut calculations for individuals unavailable for detection.
 #' }
 #' 
-#' The \code{dbinomLocal_normalCovs} distribution requires x- and y- detector coordinates (\emph{trapCoords}) and activity centers coordinates (\emph{s}) to be scaled to the habitat grid (\emph{habitatGrid}) using the (\code{\link{scaleCoordsToHabitatGrid}} function.)
+#' The \code{dbinomLocal_normalCovs} distribution requires x- and y- detector coordinates (\emph{trapCoords}) and activity centers coordinates (\emph{s}) to be scaled to the habitat grid (\emph{habitatGrid}) using the (\code{\link[nimbleSCR]{scaleCoordsToHabitatGrid}} function.)
 #'
 #' When the aim is to simulate detection data: 
 #' \enumerate{
-#' \item \emph{x} should be provided using the \emph{yCombined} object as returned by \code{\link{getSparseY}}, 
+#' \item \emph{x} should be provided using the \emph{yCombined} object as returned by \code{\link[nimbleSCR]{getSparseY}}, 
 #' \item arguments \emph{detIndices} and \emph{detNums} should not be provided, 
-#' \item argument \emph{lengthYCombined} should be provided using the \emph{lengthYCombined} object as returned by  \code{\link{getSparseY}}.
+#' \item argument \emph{lengthYCombined} should be provided using the \emph{lengthYCombined} object as returned by  \code{\link[nimbleSCR]{getSparseY}}.
 #' }
 #' 
 #' 
 #' @name dbinomLocal_normalCovs
 #'
-#' @param x Vector of individual detection frequencies. This argument can be provided in two formats: (i) with the \emph{y} object as returned by the \code{\link{getSparseY}} function; (ii) with the \emph{yCombined} object as returned by \code{\link{getSparseY}}. 
+#' @param x Vector of individual detection frequencies. This argument can be provided in two formats: (i) with the \emph{y} object as returned by the \code{\link[nimbleSCR]{getSparseY}} function; (ii) with the \emph{yCombined} object as returned by \code{\link[nimbleSCR]{getSparseY}}. 
 #' Note that when the random generation functionality is used (\code{rbinomLocal_normal}), only the \emph{yCombined} format can be used. 
 #' The \emph{yCombined} object combines \emph{detNums}, \emph{x}, and \emph{detIndices} (in that order).  When such consolidated representation of the detection data \emph{x} is used, \emph{detIndices} and \emph{detNums} arguments shouldn’t be specified.
 #' @param n Integer specifying the number of realizations to generate.  Only n = 1 is supported.
-#' @param detIndices Vector of indices of traps where the detections in x were recorded, as returned by the \emph{detIndices} object from the \code{\link{getSparseY}} function. This argument should not be specified when \emph{x} is provided as the \emph{yCombined} object (returned by \code{\link{getSparseY}}) and when detection data are simulated.
-#' @param detNums Number of detections recorded in \emph{x}, as returned by the \emph{detNums} object from the \code{\link{getSparseY}} function. This argument should not be specified when the \emph{yCombined} object (returned by \code{\link{getSparseY}}) is provided as \emph{x}, and when detection data are simulated.
+#' @param detIndices Vector of indices of traps where the detections in x were recorded, as returned by the \emph{detIndices} object from the \code{\link[nimbleSCR]{getSparseY}} function. This argument should not be specified when \emph{x} is provided as the \emph{yCombined} object (returned by \code{\link[nimbleSCR]{getSparseY}}) and when detection data are simulated.
+#' @param detNums Number of detections recorded in \emph{x}, as returned by the \emph{detNums} object from the \code{\link[nimbleSCR]{getSparseY}} function. This argument should not be specified when the \emph{yCombined} object (returned by \code{\link[nimbleSCR]{getSparseY}}) is provided as \emph{x}, and when detection data are simulated.
 #' @param size Vector of the number of trials (zero or more) for each trap (\emph{trapCoords}).
 #' @param p0 Baseline detection probability used in the half-normal detection function.
 #' @param p0Traps Vector of baseline detection probabilities for each trap used in the half-normal detection function. When \emph{p0Traps} is used, \emph{p0} should not be provided. 
 #' @param sigma Scale parameter of the half-normal detection function.
-#' @param s Individual activity center x- and y-coordinates scaled to the habitat (see \code{\link{scaleCoordsToHabitatGrid}}).
-#' @param trapCoords Matrix of x- and y-coordinates of all traps scaled to the habitat (see \code{\link{scaleCoordsToHabitatGrid}}).
-#' @param localTrapsIndices Matrix of indices of local traps around each habitat grid cell, as returned by the \code{\link{getLocalObjects}} function.
-#' @param localTrapsNum  Vector of numbers of local traps around all habitat grid cells, as returned by the \code{\link{getLocalObjects}} function.
-#' @param resizeFactor Aggregation factor used in the \code{\link{getLocalObjects}} function to reduce the number of habitat grid cells to retrieve local traps for.
-#' @param habitatGrid Matrix of habitat grid cells indices, as returned by the \code{\link{getLocalObjects}} function.
+#' @param s Individual activity center x- and y-coordinates scaled to the habitat (see \code{\link[nimbleSCR]{scaleCoordsToHabitatGrid}}).
+#' @param trapCoords Matrix of x- and y-coordinates of all traps scaled to the habitat (see \code{\link[nimbleSCR]{scaleCoordsToHabitatGrid}}).
+#' @param localTrapsIndices Matrix of indices of local traps around each habitat grid cell, as returned by the \code{\link[nimbleSCR]{getLocalObjects}} function.
+#' @param localTrapsNum  Vector of numbers of local traps around all habitat grid cells, as returned by the \code{\link[nimbleSCR]{getLocalObjects}} function.
+#' @param resizeFactor Aggregation factor used in the \code{\link[nimbleSCR]{getLocalObjects}} function to reduce the number of habitat grid cells to retrieve local traps for.
+#' @param habitatGrid Matrix of habitat grid cells indices, as returned by the \code{\link[nimbleSCR]{getLocalObjects}} function.
 #' @param indicator Logical argument specifying whether the individual is available for detection.
-#' @param lengthYCombined The length of the  x argument when the (\emph{yCombined}) format of the detection data is provided (as returned by the \emph{lengthYCombined} object from \code{\link{getSparseY}}). 
+#' @param lengthYCombined The length of the  x argument when the (\emph{yCombined}) format of the detection data is provided (as returned by the \emph{lengthYCombined} object from \code{\link[nimbleSCR]{getSparseY}}). 
 #' @param allowNoLocal To allow the possibility that some habitat grid cells have no local traps in the surroundings (default to FALSE). 
 #' @param trapCovs Matrix of detector-specific covariate values. 
 #' @param trapCovsIntercept Vector of baseline detection probabilities for each trap used in the half-normal detection function. When \emph{p0Traps} is used, \emph{p0} should not be provided.  
