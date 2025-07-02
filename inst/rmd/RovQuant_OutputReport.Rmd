@@ -104,8 +104,8 @@ load(file.path( working.dir, "data", paste0("Detectors_", engSpecies, "_", date,
 load(file.path( working.dir, "data", paste0("FilteredData_", engSpecies, "_", date, ".RData")))
 
 ##-- Load results tables
-N_LastYear <- read.csv(file.path( working.dir, "tables/Abundance_LastYearPerSex.csv"), check.names = F, row.names = 1)
-N_All <- read.csv(file.path( working.dir, "tables/Abundance_AllYears.csv"),check.names = F, row.names = 1)
+N_LastYear <- read.csv(file.path( working.dir, "tables/N_LastYearPerSex_region.csv"), check.names = F, row.names = 1)
+N_All <- read.csv(file.path( working.dir, "tables/N_AllYears_region.csv"),check.names = F, row.names = 1)
 
 ##-- Extract abundances for the last year
 CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Total"]), "-")[[1]])

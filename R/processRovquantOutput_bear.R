@@ -271,7 +271,7 @@ processRovquantOutput_bear <- function(
   if(n.mcmc >= niter){
     iter <- round(seq(1, n.mcmc, length.out = niter))
   } else {
-    warning(paste0( "The number of MCMC samples available (", n.mcmc,
+    message(paste0( "The number of MCMC samples available (", n.mcmc,
                     ") is less than niter = ", niter,
                     ".\nusing niter = ", n.mcmc, " instead."))
     iter <- 1:n.mcmc
@@ -2538,9 +2538,22 @@ processRovquantOutput_bear <- function(
   write.csv(prop,
             file = file.path(working.dir, "tables/PropDetectedNorway.csv"))
   
-  ##-- Print .tex (split in two tables to print in the overleaf document)
-  splitProp <- rbind( colnames(prop[ ,1:5]), prop[ ,1:5],
-                      colnames(prop[ ,6:10]), prop[ ,6:10])
+  if(n.years > 8){
+    ##-- Print .tex (split in two tables to print in the overleaf document)
+    splitYear <- ceiling(n.years/2)
+    
+    tab1 <- rbind(colnames(prop[ ,1:splitYear]), prop[ ,1:splitYear])
+    
+    if(length(1:splitYear) == length((splitYear+1):n.years)){
+      tab2 <-  rbind(colnames(prop[ ,(splitYear+1):n.years]),
+                     prop[ ,(splitYear+1):n.years])
+    } else {
+      diffYears <- length((splitYear+1):n.years) - length(1:splitYear) 
+      tab2 <-  rbind(c(colnames(prop[ ,(splitYear+1):n.years]), rep("", diffYears)),
+                     cbind(prop[ ,(splitYear+1):n.years], matrix("", nrow = nrow(prop), ncol = diffYears)))
+    }
+  
+  splitProp <- rbind(tab1, tab2)
   splitProp <- cbind(c("","F","M","Total","","F","M","Total"), splitProp)
   addtorow <- list()
   addtorow$pos <- list(2,4,6)
@@ -2557,8 +2570,23 @@ processRovquantOutput_bear <- function(
         hline.after = c(0,1,4,5, nrow(splitProp)),
         add.to.row = addtorow,
         file = file.path(working.dir, "tables/PropDetectedNorway.tex"))
-  
-  
+  } else {
+    
+    ##-- Print  a single .tex 
+    addtorow <- list()
+    addtorow$pos <- list(2)
+    addtorow$command <- c("\\rowcolor[gray]{.95}")
+    print(xtable( prop,
+                  type = "latex",
+                  align = paste(c("l",rep("c", ncol(prop))), collapse = "")),
+          floating = FALSE,
+          sanitize.text.function = function(x){x},
+          hline.after = c(-1,0, nrow(prop)),
+          add.to.row = addtorow,
+          file = file.path(working.dir, "tables/PropDetectedNorway.tex"))
+  }
+    
+
   
   ## ------     5.2.5. NUMBER OF IDs w/ ACs OUTSIDE NORWAY ------
   
@@ -2739,32 +2767,53 @@ processRovquantOutput_bear <- function(
   #colnames(vitalRate) <- rep("", ncol)
   rownames(vitalRate)[2:6] <- c("$\\rho$","$\\phi$","h","w", "r")
   
-  ##-- Table Vital Rates #1
-  addtorow <- list()
-  addtorow$pos <- list(0,0)
-  addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(vitalRate)))[1:5],'}', collapse = ''), '\\\\'),
-                        "\\rowcolor[gray]{.95}")
-  print(xtable(vitalRate[,1:10], type = "latex",
-               align = paste(rep("c", 11),collapse = "")),
-        floating = FALSE,
-        add.to.row = addtorow,
-        include.colnames = F,
-        sanitize.text.function = function(x){x},
-        file = file.path(working.dir, "tables/VitalRates_1.tex"))
   
-  ##-- Table Vital Rates #2
-  addtorow <- list()
-  addtorow$pos <- list(0,0)
-  addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(vitalRate)))[6:9],'}', collapse = ''), '\\\\'),
-                        "\\rowcolor[gray]{.95}")
-  print(xtable(vitalRate[,11:18], type = "latex",
-               align = paste(rep("c", 9),collapse = "")),
-        floating = FALSE,
-        add.to.row = addtorow,
-        include.colnames = F,
-        sanitize.text.function = function(x){x},
-        file = file.path(working.dir, "tables/VitalRates_2.tex"))
-  
+  if((n.years-1) > 8){
+    ##-- Print .tex (split in two tables to print in the overleaf document)
+    splitYear <- ceiling(n.years/2)  
+    
+    ##-- Table Vital Rates #1
+    addtorow <- list()
+    addtorow$pos <- list(0,0)
+    addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(vitalRate)))[1:splitYear],'}', collapse = ''), '\\\\'),
+                          "\\rowcolor[gray]{.95}")
+    print(xtable(vitalRate[,1:(splitYear*2)], type = "latex",
+                 align = paste(rep("c", (splitYear*2)+1), collapse = "")),
+          floating = FALSE,
+          add.to.row = addtorow,
+          include.colnames = F,
+          sanitize.text.function = function(x){x},
+          file = file.path(working.dir, "tables/VitalRates_1.tex"))
+    
+    ##-- Table Vital Rates #2
+    addtorow <- list()
+    addtorow$pos <- list(0,0)
+    addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(vitalRate)))[(splitYear+1):(n.years-1)],'}', collapse = ''), '\\\\'),
+                          "\\rowcolor[gray]{.95}")
+    
+    print(xtable(vitalRate[ ,(splitYear*2+1):(2*(n.years-1))], type = "latex",
+                 align = paste(rep("c", length((splitYear*2+1):(2*(n.years-1)))+1), collapse = "")),
+          floating = FALSE,
+          add.to.row = addtorow,
+          include.colnames = F,
+          sanitize.text.function = function(x){x},
+          file = file.path(working.dir, "tables/VitalRates_2.tex"))
+  } else {
+    ##-- Table Vital Rates
+    addtorow <- list()
+    addtorow$pos <- list(0,0)
+    addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(vitalRate))),'}', collapse = ''), '\\\\'),
+                          "\\rowcolor[gray]{.95}")
+    
+    print(xtable(vitalRate, type = "latex",
+                 align = paste(rep("c", ncol(vitalRate)+1), collapse = "")),
+          floating = FALSE,
+          add.to.row = addtorow,
+          include.colnames = F,
+          sanitize.text.function = function(x){x},
+          file = file.path(working.dir, "tables/VitalRates.tex"))
+    
+  }
   
   ##-- Remove unnecessary objects from memory
   rm(list = c("isMale", "isFemale","isAlive", "isAvail"))
