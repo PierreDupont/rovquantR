@@ -156,7 +156,9 @@ COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/
 COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
 
 ## POLYGONS OF COUNTIES IN SWEDEN & NORWAY
-COUNTIES <- COMMUNES %>% group_by(NAME_1) %>% summarize()
+COUNTIES <- COMMUNES %>%
+  group_by(NAME_1) %>%
+  summarize()
 
 ## AGGREGATE COUNTIES (OPTIONAL)
 COUNTIES_AGGREGATE <- COUNTIES
@@ -170,10 +172,15 @@ COUNTIES_AGGREGATE$id[c(35)] <- 2
 COUNTIES_AGGREGATE$id[c(17,28)] <- 5
 COUNTIES_AGGREGATE$id[c(18)] <- 7
 COUNTIES_AGGREGATE$id[c(30)] <- 8
+COUNTIES_AGGREGATE <- COUNTIES_AGGREGATE %>%
+  group_by(id) %>%
+  summarize()
 
-COUNTIES_AGGREGATE <- COUNTIES_AGGREGATE %>% group_by(id) %>% summarize()
-COUNTIES_AGGREGATED <- st_simplify(COUNTIES_AGGREGATE,preserveTopology = T,dTolerance = 500)
+COUNTIES_AGGREGATED <- st_simplify( COUNTIES_AGGREGATE,
+                                    preserveTopology = T,
+                                    dTolerance = 500)
 COUNTIES_AGGREGATED$id <- COUNTIES_AGGREGATE$id
+
 ggplot(COUNTIES_AGGREGATED) +
   geom_sf(aes(fill = id)) +
   geom_sf_label(aes(label = id))
@@ -184,7 +191,7 @@ ggplot(COUNTIES_AGGREGATED) +
 
 ## CREATE STUDY AREA POLYGON BASED ON COUNTRY NAMES
 if(!is.null(HABITAT$countries)){
-  myStudyArea <- COUNTRIES[COUNTRIES$ISO %in% HABITAT$countries, ]
+  myStudyArea <- COUNTRIES[COUNTRIES$ISO %in% HABITAT$countries, ] 
 
   ## CREATE A POLYGON OF THE ACTUAL HABITAT POLYGON CONSIDERED (different from buffered.habitat.poly)
   myBufferedArea <- st_buffer(st_as_sf(myStudyArea), dist = HABITAT$habBuffer)
@@ -248,15 +255,18 @@ colnames(rovbaseObs) <- translateForeignCharacters(dat=colnames(rovbaseObs), dir
 rovbaseObs$Proevetype <- translateForeignCharacters(dat=rovbaseObs$Proevetype, dir.translation = dir.analysis)
 
 
+
 ## ------ 3. SEARCH EFFORT DATA ------
 
 ## ------    3.1.GPS SEARCH TRACKS ------
 
 ## COMBINE ALL TRACKS
 ALL_TRACKS <- rbind(TRACKS_SINGLE, TRACKS_MULTI)
+
 ## REMOVE HELICOPTER TRACKS
 ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Helikopter=="0", ]
-# KEEP ONLY WOLVERINE TRACKS
+
+## KEEP ONLY WOLVERINE TRACKS
 ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Jerv == "1", ]
 
 ## SELECT TRACKS YEAR
@@ -277,11 +287,13 @@ for(t in 1:n.years){
 
 
 ## ------    3.2.DISTANCE TO ROADS ------
+
 ## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
-r   <- fasterize(st_as_sf(myStudyArea), DistAllRoads)
+r <- fasterize(st_as_sf(myStudyArea), DistAllRoads)
 r[!is.na(r)] <- DistAllRoads[!is.na(r)]
 DistAllRoads <- r
 DistAllRoads <- crop(DistAllRoads, myStudyArea)
+
 ## PLOT CHECK
 if(plot.check){
   plot(DistAllRoads)
@@ -293,16 +305,21 @@ if(plot.check){
 ## ------    3.3.DAYS OF SNOW ------
 
 ## RENAME THE LAYERS
-names(SNOW) <- paste(2008:2023,(2008:2023)+1, sep="_")
+names(SNOW) <- paste(2008:2023, (2008:2023) + 1, sep = "_")
+
 ## SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
-SNOW <- SNOW[[paste("X", years, "_", years+1, sep="")]]
+SNOW <- SNOW[[paste("X", years, "_", years+1, sep = "")]]
 SNOW <- raster::crop(SNOW, c(0,40,55,75))
 
 
 
 ## ------    3.4.SAVE SEARCH EFFORT OBJECTS FOR FASTER RUNS ------
 
-save(TRACKS_YEAR, SNOW, DistAllRoads, file = file.path(working.dir, "data/TRACKS20122024Cleaned.RData"))
+save( TRACKS_YEAR,
+      SNOW,
+      DistAllRoads,
+      file = file.path(working.dir, "data/TRACKS20122024Cleaned.RData"))
+
 load(file.path(working.dir, "data/TRACKS20122024Cleaned.RData"))
 
 
@@ -314,6 +331,7 @@ load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewS
 
 plot(habitatRasters, "Habitat")
 plot(myStudyArea, add = T)
+
 
 
 ## -----------------------------------------------------------------------------
@@ -331,27 +349,20 @@ DEAD <- DEAD[!grepl(pattern = "Påskutt", x = as.character(DEAD$Utfall)), ]
 ## ------    1.1.CLEAN NGS & DEAD RECOVERY DATA ------
 
 myCleanedData.sp <- CleanDataNew2sf( 
-  dna_samples = DNA
-  ,
-  dead_recoveries = DEAD
-  ,
-  species_id = DATA$species
-  ,
-  country_polygon = COUNTRIES
-  ,
-  threshold_month = unlist(DATA$samplingMonths)[1]
-  ,
-  keep_dead = T
-  ,
-  age.label.lookup = age.lookup.table
-)
-
+  dna_samples = DNA,
+  dead_recoveries = DEAD,
+  species_id = DATA$species,
+  country_polygon = COUNTRIES,
+  threshold_month = unlist(DATA$samplingMonths)[1],
+  keep_dead = T,
+  age.label.lookup = age.lookup.table)
 
 ## PLOT CHECK
 if(plot.check){
-  plot(st_geometry(COUNTRIES))
-  plot(st_geometry(myStudyArea), add = T, col ="red")
-  plot(st_geometry(myCleanedData.sp), add=TRUE,pch=19,cex=0.2, col="white")
+  plot( st_geometry(COUNTRIES))
+  plot( st_geometry(myStudyArea), add = T, col ="red")
+  plot( st_geometry(myCleanedData.sp),
+        add = TRUE, pch = 19, cex = 0.2, col = "white")
 }
 
 
@@ -359,19 +370,14 @@ if(plot.check){
 ## ------    1.2.FILTER DATA ------
 
 myFullData.sp <- FilterDatasf( 
-  myData = myCleanedData.sp
-  ,
-  poly = myStudyArea
-  ,
-  dead.recovery = T
-  ,
-  sex = c("Hann","Hunn")
-  ,#DATA$sex,# do the sex selection at the last moment
-  setSex = T
-)
+  myData = myCleanedData.sp,
+  poly = myStudyArea,
+  dead.recovery = T,
+  setSex = T )
 
 if(plot.check){
-  plot(st_geometry(myFullData.sp$alive), add=TRUE,pch=19,cex=0.2, col="lightblue")
+  plot( st_geometry(myFullData.sp$alive),
+        add = TRUE, pch = 19, cex = 0.2, col = "lightblue")
 }
 
 ## REMOVE SUSPECT SAMPLES ACCORDING TO HENRIK
@@ -433,16 +439,19 @@ myFullData.sp$dead.recovery$weight[is.na(myFullData.sp$dead.recovery$weight)] <-
 # check with Henrik
 # this step does not remove dead recoveries on id with weight==0 should it?
 # WEIGTH DISTRIBUTION
-par(mfrow=c(4,3))
+par(mfrow = c(4,3))
 for(t in 1:12){
   hist(myFullData.sp$dead.recovery$weight[(myFullData.sp$dead.recovery$weight >-1) &
-                                            myFullData.sp$dead.recovery$Month%in% t],breaks=c(0:30), main=t,xlab="Weight")
+                                            myFullData.sp$dead.recovery$Month%in% t],
+       breaks=c(0:30), main=t,xlab="Weight")
 }
+
 # AGE DISTRIBUTION
 par(mfrow=c(4,3))
 for(t in 1:12){
   hist(myFullData.sp$dead.recovery$Age[(myFullData.sp$dead.recovery$Age >-1) &
-                                         myFullData.sp$dead.recovery$Month%in% t],breaks=seq(-0.01,20.99,by=1),
+                                         myFullData.sp$dead.recovery$Month%in% t],
+       breaks=seq(-0.01,20.99,by=1),
        main=t,xlab="Age")
 }
 
@@ -466,6 +475,7 @@ if(sum(myFullData.sp$dead.recovery$Age %in% 0 &
 }
 
 
+
 ## ------    1.3.FILTER NGS & DEAD RECOVERY DATA ------
 
 myFilteredData.sp <- myFullData.sp
@@ -477,21 +487,24 @@ myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredDat
 ## Subset to months of interest
 myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in% unlist(DATA$samplingMonths), ]
 
+
+
 ## ------    2.1.1a SUBSET DETECTIONS IN NORRBOTTEN IN ALL YEARS EXCEPT 2017, 2018 and 2019  ------ #[CM]
-COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten",]
+
+COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten", ]
 yearsSampledNorrb <- c(2016:2018,2023)
 
 is.Norr <- as.numeric(st_intersects(myFilteredData.sp$alive, COUNTIESNorrbotten))
 
 
-#check how many detections are removed.
+## check how many detections are removed.
 table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
                                       !is.na(is.Norr)), ]$Year)
 
-#subset
+## subset
 myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
                                                              !is.na(is.Norr)), ]
-#plot check
+## plot check
 for(t in 1:n.years){
   plot(st_geometry(myStudyArea))
   plot(st_geometry(COUNTIESNorrbotten),add=T,col="blue")
@@ -508,7 +521,6 @@ myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[myFullData.sp$dead.re
 myFilteredData.spAllSex <- myFilteredData.sp
 myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Sex %in% DATA$sex,]
 myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Sex %in% DATA$sex,]
-
 
 
 ##TRY PIERRE'S FUNCTION
@@ -536,8 +548,12 @@ if(plot.check){
   }#t
 }
 
+
+
 ## ------    1.4. SEPARATE STRUCTURED AND OPPORTUNISTIC SAMPLING ------
+
 ## ------      1.4.1. ASSIGN SAMPLES TO TRACKS  ------
+
 ## ASSIGN ROVBASE ID AND SIMPLIFY TRACKS
 myFilteredData.sp$alive$TrackRovbsID <- NA
 myFilteredData.sp$alive$TrackDist <- NA
@@ -564,9 +580,6 @@ for(i in 1:nrow(myFilteredData.sp$alive)){
   if(nrow(tmpTRACKS)==0){next}
   # FIND THE CLOSEST TRACK
   dist <- st_distance(dnatemp[i,], tmpTRACKS, by_element = F)
-  #whichSameDate <- numeric()
-  # MAKE SURE THE SAMPLE WAS COLLECTED AT THE SAME TIME THAN THE TRACK
-  #whichSameDate <- which(as.character(tmpTRACKS$Dato)==as.character(myFilteredData.sp$alive$Date[i]))
   # IF NO MATCHING DATE ASSIGN TO NA?
   if(length(dist)==0){
     myFilteredData.sp$alive$TrackRovbsID[i] <- NA
@@ -583,10 +596,9 @@ for(i in 1:nrow(myFilteredData.sp$alive)){
     myFilteredData.sp$alive$TrackDist[i] <- min(dist)
   }
   print(i)
-  #if(is.na(myFilteredData.sp$alive$TrackRovbsID[i])){print(i)}
 }
 
-# SAVE THE FOR FASTER LOADING
+## SAVE THE FOR FASTER LOADING
 save(myFilteredData.sp, file = file.path(working.dir, "data/myFilteredData.sp.RData"))
 load(file.path(working.dir, "data/myFilteredData.sp.RData"))
 
@@ -600,32 +612,26 @@ distanceThreshold <- 500
 myFilteredData.sp$alive$Proeveleverandoer <-  ifelse(myFilteredData.sp$alive$Annen.innsamler...Rolle %in% "" , 
                                                      myFilteredData.sp$alive$Samlet.selv...Rolle, myFilteredData.sp$alive$Annen.innsamler...Rolle)
 
-
 whichStructured <- myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
   !is.na(myFilteredData.sp$alive$TrackRovbsID) &
   myFilteredData.sp$alive$TrackDist <= distanceThreshold
 
-
-
-
-
-
 myFilteredData.spStructured <- myFilteredData.sp$alive[whichStructured, ]
 myFilteredData.spOthers <- myFilteredData.sp$alive[!whichStructured, ]
-
 
 ## CHECK IF A SAMPLE IS NOT MISSING SOMEWHERE
 nrow(myFilteredData.spStructured) + nrow(myFilteredData.spOthers)
 nrow(myFilteredData.sp$alive)
 
-
-
-##PUSH ALL RESULTS FROM HAIR TRAPS TO OPPORTUNISTIC
+## PUSH ALL RESULTS FROM HAIR TRAPS TO OPPORTUNISTIC
 whichHair <- which(myFilteredData.sp$alive$DNAID%in% HairTrapSamples$DNAID)
-#plot check 
+
+## plot check 
 plot(COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten",]$geometry)
 plot(myFilteredData.sp$alive[whichHair,]$geometry, add=T, col="red",pch=16)
-if(length(which(myFilteredData.spStructured$alive$DNAID%in% HairTrapSamples$DNAID))>0){print("WARNING SAMPLES FROM HAIR TRAPS ASSIGNED TO STRUCTURED")}
+if(length(which(myFilteredData.spStructured$alive$DNAID%in% HairTrapSamples$DNAID))>0){
+  print("WARNING SAMPLES FROM HAIR TRAPS ASSIGNED TO STRUCTURED")
+  }
 
 
 
@@ -633,12 +639,17 @@ if(length(which(myFilteredData.spStructured$alive$DNAID%in% HairTrapSamples$DNAI
 
 pdf(file = file.path(working.dir, "figures/DetectionsStructuredOppBarplot.pdf"))
 
-par(mfrow=c(2,1),mar=c(4,4,3,2))
-barplot(rbind(table(myFilteredData.spStructured$Year),
-              table(myFilteredData.spOthers$Year)),beside=T,ylim=c(0,2000),col=c(grey(0.2),grey(0.8)),ylab="Number of samples")
-abline(h=seq(0,2000,by=500),lty=2,col=grey(0.8))
-title(main="500m threshold")
-legend("topleft",fill=c(grey(0.2),grey(0.8)),legend=c("Structured","Other"))
+par(mfrow = c(2,1), mar = c(4,4,3,2))
+barplot( rbind(table(myFilteredData.spStructured$Year),
+              table(myFilteredData.spOthers$Year)),
+        beside = T,
+        ylim = c(0,2000),
+        col = c(grey(0.2),grey(0.8)),
+        ylab = "Number of samples")
+abline(h = seq(0, 2000, by = 500),
+       lty = 2, col = grey(0.8))
+title(main = "500m threshold")
+legend("topleft", fill = c(grey(0.2),grey(0.8)), legend = c("Structured","Other"))
 
 ###
 distanceThreshold1 <- 2000
@@ -825,8 +836,8 @@ myBufferedArea <- BuffAlive %>% group_by(idd) %>% summarize()
 ## CUT TO SWEDISH AND NORWEGIAN BORDERS
 myStudyArea <- st_intersection(myBufferedArea, myStudyArea)#[myStudyArea$ISO %in% c("SWE","NOR"), ])
 
-# plot check 
-par(mar=c(0,0,0,0))
+## plot check 
+par(mar = c(0,0,0,0))
 plot(st_geometry(myStudyArea))
 plot(st_geometry(myFilteredData.spAllSex$alive), pch=21, bg="red", cex=0.5,add=T)
 plot(st_geometry(myFilteredData.spAllSex$dead.recovery), pch=21, bg="blue", cex=0.5,add=T)
@@ -839,21 +850,10 @@ plot(st_geometry(myStudyArea), border="grey", add=T)
 ## ------    2.1. GENERATE HABITAT CHARACTERISTICS FROM THE NEW HABITAT DEFINITION ------
 
 myHabitat <- MakeHabitatFromRastersf(
-  poly = myStudyArea
-  ,
-  habitat.r = habitatRasters[["Habitat"]]
-  ,
-  buffer = HABITAT$habBuffer
-  ,                               
-  plot.check = T
-)
-# proj4string(myHabitat$buffered.habitat.poly) <- CRS(proj4string(myHabitat$habitat.sp))
-#get polygon of the buffered area
-
-#PLOT CHECK 
-par(mfrow=c(1,2))
-plot(myHabitat$habitat.r,legend=F)
-plot(st_geometry(myStudyArea), add=T)
+  poly = myStudyArea,
+  habitat.r = habitatRasters[["Habitat"]],
+  buffer = HABITAT$habBuffer,                               
+  plot.check = T)
 
 ## RETRIEVE HABITAT WINDOWS BOUNDARIES
 lowerHabCoords <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] - 0.5*HABITAT$habResolution
@@ -881,7 +881,7 @@ image(habIDCells.mx)
 ## Remove samples outside the STUDY AREA 
 myStudyArea$idd <- 1
 myStudyAreaAggregated <- myStudyArea %>% group_by(idd) %>% summarize()
-#
+
 whichOut <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$alive, myStudyAreaAggregated))))
 if(length(whichOut)>0){
   myFilteredData.sp$alive <- myFilteredData.sp$alive[whichOut, ]
