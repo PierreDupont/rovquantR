@@ -21,6 +21,7 @@
 #' @param sd Standard deviation of the isotropic bivariate normal distribution.
 #' @param detNums an \code{integer} denoting the number of detections of the focal individual.
 #' @param detIndices a vector of length \emph{detNums} denoting the IDs of the detectors where the focal individual was detected.
+#' @param radius a \code{numeric} denoting the IDs of the detectors where the focal individual was detected.
 #' 
 #' @return This function returns a 2- or 3-dimensional array of initial AC locations.
 #' 
@@ -39,10 +40,10 @@ getInits.s <- function( y,
                         habitatGrid,
                         known.s = NULL,
                         baseIntensities = NULL,
-                        sd,
+                        sd = 2,
                         detNums = NULL,
                         detIndices = NULL,
-                        radius = NULL){
+                        radius = 10){
   
   ## ----- 1. Function set-up -----
   
@@ -95,14 +96,14 @@ getInits.s <- function( y,
   ## ----- 2. For detected IDs -----
   
   ##-- Find out who's detected at least once
-  detected.any <- which(apply(y, 1, function(x)any(x[1, ] > 0)))
+  detected.any <- which(rowSums(detNums) > 0)
   if (!is.null(known.s)) { 
     detected.any <- unique(c(detected.any,
                              which(apply(known.s, 1, function(x)any(!is.na(x))))))
   }
   
   ##-- Find out who's detected each year
-  detected.t <- lapply(1:n.years, function(x) which(y[ ,1,x] > 0))
+  detected.t <- apply(detNums, 2, function(x) which(x > 0))
   
   for(i in detected.any){
     
@@ -119,12 +120,15 @@ getInits.s <- function( y,
         }
       }
     })
-    for(t in which(sapply(detected.t, function(x)i %in% x))){ s[i, ,t] <- centroids.t[[t]] }#t
-    
-    
+    for(t in which(sapply(detected.t, function(x)i %in% x))){ 
+      s[i, ,t] <- centroids.t[[t]] 
+      }#t
+  
     
     ## -----    2.2. Before first detection ... -----
-    years.det <- which(!is.na(s[i,1,]))
+    
+    years.det <- which(!is.na(s[i,1, ]))
+    
     ##-- We sample backward from first detection
     years.before.det <- which(1:n.years < min(years.det)) 
     if(length(years.before.det) > 0){
@@ -168,6 +172,7 @@ getInits.s <- function( y,
     
     
     ## -----    2.4. In between ... -----
+    
     ##-- We sample activity center locations on a straight line
     if(length(years.det)>1) {
       ##-- First, we need to identify gaps >= 2 years

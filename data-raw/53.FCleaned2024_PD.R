@@ -42,7 +42,10 @@ gc()
 
 library(rovquantR)
 library(nimbleSCR)
-
+library(sf)
+library(dplyr)
+library(raster)
+library(ggplot2)
 
 ##------------------------------------------------------------------------------
 
@@ -91,80 +94,91 @@ dir.dropbox <-  "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant"
 
 ## ------ 1. GENERAL VARIABLES DECLARATION ------
 
-  # HABITAT SPECIFICATIONS
-  HABITAT = list( countries =  c("SWE","NOR"),
-                  habResolution = 20000,
-                  habBuffer = 60000)
-  
-  # NGS DATA SPECIFICATIONS
-  DATA = list( years = 2014:2023,
-               species = c("Jerv"),              
-               sex = c("Hunn"),                   
-               samplingMonths = list(12,1:6)) 
-  
-  # DETECTORS SPECIFICATIONS
-  DETECTORS = list( detSubResolution = 2000,
-                    detResolution = 10000,
-                    detDeadResolution = 15000)
-  
-  # DATA GENERATION
-  DETECTIONS = list( maxDetDist = 40000,
-                     resizeFactor = 3,
-                     aug.factor = 0.8) 
-  
-  ## OUTPUT PLOTS
-  OUTPUT = list(mapResolution = 10000)
-  
-  ## MISCELLANEOUS
-  plot.check = TRUE
+## HABITAT SPECIFICATIONS
+HABITAT = list( countries =  c("SWE","NOR"),
+                habResolution = 20000,
+                habBuffer = 60000)
 
+## NGS DATA SPECIFICATIONS
 years <- 2014:2023
 n.years <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
+species = c("Jerv")             
+samplingMonths = list(12,1:6) 
+
+## DETECTORS SPECIFICATIONS
+DETECTORS = list( detSubResolution = 2000,
+                  detResolution = 10000,
+                  detDeadResolution = 15000)
+
+## DATA GENERATION
+DETECTIONS = list( maxDetDist = 40000,
+                   resizeFactor = 3,
+                   aug.factor = 0.8) 
+
+## MISCELLANEOUS
+plot.check = TRUE
+
 
 ## -----------------------------------------------------------------------------
 
+##-- Create directory structure 
 
 makeDirectories( path = working.dir,
                  subFolders = c("female","male"),
                  show.dir = TRUE)
 
+## -----------------------------------------------------------------------------
 
-
-## ------ I.LOAD AND SELECT DATA ------
+## ------ I. LOAD AND SELECT DATA ------
 
 ## ------ 1. HABITAT DATA ------
 
-## ------    1.1.LOAD RAW SHAPEFILES ------
+## ------    1.1. LOAD RAW SHAPEFILES ------
 
 ## POLYGONS OF THE REGION
 GLOBALMAP2 <- st_read(file.path(dir.dropbox, "DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) ## Map of Scandinavia (including Finland & parts of Russia)
 GLOBALMAP2 <- GLOBALMAP2[GLOBALMAP2$area > 80000000, ]
 GLOBALMAP2 <- st_crop(GLOBALMAP2, st_bbox(extent(c(-70000,1200000,5100000,8080000))))
 
-data("GLOBALMAP")
+data("GLOBALMAP", package = "rovquantR")
+
+plot(st_geometry(GLOBALMAP2), col = "gray60")
+plot(st_geometry(GLOBALMAP), add = T, border = "red")
+
+
 
 ## POLYGONS OF SWEDEN & NORWAY
-COUNTRIES <- GLOBALMAP %>%
+COUNTRIES2 <- GLOBALMAP2 %>%
   filter(ISO %in% c("SWE","NOR")) %>%
   group_by(ISO) %>%
   summarize()
 
-## POLYGONS OF COMMUNES IN SWEDEN & NORWAY
-COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))   ## Communal map of Norway
-COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))    ## Communal map of Sweden
-COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
+data("COUNTRIES", package = "rovquantR")
 
+plot(st_geometry(COUNTRIES2), col = "gray60")
+plot(st_geometry(COUNTRIES), add = T, border = "red")
+
+
+
+## POLYGONS OF COMMUNES IN SWEDEN & NORWAY
+COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))  ## Communal map of Norway
+COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))  ## Communal map of Sweden
+COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
 ## POLYGONS OF COUNTIES IN SWEDEN & NORWAY
-COUNTIES <- COMMUNES %>%
+COUNTIES2 <- COMMUNES %>%
   group_by(NAME_1) %>%
   summarize()
 
-## AGGREGATE COUNTIES (OPTIONAL)
-COUNTIES_AGGREGATE <- COUNTIES
-COUNTIES_AGGREGATE$id <- 1:nrow(COUNTIES_AGGREGATE)
+data("REGIONS", package = "rovquantR")
 
-## adjust Counties aggregation
+plot(st_geometry(COUNTIES2), col = "gray60")
+plot(st_geometry(REGIONS), add = T, border = "red")
+
+
+## AGGREGATE COUNTIES 
+COUNTIES_AGGREGATE <- COUNTIES2
+COUNTIES_AGGREGATE$id <- 1:nrow(COUNTIES_AGGREGATE)
 COUNTIES_AGGREGATE$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
 COUNTIES_AGGREGATE$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
 COUNTIES_AGGREGATE$id[c(19)] <- 1
@@ -175,33 +189,64 @@ COUNTIES_AGGREGATE$id[c(30)] <- 8
 COUNTIES_AGGREGATE <- COUNTIES_AGGREGATE %>%
   group_by(id) %>%
   summarize()
-
-COUNTIES_AGGREGATED <- st_simplify( COUNTIES_AGGREGATE,
+COUNTIES_AGGREGATED2 <- st_simplify( COUNTIES_AGGREGATE,
                                     preserveTopology = T,
                                     dTolerance = 500)
-COUNTIES_AGGREGATED$id <- COUNTIES_AGGREGATE$id
+COUNTIES_AGGREGATED2$id <- COUNTIES_AGGREGATE$id
+# ggplot(COUNTIES_AGGREGATED) +
+#   geom_sf(aes(fill = id)) +
+#   geom_sf_label(aes(label = id))
 
-ggplot(COUNTIES_AGGREGATED) +
-  geom_sf(aes(fill = id)) +
-  geom_sf_label(aes(label = id))
+
+## AGGREGATE COUNTIES 
+COUNTIES_AGGREGATED <- REGIONS %>%
+  mutate(id = case_when(
+    county %in% c("Norrbotten") ~ 1,
+    county %in% c("Västerbotten") ~ 2,
+    county %in% c("Blekinge","Dalarna","Gävleborg","Gotland","Halland","Jämtland",
+                  "Jönköping","Kalmar","Kronoberg","Örebro","Östergötland","Skåne",
+                  "Södermanland","Stockholm","Uppsala","Värmland","Västernorrland",
+                  "Västmanland","Västra Götaland") ~ 3,
+    county %in% c("Agder","Akershus","Buskerud","Innlandet","Møre og Romsdal",
+                  "Oppland","Oslo","Østfold","Rogaland","Vestland","Telemark",
+                  "Vestfold") ~ 4,
+    county %in% c("Trøndelag") ~ 5,
+    county %in% c("Finnmark") ~ 6,
+    county %in% c("Nordland") ~ 7,
+    county %in% c("Troms") ~ 8)) %>%
+  group_by(id) %>%
+  summarize() %>%
+  st_simplify( ., preserveTopology = T, dTolerance = 500)
+
+plot(st_geometry(COUNTIES_AGGREGATED2), col = "gray60")
+plot(st_geometry(COUNTIES_AGGREGATED), add = T, border = "red")
 
 
 
 ## ------    1.2.CREATE STUDY AREA POLYGON ------
 
-## CREATE STUDY AREA POLYGON BASED ON COUNTRY NAMES
-if(!is.null(HABITAT$countries)){
-  myStudyArea <- COUNTRIES[COUNTRIES$ISO %in% HABITAT$countries, ] 
+# ## CREATE STUDY AREA POLYGON BASED ON COUNTRY NAMES
+# myStudyArea <- COUNTRIES[COUNTRIES$ISO %in% HABITAT$countries, ]
+# ## CREATE A POLYGON OF THE ACTUAL HABITAT POLYGON CONSIDERED (different from buffered.habitat.poly)
+# myBufferedArea <- st_buffer(st_as_sf(myStudyArea), dist = HABITAT$habBuffer)
+# myBufferedArea$id <- 1
+# myBufferedArea <- myBufferedArea %>% group_by(id) %>% summarize()
+# myBufferedArea <- st_intersection(myBufferedArea, GLOBALMAP)
+# myStudyArea$id <- 1
+# myStudyArea <- myStudyArea %>% group_by(id) %>% summarize()
 
-  ## CREATE A POLYGON OF THE ACTUAL HABITAT POLYGON CONSIDERED (different from buffered.habitat.poly)
-  myBufferedArea <- st_buffer(st_as_sf(myStudyArea), dist = HABITAT$habBuffer)
-  myBufferedArea$id <- 1
-  myBufferedArea <- myBufferedArea %>% group_by(id) %>% summarize()
-  myBufferedArea <- st_intersection(myBufferedArea, GLOBALMAP)
-}
 
-myStudyArea$id <- 1
-myStudyArea <- myStudyArea %>% group_by(id) %>% summarize()
+## CREATE STUDY AREA POLYGON 
+myStudyArea <- COUNTRIES %>%
+  filter(ISO %in% c("NOR","SWE")) %>%
+  mutate(id = 1) %>%
+  group_by(id) %>% 
+  summarize()
+  
+## CREATE HABITAT POLYGON 
+myBufferedArea <- myStudyArea %>%
+  st_buffer(dist = HABITAT$habBuffer) %>%
+  st_intersection(., GLOBALMAP)
 
 ## PLOT CHECK
 if(plot.check){
@@ -226,7 +271,16 @@ SUSPECT_DeadRecoSAMPLES <- read.csv(file.path(dir.dropbox, "DATA/RovbaseData/ROV
 HairTrapSamples <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/hairtrapsNB2024.xlsx"))#, fileEncoding="latin1") ## DNA samples to be removed from Henrik
 DEN <- read.csv(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/DEN_COUNTS_2009_2024_fromHB.csv"), fileEncoding="latin1")
 
+##-- Load the last SkandObs data file
+skandObs <- readMostRecent( 
+  path = file.path(data.dir),
+  extension = ".xlsx",
+  pattern = "Skandobs")
+
+
 skandObs <- read_xlsx(file.path(dir.dropbox, "DATA/Skandobs/RB_Skandobs_2012_2024/Richard_Bischof_Skandobs_2012_2024dd.xlsx"))
+
+
 rovbaseObs1 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB2810202415264376.xlsx"))
 rovbaseObs2 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB28102024152348493.xlsx"))
 rovbaseObs3 <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/ALL SPECIES IN SEPERATE YEARS/RIB28102024152447860.xlsx"))
@@ -240,7 +294,6 @@ TRACKS_MULTI <- read_sf(file.path(dir.dropbox, "DATA/RovbaseData/TRACK DATA FROM
 
 DistAllRoads <- raster(file.path(dir.dropbox,"DATA/GISData/Roads/MinDistAllRoads1km.tif"))
 SNOW <- stack(file.path(dir.dropbox,"DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
-
 
 
 ## ------    2.2.TRANSLATE SCANDINAVIAN CHARACTERS ------
