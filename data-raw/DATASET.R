@@ -74,11 +74,11 @@ head(fromto)
 
 ##-- Load and prepare spatial data (COUNTRIES and COUNTIES maps in our case)
 ##-- These are saved in ./data 
-# GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
-#   filter(., area > 80000000) %>%
-#   st_crop(., st_bbox(raster::extent(c(-70000,1200000,5100000,8080000)))) 
-GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/Scandinavia_border_33NNoLakes.shp")) %>% 
-  st_simplify(., dTolerance =  500)
+GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
+  filter(., area > 80000000) %>%
+  st_crop(., st_bbox(raster::extent(c(-70000,1200000,5100000,8080000))))
+# GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/Scandinavia_border_33NNoLakes.shp")) %>% 
+#   st_simplify(., dTolerance =  500)
 
 
 ##-- POLYGONS OF SWEDEN & NORWAY
