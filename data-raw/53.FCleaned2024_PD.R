@@ -149,7 +149,7 @@ makeDirectories( path = working.dir,
 # GLOBALMAP2 <- st_crop(GLOBALMAP2, st_bbox(extent(c(-70000,1200000,5100000,8080000))))
 # plot(st_geometry(GLOBALMAP2), col = "gray60")
 data("GLOBALMAP", package = "rovquantR")
-plot(st_geometry(GLOBALMAP), add = T, border = "red")
+plot(st_geometry(GLOBALMAP))
 
 
 ## POLYGONS OF SWEDEN & NORWAY
@@ -163,41 +163,39 @@ plot(st_geometry(COUNTRIES), add = T, border = "red")
 
 
 ## POLYGONS OF COMMUNES IN SWEDEN & NORWAY
-COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))  ## Communal map of Norway
-COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))  ## Communal map of Sweden
-COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
-## POLYGONS OF COUNTIES IN SWEDEN & NORWAY
-COUNTIES2 <- COMMUNES %>%
-  group_by(NAME_1) %>%
-  summarize()
-
+# COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))  ## Communal map of Norway
+# COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))  ## Communal map of Sweden
+# COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
+# ## POLYGONS OF COUNTIES IN SWEDEN & NORWAY
+# COUNTIES2 <- COMMUNES %>%
+#   group_by(NAME_1) %>%
+#   summarize()
+#plot(st_geometry(COUNTIES2), col = "gray60")
 data("REGIONS", package = "rovquantR")
-
-plot(st_geometry(COUNTIES2), col = "gray60")
-plot(st_geometry(REGIONS), add = T, border = "red")
+plot(st_geometry(REGIONS), add = T, border = "blue")
 
 
 ## AGGREGATE COUNTIES 
-COUNTIES_AGGREGATE <- COUNTIES2
-COUNTIES_AGGREGATE$id <- 1:nrow(COUNTIES_AGGREGATE)
-COUNTIES_AGGREGATE$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
-COUNTIES_AGGREGATE$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
-COUNTIES_AGGREGATE$id[c(19)] <- 1
-COUNTIES_AGGREGATE$id[c(35)] <- 2
-COUNTIES_AGGREGATE$id[c(17,28)] <- 5
-COUNTIES_AGGREGATE$id[c(18)] <- 7
-COUNTIES_AGGREGATE$id[c(30)] <- 8
-COUNTIES_AGGREGATE <- COUNTIES_AGGREGATE %>%
-  group_by(id) %>%
-  summarize()
-COUNTIES_AGGREGATED2 <- st_simplify( COUNTIES_AGGREGATE,
-                                    preserveTopology = T,
-                                    dTolerance = 500)
-COUNTIES_AGGREGATED2$id <- COUNTIES_AGGREGATE$id
-# ggplot(COUNTIES_AGGREGATED) +
+# COUNTIES_AGGREGATE <- COUNTIES2
+# COUNTIES_AGGREGATE$id <- 1:nrow(COUNTIES_AGGREGATE)
+# COUNTIES_AGGREGATE$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
+# COUNTIES_AGGREGATE$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
+# COUNTIES_AGGREGATE$id[c(19)] <- 1
+# COUNTIES_AGGREGATE$id[c(35)] <- 2
+# COUNTIES_AGGREGATE$id[c(17,28)] <- 5
+# COUNTIES_AGGREGATE$id[c(18)] <- 7
+# COUNTIES_AGGREGATE$id[c(30)] <- 8
+# COUNTIES_AGGREGATE <- COUNTIES_AGGREGATE %>%
+#   group_by(id) %>%
+#   summarize()
+# COUNTIES_AGGREGATED2 <- st_simplify( COUNTIES_AGGREGATE,
+#                                     preserveTopology = T,
+#                                     dTolerance = 500)
+# COUNTIES_AGGREGATED2$id <- COUNTIES_AGGREGATE$id
+# # ggplot(COUNTIES_AGGREGATED) +
 #   geom_sf(aes(fill = id)) +
 #   geom_sf_label(aes(label = id))
-
+#plot(st_geometry(COUNTIES_AGGREGATED2), col = "gray60")
 
 ## AGGREGATE COUNTIES 
 COUNTIES_AGGREGATED <- REGIONS %>%
@@ -218,9 +216,7 @@ COUNTIES_AGGREGATED <- REGIONS %>%
   group_by(id) %>%
   summarize() %>%
   st_simplify( ., preserveTopology = T, dTolerance = 500)
-
-plot(st_geometry(COUNTIES_AGGREGATED2), col = "gray60")
-plot(st_geometry(COUNTIES_AGGREGATED), add = T, border = "red")
+plot(st_geometry(COUNTIES_AGGREGATED), add = T, border = "firebrick4")
 
 
 
@@ -267,18 +263,18 @@ if(plot.check){
 DNA <- readMostRecent( path = data.dir,
                        extension = ".xlsx",
                        pattern = "dna")
-colnames(DNA) <- translateForeignCharacters(dat=colnames(DNA), dir.translation = dir.analysis)
+colnames(DNA) <- translateForeignCharacters(dat = colnames(DNA))
 #drop a column that makes cleanDataNew to fail
-DNA <- DNA[ ,-which(colnames(DNA)%in% "Kjoenn..Individ.")]
+DNA <- DNA[ ,-which(colnames(DNA)%in% "Kjoenn (Individ)")]
 
 
 # DEAD <- read.csv(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/dead_carnivores.csv"), fileEncoding="latin1") ## Dead Recoveries from RovBase#[CM update to 20190627]
 DEAD <- readMostRecent( path = data.dir,
                         extension = ".xlsx",
                         pattern = "dead")
-colnames(DEAD) <- translateForeignCharacters(dat=colnames(DEAD), dir.translation = dir.analysis)
+colnames(DEAD) <- translateForeignCharacters(dat = colnames(DEAD))
 
-#SUSPECT_NGS_SAMPLES <- read.csv(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/Remove ngs samples list wolverine 2024.csv"), fileEncoding="latin1") ## DNA samples to be removed from Henrik
+#SUSPECT_NGS_SAMPLES <- read.csv(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/Remove ngs samples list wolverine 2024.csv"), fileEncoding="latin1") 
 SUSPECT_NGS_SAMPLES <- readMostRecent( path = data.dir,
                                        extension = ".xlsx",
                                        pattern = "Remove ngs")
@@ -298,7 +294,7 @@ HairTrapSamples <- readMostRecent( path = data.dir,
 DEN <- readMostRecent( path = data.dir,
                        extension = ".csv",
                        pattern = "DEN_COUNTS")
-colnames(DEN) <- translateForeignCharacters(dat = colnames(DEN), dir.translation = dir.analysis)
+colnames(DEN) <- translateForeignCharacters(dat = colnames(DEN))
 
 
 ##-- Load the last SkandObs data file
@@ -307,8 +303,7 @@ skandObs <- readMostRecent(
   path = file.path(data.dir),
   extension = ".xlsx",
   pattern = "Skandobs")
-
-colnames(skandObs) <- translateForeignCharacters(dat=colnames(skandObs), dir.translation = dir.analysis)
+colnames(skandObs) <- translateForeignCharacters(dat = colnames(skandObs))
 
 
 ##-- Load the last Rovbase data files
@@ -334,16 +329,17 @@ rovbaseObs4 <- readMostRecent(
   pattern = "RIB28102024152538742")
 rovbaseObs <- rbind(rovbaseObs1,rovbaseObs2,rovbaseObs3,rovbaseObs4)
 
-colnames(rovbaseObs) <- translateForeignCharacters(dat=colnames(rovbaseObs), dir.translation = dir.analysis)
-rovbaseObs$Proevetype <- translateForeignCharacters(dat=rovbaseObs$Proevetype, dir.translation = dir.analysis)
+colnames(rovbaseObs) <- translateForeignCharacters(dat = colnames(rovbaseObs))
+rovbaseObs$Proevetype <- translateForeignCharacters(dat = rovbaseObs$Proevetype)
 
 
 
 ## ------     2.2. LOAD SCANDINAVIAN 20KM HABIAT  ------
 
-load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20km.RData"))
-load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
-
+# load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20km.RData"))
+# load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
+data("habitatRasters")
+data("habitatRasterResolution")
 #plot(habitatRasters, "Habitat")
 #plot(myStudyArea, add = T)
 
@@ -351,10 +347,8 @@ load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewS
 
 ## ------     2.3. DISTANCE TO ROADS ------
 
-## NEED TO MOVE TO 'data.dir'
-DistAllRoads <- raster(file.path(dir.dropbox,"DATA/GISData/Roads/MinDistAllRoads1km.tif"))
-
 ##-- Load map of distance to roads (1km resolution)
+#DistAllRoads <- raster(file.path(dir.dropbox,"DATA/GISData/Roads/MinDistAllRoads1km.tif"))
 DistAllRoads <- raster::raster(file.path(data.dir,"GIS/Roads/MinDistAllRoads1km.tif"))
 
 ##-- Fasterize to remove values that fall in the sea
@@ -374,13 +368,13 @@ rm(list = c("r"))
 
 ## ------     2.4. DAYS OF SNOW ------
 
-## NEED TO MOVE TO 'data.dir'
-SNOW <- stack(file.path(dir.dropbox,"DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
+#SNOW <- stack(file.path(dir.dropbox,"DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
+SNOW <- stack(file.path(data.dir,"GIS/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
 
-## RENAME THE LAYERS
+##-- RENAME THE LAYERS
 names(SNOW) <- paste(2008:2023, (2008:2023) + 1, sep = "_")
 
-## SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
+##-- SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
 SNOW <- SNOW[[paste("X", years, "_", years+1, sep = "")]]
 SNOW <- raster::crop(SNOW, c(0,40,55,75))
 
@@ -390,8 +384,8 @@ SNOW <- raster::crop(SNOW, c(0,40,55,75))
 
 ## COMBINE ALL TRACKS
 ALL_TRACKS <- rbind(
-  read_sf(file.path(dir.dropbox, "DATA/RovbaseData/TRACK DATA FROM BOUVET 20240830/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
-  read_sf(file.path(dir.dropbox, "DATA/RovbaseData/TRACK DATA FROM BOUVET 20240830/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>%
+  read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
+  read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>%
   filter( Helikopter=="0", ## REMOVE HELICOPTER TRACKS
           Jerv == "1")     ## KEEP ONLY WOLVERINE TRACKS
 
@@ -405,8 +399,8 @@ ALL_TRACKS <- rbind(
 TRACKS_YEAR <- list()
 for(t in 1:n.years){
   ## SUBSET GPS TRACKS TO THE SAMPLING PERIOD
-  TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][1] & ALL_TRACKS$Mth%in%DATA$samplingMonths[[1]], ]
-  TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][2] & ALL_TRACKS$Mth%in%DATA$samplingMonths[[2]], ]
+  TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr %in% YEARS[[t]][1] & ALL_TRACKS$Mth %in% samplingMonths[[1]], ]
+  TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr %in% YEARS[[t]][2] & ALL_TRACKS$Mth %in% samplingMonths[[2]], ]
   TRACKS <- rbind(TRACKS_1, TRACKS_2)
   ## SIMPLIFY TRACKS SHAPES
   # TRACKS <- st_simplify(TRACKS, T, 100)
@@ -430,12 +424,14 @@ rm("TRACKS_YEAR")
 
 ## ------   1. CLEAN & FILTER NGS DATA ------
 
-## Remove DEAD entries from the DNA data [HB]
-DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
+##-- Remove DEAD entries from the DNA data [HB]
+# DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
+DNA <- DNA[substr(DNA$`RovbaseID (Proeve)`,1,1) != "M", ]
 
-## Remove un-verified dead recoveries [HB]
-## ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
-DEAD <- DEAD[!grepl(pattern = "Påskutt", x = as.character(DEAD$Utfall)), ]
+##-- Remove un-verified dead recoveries [HB]
+##-- ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
+DEAD <- DEAD[!grepl( pattern = "Påskutt",
+                     x = as.character(DEAD$Utfall)), ]
 
 
 
@@ -450,7 +446,7 @@ myCleanedData.sp <- CleanDataNew2sf(
   keep_dead = T,
   age.label.lookup = age.lookup.table)
 
-## PLOT CHECK
+##-- PLOT CHECK
 if(plot.check){
   plot( st_geometry(COUNTRIES))
   plot( st_geometry(myStudyArea), add = T, col ="red")
