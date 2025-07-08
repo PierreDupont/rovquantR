@@ -220,7 +220,7 @@ plot(st_geometry(COUNTIES_AGGREGATED), add = T, border = "firebrick4")
 
 
 
-## ------     1.2.CREATE STUDY AREA POLYGON ------
+## ------     1.2. CREATE STUDY AREA POLYGON ------
 
 # ## CREATE STUDY AREA POLYGON BASED ON COUNTRY NAMES
 # myStudyArea <- COUNTRIES[COUNTRIES$ISO %in% HABITAT$countries, ]
@@ -334,7 +334,7 @@ rovbaseObs$Proevetype <- translateForeignCharacters(dat = rovbaseObs$Proevetype)
 
 
 
-## ------     2.2. LOAD SCANDINAVIAN 20KM HABIAT  ------
+## ------     2.2. LOAD SCANDINAVIAN 20KM HABITAT  ------
 
 # load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20km.RData"))
 # load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
@@ -382,40 +382,40 @@ SNOW <- raster::crop(SNOW, c(0,40,55,75))
 
 ## ------   3. SEARCH EFFORT DATA ------
 
-## COMBINE ALL TRACKS
-ALL_TRACKS <- rbind(
-  read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
-  read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>%
-  filter( Helikopter=="0", ## REMOVE HELICOPTER TRACKS
-          Jerv == "1")     ## KEEP ONLY WOLVERINE TRACKS
-
-# ## REMOVE HELICOPTER TRACKS
-# ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Helikopter=="0", ]
+# ## COMBINE ALL TRACKS
+# ALL_TRACKS <- rbind(
+#   read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
+#   read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>%
+#   filter( Helikopter=="0", ## REMOVE HELICOPTER TRACKS
+#           Jerv == "1")     ## KEEP ONLY WOLVERINE TRACKS
 # 
-# ## KEEP ONLY WOLVERINE TRACKS
-# ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Jerv == "1", ]
-
-## SELECT TRACKS YEAR
-TRACKS_YEAR <- list()
-for(t in 1:n.years){
-  ## SUBSET GPS TRACKS TO THE SAMPLING PERIOD
-  TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr %in% YEARS[[t]][1] & ALL_TRACKS$Mth %in% samplingMonths[[1]], ]
-  TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr %in% YEARS[[t]][2] & ALL_TRACKS$Mth %in% samplingMonths[[2]], ]
-  TRACKS <- rbind(TRACKS_1, TRACKS_2)
-  ## SIMPLIFY TRACKS SHAPES
-  # TRACKS <- st_simplify(TRACKS, T, 100)
-  TRACKS <- st_intersection(TRACKS, st_as_sf(myStudyArea))
-  ## NAME TRACKS
-  TRACKS$ID <- 1:nrow(TRACKS)
-  TRACKS_YEAR[[t]] <- TRACKS
-}#t
-
-rm(list = c("TRACKS_1", "TRACKS_2", "TRACKS", "ALL_TRACKS"))
-
-save( TRACKS_YEAR, file = file.path(working.dir, "data/searchTracks.RData"))
-
-rm("TRACKS_YEAR")
-
+# # ## REMOVE HELICOPTER TRACKS
+# # ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Helikopter=="0", ]
+# # 
+# # ## KEEP ONLY WOLVERINE TRACKS
+# # ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Jerv == "1", ]
+# 
+# ## SELECT TRACKS YEAR
+# TRACKS_YEAR <- list()
+# for(t in 1:n.years){
+#   ## SUBSET GPS TRACKS TO THE SAMPLING PERIOD
+#   TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr %in% YEARS[[t]][1] & ALL_TRACKS$Mth %in% samplingMonths[[1]], ]
+#   TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr %in% YEARS[[t]][2] & ALL_TRACKS$Mth %in% samplingMonths[[2]], ]
+#   TRACKS <- rbind(TRACKS_1, TRACKS_2)
+#   ## SIMPLIFY TRACKS SHAPES
+#   # TRACKS <- st_simplify(TRACKS, T, 100)
+#   TRACKS <- st_intersection(TRACKS, st_as_sf(myStudyArea))
+#   ## NAME TRACKS
+#   TRACKS$ID <- 1:nrow(TRACKS)
+#   TRACKS_YEAR[[t]] <- TRACKS
+# }#t
+# 
+# rm(list = c("TRACKS_1", "TRACKS_2", "TRACKS", "ALL_TRACKS"))
+# 
+# save( TRACKS_YEAR, file = file.path(working.dir, "data/searchTracks.RData"))
+# 
+# rm("TRACKS_YEAR")
+# 
 
 
 ##------------------------------------------------------------------------------
@@ -437,14 +437,123 @@ DEAD <- DEAD[!grepl( pattern = "Påskutt",
 
 ## ------     1.1. CLEAN NGS & DEAD RECOVERY DATA ------
 
-myCleanedData.sp <- CleanDataNew2sf( 
-  dna_samples = DNA,
-  dead_recoveries = DEAD,
-  species_id = DATA$species,
-  country_polygon = COUNTRIES,
-  threshold_month = unlist(DATA$samplingMonths)[1],
-  keep_dead = T,
-  age.label.lookup = age.lookup.table)
+# CleanDataNew2sf( 
+#   dna_samples = DNA,
+#   dead_recoveries = DEAD,
+#   species_id = species,
+#   country_polygon = COUNTRIES,
+#   threshold_month = unlist(samplingMonths)[1],
+#   keep_dead = T,
+#   age.label.lookup = age.lookup.table)
+
+dna_samples = DNA                            ## DNA samples file  
+dead_recoveries = DEAD                       ## Dead recoveries file
+species_id = species
+country_polygon = COUNTRIES                  ## Country polygon for correct assignment
+threshold_month = unlist(samplingMonths)[1]  ## Initial month of the biological year: 1:January...12=December
+keep_dead = TRUE                             ## wheather dead recovery should be included or not 
+age.label.lookup = NULL
+
+## Merge DNA and dead recoveries data## Rename Dead Recoveries
+names(DEAD)[grep(pattern = "Individ",x = names(DEAD))] <- "Id"
+names(DEAD)[grep(pattern = "RovbaseID",x = names(DEAD),fixed = TRUE)] <- "RovBaseId"
+names(DEAD)[grep(pattern = "DNAID..Proeve",x = names(DEAD),fixed = TRUE)] <- "DNAID"
+names(DEAD)[grep(pattern = "Art",x = names(DEAD))] <- "Species"
+names(DEAD)[grep(pattern = "Kjoenn",x = names(DEAD))] <- "Sex"
+names(DEAD)[grep(pattern = "Doedsdato",x = names(DEAD))] <- "Date"
+names(DEAD)[grep(pattern = "Oest..UTM33",x = names(DEAD))] <- "East"
+names(DEAD)[grep(pattern = "Nord..UTM33",x = names(DEAD))] <- "North"
+names(DEAD)[grep(pattern = "^Alder..verifisert$",x = names(DEAD))] <- "Age" ## two age columns now so use ^and $ to find exact match
+names(DEAD)[grep(pattern = "Bakgrunn.arsak.metode",x = names(DEAD))] <- "DeathCause_2"
+names(DEAD)[grep(pattern = "Bakgrunn.arsak.formal",x = names(DEAD))] <- "DeathCause_3"
+names(DEAD)[grep(pattern = "Bakgrunn.arsak",x = names(DEAD))] <- "DeathCause"
+
+## Rename DNA Samples
+names(DNA)[grep(pattern = "Individ",x = names(DNA))] <- "Id"
+names(DNA)[grep(pattern = "RovbaseID..Proeve",x = names(DNA))] <- "RovBaseId"
+names(DNA)[grep(pattern = "DNAID..Proeve",x = names(DNA))] <- "DNAID"
+names(DNA)[grep(pattern = "Art..Analyse",x = names(DNA))] <- "Species"
+names(DNA)[grep(pattern = "Kjoenn",x = names(DNA))] <- "Sex"
+names(DNA)[grep(pattern = "Funnetdato",x = names(DNA))] <- "Date"
+names(DNA)[grep(pattern = "Oest..UTM33",x = names(DNA))] <- "East"
+names(DNA)[grep(pattern = "Nord..UTM33",x = names(DNA))] <- "North"
+names(DNA)[grep(pattern = "DNA.proeveleverandoer",x = names(DNA))] <- "Origin"
+
+## Merge 
+myData <- merge( DEAD, DNA,
+                 by = c("Id","RovBaseId","DNAID","Species","Sex","Date","East","North"),
+                 all = TRUE)
+
+## Remove unidentified samples
+myData <- myData[myData$Id != "", ]                                ## Delete unknown individuals
+myData <- myData[!is.na(myData$Id), ]                              ## Delete NA individuals
+
+## Remove samples without coordinates
+myData <- myData[!is.na(myData$East), ]                            ## Delete NA locations
+myData <- myData[!is.na(myData$Date), ]                            ## Delete NA dates
+
+## Filter by species
+myData <- myData[myData$Species %in% species_id, ]
+
+## Convert dates to biological years
+myData$Date <- as.POSIXct(strptime(myData$Date, "%d.%m.%Y"))
+myData$Year <- as.numeric(format(myData$Date,"%Y"))
+myData$Month <- as.numeric(format(myData$Date,"%m"))
+myData <- myData[!is.na(myData$Year), ]                                      ## Delete NA dates
+if(!is.null(threshold_month)){
+  myData$Year[myData$Month<threshold_month] <- myData$Year[myData$Month<threshold_month] - 1
+  if(reset_month){myData$Month[myData$Month < threshold_month] <- myData$Month[myData$Month < threshold_month] + 12}
+}#if 
+
+## Determine Death and Birth Years
+myData$Age <- suppressWarnings(as.numeric(as.character(myData$Age))) 
+myData$RovBaseId <- as.character(myData$RovBaseId)
+myData$Death <- NA
+myData$Death[substr(myData$RovBaseId,1,1)=="M"] <- myData$Year[substr(myData$RovBaseId,1,1)=="M"]
+myData$Birth <- myData$Death-myData$Age
+
+## Reconstruct minimal & maximal ages
+myData$Age.orig <- myData$Age
+if(!is.null(age.label.lookup)){
+  temp <- temp1 <- as.character(levels(myData$Age.orig))  ## list age levels
+  temp <- toupper(temp)                                   ## Upper case all
+  temp <- gsub("\\s", "", temp)                           ## Remove blank spaces
+  myData$Age.orig2 <- myData$Age.orig
+  levels(myData$Age.orig2) <- temp
+  myData <- merge( myData, age.label.lookup[ ,-1],
+                   by.x = "Age.orig2",
+                   by.y = "age.label",
+                   all.x = TRUE)                          ## Merge with info from lookup table
+  
+  ## FILL IN THE REST OF THE AGES FROM FOR NUMERIC RECORDS
+  numeric.age.records <- which(!is.na(as.numeric(as.character(myData$Age.orig2))) & !is.na(myData$Age.orig2))
+  myData[numeric.age.records, c("min.age","max.age","age")] <- floor(as.numeric(as.character(myData$Age.orig2[numeric.age.records])))
+}
+
+## Convert samples coordinates to the correct spatial projection
+myData <-  st_as_sf(myData, coords = c("East", "North"))
+st_crs(myData) <- st_crs(country_polygon)
+
+##-- Overlay with SpatialPolygons to determine the countries 
+if(!is.null(country_polygon)){
+  myData$Country <- NA
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("FIN")),] )))] <- "F"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("RUS")),] )))] <- "R"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("GOT")),] )))] <- "G"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("NOR")),] )))] <- "N"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("SWE")),] )))] <- "S"
+}#if
+
+##-- Remove dead recoveries if needed
+if(!keep_dead){myData <- myData[is.na(myData$Death), ]} 
+
+##-- the "Factor" trick...needed to suppress unused factor levels in Id
+myData$Id <- factor(as.character(myData$Id), levels = unique(as.character(myData$Id)))
+
+
+myCleanedData.sp <- myData
+
+
 
 ##-- PLOT CHECK
 if(plot.check){

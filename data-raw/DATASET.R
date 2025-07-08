@@ -70,6 +70,12 @@ library(nngeo)
 load(file.path(dir.git, "Analyses/CharacterTranslation.RData"))
 head(fromto)
 
+##-- Load and prepare age label data 
+##-- This is saved in R/sysdata.rda as it is only used inside the 'cleanRovBaseData' function.
+load(file.path(dir.dropbox,"DATA/MISC DATA/age.lookup.table.RData"))
+head(age.lookup.table)
+
+
 ## -----------------------------------------------------------------------------
 
 ##-- Load and prepare spatial data (COUNTRIES and COUNTIES maps in our case)
@@ -166,6 +172,7 @@ load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNew
 
 ##-- Save necessary data in the right folder (./data)
 use_data(fromto, internal = TRUE, overwrite = TRUE)
+use_data(age.lookup.table, internal = TRUE, overwrite = TRUE)
 use_data(COUNTIES, overwrite = TRUE)
 use_data(REGIONS, overwrite = TRUE)
 use_data(COUNTRIES, overwrite = TRUE)
