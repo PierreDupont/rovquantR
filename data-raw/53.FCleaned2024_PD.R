@@ -48,6 +48,7 @@ library(raster)
 library(ggplot2)
 library(readxl)
 
+
 ##------------------------------------------------------------------------------
 
 ## ------ I. SET-UP WORKING ENVIRONMENT ------
@@ -446,14 +447,6 @@ DEAD <- DEAD[!grepl( pattern = "Påskutt",
 #   keep_dead = T,
 #   age.label.lookup = age.lookup.table)
 
-dna_samples = DNA                            ## DNA samples file  
-dead_recoveries = DEAD                       ## Dead recoveries file
-species_id = species
-country_polygon = COUNTRIES                  ## Country polygon for correct assignment
-threshold_month = unlist(samplingMonths)[1]  ## Initial month of the biological year: 1:January...12=December
-keep_dead = TRUE                             ## wheather dead recovery should be included or not 
-age.label.lookup = NULL
-
 ## Merge DNA and dead recoveries data## Rename Dead Recoveries
 names(DEAD)[grep(pattern = "Individ",x = names(DEAD))] <- "Id"
 names(DEAD)[grep(pattern = "RovbaseID",x = names(DEAD),fixed = TRUE)] <- "RovBaseId"
@@ -485,24 +478,23 @@ myData <- merge( DEAD, DNA,
                  all = TRUE)
 
 ## Remove unidentified samples
-myData <- myData[myData$Id != "", ]                                ## Delete unknown individuals
-myData <- myData[!is.na(myData$Id), ]                              ## Delete NA individuals
+myData <- myData[myData$Id != "", ]              ## Delete unknown individuals
+myData <- myData[!is.na(myData$Id), ]            ## Delete NA individuals
 
 ## Remove samples without coordinates
-myData <- myData[!is.na(myData$East), ]                            ## Delete NA locations
-myData <- myData[!is.na(myData$Date), ]                            ## Delete NA dates
+myData <- myData[!is.na(myData$East), ]          ## Delete NA locations
+myData <- myData[!is.na(myData$Date), ]          ## Delete NA dates
 
 ## Filter by species
-myData <- myData[myData$Species %in% species_id, ]
+myData <- myData[myData$Species %in% species, ]
 
 ## Convert dates to biological years
-myData$Date <- as.POSIXct(strptime(myData$Date, "%d.%m.%Y"))
+#myData$Date <- as.POSIXct(strptime(myData$Date, "%d.%m.%Y"))
 myData$Year <- as.numeric(format(myData$Date,"%Y"))
 myData$Month <- as.numeric(format(myData$Date,"%m"))
 myData <- myData[!is.na(myData$Year), ]                                      ## Delete NA dates
-if(!is.null(threshold_month)){
-  myData$Year[myData$Month<threshold_month] <- myData$Year[myData$Month<threshold_month] - 1
-  if(reset_month){myData$Month[myData$Month < threshold_month] <- myData$Month[myData$Month < threshold_month] + 12}
+if(!is.null(unlist(samplingMonths)[1] )){
+  myData$Year[myData$Month < unlist(samplingMonths)[1]] <- myData$Year[myData$Month < unlist(samplingMonths)[1]] - 1
 }#if 
 
 ## Determine Death and Birth Years
@@ -514,34 +506,33 @@ myData$Birth <- myData$Death-myData$Age
 
 ## Reconstruct minimal & maximal ages
 myData$Age.orig <- myData$Age
-if(!is.null(age.label.lookup)){
-  temp <- temp1 <- as.character(levels(myData$Age.orig))  ## list age levels
-  temp <- toupper(temp)                                   ## Upper case all
-  temp <- gsub("\\s", "", temp)                           ## Remove blank spaces
-  myData$Age.orig2 <- myData$Age.orig
-  levels(myData$Age.orig2) <- temp
-  myData <- merge( myData, age.label.lookup[ ,-1],
-                   by.x = "Age.orig2",
-                   by.y = "age.label",
-                   all.x = TRUE)                          ## Merge with info from lookup table
-  
-  ## FILL IN THE REST OF THE AGES FROM FOR NUMERIC RECORDS
-  numeric.age.records <- which(!is.na(as.numeric(as.character(myData$Age.orig2))) & !is.na(myData$Age.orig2))
-  myData[numeric.age.records, c("min.age","max.age","age")] <- floor(as.numeric(as.character(myData$Age.orig2[numeric.age.records])))
-}
+temp <- temp1 <- as.character(levels(myData$Age.orig))  ## list age levels
+temp <- toupper(temp)                                   ## Upper case all
+temp <- gsub("\\s", "", temp)                           ## Remove blank spaces
+myData$Age.orig2 <- myData$Age.orig
+levels(myData$Age.orig2) <- temp
+myData <- merge( myData, age.label.lookup[ ,-1],
+                 by.x = "Age.orig2",
+                 by.y = "age.label",
+                 all.x = TRUE)                          ## Merge with info from lookup table
+
+## FILL IN THE REST OF THE AGES FROM FOR NUMERIC RECORDS
+numeric.age.records <- which(!is.na(as.numeric(as.character(myData$Age.orig2))) & !is.na(myData$Age.orig2))
+myData[numeric.age.records, c("min.age","max.age","age")] <- floor(as.numeric(as.character(myData$Age.orig2[numeric.age.records])))
+
 
 ## Convert samples coordinates to the correct spatial projection
-myData <-  st_as_sf(myData, coords = c("East", "North"))
-st_crs(myData) <- st_crs(country_polygon)
+myData <- st_as_sf(myData, coords = c("East", "North"))
+st_crs(myData) <- st_crs(COUNTRIES)
 
 ##-- Overlay with SpatialPolygons to determine the countries 
-if(!is.null(country_polygon)){
+if(!is.null(COUNTRIES)){
   myData$Country <- NA
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("FIN")),] )))] <- "F"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("RUS")),] )))] <- "R"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("GOT")),] )))] <- "G"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("NOR")),] )))] <- "N"
-  myData$Country[!is.na(as.numeric(st_intersects(myData, country_polygon[which(country_polygon$ISO %in% c("SWE")),] )))] <- "S"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, COUNTRIES[which(COUNTRIES$ISO %in% c("FIN")),] )))] <- "F"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, COUNTRIES[which(COUNTRIES$ISO %in% c("RUS")),] )))] <- "R"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, COUNTRIES[which(COUNTRIES$ISO %in% c("GOT")),] )))] <- "G"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, COUNTRIES[which(COUNTRIES$ISO %in% c("NOR")),] )))] <- "N"
+  myData$Country[!is.na(as.numeric(st_intersects(myData, COUNTRIES[which(COUNTRIES$ISO %in% c("SWE")),] )))] <- "S"
 }#if
 
 ##-- Remove dead recoveries if needed
