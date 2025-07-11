@@ -1,4 +1,4 @@
-### ------ IMPORT REQUIRED LIBRARIES ------
+## ------ IMPORT REQUIRED LIBRARIES ------
 rm(list=ls())
 gc()
 #.libPaths(new=c(.libPaths(),"C:\\PROJECTS\\R\\LIBRARY"))
@@ -6,7 +6,7 @@ library(raster)
 library(coda)
 library(nimble)
 library(spdep)
-library(maptools)
+#library(maptools)
 library(stringr)
 library(abind)
 library(R.utils)
@@ -19,24 +19,28 @@ library(readxl)
 library(spatstat)
 library(ggplot2)
 library(stars)
+
+
 ## ------ SET REQUIRED WORKING DIRECTORIES ------
- source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/myWorkingDirectories.R")
-# source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
+#source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/myWorkingDirectories.R")
+source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
 # source("C:/PROJECTS/RovQuant/Temp/RB/myWorkingDirectories.R")
+
 
 ## ------ SOURCE THE REQUIRED FUNCTIONS ------
 sourceDirectory(dir.function, modifiedOnly = FALSE)
 sourceDirectory(dir.function.nimble, modifiedOnly = FALSE)
 load(paste(dir.dropbox,"/DATA/MISC DATA/age.lookup.table.RData",sep=""))
 
+
 ## ------ SOURCE THE NIMBLE FUNCTION ------
-source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/functions/Nimble/dbin_LESS_Cached_MultipleCovResponse.R")
-source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/functions/Nimble/dbin_LESS_Cached_MultipleCovResponse.R")
+#source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/functions/Nimble/dbin_LESS_Cached_MultipleCovResponse.R")
+source("C:/My_documents/RovQuant/Temp/CM/functions/Nimble/dbin_LESS_Cached_MultipleCovResponse.R")
 
 
-## ----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## ------ 0.SET ANALYSIS CHARACTERISTICS -----
-## ----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ### ==== 1. GENERAL VARIABLES DECLARATION ====
 myVars <- list(
    ## WORKING DIRECTORY & MODEL NAME
@@ -81,9 +85,9 @@ if(is.null(myVars$modelName))stop("YOU SHOULD PROBABLY CHOOSE A NAME FOR THIS AN
 if(is.null(myVars$WD))stop("YOU SHOULD PROBABLY CHOOSE A WORKING DIRECTORY FOR THIS ANALYSIS/MODEL")
 if(!dir.exists(file.path(myVars$WD, myVars$modelName))){dir.create(file.path(myVars$WD, myVars$modelName))}
 
-## ----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## ------ I.LOAD AND SELECT DATA ------
-## ----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ### ==== 1. HABITAT DATA ====
 ### ====    1.1.LOAD RAW SHAPEFILES ====
 ## POLYGONS OF THE REGION
@@ -102,7 +106,7 @@ COMMUNES_NOR <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/NOR
 COMMUNES_SWE <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp", sep = ""))    ## Communal map of Sweden
 COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
 ## POLYGONS OF COUNTIES IN SWEDEN & NORWAY
-COUNTIES <- COMMUNES %>% group_by(NAME_1) %>%summarize()
+COUNTIES <- COMMUNES %>% group_by(NAME_1) %>% summarize()
 
 #plot(st_geometry(COUNTIES))
 ## AGGREGATE COUNTIES (OPTIONAL)
@@ -239,32 +243,35 @@ rovbaseObs$Proevetype <- translateForeignCharacters(dat=rovbaseObs$Proevetype, d
 #    TRACKS_YEAR[[t]] <- TRACKS
 # }#t
 # 
-# ### ====    3.2.DISTANCE TO ROADS ====
-# ## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
-# DistAllRoads <- raster(paste(dir.dropbox,"/DATA/GISData/Roads/MinDistAllRoads1km.tif", sep=""))
-# r   <- fasterize(st_as_sf(myStudyArea), DistAllRoads)
-# r[!is.na(r)] <- DistAllRoads[!is.na(r)]
-# DistAllRoads <- r
-# DistAllRoads <- crop(DistAllRoads, myStudyArea)
-# ## PLOT CHECK
-# if(myVars$plot.check){
-#    plot(DistAllRoads)
-#    plot(myStudyArea,add=T)
-# }
-# 
-# ### ====    3.3.DAYS OF SNOW ====
-# # ## SEASONAL MAPS (CREATED IN TEMP/CM/GIS/snowMODIS)
-# SNOW <- stack(paste(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2008_2024_Wolf.tif", sep=""))
-# ## RENAME THE LAYERS
-# names(SNOW) <- paste(2008:2023,(2008:2023)+1, sep="_")
-# ## SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
-# SNOW <- SNOW[[paste("X", years, "_", years+1, sep="")]]
-# SNOW <- raster::crop(SNOW, c(0,40,55,75))
-# 
+### ====    3.2.DISTANCE TO ROADS ====
+## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
+DistAllRoads <- raster(paste(dir.dropbox,"/DATA/GISData/Roads/MinDistAllRoads1km.tif", sep=""))
+r   <- fasterize(st_as_sf(myStudyArea), DistAllRoads)
+r[!is.na(r)] <- DistAllRoads[!is.na(r)]
+DistAllRoads <- r
+DistAllRoads <- crop(DistAllRoads, myStudyArea)
+## PLOT CHECK
+if(myVars$plot.check){
+   plot(DistAllRoads)
+   plot(myStudyArea,add=T)
+}
+
+### ====    3.3.DAYS OF SNOW ====
+# ## SEASONAL MAPS (CREATED IN TEMP/CM/GIS/snowMODIS)
+SNOW <- stack(paste(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2008_2024_Wolf.tif", sep=""))
+## RENAME THE LAYERS
+names(SNOW) <- paste(2008:2023,(2008:2023)+1, sep="_")
+## SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
+SNOW <- SNOW[[paste("X", years, "_", years+1, sep="")]]
+SNOW <- raster::crop(SNOW, c(0,40,55,75))
+
 # ## ====    3.4.SAVE SEARCH EFFORT OBJECTS FOR FASTER RUNS ====
 # save(TRACKS_YEAR, SNOW, DistAllRoads, file = file.path(myVars$WD, "TRACKS20122024Cleaned.RData"))
- load(file.path(myVars$WD, "TRACKS20122024Cleaned.RData"))
-#
+#load(file.path(myVars$WD, "TRACKS20122024Cleaned.RData"))
+load("C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Test.0.1/data/searchTracks.RData")
+
+
+
 # # ### ====    3.5. LOAD SCANDINAVIAN 20KM HABIAT  ====
 load(paste(dir.dropbox,"/DATA/GISData/spatialDomain/Habitat20km.RData",sep=""))
 load(paste(dir.dropbox,"/DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData",sep=""))
@@ -272,9 +279,9 @@ load(paste(dir.dropbox,"/DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweC
 plot(habitatRasters,"Habitat")
 plot(myStudyArea,add=T)
 
-## ----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## ------ II.CREATE SCR DATA ------
-## ----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ### ==== 1.CLEAN AND FILTER NGS DATA ====
 ## Remove DEAD entries from the DNA data [HB]
 DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
@@ -284,64 +291,55 @@ DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
  DEAD <- DEAD[!grepl(pattern = "Påskutt", x = as.character(DEAD$Utfall)), ]
 # DEAD$Individ
 
+ 
+ 
 ### ====    1.1.CLEAN NGS & DEAD RECOVERY DATA ====
-myCleanedData.sp <- CleanDataNew2sf( dna_samples = DNA
-                                   ,
-                                   dead_recoveries = DEAD
-                                   ,
-                                   species_id = myVars$DATA$species
-                                   ,
-                                   country_polygon = COUNTRIES
-                                   ,
-                                   threshold_month = unlist(myVars$DATA$samplingMonths)[1]
-                                   ,
-                                   keep_dead = T
-                                   ,
-                                   age.label.lookup = age.lookup.table
-)
-
-
+ 
+ myCleanedData.sp <- CleanDataNew2sf( 
+   dna_samples = DNA,
+   dead_recoveries = DEAD,
+   species_id = myVars$DATA$species,
+   country_polygon = COUNTRIES,
+   threshold_month = unlist(myVars$DATA$samplingMonths)[1],
+   keep_dead = T,
+   age.label.lookup = age.lookup.table)
+ 
+dim(myCleanedData.sp)
+ 
 ## PLOT CHECK
 if(myVars$plot.check){
-   plot(st_geometry(COUNTRIES))
-   plot(st_geometry(myStudyArea), add = T, col ="red")
-   plot(st_geometry(myCleanedData.sp), add=TRUE,pch=19,cex=0.2, col="white")
+  plot(st_geometry(COUNTRIES))
+  plot(st_geometry(myStudyArea),
+       add = T, col ="red")
+  plot( st_geometry(myCleanedData.sp),
+        add = TRUE, pch = 19, cex = 0.2, col = "blue")
 }
 
 
 
 ### ====    1.2.FILTER DATA ====
-myFullData.sp <- FilterDatasf( myData = myCleanedData.sp
-                                 ,
-                                 poly = myStudyArea
-                                 ,
-                                 dead.recovery = T
-                                 ,
-                                 sex = c("Hann","Hunn")
-                                 ,#myVars$DATA$sex,# do the sex selection at the last moment
-                                 setSex = T
-                                 )
+
+myFullData.sp <- FilterDatasf(
+  myData = myCleanedData.sp,
+  poly = myStudyArea,
+  dead.recovery = T ,
+  sex = c("Hann","Hunn"), #myVars$DATA$sex,# do the sex selection at the last moment
+  setSex = T)
 
 if(myVars$plot.check){
-   plot(st_geometry(myFullData.sp$alive), add=TRUE,pch=19,cex=0.2, col="lightblue")
+   plot(st_geometry(myFullData.sp$alive), add=TRUE,pch=19,cex=0.2, col="white")
 }
 
 ## REMOVE SUSPECT SAMPLES ACCORDING TO HENRIK
 myFullData.sp$alive$DNAID <- as.character(myFullData.sp$alive$DNAID)
 myFullData.sp$dead.recovery$DNAID <- as.character(myFullData.sp$dead.recovery$DNAID)
+dim(myFullData.sp$alive)
+dim(myFullData.sp$dead.recovery)
 
 myFullData.sp$alive <- myFullData.sp$alive[!(myFullData.sp$alive$DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB)), ]
 myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[!(myFullData.sp$dead.recovery$RovBaseId %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID)), ]
-
-
-
-##EXPORT THE DATA
-if(myVars$DATA$sex=="Hann"){
-   assign("myFullData.spM", myFullData.sp)
-}else{
-   assign("myFullData.spF", myFullData.sp)
-}
-
+dim(myFullData.sp$alive)
+dim(myFullData.sp$dead.recovery)
 
 ## Remove individuals that died twice# [CM] TO BE CHECKED BECAUSE "length(IdDoubleDead) < 0" and so it was desactivated
 myFullData.sp$dead.recovery$Id <- as.character(myFullData.sp$dead.recovery$Id)
@@ -390,6 +388,7 @@ myFullData.sp$dead.recovery$weight <- ifelse(!is.na(myFullData.sp$dead.recovery$
                                              myFullData.sp$dead.recovery$Slaktevekt)
 #assign negative values to nas to avoid issues
 myFullData.sp$dead.recovery$weight[is.na(myFullData.sp$dead.recovery$weight)] <- -999
+dim(myFullData.sp$dead.recovery)
 
 # check with Henrik
 # this step does not remove dead recoveries on id with weight==0 should it?
@@ -426,25 +425,34 @@ if(sum(myFullData.sp$dead.recovery$Age %in% 0 &
                                   myFullData.sp$dead.recovery$Month > 2,  ]
 }
 
+table(myFullData.sp$alive$Year)
+
+
 
 ### ====    1.3.FILTER NGS & DEAD RECOVERY DATA ====
 myFilteredData.sp <- myFullData.sp
+dim(myFullData.sp$alive)
 
 ## Subset to years of interest
 myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years, ]
+dim(myFilteredData.sp$alive)
+
 myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year %in% years, ]
+dim(myFilteredData.sp$dead.recovery)
 
 ## Subset to months of interest
 myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in% unlist(myVars$DATA$samplingMonths), ]
+lapply(myFilteredData.sp,dim)
 
-### ====    2.1.1a SUBSET DETECTIONS IN NORRBOTTEN IN ALL YEARS EXCEPT 2017, 2018 and 2019  ==== #[CM]
+
+
+### ====    2.1.1a SUBSET DETECTIONS IN NORRBOTTEN IN ALL YEARS EXCEPT 2017, 2018 and 2019  ==== 
+
 COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten",]
 yearsSampledNorrb <- c(2016:2018,2023)
 
 is.Norr <- as.numeric(st_intersects(myFilteredData.sp$alive, COUNTIESNorrbotten))
-# is.Norr <- over(myFilteredData.sp$alive, COUNTIESNorrbotten)[,1]
-
-
+sum(is.Norr,na.rm=T)
 
 #check how many detections are removed.
 table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
@@ -453,6 +461,8 @@ table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSamp
 #subset
 myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
                                                               !is.na(is.Norr)), ]
+dim(myFilteredData.sp$alive)
+
 #plot check
 for(t in 1:nYears){
   plot(st_geometry(myStudyArea))
@@ -460,60 +470,56 @@ for(t in 1:nYears){
   plot(st_geometry(myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t],]), col="red",add=T,pch=16)
 }
 
-## SELECT THE SEX
-#MYFULLDATA
-myFullData.sp <- myFullData.sp
-myFullData.sp$alive <- myFullData.sp$alive[myFullData.sp$alive$Sex %in% myVars$DATA$sex,]
-myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
-
-#myFilteredData
-myFilteredData.spAllSex <- myFilteredData.sp
-myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Sex %in% myVars$DATA$sex,]
-myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
-
-
-
-##TRY PIERRE'S FUNCTION
-#cleanRovBaseData(species = "wolverine", years = 2012:2022)
-
-## PLOT CHECK
-if(myVars$plot.check){
-   par(mfrow = c(1,3))
-   for(t in 1:nYears){
-      ## DEAD RECOVERIES TOTAL
-      tempTotal <-  myFilteredData.sp$dead.recovery[ myFilteredData.sp$dead.recovery$Year == years[t] & myFilteredData.sp$dead.recovery$Sex %in% myVars$DATA$sex, ]
-      NGS_TabTotal <- table(tempTotal$Country)
-      ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country), 2, function(x) sum(x>0))
-      ## DEAD RECOVERIES INSIDE STUDY AREA/SAMPLING PERIOD
-      ## PLOT NGS SAMPLES
-      plot(st_geometry(GLOBALMAP), col="gray80")
-      plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-      plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
-      plot(st_geometry(tempTotal), pch = 21, bg = "darkred",add=T)
-      # ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-      graphics::text(x = 100000, y = 7250000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
-      graphics::text(x = 820000, y = 6820000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
-      ## ADD OVERALL NUMBERS
-      mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-    }#t
-}
+# ## SELECT THE SEX
+# #MYFULLDATA
+# myFullData.sp <- myFullData.sp
+# myFullData.sp$alive <- myFullData.sp$alive[myFullData.sp$alive$Sex %in% myVars$DATA$sex,]
+# myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
+# 
+# #myFilteredData
+# myFilteredData.spAllSex <- myFilteredData.sp
+# myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Sex %in% myVars$DATA$sex,]
+# myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Sex %in% myVars$DATA$sex,]
+# 
+# 
+# ## PLOT CHECK
+# if(myVars$plot.check){
+#    par(mfrow = c(1,3))
+#    for(t in 1:nYears){
+#       ## DEAD RECOVERIES TOTAL
+#       tempTotal <-  myFilteredData.sp$dead.recovery[ myFilteredData.sp$dead.recovery$Year == years[t], ]
+#       NGS_TabTotal <- table(tempTotal$Country)
+#       ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country), 2, function(x) sum(x>0))
+#       ## DEAD RECOVERIES INSIDE STUDY AREA/SAMPLING PERIOD
+#       ## PLOT NGS SAMPLES
+#       plot(st_geometry(GLOBALMAP), col="gray80")
+#       plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
+#       plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
+#       plot(st_geometry(tempTotal), pch = 21, bg = "darkred",add=T)
+#       # ## ADD NUMBER OF NGS samples and IDs per COUNTRY
+#       graphics::text(x = 100000, y = 7250000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
+#       graphics::text(x = 820000, y = 6820000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
+#       ## ADD OVERALL NUMBERS
+#       mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
+#     }#t
+# }
 
 ### ====    1.4. SEPARATE STRUCTURED AND OPPORTUNISTIC SAMPLING ====
-### ====      1.4.1. ASSIGN SAMPLES TO TRACKS  ====
-## ASSIGN ROVBASE ID AND SIMPLIFY TRACKS
-myFilteredData.sp$alive$TrackRovbsID <- NA
-myFilteredData.sp$alive$TrackDist <- NA
-
-TRACKSSimple_sf <- list()
-for(t in 1:nYears){
-  TRACKS_YEAR[[t]]$RovbsID <- as.character(TRACKS_YEAR[[t]]$RovbaseID)
-  TRACKS_YEAR[[t]]$RovbasID <- 1:length(TRACKS_YEAR[[t]]$RovbsID)
-  TRACKSSimple_sf[[t]] <- TRACKS_YEAR[[t]]#st_simplify(TRACKS_YEAR[[t]],preserveTopology = T,dTolerance = 1000)
-}
-
-## ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
-dnatemp <- st_as_sf(myFilteredData.sp$alive)
-# CREATE A BUFFER AROUND EACH DETECTION
+### ====      1.4.1. ASSIGN SAMPLES TO TRACKS ====
+# ## ASSIGN ROVBASE ID AND SIMPLIFY TRACKS
+# myFilteredData.sp$alive$TrackRovbsID <- NA
+# myFilteredData.sp$alive$TrackDist <- NA
+# 
+# TRACKSSimple_sf <- list()
+# for(t in 1:nYears){
+#   TRACKS_YEAR[[t]]$RovbsID <- as.character(TRACKS_YEAR[[t]]$RovbaseID)
+#   TRACKS_YEAR[[t]]$RovbasID <- 1:length(TRACKS_YEAR[[t]]$RovbsID)
+#   TRACKSSimple_sf[[t]] <- TRACKS_YEAR[[t]]#st_simplify(TRACKS_YEAR[[t]],preserveTopology = T,dTolerance = 1000)
+# }
+# 
+# ## ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
+# dnatemp <- st_as_sf(myFilteredData.sp$alive)
+# ## CREATE A BUFFER AROUND EACH DETECTION
 # tmp <-  st_buffer(dnatemp, dist=750)
 # for(i in 1:nrow(myFilteredData.sp$alive)){
 #    # INTERSECT POINT WITH TRACKS,
@@ -547,17 +553,37 @@ dnatemp <- st_as_sf(myFilteredData.sp$alive)
 #    print(i)
 #    #if(is.na(myFilteredData.sp$alive$TrackRovbsID[i])){print(i)}
 # }
-# 
+
 # # SAVE THE FOR FASTER LOADING
 # save(myFilteredData.sp, file = file.path(myVars$WD, myVars$modelName,
 #                                          paste("_myFilteredData.sp", ".RData", sep = "")))
-load(file.path(myVars$WD, myVars$modelName,paste("_myFilteredData.sp", ".RData", sep = "")))
+#load(file.path(myVars$WD, myVars$modelName,paste("_myFilteredData.sp", ".RData", sep = "")))
+# save( myFilteredData.sp,
+#       file ="C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Test.0.1/data/myFilteredData_original.RData")
+load("C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Test.0.1/data/myFilteredData_original.RData")
 
-### ====      1.4.2. SPLIT MYFILTERED DATA TO OPPORTUNISTIC AND STRUCTURED ====
+
+
+
+##------------------------------------------------------------------------------
+##------------------------------------------------------------------------------
+
+
+## PICK UP HERE ON THURSDAY 10.07.2025
+
+
+##------------------------------------------------------------------------------
+##------------------------------------------------------------------------------
+
+
+
+
+### ====      1.4.2. SPLIT MYFILTERED DATA TO OPPORTUNISTIC & STRUCTURED ====
+
 distanceThreshold <- 500
 
 #Proeveleverandoer columns was replaced by two columns, merging them now...
-myFilteredData.sp$alive$Proeveleverandoer <-  ifelse(myFilteredData.sp$alive$Annen.innsamler...Rolle %in% "" , 
+myFilteredData.sp$alive$Proeveleverandoer <- ifelse(myFilteredData.sp$alive$Annen.innsamler...Rolle %in% "" , 
                                               myFilteredData.sp$alive$Samlet.selv...Rolle, myFilteredData.sp$alive$Annen.innsamler...Rolle)
 
 
@@ -567,11 +593,8 @@ whichStructured <- myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforval
 
 
 
-
-
-
-myFilteredData.spStructured <- myFilteredData.sp$alive[whichStructured,]
-myFilteredData.spOthers <- myFilteredData.sp$alive[!whichStructured,]
+myFilteredData.spStructured <- myFilteredData.sp$alive[whichStructured, ]
+myFilteredData.spOthers <- myFilteredData.sp$alive[!whichStructured, ]
 
 
 ## CHECK IF A SAMPLE IS NOT MISSING SOMEWHERE
@@ -1493,28 +1516,28 @@ myData.dead <- AssignDetectors_v3sf( myData = myFilteredData.sp$dead.recovery
                                    radius = myVars$DETECTORS$detResolution)
 
 
-##EXPORT THE DATA 
-if(myVars$DATA$sex=="Hann"){
-  assign("myFilteredData.spM", myFilteredData.sp)
-  assign("myFilteredData.spOthersM", myFilteredData.spOthers)
-  assign("myFilteredData.spStructuredM", myFilteredData.spStructured)
-  
-  save(myFilteredData.spM, myFullData.spM,
-       myFilteredData.spOthersM,myFilteredData.spStructuredM,
-       file = file.path(myVars$WD, myVars$modelName,
-                        paste(myVars$modelName, "_NGSData", ".RData", sep = "")) )
-  
-}else{
-  assign("myFilteredData.spF", myFilteredData.sp)
-  assign("myFilteredData.spOthersF", myFilteredData.spOthers)
-  assign("myFilteredData.spStructuredF", myFilteredData.spStructured)
-  
-  save(myFilteredData.spF, myFullData.spF,
-       myFilteredData.spOthersF,myFilteredData.spStructuredF,
-       file = file.path(myVars$WD, myVars$modelName,
-                        paste(myVars$modelName, "_NGSData", ".RData", sep = "")) )
-  
-}
+# ##EXPORT THE DATA 
+# if(myVars$DATA$sex=="Hann"){
+#   assign("myFilteredData.spM", myFilteredData.sp)
+#   assign("myFilteredData.spOthersM", myFilteredData.spOthers)
+#   assign("myFilteredData.spStructuredM", myFilteredData.spStructured)
+#   
+#   save(myFilteredData.spM, myFullData.spM,
+#        myFilteredData.spOthersM,myFilteredData.spStructuredM,
+#        file = file.path(myVars$WD, myVars$modelName,
+#                         paste(myVars$modelName, "_NGSData", ".RData", sep = "")) )
+#   
+# }else{
+#   assign("myFilteredData.spF", myFilteredData.sp)
+#   assign("myFilteredData.spOthersF", myFilteredData.spOthers)
+#   assign("myFilteredData.spStructuredF", myFilteredData.spStructured)
+#   
+#   save(myFilteredData.spF, myFullData.spF,
+#        myFilteredData.spOthersF,myFilteredData.spStructuredF,
+#        file = file.path(myVars$WD, myVars$modelName,
+#                         paste(myVars$modelName, "_NGSData", ".RData", sep = "")) )
+#   
+# }
 
 
 ### ====    4.3. GENERATE NGS & DEAD RECOVERIES : y.alive[i,j,t] & y.dead[i,t] ====
@@ -2504,15 +2527,15 @@ for(c in 1:4){
   }
   
   ### ==== 7. SAVE NIMBLE INPUT ====
-  save(nimData,
-       nimConstants,
-       y.dead,
-       nimParams,
-       nimParams2,
-       modelCode,
-       nimInits,
-       file = file.path(myVars$WD, myVars$modelName,
-                        paste(myVars$modelName,"Chain", c, ".RData", sep = "")))
+  # save(nimData,
+  #      nimConstants,
+  #      y.dead,
+  #      nimParams,
+  #      nimParams2,
+  #      modelCode,
+  #      nimInits,
+  #      file = file.path(myVars$WD, myVars$modelName,
+  #                       paste(myVars$modelName,"Chain", c, ".RData", sep = "")))
   #####
 }#c
 
@@ -2528,9 +2551,9 @@ myFilteredData.sp <- myFilteredData.sp
 myFullData.sp <- myFullData.sp
 COUNTIES_AGGREGATED <- COUNTIES_AGGREGATED
 COUNTIES_AGGREGATEDSubset <- COUNTIES_AGGREGATEDSubset
-save(myHabitat.list, myDetectors, COUNTRIES, myStudyArea.poly, COMMUNES,COUNTIES_AGGREGATEDSubset,
-     myFilteredData.sp, myFullData.sp, COUNTIES_AGGREGATED,
-     file = file.path(myVars$WD, myVars$modelName, "NecessaryObjects.RData" ))
+# save(myHabitat.list, myDetectors, COUNTRIES, myStudyArea.poly, COMMUNES,COUNTIES_AGGREGATEDSubset,
+#      myFilteredData.sp, myFullData.sp, COUNTIES_AGGREGATED,
+#      file = file.path(myVars$WD, myVars$modelName, "NecessaryObjects.RData" ))
 
 
 
@@ -2911,14 +2934,14 @@ for(ch in 1:4){
     nimParams2 <- c(
       "z", "sxy")
     
-    save(nimData,
-         nimConstants,
-         nimParams,
-         nimParams2,
-         modelCode,
-         nimInits,
-         file = file.path(myVars$WD, myVars$modelName,
-                          paste("Snap",myVars$modelName,years[t],"_", ch, ".RData", sep = "")))
+    # save(nimData,
+    #      nimConstants,
+    #      nimParams,
+    #      nimParams2,
+    #      modelCode,
+    #      nimInits,
+    #      file = file.path(myVars$WD, myVars$modelName,
+    #                       paste("Snap",myVars$modelName,years[t],"_", ch, ".RData", sep = "")))
     #####
     
   }
