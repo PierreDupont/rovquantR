@@ -454,6 +454,7 @@ makeRovquantData_bear <- function(
                  as_points = FALSE,
                  merge = TRUE) %>%
     dplyr::filter(Habitat %in% 1)
+  detArea <- aggregate(rasterToPolygons(myHabitat$habitat.rWthBuffer,function(x) x==1))
   
   r.detector <- raster::aggregate( 
     subdetectors.r,
@@ -697,6 +698,8 @@ makeRovquantData_bear <- function(
       Sex %in% sex,
       ##-- Filter data for space
       !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
+      # ##-- Filter data for space
+      # Country_sample == "(N)"
     ) %>% 
     ##-- Assign detector based on distance
     assignDetectors(
@@ -704,7 +707,6 @@ makeRovquantData_bear <- function(
       detectors = detectors$main.detector.sp,
       radius = detectors$resolution)
 
-  
   
   ## ------     6.3. PLOT NGS and DEAD RECOVERY MAPS ----- 
   
