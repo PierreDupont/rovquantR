@@ -75,33 +75,32 @@ makeRovquantData_wolverine <- function(
   
   ## ------ 0. BASIC SET-UP ------
   
-  ##-- Set default values for the wolverine model
-  if(is.null(aug.factor)){aug.factor <- 0.8}
-  if(is.null(sampling.months)){sampling.months <- list(12,1:6)}
-  if(is.null(habitat.res)){habitat.res <- 20000} 
-  if(is.null(buffer.size)){buffer.size <- 60000}
-  if(is.null(max.move.dist)){max.move.dist <- 250000}
-  if(is.null(detector.res)){detector.res <- 10000}
-  if(is.null(subdetector.res)){subdetector.res <- 2000}
-  if(is.null(max.det.dist)){max.det.dist <- 84000}
-  if(is.null(resize.factor)){resize.factor <- 2}
-  
-  
-  ##-- Set up list of Habitat characteristics
-  habitat <- list( resolution = habitat.res,
-                   buffer = buffer.size,
-                   maxDist = max.move.dist)
-  
-  ##-- Set up list of Detectors characteristics
-  detectors <- list( resolution = detector.res,
-                     resolution.sub = subdetector.res,
-                     maxDist = max.det.dist)
-  
-  ##-- Set up list of Data characteristics
-  data <- list( sex = sex,
-                aug.factor = aug.factor,
-                sampling.months = sampling.months)
-  
+##-- Set default values for the wolverine model
+if(is.null(aug.factor)){aug.factor <- 0.8}
+if(is.null(sampling.months)){sampling.months <- list(12,1:6)}
+if(is.null(habitat.res)){habitat.res <- 20000} 
+if(is.null(buffer.size)){buffer.size <- 60000}
+if(is.null(detector.res)){detector.res <- 10000}
+if(is.null(subdetector.res)){subdetector.res <- 2000}
+if(is.null(max.det.dist)){max.det.dist <- 40000}
+if(is.null(resize.factor)){resize.factor <- 3}
+
+##-- Set up list of Habitat characteristics
+habitat <- list( resolution = habitat.res,
+                 buffer = buffer.size)
+
+##-- Set up list of Detectors characteristics
+detectors <- list( resolution = detector.res,
+                   resolution.sub = subdetector.res,
+                   maxDist = max.det.dist,
+                   resize.factor = resize.factor)
+
+##-- Set up list of Data characteristics
+data <- list( sex = sex,
+              aug.factor = aug.factor,
+              sampling.months = sampling.months)
+
+
   
   
   ## ---------------------------------------------------------------------------
