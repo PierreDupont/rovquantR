@@ -586,8 +586,11 @@ makeRovquantData_bear <- function(
   par(mar = c(0,0,0,0))
   for(t in 1:length(years)){
     plot(st_geometry(COUNTRIES[1,]), border = NA, col = "gray80")
-    plot(detectors$grid[, paste0("detOtherSamples.",years[t])],  border = NA, add = TRUE, legend = FALSE)
-
+    
+    thisColumn <- which(names(st_drop_geometry(detectors$grid)) == paste0("detOtherSamples.",years[t]))
+    thisCol <- ifelse(st_drop_geometry(detectors$grid)[,thisColumn] == 0, "white", "forestgreen")
+    plot(detectors$grid[, paste0("detOtherSamples.",years[t])],
+         border = NA, add = TRUE, legend = FALSE, col = thisCol)
     mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
     
     if(t == n.years){
@@ -595,17 +598,12 @@ makeRovquantData_bear <- function(
                y0 = 6730000, y1 = 6730000 + 500000,
                col = grey(0.3), lwd = 4, lend = 2)
       text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
-      
-      ##-- LEGEND
-      par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
-      plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
     }#if
   }#t
   dev.off()
   
   
-  
-  ##-- Plot Carnivore observations maps
+  ##-- Plot distance to roads maps
   pdf(file = file.path(working.dir, "figures", "DistanceToRoads.pdf"),
       width = 18, height = 12)
   par(mar = c(0,0,0,0))
@@ -615,8 +613,6 @@ makeRovquantData_bear <- function(
            y0 = 6730000, y1 = 6730000 + 500000,
            col = grey(0.3), lwd = 4, lend = 2)
   text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
-  par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
-  plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
   dev.off()  
   
   
