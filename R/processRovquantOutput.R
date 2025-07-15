@@ -116,9 +116,9 @@ processRovquantOutput <- function(
     
     ##-- Find the .rmd template for the report.
     if(is.null(Rmd.template)){
-      Rmd.template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
+      Rmd.template <- system.file("rmd", "RovQuant_FullReport.Rmd", package = "rovquantR")
       if(!file.exists(Rmd.template)) {
-        stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
+        stop('Can not find a .rmd template called "RovQuant_FullReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
       } 
     }
     
@@ -131,8 +131,9 @@ processRovquantOutput <- function(
       params = list( species = out$SPECIES,
                      years = out$YEARS,
                      date = out$DATE,
-                     working.dir = working.dir),
+                     working.dir = working.dir, 
+                     out = out),
       output_dir = output.dir,
-      output_file = paste0("Results_", out$engSpecies, "_", out$DATE,".html"))
+      output_file = paste0("FullResults_", out$engSpecies, "_", out$DATE,".html"))
   }
 }

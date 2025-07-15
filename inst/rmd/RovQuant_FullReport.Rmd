@@ -4,6 +4,7 @@ params:
   years: !r 2012:2024
   date: !r Sys.Date()   
   working.dir: !r getwd()
+  out: !r list()
 title: "`r paste('Estimates of', params$species, 'density, abundance, and population dynamics in Scandinavia,', params$years[1], '-', params$years[length(params$years)]')`"
 output:
   pdf_document: default
@@ -13,9 +14,9 @@ output:
     toc: yes
     toc_float: yes
     df_print: kable
-    #css: bootstrap.css
+    # css: bootstrap.css
     highlight: zenburn
-    #fig_caption: true
+    # fig_caption: true
   word_document: default
 bibliography: references.bib
 ---
