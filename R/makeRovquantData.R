@@ -138,7 +138,7 @@ makeRovquantData <- function(
   
   
   ##---- 2. WOLF DATA PREPARATION -----
-  #
+  
   # ##-- Check species and use corresponding function
   # if(sum(grep("wolf", species, ignore.case = T))>0|
   #    sum(grep("wolves", species, ignore.case = T))>0|

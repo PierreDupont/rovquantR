@@ -19,7 +19,7 @@
 #' 
 #' @author Pierre Dupont
 #'
-#' @importFrom raster res image extent
+#' @importFrom raster res image extent writeRaster
 #' @importFrom graphics plot layout par segments mtext text rasterImage
 #' @importFrom sf st_geometry 
 #' @importFrom grDevices png colorRampPalette
@@ -34,9 +34,10 @@ plotDensityMaps <- function(
     mask,
     background = NULL,
     type = c("time.series", "last.year", "summary"),
-    path = file.path(getwd(), "figures"),
+    path = getwd(),
     species = NULL,
     q95 = NULL,
+    export.raster = TRUE,
     name = "UD_Density")
 {
   
@@ -44,10 +45,21 @@ plotDensityMaps <- function(
   if(is.null(mask)){ mask <- input }
   if(!inherits(estimates,"list")){ estimates <- list(estimates) }
   if(is.null(background)){background <- COUNTRIES}
+  if(sum(grep("bear", species, ignore.case = T)) > 0|
+     sum(grep("bjørn", species, ignore.case = T)) > 0|
+     sum(grep("bjorn", species, ignore.case = T)) > 0) { species <- "bear" }
+  if(sum(grep("wolf", species, ignore.case = T)) > 0|
+     sum(grep("wolves", species, ignore.case = T)) > 0|
+     sum(grep("ulv", species, ignore.case = T)) > 0) { species <- "wolf" }
+  if (sum(grep("wolverine", species, ignore.case = T))>0|
+      sum(grep("jerv", species, ignore.case = T))>0|
+      sum(grep("järv", species, ignore.case = T))>0) { species <- "wolverine" }
+  
   
   ##-- Convert densities to the desired density unit (usually inds.100km-2)
   conversionFactor <- unit/( raster::res(input)[1]/1000)^2
 
+  
   ##-- Rasterize and mask density maps 
   density <- list()
   for(t in 1:length(estimates)){
@@ -58,11 +70,13 @@ plotDensityMaps <- function(
   }#t
   names(density) <- names(estimates)
   
+  
   ##-- Set color scale
   max <- max(unlist(lapply(density, function(x) max(x[], na.rm = T))))
   cuts <- seq(0, max, length.out = 100) ##-- set breaks
   colfunc <- grDevices::colorRampPalette(c("white", "slateblue", "yellow", "orange", "red", "red"))
   col <- colfunc(100)
+  
   
   ##-- Set x- and y-limits
   xLims <- raster::extent(background)[1:2]
@@ -76,7 +90,7 @@ plotDensityMaps <- function(
     
     ##-- layout
     L <- length(density)
-    if(L < 6){ nrows <- 1 } else{
+    if(L < 6){ nrows <- 1 } else {
       if(L < 13){ nrows <- 2 } else {
         if(L < 22){ nrows <- 3 } else {
           if(L < 33){ nrows <- 4 } else {
@@ -84,7 +98,7 @@ plotDensityMaps <- function(
           }}}}
     ncols <- ceiling(L/nrows)
     
-    grDevices::png(filename = file.path(path, paste0(name,"_TimeSeries.png")),
+    grDevices::png(filename = file.path(path, "figures", paste0(name,"_TimeSeries.png")),
                    width = ncols*2, height = nrows*4,
                    units = "in", pointsize = 12,
                    res = 300, bg = NA)
@@ -110,7 +124,7 @@ plotDensityMaps <- function(
       ##-- Plot density
       plot(sf::st_geometry(background), border = NA, col = "gray80")
       raster::image( density[[t]], add = TRUE,
-                     breaks = c(cuts, max(cuts)+1000),
+                     breaks = c(cuts, max(cuts) + 1000),
                      col = col, legend = FALSE)
       plot( sf::st_geometry(background),
             border = "gray40", col = NA, add = TRUE)
@@ -144,11 +158,17 @@ plotDensityMaps <- function(
         ######----- NEED TO FIX LEGEND TEXT 
         ######----- expression("Individuals/100 km"^ 2)
       }#if
-      # ##-- Export rasters
-      # writeRaster(density[[t]],
-      #             file.path(path,
-      #                       paste0("DensityRaster100km2", years[t],".tif")),
-      #             overwrite = TRUE)
+
+      ##-- Export rasters
+      if(export.raster){
+        writeRaster( density[[t]],
+                     file.path( path, "rasters",
+                                paste0( species, "_",
+                                        raster::res(input)[1]/1000, "km", 
+                                        names(estimates)[t], ".tif")),
+                     overwrite = TRUE)
+      }
+      
     }#t
     dev.off()
   }
@@ -225,9 +245,7 @@ plotDensityMaps <- function(
       
       
       ##-- Option 1: brown bear
-      if(sum(grep("bear", species, ignore.case = T)) > 0|
-         sum(grep("bjørn", species, ignore.case = T)) > 0|
-         sum(grep("bjorn", species, ignore.case = T)) > 0) {
+      if(species == "bear") {
         
         ##-- Add km scale 
         legend.x <- xLims[1] + 0.65 * xRange
