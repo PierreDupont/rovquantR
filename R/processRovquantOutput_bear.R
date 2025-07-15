@@ -545,7 +545,7 @@ processRovquantOutput_bear <- function(
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES[1, ],
-    type = c("time.series", "last.year", "summary"),
+    type = c("time.series", "last.year", "summary","summary_NOR"),
     species = "bear",
     q95 = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")],
     path = file.path(working.dir, "figures"),
