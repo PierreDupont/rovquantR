@@ -72,35 +72,41 @@ processRovquantOutput <- function(
       niter,
       extraction.res,
       overwrite)
-  } else {
-    message("Come back some other time for wolves and wolverines...or any other species")
   }
   
   
 
   ##---- 2. WOLF RESULTS PROCESSING -----
   
-  # 
-  # if(sum(grep("wolf", species, ignore.case = T))>0|
-  #    sum(grep("ulv", species, ignore.case = T))>0|
-  #    sum(grep("bjorn", species, ignore.case = T))>0){
-  #   
-  #   ##-- Process the model output
-  #   out <- processRovquantOutput_wolf(
-  #     data.dir,
-  #     working.dir,
-  #     nburnin,
-  #     niter,
-  #     extraction.res,
-  #     overwrite)
-  # }
-  # 
+  if(sum(grep("wolf", species, ignore.case = T))>0|
+     sum(grep("ulv", species, ignore.case = T))>0){
+
+    ##-- Process the model output
+    out <- processRovquantOutput_wolf(
+      data.dir,
+      working.dir,
+      nburnin,
+      niter,
+      extraction.res,
+      overwrite)
+  }
+
+  
   
   ##---- 3. WOLVERINE RESULTS PROCESSING -----
   
-  # if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, ignore.case = T))>0){
-  #   out <- processRovquantOutput_wolverine(...)
-  # }
+  if(sum(grep("wolverine", species, ignore.case = T))>0|
+     sum(grep("jerv", species, ignore.case = T))>0){
+    
+    ##-- Process the model output
+    out <- processRovquantOutput_wolverine(
+      data.dir,
+      working.dir,
+      nburnin,
+      niter,
+      extraction.res,
+      overwrite)
+  }
   
   
 
