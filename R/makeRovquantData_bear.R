@@ -454,7 +454,7 @@ makeRovquantData_bear <- function(
                  as_points = FALSE,
                  merge = TRUE) %>%
     dplyr::filter(Habitat %in% 1)
-  detArea <- aggregate(rasterToPolygons(myHabitat$habitat.rWthBuffer,function(x) x==1))
+  #detArea <- aggregate(rasterToPolygons(myHabitat$habitat.rWthBuffer,function(x) x==1))
   
   r.detector <- raster::aggregate( 
     subdetectors.r,
