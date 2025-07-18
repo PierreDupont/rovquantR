@@ -979,60 +979,55 @@ table(myFilteredData.sp$alive$Year)
 
 ## ------     3. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
 
-# ------       3.1. ASSIGN SAMPLES TO TRACKS ------
+## ------       3.1. ASSIGN SAMPLES TO TRACKS ------
 
 message("Assigning DNA samples to GPS tracks... ")
 message("This can take several minutes... ")
 
-##-- Load pr-processed GPS search tracks
-load(file.path(working.dir, "data/searchTracks.RData"))
-
-
-##-- ASSIGN ROVBASE ID
-myFilteredData.sp$alive$TrackID <- NA
-myFilteredData.sp$alive$TrackDist <- NA
-
-
-##-- ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
-dnatemp <- st_as_sf(myFilteredData.sp$alive)
-
-##-- CREATE A BUFFER AROUND EACH DETECTION
-tmp <- st_buffer(dnatemp, dist = 750)
-
-##-- Loop over detections
-for(i in 1:1000){#nrow(myFilteredData.sp$alive)){
-  t <- which(years %in% tmp[i, ]$Year)
-
-  ##-- If no tracks on the same date ==> next sample
-  whichSameDate <- which(as.character(TRACKS_YEAR[[t]]$Dato) == as.character(myFilteredData.sp$alive$Date[i]))
-  if(length(whichSameDate) == 0){next}
-
-  ##-- If no tracks on the same date within 750m of the NGS sample ==> next sample
-  tmpTRACKS <- st_intersection(TRACKS_YEAR[[t]][whichSameDate, ], tmp[i, ])
-  if(nrow(tmpTRACKS) == 0){next}
-
-  ##-- Calculate distance to matching tracks
-  dist <- st_distance(dnatemp[i,], tmpTRACKS, by_element = F)
-
-  ##-- Assign sample to the closest matching track
-  myFilteredData.sp$alive$TrackID[i] <- tmpTRACKS$RovbaseID[which.min(dist)]
-  myFilteredData.sp$alive$TrackDist[i] <- min(dist)
-
-  print(i)
-}#i
-Rprof(NULL)
-summaryRprof("assignTracks2.out")
-
-Rprof("assignTracks.out")
-test <- assignSearchTracks( data = myFilteredData.sp$alive[1:1000, ],
-                            tracks = TRACKS,
-                            dist = 750)
-Rprof(NULL)
-summaryRprof("assignTracks.out")
-
-##-- SAVE THE FOR FASTER LOADING
-save(myFilteredData.sp, file = file.path(working.dir, "data/myFilteredData.sp.RData"))
+# ##-- Load pr-processed GPS search tracks
+# load(file.path(working.dir, "data/searchTracks.RData"))
+#
+# myFilteredData.sp$alive <- assignSearchTracks( data = myFilteredData.sp$alive,
+#                             tracks = TRACKS)
+# 
+# ##-- SAVE THE FOR FASTER LOADING
+# save(myFilteredData.sp, file = file.path(working.dir, "data/myFilteredData.sp.RData"))
 load(file.path(working.dir, "data/myFilteredData.sp.RData"))
+ 
+
+# ##-- OLD STUFF
+# # ##-- ASSIGN ROVBASE ID
+# # myFilteredData.sp$alive$trackID <- NA
+# # myFilteredData.sp$alive$trackDist <- NA
+# # 
+# #  
+# # ##-- ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
+# # dnatemp <- st_as_sf(myFilteredData.sp$alive)
+# # 
+# # ##-- CREATE A BUFFER AROUND EACH DETECTION
+# # tmp <- st_buffer(dnatemp, dist = 750)
+# # 
+# # ##-- Loop over detections
+# # for(i in 1:1000){#nrow(myFilteredData.sp$alive)){
+# #   t <- which(years %in% tmp[i, ]$Year)
+# # 
+# #   ##-- If no tracks on the same date ==> next sample
+# #   whichSameDate <- which(as.character(TRACKS_YEAR[[t]]$Dato) == as.character(myFilteredData.sp$alive$Date[i]))
+# #   if(length(whichSameDate) == 0){next}
+# # 
+# #   ##-- If no tracks on the same date within 750m of the NGS sample ==> next sample
+# #   tmpTRACKS <- st_intersection(TRACKS_YEAR[[t]][whichSameDate, ], tmp[i, ])
+# #   if(nrow(tmpTRACKS) == 0){next}
+# # 
+# #   ##-- Calculate distance to matching tracks
+# #   dist <- st_distance(dnatemp[i,], tmpTRACKS, by_element = F)
+# # 
+# #   ##-- Assign sample to the closest matching track
+# #   myFilteredData.sp$alive$trackID[i] <- tmpTRACKS$RovbaseID[which.min(dist)]
+# #   myFilteredData.sp$alive$trackDist[i] <- min(dist)
+# # 
+# #   print(i)
+# # }#i
 
 
 
@@ -1047,25 +1042,18 @@ myFilteredData.sp$alive$Collector <- ifelse(
   myFilteredData.sp$alive$Collector_other_role)
 table(myFilteredData.sp$alive$Collector, useNA = "always")
 
-##--
+##-- Identify samples from structured and opportunistic sampling
 myFilteredData.sp$alive <- myFilteredData.sp$alive %>%
   mutate( hairTrap = DNAID %in% HairTrapSamples$DNAID,
           structured = Collector %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") & 
-            !is.na(TrackID) &  
-            TrackDist <= distanceThreshold )
-
-whichStructured <- myFilteredData.sp$alive$Collector %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
-  !is.na(myFilteredData.sp$alive$TrackID) &
-  myFilteredData.sp$alive$TrackDist <= distanceThreshold
-
-table(whichStructured, useNA = "always")
+            !is.na(trackID) &  
+            trackDist <= distanceThreshold )
 table(myFilteredData.sp$alive$structured, useNA = "always")
 
 ##-- PLOT CHECK
 if(plot.check){
   plot(REGIONS[REGIONS$county %in% "Norrbotten",]$geometry)
-  tmp <- myFilteredData.sp$alive %>%
-    filter(hairTrap)
+  tmp <- myFilteredData.sp$alive %>%  filter(hairTrap)
   plot(tmp$geometry, add = T, col = "red", pch = 16)
   if(length(which(myFilteredData.sp$alive$DNAID[myFilteredData.sp$alive$structured] %in% HairTrapSamples$DNAID))>0){
     print("WARNING SAMPLES FROM HAIR TRAPS ASSIGNED TO STRUCTURED")
@@ -1094,8 +1082,8 @@ if(plot.check){
   
   ##
   structured2000 <- myFilteredData.sp$alive$Collector %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
-    !is.na(myFilteredData.sp$alive$TrackID) &
-    myFilteredData.sp$alive$TrackDist <= 2000
+    !is.na(myFilteredData.sp$alive$trackID) &
+    myFilteredData.sp$alive$trackDist <= 2000
   barplot( rbind(table(myFilteredData.sp$alive$Year[structured2000]),
                  table(myFilteredData.sp$alive$Year[!structured2000])),
            beside = T,
@@ -1118,19 +1106,20 @@ if(plot.check){
     par(mar = c(0,0,3,0), mfrow = c(1,3))
     
     ##-- samples with tracks
-    tmpNoTracks <- tmp %>% 
+    tmpTracks <- tmp %>% 
       filter( Year %in% years[t],
-              is.na(TrackID))
-    plot( st_geometry(myStudyArea), col = "gray60", main = "Structured without track")
-    plot( st_geometry(tmpNoTracks),
+              !is.na(trackID),
+              trackDist <= 750)
+    plot( st_geometry(myStudyArea), col = "gray60", main = "Structured with track")
+    plot( st_geometry(tmpTracks),
           pch = 21, col = "black",
           cex = 1, bg = "red", add = T)
     
     ##-- samples without tracks
-    tmpTracks <- tmp %>% 
+    tmpNoTracks <- tmp %>% 
       filter( Year %in% years[t],
-              !is.na(TrackID))
-    plot( st_geometry(myStudyArea), col = "gray60", main = "Structured with track")
+              is.na(trackID) | trackDist >= 750)
+    plot( st_geometry(myStudyArea), col = "gray60", main = "Structured without track")
     plot( st_geometry(tmpNoTracks),
           pch = 21, col = "black", 
           cex = 1, bg = "blue", add = T)
@@ -1148,7 +1137,7 @@ if(plot.check){
   }#t
   
   ##-- Number of samples collected per year
-  tab <- table(tmp$Year, tmp$TrackID, useNA ="always")
+  tab <- table(tmp$Year, tmp$trackID, useNA ="always")
   barplot( tab[ ,which(is.na(colnames(tab)))]/rowSums(tab),
            main = "% of samples from Statsforvalteren and \nSNO that cannot be assigned to a track") 
   dev.off()
@@ -1163,10 +1152,10 @@ if(plot.check){
         pch = 16, col = "red", cex = 0.3, add = T)
   plot( st_geometry(myFullData.sp$dead.recovery),
         pch = 16, col = "blue", cex = 0.3, add = T)
-  mtext(paste("Live detections", length(myFullData.sp$alive),
-              "; ID:", length(unique(myFullData.sp$alive$Id))),
+  mtext(paste("Live detections", nrow(myFullData.sp$alive),
+              "; ID:", nrow(unique(myFullData.sp$alive$Id))),
         line = +1)
-  mtext(paste("Dead recovery:", length(myFullData.sp$dead.recovery)))
+  mtext(paste("Dead recovery:", nrow(myFullData.sp$dead.recovery)))
   dev.off()
 }
 

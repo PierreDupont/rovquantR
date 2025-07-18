@@ -435,14 +435,16 @@ dim(myFullData.sp$alive)
 
 ## Subset to years of interest
 myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years, ]
+table(myFilteredData.sp$alive$Year)
 dim(myFilteredData.sp$alive)
 
 myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year %in% years, ]
+table(myFilteredData.sp$dead.recovery$Year)
 dim(myFilteredData.sp$dead.recovery)
 
 ## Subset to months of interest
 myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in% unlist(myVars$DATA$samplingMonths), ]
-lapply(myFilteredData.sp,dim)
+table(myFilteredData.sp$alive$Year)
 
 
 
@@ -456,12 +458,13 @@ sum(is.Norr,na.rm=T)
 
 #check how many detections are removed.
 table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
-                                                     !is.na(is.Norr)), ]$Year)
+                                                     !is.na(is.Norr)), ]$Year) %>% sum()
 
 #subset
 myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
                                                               !is.na(is.Norr)), ]
 dim(myFilteredData.sp$alive)
+table(myFilteredData.sp$alive$Year)
 
 #plot check
 for(t in 1:nYears){
@@ -506,6 +509,7 @@ myFilteredData.spAllSex <- myFilteredData.sp
 
 ### ====    1.4. SEPARATE STRUCTURED AND OPPORTUNISTIC SAMPLING ====
 ### ====      1.4.1. ASSIGN SAMPLES TO TRACKS ====
+# 
 # ## ASSIGN ROVBASE ID AND SIMPLIFY TRACKS
 # myFilteredData.sp$alive$TrackRovbsID <- NA
 # myFilteredData.sp$alive$TrackDist <- NA
@@ -553,7 +557,8 @@ myFilteredData.spAllSex <- myFilteredData.sp
 #    print(i)
 #    #if(is.na(myFilteredData.sp$alive$TrackRovbsID[i])){print(i)}
 # }
-
+# 
+# 
 # # SAVE THE FOR FASTER LOADING
 # save(myFilteredData.sp, file = file.path(myVars$WD, myVars$modelName,
 #                                          paste("_myFilteredData.sp", ".RData", sep = "")))
@@ -572,10 +577,15 @@ distanceThreshold <- 500
 myFilteredData.sp$alive$Proeveleverandoer <- ifelse(myFilteredData.sp$alive$Annen.innsamler...Rolle %in% "" , 
                                               myFilteredData.sp$alive$Samlet.selv...Rolle,
                                               myFilteredData.sp$alive$Annen.innsamler...Rolle)
+table(myFilteredData.sp$alive$Proeveleverandoer, useNA = "always")
+sum(duplicated(myFilteredData.sp$alive$RovbaseID))
+sum(duplicated(myFilteredData.sp$alive$DNAID))
+
 
 whichStructured <- myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
                    !is.na(myFilteredData.sp$alive$TrackRovbsID) &
                    myFilteredData.sp$alive$TrackDist <= distanceThreshold
+table(whichStructured, useNA = "always")
 
 myFilteredData.spStructured <- myFilteredData.sp$alive[whichStructured, ]
 myFilteredData.spOthers <- myFilteredData.sp$alive[!whichStructured, ]
@@ -637,16 +647,16 @@ for(t in 1:nYears){
   tmpNoTracks <-  tmp1[is.na(tmp1$TrackRovbsID), ]
   tmpTracks <-  tmp1[!is.na(tmp1$TrackRovbsID), ]
   
-  plot(myStudyArea, main="Structured with track")
+  plot( st_geometry(myStudyArea), col = "gray60",  main="Structured with track")
   plot(st_geometry(tmpTracks), pch=21, col="black", cex=1,bg="red",add=T)
   
-  plot(myStudyArea, main="Structured without track")
+  plot( st_geometry(myStudyArea), col = "gray60",  main="Structured without track")
   plot(st_geometry(tmpNoTracks), pch=21, col="black", cex=1,bg="blue",add=T)
   
   tmpOpp <- myFilteredData.sp$alive[!myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),]
   tmpOpp <- tmpOpp[tmpOpp$Year%in% years[t],]
   
-  plot(myStudyArea, main="Other samples")
+  plot( st_geometry(myStudyArea), col = "gray60",  main="Other samples")
   plot(st_geometry(tmpOpp), pch=21, col="black", cex=1,bg="green",add=T)
   
   mtext(years[t],adj = -0.8,padj = 1)
@@ -654,7 +664,7 @@ for(t in 1:nYears){
 }
 barplot(tab[,which(is.na(colnames(tab)))]/rowSums(tab),main="% of samples from Statsforvalteren and \nSNO that cannot be assigned to a track") 
 
-dev.off()
+#dev.off()
 
 ### plot check 
 ##pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"OverallDetectionsDeadRecoveries",".pdf", sep="" ))
@@ -662,11 +672,11 @@ plot(st_geometry(GLOBALMAP))
 plot(st_geometry(myStudyArea),add=T)
 plot(st_geometry(myFullData.sp$alive),pch=16, col="red", cex=0.3,add=T)
 plot(st_geometry(myFullData.sp$dead.recovery),pch=16, col="blue", cex=0.3,add=T)
-mtext(paste("Live detections", length(myFullData.sp$alive),
-            "; ID:", length(unique(myFullData.sp$alive$Id))
+mtext(paste("Live detections", nrow(myFullData.sp$alive),
+            "; ID:", nrow(unique(myFullData.sp$alive$Id))
 ),line = +1)
-mtext(paste("Dead recovery:",length(myFullData.sp$dead.recovery)))
-dev.off()
+mtext(paste("Dead recovery:",nrow(myFullData.sp$dead.recovery)))
+#dev.off()
 
 ### ====    1.5.SEPARATE MORTALITY CAUSES ==== 
 ## MORTALITY CAUSES
