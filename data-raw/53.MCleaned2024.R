@@ -664,7 +664,7 @@ if(length(which(myFilteredData.spStructured$alive$DNAID%in% HairTrapSamples$DNAI
 
 
 ### ====      1.4.3. PLOT CHECKS   ====
-pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"DetectionsStructuredOppBarplot",".pdf", sep="" ))
+#pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"DetectionsStructuredOppBarplot",".pdf", sep="" ))
 par(mfrow=c(2,1),mar=c(4,4,3,2))
 barplot(rbind(table(myFilteredData.spStructured$Year),
               table(myFilteredData.spOthers$Year)),beside=T,ylim=c(0,2000),col=c(grey(0.2),grey(0.8)),ylab="Number of samples")
@@ -694,7 +694,7 @@ tab <- table(tmp$Year,tmp$TrackRovbsID,useNA ="always" )
 
 
 ## plot check 
-pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"DetectionsStructuredOpp",".pdf", sep="" ))
+#pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"DetectionsStructuredOpp",".pdf", sep="" ))
 for(t in 1:nYears){
   par(mar=c(0,0,3,0),mfrow=c(1,3))
   tmp1 <- tmp[tmp$Year%in% years[t],]
@@ -721,7 +721,7 @@ barplot(tab[,which(is.na(colnames(tab)))]/rowSums(tab),main="% of samples from S
 dev.off()
 
 ### plot check 
-pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"OverallDetectionsDeadRecoveries",".pdf", sep="" ))
+#pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"OverallDetectionsDeadRecoveries",".pdf", sep="" ))
 plot(st_geometry(GLOBALMAP))
 plot(st_geometry(myStudyArea),add=T)
 plot(st_geometry(myFullData.sp$alive),pch=16, col="red", cex=0.3,add=T)
@@ -791,7 +791,7 @@ if(myVars$plot.check){
 
 ## PLOT TREND DETECTIONS AND DEAD RECOVERIES OVER TIME AND SPACE #[CM]
 #DETECTIONS
-pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"_TRENDDetections.pdf",sep="")))
+#pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"_TRENDDetections.pdf",sep="")))
 temp <- unique(myFilteredData.sp$alive[,c("Year","Country","DNAID")])
 tab_Country.Year <- table(temp$Year, temp$Country)
 country.colors <- c("goldenrod1","goldenrod3")
@@ -949,7 +949,7 @@ for(i in 1:length(deadID)){
 }
 
 ## PLOT CHECK
-pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"Prop id deteced_Time available.pdf",sep="")))
+#pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"Prop id deteced_Time available.pdf",sep="")))
 plot(ndet ~timeDiff, ylab="Total number of detections", xlab="Number of days between dec 1 and dead recovery")
 hh <- hist(timeDiff[ndet>0], breaks = seq(0,400,by=25))
 hh1 <- hist(timeDiff[ndet==0], breaks = seq(0,400,by=25))
@@ -1134,7 +1134,7 @@ sum(TRACKS.r[[t]][],na.rm=T)/1000
 
 
 
-pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"Tracks.pdf",sep="")))
+#pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"Tracks.pdf",sep="")))
 if(myVars$plot.check){
   NORTRACKS <- SWETRACKS <- 0
   # par(mfrow = c(2,2))#[CM]
@@ -1230,7 +1230,7 @@ plot(st_geometry(habitat.rWthBufferPol))
 plot(st_geometry(skandObs),col="red",add=T)
 ## PLOT CHECK 
 ## SUMMARY SKANDOBS
-pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"skandObs",".pdf", sep="" ), width = 10)
+#pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"skandObs",".pdf", sep="" ), width = 10)
 barplot(table(skandObs$monitoring.season ))
 barplot(table(skandObs$month ), xlab="Months")
 # barplot(table(skandObs$activity),cex.names=0.7)
@@ -1305,7 +1305,7 @@ r.OtherSamplesContinuous <- brick(lapply(r.list,function(x) x[[2]]))
 
 
 #PLOT
-pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"mapStructuredOthers",".pdf", sep="" ))
+#pdf(file = paste(myVars$WD,"/",myVars$modelName,"/",myVars$modelName,"mapStructuredOthers",".pdf", sep="" ))
 for(t in 1:nYears){
   year= years[t]
   tmpOthers <- myFilteredData.spOthers[myFilteredData.spOthers$Year%in%year, ]
@@ -1435,7 +1435,7 @@ for(t in 1:nYears){
 ## PLOT CHECK
 dev.off()
 
-pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"_detections over space and time.pdf",sep="")))
+#pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"_detections over space and time.pdf",sep="")))
 if(myVars$plot.check){
   for(t in 1:nYears){
     ## NGS DETECTIONS TOTAL
@@ -2313,7 +2313,7 @@ recruitnb <- recruitnb[,c(2,4)]        # overall phi
 
 
 ###
-pdf(file = file.path( myVars$WD,
+#pdf(file = file.path( myVars$WD,
                       myVars$modelName,paste(myVars$modelName,"realizedPhiCountry",".pdf",sep="")
 ))
 par(mfrow = c(1,1))
@@ -2381,7 +2381,7 @@ recruitSWE <- recruit[,-c(8,9,10,11,12,13,14,15,16)]
 
 
 ###
-pdf(file = file.path( myVars$WD,
+#pdf(file = file.path( myVars$WD,
                       myVars$modelName,paste(myVars$modelName,"realizedPhiCounties",".pdf",sep="")
 ),width = 11,height=6)
 # PHI
@@ -3299,7 +3299,7 @@ myResults <- ProcessCodaOutput(nimOutput,params.omit = c("sxy","z"))
 {#doall[CM]
   
   ### ==== 2. PLOT PARAMETERS ESTIMATES ====
-  pdf(file = file.path( myVars$WD,
+  #pdf(file = file.path( myVars$WD,
                         myVars$modelName,paste(myVars$modelName,".pdf",sep="")
   ))
   
@@ -3784,7 +3784,7 @@ for(t in 1:nYears){
 {#doall[CM]
   
   ### ==== 2. PLOT PARAMETERS ESTIMATES ====
-  pdf(file = file.path( myVars$WD,
+  #pdf(file = file.path( myVars$WD,
                         myVars$modelName,paste(myVars$modelName,"Snap.pdf",sep="")
   ))
   
@@ -4028,7 +4028,7 @@ max <- max(unlist(lapply(Densi, function(x) max(x$PosteriorsCellsMean))))
 cuts <- seq(0,max,length.out = 100)   #set breaks
 col <- rev(terrain.colors(100))
 
-pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"_DENSITY.pdf",sep="")))
+#pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"_DENSITY.pdf",sep="")))
 
 for(t in 1: dim(sxyScaled$data.scaled.xy)[4]){
   habbdens[] <- Densi[[t]]$PosteriorsCellsMean
@@ -4158,7 +4158,7 @@ for(t in 1:dim(sxyScaled$data.scaled.xy)[4]){
 ## ===== PLOT COUNTIES/COUNTRIES SPECIFIC DENSITY ESTIMATES ====
 ## TOTAL 
 {#doall
-   pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"_NRegions.pdf",sep="")))
+   #pdf(file=file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"_NRegions.pdf",sep="")))
    plot(-1000, xlim=c(0.5,nYears+0.5), ylim=c(0,1200), ylab="N Total",xaxt="n")
    axis(1, at=c(1:nYears), labels = years)
    at = c(1:nYears)
@@ -4412,7 +4412,7 @@ GetPopDensityFromPolygon <- function(habPolygon = NULL,
 #                                 myVars$modelName,
 #                                 paste("9JM_DENSITY_PD.RData", sep = "")))
 ## PLOT DENSITY
-pdf(file = file.path( myVars$WD,
+#pdf(file = file.path( myVars$WD,
                       myVars$modelName,
                       paste("9JM_DENSITY_PD.pdf", sep = "")))
 

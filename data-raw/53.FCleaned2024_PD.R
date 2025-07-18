@@ -37,7 +37,6 @@ gc()
 #devtools::install_github("PierreDupont/rovquantR")
 
 
-
 ## ------ LOAD REQUIRED LIBRARIES ------
 
 library(rovquantR)
@@ -81,18 +80,15 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2
 # library(ggplot2)
 # library(stars)
 #
-#
 # ## ------ SET REQUIRED WORKING DIRECTORIES ------
 #
 # source("C:/My_documents/RovQuant/Temp/CM/myWorkingDirectories.R")
-#
 #
 # ## ------ SOURCE THE REQUIRED FUNCTIONS ------
 #
 # sourceDirectory(dir.function, modifiedOnly = FALSE)
 # sourceDirectory(dir.function.nimble, modifiedOnly = FALSE)
 # load(file.path(dir.dropbox, "DATA/MISC DATA/age.lookup.table.RData"))
-#
 #
 ## ------ SOURCE THE NIMBLE FUNCTION ------
 
@@ -243,19 +239,19 @@ plot(st_geometry(COUNTIES_AGGREGATED), add = T, border = "firebrick4")
 # myStudyArea$id <- 1
 # myStudyArea <- myStudyArea %>% group_by(id) %>% summarize()
 
-## CREATE STUDY AREA POLYGON 
+##-- CREATE STUDY AREA POLYGON 
 myStudyArea <- COUNTRIES %>%
   filter(ISO %in% c("NOR","SWE")) %>%
   mutate(id = 1) %>%
   group_by(id) %>% 
   summarize()
 
-## CREATE HABITAT POLYGON 
+##-- CREATE HABITAT POLYGON 
 myBufferedArea <- myStudyArea %>%
   st_buffer(dist = HABITAT$habBuffer) %>%
   st_intersection(., GLOBALMAP)
 
-## PLOT CHECK
+##-- PLOT CHECK
 if(plot.check){
   par(mfrow = c(1,1))
   plot(st_geometry(COUNTRIES))
@@ -270,25 +266,29 @@ if(plot.check){
 ## ------     2.1. LOAD ROVBASE FILES ------
 
 #SUSPECT_NGS_SAMPLES <- read.csv(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/Remove ngs samples list wolverine 2024.csv"), fileEncoding="latin1") 
-SUSPECT_NGS_SAMPLES <- readMostRecent( path = data.dir,
-                                       extension = ".xlsx",
-                                       pattern = "Remove ngs")
+SUSPECT_NGS_SAMPLES <- readMostRecent(
+  path = data.dir,
+  extension = ".xlsx",
+  pattern = "Remove ngs")
 
 #SUSPECT_DeadRecoSAMPLES <- read.csv(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/Remove dead recoveries list wolverine 2024.csv"), fileEncoding="latin1") ## DNA samples to be removed from Henrik
-SUSPECT_DeadRecoSAMPLES <- readMostRecent( path = data.dir,
-                                           extension = ".xlsx",
-                                           pattern = "Remove dead")
+SUSPECT_DeadRecoSAMPLES <- readMostRecent(
+  path = data.dir,
+  extension = ".xlsx",
+  pattern = "Remove dead")
 
 #HairTrapSamples <- read_xlsx(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/hairtrapsNB2024.xlsx"))#, fileEncoding="latin1") ## DNA samples to be removed from Henrik
-HairTrapSamples <- readMostRecent( path = data.dir,
-                                   extension = ".xlsx",
-                                   pattern = "hairtrap")
+HairTrapSamples <- readMostRecent( 
+  path = data.dir,
+  extension = ".xlsx",
+  pattern = "hairtrap")
 
 ##-- Load the last DEN COUNT data file
 #DEN <- read.csv(file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/DEN_COUNTS_2009_2024_fromHB.csv"), fileEncoding="latin1")
-DEN <- readMostRecent( path = data.dir,
-                       extension = ".csv",
-                       pattern = "DEN_COUNTS")
+DEN <- readMostRecent( 
+  path = data.dir,
+  extension = ".csv",
+  pattern = "DEN_COUNTS")
 colnames(DEN) <- translateForeignCharacters(dat = colnames(DEN))
 
 
@@ -329,14 +329,12 @@ rovbaseObs$Proevetype <- translateForeignCharacters(dat = rovbaseObs$Proevetype)
 
 
 
-## ------     2.2. LOAD SCANDINAVIAN 20KM HABITAT  ------
+## ------     2.2. LOAD SCANDINAVIAN 20KM HABITAT ------
 
 # load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20km.RData"))
 # load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
 data("habitatRasters")
 data("habitatRasterResolution")
-#plot(habitatRasters, "Habitat")
-#plot(myStudyArea, add = T)
 
 
 
@@ -370,7 +368,7 @@ SNOW <- stack(file.path(data.dir,"GIS/AverageSnowCoverModisSeason2008_2024_Wolf.
 names(SNOW) <- paste(2008:2023, (2008:2023) + 1, sep = "_")
 
 ##-- SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
-SNOW <- SNOW[[paste("X", years, "_", years+1, sep = "")]]
+SNOW <- SNOW[[paste("X", years, "_", years + 1, sep = "")]]
 SNOW <- raster::crop(SNOW, c(0,40,55,75))
 
 
@@ -627,6 +625,7 @@ myData$Age <- suppressWarnings(as.numeric(as.character(myData$Age)))
 myData$Death <- NA
 myData$Death[substr(myData$RovbaseID,1,1)%in%"M"] <- myData$Year[substr(myData$RovbaseID,1,1)%in%"M"]
 myData$Birth <- myData$Death-myData$Age
+
 ##-- Reconstruct minimal & maximal ages
 myData$Age.orig <- myData$Age
 temp <- temp1 <- as.character(levels(myData$Age.orig))  ## list age levels
@@ -638,7 +637,8 @@ myData <- merge( myData, age.lookup.table[ ,-1],
                  by.x = "Age.orig2",
                  by.y = "age.label",
                  all.x = TRUE)                          ## Merge with info from lookup table
-##-- FILL IN THE REST OF THE AGES FROM FOR NUMERIC RECORDS
+
+##-- Fill in the rest of the ages from numeric records
 numeric.age.records <- which(!is.na(as.numeric(as.character(myData$Age.orig2))) & !is.na(myData$Age.orig2))
 myData[numeric.age.records, c("min.age","max.age","age")] <- floor(as.numeric(as.character(myData$Age.orig2[numeric.age.records])))
 dim(myData)
@@ -670,8 +670,6 @@ dim(myData)
 #   plot( st_geometry(myData),
 #         add = TRUE, pch = 19, cex = 0.2, col = "blue")
 # }
-
-
 
 # myFullData.sp <- FilterDatasf( 
 #   myData = myData,
@@ -712,9 +710,8 @@ for(i in 1:length(ID)){
 }#i
 
 
-## Remove individuals with unknwon sex
+##-- Remove individuals with unknwon sex
 myData <- myData[which(myData$Sex %in% c("Hann","Hunn")), ]
-
 
 ##-- Remove all samples outside the polygon of interest (study area)
 myData <- myData[!is.na(as.numeric(st_intersects(myData, myStudyArea))), ]
@@ -723,8 +720,8 @@ myData <- myData[!is.na(as.numeric(st_intersects(myData, myStudyArea))), ]
 myData.dead <- myData[!is.na(myData$Death), ]
 myData.alive <- myData[is.na(myData$Death), ]
 
-myData.dead$Id <- droplevels(myData.dead$Id)
-myData.alive$Id <- droplevels(myData.alive$Id)
+#myData.dead$Id <- droplevels(myData.dead$Id)
+#myData.alive$Id <- droplevels(myData.alive$Id)
 
 IdDoubleDead <- myData.dead$Id[duplicated(myData.dead$Id)]
 
@@ -791,10 +788,10 @@ myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-which(myFullData.sp$
 myFullData.sp$dead.recovery$Weight_total <- as.character(myFullData.sp$dead.recovery$Weight_total)
 myFullData.sp$dead.recovery$Weight_slaughter <- as.character(myFullData.sp$dead.recovery$Weight_slaughter)
 
-#convert to decimals
+## convert to decimals
 myFullData.sp$dead.recovery$Weight_total <- as.numeric(gsub(",", ".", myFullData.sp$dead.recovery$Weight_total))
 myFullData.sp$dead.recovery$Weight_slaughter <- as.numeric(gsub(",", ".", myFullData.sp$dead.recovery$Weight_slaughter))
-# get the two weight columns together.
+## get the two weight columns together.
 myFullData.sp$dead.recovery$weight <- ifelse(!is.na(myFullData.sp$dead.recovery$Weight_total),
                                              myFullData.sp$dead.recovery$Weight_total,
                                              myFullData.sp$dead.recovery$Weight_slaughter)
@@ -939,7 +936,7 @@ dim(myFilteredData.sp$alive)
 # myFullData.sp$alive <- myFullData.sp$alive[myFullData.sp$alive$Sex %in% DATA$sex,]
 # myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Sex %in% DATA$sex,]
 # #myFilteredData
-# myFilteredData.spAllSex <- myFilteredData.sp
+# myFilteredData.sp <- myFilteredData.sp
 # myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Sex %in% DATA$sex,]
 # myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Sex %in% DATA$sex,]
 # 
@@ -970,16 +967,15 @@ dim(myFilteredData.sp$alive)
 ## ------     3. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
 
 ## ------       3.1. ASSIGN SAMPLES TO TRACKS ------
-# 
+
 # message("Assigning DNA samples to GPS tracks... ")
-# message("This can take up to 10 min... ")
-# message("It is worth it, I swear... ")
+# message("This can take several minutes... ")
 # 
 # 
 # ##-- Load pr-processed GPS search tracks
 # load(file.path(working.dir, "data/searchTracks.RData"))
 # 
-# ##-- ASSIGN ROVBASE ID 
+# ##-- ASSIGN ROVBASE ID
 # myFilteredData.sp$alive$TrackID <- NA
 # myFilteredData.sp$alive$TrackDist <- NA
 # 
@@ -1018,160 +1014,155 @@ load(file.path(working.dir, "data/myFilteredData.sp.RData"))
 
 
 
-
-
-
-##------------------------------------------------------------------------------
-##------------------------------------------------------------------------------
-
-
-## PICK UP HERE ON THURSDAY 10.07.2025
-
-
-##------------------------------------------------------------------------------
-##------------------------------------------------------------------------------
-
-
-
-
-## ------       1.4.2. SPLIT MYFILTERED DATA TO OPPORTUNISTIC & STRUCTURED ------
+## ------       3.2. ASSIGN SAMPLES TO OPPORTUNISTIC OR STRUCTURED ------
 
 distanceThreshold <- 500
 
-#Proeveleverandoer columns was replaced by two columns, merging them now...
-myFilteredData.sp$alive$Proeveleverandoer <- ifelse( myFilteredData.sp$alive$Annen.innsamler...Rolle %in% "" , 
-                                                     myFilteredData.sp$alive$Samlet.selv...Rolle, myFilteredData.sp$alive$Annen.innsamler...Rolle)
+##-- Collector column was replaced by two columns, merging them now...
+myFilteredData.sp$alive$Collector <- ifelse(
+  is.na(myFilteredData.sp$alive$Collector_other_role), 
+  myFilteredData.sp$alive$Collector_role, 
+  myFilteredData.sp$alive$Collector_other_role)
+table(myFilteredData.sp$alive$Collector, useNA = "always")
 
-whichStructured <- myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
-  !is.na(myFilteredData.sp$alive$TrackID) &
-  myFilteredData.sp$alive$TrackDist <= distanceThreshold
+##--
+myFilteredData.sp$alive <- myFilteredData.sp$alive %>%
+  mutate( hairTrap = DNAID %in% HairTrapSamples$DNAID,
+          structured = Collector %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") & 
+            !is.na(TrackID) &  
+            TrackDist <= distanceThreshold & 
+            !hairTrap )
 
-myFilteredData.spStructured <- myFilteredData.sp$alive[whichStructured, ]
-myFilteredData.spOthers <- myFilteredData.sp$alive[!whichStructured, ]
+table(myFilteredData.sp$alive$Collector,useNA = "always")
 
-## CHECK IF A SAMPLE IS NOT MISSING SOMEWHERE
-nrow(myFilteredData.spStructured) + nrow(myFilteredData.spOthers)
-nrow(myFilteredData.sp$alive)
-
-## PUSH ALL RESULTS FROM HAIR TRAPS TO OPPORTUNISTIC
-whichHair <- which(myFilteredData.sp$alive$DNAID%in% HairTrapSamples$DNAID)
-
-## plot check 
-plot(COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten",]$geometry)
-plot(myFilteredData.sp$alive[whichHair,]$geometry, add=T, col="red",pch=16)
-if(length(which(myFilteredData.spStructured$alive$DNAID%in% HairTrapSamples$DNAID))>0){
-  print("WARNING SAMPLES FROM HAIR TRAPS ASSIGNED TO STRUCTURED")
+##-- PLOT CHECK
+if(plot.check){
+  plot(REGIONS[REGIONS$county %in% "Norrbotten",]$geometry)
+  tmp <- myFilteredData.sp$alive %>%
+    filter(hairTrap)
+  plot(tmp$geometry, add=T, col="red",pch=16)
+  if(length(which(myFilteredData.sp$alive$DNAID[myFilteredData.sp$alive$structured] %in% HairTrapSamples$DNAID))>0){
+    print("WARNING SAMPLES FROM HAIR TRAPS ASSIGNED TO STRUCTURED")
+  }
 }
 
 
 
-## ------       1.4.3. PLOT CHECKS   ------
+## ------       3.3. PLOT CHECKS ------
 
-pdf(file = file.path(working.dir, "figures/DetectionsStructuredOppBarplot.pdf"))
-
-par(mfrow = c(2,1), mar = c(4,4,3,2))
-barplot( rbind(table(myFilteredData.spStructured$Year),
-               table(myFilteredData.spOthers$Year)),
-         beside = T,
-         ylim = c(0,2000),
-         col = c(grey(0.2),grey(0.8)),
-         ylab = "Number of samples")
-abline(h = seq(0, 2000, by = 500),
-       lty = 2, col = grey(0.8))
-title(main = "500m threshold")
-legend("topleft", fill = c(grey(0.2),grey(0.8)), legend = c("Structured","Other"))
-
-###
-distanceThreshold1 <- 2000
-whichStructured2000 <- myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
-  !is.na(myFilteredData.sp$alive$TrackID) &
-  myFilteredData.sp$alive$TrackDist <= distanceThreshold1
-myFilteredData.spStructured2000 <- myFilteredData.sp$alive[whichStructured2000,]
-myFilteredData.spOthers2000 <- myFilteredData.sp$alive[!whichStructured2000,]
-
-barplot(rbind(table(myFilteredData.spStructured2000$Year),
-              table(myFilteredData.spOthers2000$Year)),beside=T,ylim=c(0,2000),col=c(grey(0.2),grey(0.8)),ylab="Number of samples")
-abline(h=seq(0,2000,by=500),lty=2,col=grey(0.8))
-title(main="2000m threshold")
-legend("topleft",fill=c(grey(0.2),grey(0.8)),legend=c("Structured","Other"))
-dev.off()
-
-## CONSTRAIN TO SAMPLES COLLECTED "Fylkesmannen","SNO" 
-tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Proeveleverandoer %in% 
-                                 c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),]
-tab <- table(tmp$Year,tmp$TrackID,useNA ="always" )
-
-
-## plot check 
-pdf(file = paste(working.dir, "figures/DetectionsStructuredOpp.pdf"))
-for(t in 1:n.years){
-  par(mar=c(0,0,3,0),mfrow=c(1,3))
-  tmp1 <- tmp[tmp$Year%in% years[t],]
-  tmpNoTracks <-  tmp1[is.na(tmp1$TrackID), ]
-  tmpTracks <-  tmp1[!is.na(tmp1$TrackID), ]
+if(plot.check){
   
-  plot(myStudyArea, main="Structured with track")
-  plot(st_geometry(tmpTracks), pch=21, col="black", cex=1,bg="red",add=T)
+  ##-- Barplot of structured vs. opportunistic samples
+  pdf(file = file.path(working.dir, "figures/DetectionsStructuredOppBarplot.pdf"))
+  par(mfrow = c(2,1), mar = c(4,4,3,2))
+  barplot( rbind(table(myFilteredData.sp$alive$Year[myFilteredData.sp$alive$structured]),
+                 table(myFilteredData.sp$alive$Year[!myFilteredData.sp$alive$structured])),
+           beside = T,
+           ylim = c(0,2000),
+           col = c(grey(0.2),grey(0.8)),
+           ylab = "Number of samples")
+  abline(h = seq(0, 2000, by = 500),
+         lty = 2, col = grey(0.8))
+  title(main = "500m threshold")
+  legend("topleft", fill = c(grey(0.2),grey(0.8)), legend = c("Structured","Other"))
   
-  plot(myStudyArea, main="Structured without track")
-  plot(st_geometry(tmpNoTracks), pch=21, col="black", cex=1,bg="blue",add=T)
+  ##
+  structured2000 <- myFilteredData.sp$alive$Collector %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
+    !is.na(myFilteredData.sp$alive$TrackID) &
+    myFilteredData.sp$alive$TrackDist <= 2000
+  barplot( rbind(table(myFilteredData.sp$alive$Year[structured2000]),
+                 table(myFilteredData.sp$alive$Year[!structured2000])),
+           beside = T,
+           ylim = c(0,2000),
+           col = c(grey(0.2),grey(0.8)),
+           ylab = "Number of samples")
+  abline(h=seq(0,2000,by=500),lty=2,col=grey(0.8))
+  title(main="2000m threshold")
+  legend("topleft",fill=c(grey(0.2),grey(0.8)),legend=c("Structured","Other"))
+  dev.off()
   
-  tmpOpp <- myFilteredData.sp$alive[!myFilteredData.sp$alive$Proeveleverandoer %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),]
-  tmpOpp <- tmpOpp[tmpOpp$Year%in% years[t],]
   
-  plot(myStudyArea, main="Other samples")
-  plot(st_geometry(tmpOpp), pch=21, col="black", cex=1,bg="green",add=T)
+  ##-- CONSTRAIN TO SAMPLES COLLECTED "Fylkesmannen","SNO" 
+  tmp <- myFilteredData.sp$alive %>%
+    filter(Collector %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"))
   
-  mtext(years[t],adj = -0.8,padj = 1)
+  # plot check 
+  pdf(file = file.path(working.dir, "figures/DetectionsStructuredOpp.pdf"))
+  for(t in 1:n.years){
+    par(mar = c(0,0,3,0), mfrow = c(1,3))
+    
+    ##-- samples with tracks
+    tmpNoTracks <- tmp %>% 
+      filter( Year %in% years[t],
+              is.na(TrackID))
+    plot( st_geometry(myStudyArea), col = "gray60", main = "Structured without track")
+    plot( st_geometry(tmpNoTracks),
+          pch = 21, col = "black",
+          cex = 1, bg = "red", add = T)
+    
+    ##-- samples without tracks
+    tmpTracks <- tmp %>% 
+      filter( Year %in% years[t],
+              !is.na(TrackID))
+    plot( st_geometry(myStudyArea), col = "gray60", main = "Structured with track")
+    plot( st_geometry(tmpNoTracks),
+          pch = 21, col = "black", 
+          cex = 1, bg = "blue", add = T)
+    
+    ##-- Other samples
+    tmpOpp <- myFilteredData.sp$alive %>%
+      filter(!Collector %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),
+             Year%in% years[t])
+    plot( st_geometry(myStudyArea), col = "gray60", main = "Other samples")
+    plot( st_geometry(tmpOpp),
+          pch = 21, col = "black",
+          cex = 1, bg = "green", add = T)
+    
+    mtext(years[t], adj = -0.8, padj = 1)
+  }#t
+  
+  ##-- Number of samples collected per year
+  tab <- table(tmp$Year, tmp$TrackID, useNA ="always")
+  barplot( tab[ ,which(is.na(colnames(tab)))]/rowSums(tab),
+           main = "% of samples from Statsforvalteren and \nSNO that cannot be assigned to a track") 
+  dev.off()
+  
+  
+  
+  ##-- plot check 
+  pdf( file = file.path(working.dir, "figures/OverallDetectionsDeadRecoveries.pdf"))
+  plot( st_geometry(GLOBALMAP))
+  plot( st_geometry(myStudyArea), add = T)
+  plot( st_geometry(myFullData.sp$alive),
+        pch = 16, col = "red", cex = 0.3, add = T)
+  plot( st_geometry(myFullData.sp$dead.recovery),
+        pch = 16, col = "blue", cex = 0.3, add = T)
+  mtext(paste("Live detections", length(myFullData.sp$alive),
+              "; ID:", length(unique(myFullData.sp$alive$Id))),
+        line = +1)
+  mtext(paste("Dead recovery:", length(myFullData.sp$dead.recovery)))
+  dev.off()
 }
-barplot(tab[,which(is.na(colnames(tab)))]/rowSums(tab),
-        main = "% of samples from Statsforvalteren and \nSNO that cannot be assigned to a track") 
-dev.off()
-
-
-### plot check 
-pdf(file = paste(working.dir, "figures/OverallDetectionsDeadRecoveries.pdf"))
-plot(st_geometry(GLOBALMAP))
-plot(st_geometry(myStudyArea),add=T)
-plot(st_geometry(myFullData.sp$alive),pch=16, col="red", cex=0.3,add=T)
-plot(st_geometry(myFullData.sp$dead.recovery),pch=16, col="blue", cex=0.3,add=T)
-mtext(paste("Live detections", length(myFullData.sp$alive),
-            "; ID:", length(unique(myFullData.sp$alive$Id))),line = +1)
-mtext(paste("Dead recovery:",length(myFullData.sp$dead.recovery)))
-dev.off()
 
 
 
-## ------     1.5. SEPARATE MORTALITY CAUSES ------ 
+## ------     4. SEPARATE MORTALITY CAUSES ------ 
 
-## MORTALITY CAUSES
-length(myFilteredData.sp$dead.recovery)
-length(myFullData.sp$dead.recovery)
+##-- Identify legal mortality causes
+MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
+whichLegalCauses <- unlist(lapply(c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske"), 
+                                  function(x)grep(x,MortalityNames)))
+legalCauses <- MortalityNames[whichLegalCauses]
 
-MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$DeathCause))
 
-## DEFINE LEGAL MORTALITY
-# legalCauses <- MortalityNames[grep("JF", MortalityNames)]
-# legalCauses <- c(legalCauses, MortalityNames[grep("Rifle", MortalityNames)])
-# legalCauses <- c(legalCauses, MortalityNames[grep("18", MortalityNames)])
-# legalCauses <- c(legalCauses, MortalityNames[grep("17", MortalityNames)])
-# legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
-# legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Uspesifisert", MortalityNames)])
-# legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Fellefangst", MortalityNames)])
-# legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Hagle", MortalityNames)])
-# legalCauses <- c(legalCauses, MortalityNames[grep("Skyddsjakt", MortalityNames)])
-legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
-legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
+##-- Split data based on mortality causes
+myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery %>% 
+  mutate(legal = Death_cause %in% legalCauses)
 
-## SPLIT MORTALITY CAUSES
-legal.death <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$DeathCause %in% legalCauses, ]
-Other.death <- myFilteredData.sp$dead.recovery[!myFilteredData.sp$dead.recovery$DeathCause %in% legalCauses, ]
+# legal.death <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$DeathCause %in% legalCauses, ]
+# Other.death <- myFilteredData.sp$dead.recovery[!myFilteredData.sp$dead.recovery$DeathCause %in% legalCauses, ]
 
-## PLOT CHECK
+##-- PLOT CHECK
 if(plot.check){
   par(mfrow = c(1,3))
   for(t in 1:n.years){
@@ -1187,7 +1178,6 @@ if(plot.check){
     plot(st_geometry(GLOBALMAP), col="gray80")
     plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
     plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
-    # points(tempTotal, pch = 21, bg = "darkred")
     plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
     ## ADD NUMBER OF NGS samples and IDs per COUNTRY
     graphics::text(x = 100000, y = 7250000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
@@ -1197,55 +1187,56 @@ if(plot.check){
     mtext(text = paste(sum(NGS_TabIn), "Dead Recoveries /", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
     # mtext(text = paste(sum(NGS_TabTotal), "Recoveries /", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
   }#t
+  
+  
+  
+  ## PLOT TREND DETECTIONS AND DEAD RECOVERIES OVER TIME AND SPACE 
+  
+  ## DETECTIONS
+  pdf(file = file.path(working.dir, "figures/TRENDDetections.pdf"))
+  
+  temp <- unique(myFilteredData.sp$alive[,c("Year","Country","DNAID")])
+  tab_Country.Year <- table(temp$Year, temp$Country)
+  country.colors <- c("goldenrod1","goldenrod3")
+  
+  par(mfrow=c(1,1), mar=c(5,5,5,5))
+  plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year))), ylim=c(0,max(tab_Country.Year)), ylab="N Detections", xlab="Years")
+  lines(tab_Country.Year[,"N"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[1], lwd=2, pch=16, type="b")
+  lines(tab_Country.Year[,"S"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[2], lwd=2, pch=16, type="b")
+  legend("bottomright",c("N","S"), fill=country.colors)
+  
+  ## ID DETECTED
+  temp <- table(myFilteredData.sp$alive$Year,myFilteredData.sp$alive$Country,myFilteredData.sp$alive$Id)
+  tab_Country.Year1 <- apply(temp,c(1,2),function(x) sum(x>0))
+  country.colors <- c("goldenrod1","goldenrod3")
+  par(mfrow=c(1,1), mar=c(5,5,5,5))
+  plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year1))), ylim=c(0,max(tab_Country.Year1)), ylab="N Id detected", xlab="Years")
+  lines(tab_Country.Year1[,"N"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[1], lwd=2, pch=16, type="b")
+  lines(tab_Country.Year1[,"S"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[2], lwd=2, pch=16, type="b")
+  legend("bottomright",c("N","S"), fill=country.colors)
+  
+  ## Average number of detection per detected ID  
+  tab_Country.Year2 <- tab_Country.Year/tab_Country.Year1
+  par(mfrow=c(1,1), mar=c(5,5,5,5))
+  plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year2))), ylim=c(0,max(tab_Country.Year2)),
+       ylab="Average Number of detections", xlab="Years")
+  lines(tab_Country.Year2[,"N"]~as.numeric(row.names(tab_Country.Year2)), col=country.colors[1], lwd=2, pch=16, type="b")
+  lines(tab_Country.Year2[,"S"]~as.numeric(row.names(tab_Country.Year2)), col=country.colors[2], lwd=2, pch=16, type="b")
+  legend("bottomright",c("N","S"), fill=country.colors)
+  
+  ## deadrecovery 
+  temp <- unique(myFilteredData.sp$dead.recovery[,c("Year","Country","Id")])
+  tab_Country.Year <- table(temp$Year, temp$Country)
+  country.colors <- c("goldenrod1","goldenrod3")
+  
+  par(mfrow=c(1,1), mar=c(5,5,5,5))
+  plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year))), ylim=c(0,max(tab_Country.Year)),
+       ylab="N Id Dead recovered", xlab="Years")
+  lines(tab_Country.Year[,"N"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[1], lwd=2, pch=16, type="b")
+  lines(tab_Country.Year[,"S"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[2], lwd=2, pch=16, type="b")
+  legend("topright",c("N","S"), fill=country.colors)
+  dev.off()
 }
-
-
-## PLOT TREND DETECTIONS AND DEAD RECOVERIES OVER TIME AND SPACE 
-
-## DETECTIONS
-pdf(file = file.path(working.dir, "figures/TRENDDetections.pdf"))
-
-temp <- unique(myFilteredData.sp$alive[,c("Year","Country","DNAID")])
-tab_Country.Year <- table(temp$Year, temp$Country)
-country.colors <- c("goldenrod1","goldenrod3")
-
-par(mfrow=c(1,1), mar=c(5,5,5,5))
-plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year))), ylim=c(0,max(tab_Country.Year)), ylab="N Detections", xlab="Years")
-lines(tab_Country.Year[,"N"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[1], lwd=2, pch=16, type="b")
-lines(tab_Country.Year[,"S"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[2], lwd=2, pch=16, type="b")
-legend("bottomright",c("N","S"), fill=country.colors)
-
-## ID DETECTED
-temp <- table(myFilteredData.sp$alive$Year,myFilteredData.sp$alive$Country,myFilteredData.sp$alive$Id)
-tab_Country.Year1 <- apply(temp,c(1,2),function(x) sum(x>0))
-country.colors <- c("goldenrod1","goldenrod3")
-par(mfrow=c(1,1), mar=c(5,5,5,5))
-plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year1))), ylim=c(0,max(tab_Country.Year1)), ylab="N Id detected", xlab="Years")
-lines(tab_Country.Year1[,"N"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[1], lwd=2, pch=16, type="b")
-lines(tab_Country.Year1[,"S"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[2], lwd=2, pch=16, type="b")
-legend("bottomright",c("N","S"), fill=country.colors)
-
-## Average number of detection per detected ID  
-tab_Country.Year2 <- tab_Country.Year/tab_Country.Year1
-par(mfrow=c(1,1), mar=c(5,5,5,5))
-plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year2))), ylim=c(0,max(tab_Country.Year2)),
-     ylab="Average Number of detections", xlab="Years")
-lines(tab_Country.Year2[,"N"]~as.numeric(row.names(tab_Country.Year2)), col=country.colors[1], lwd=2, pch=16, type="b")
-lines(tab_Country.Year2[,"S"]~as.numeric(row.names(tab_Country.Year2)), col=country.colors[2], lwd=2, pch=16, type="b")
-legend("bottomright",c("N","S"), fill=country.colors)
-
-## deadrecovery 
-temp <- unique(myFilteredData.sp$dead.recovery[,c("Year","Country","Id")])
-tab_Country.Year <- table(temp$Year, temp$Country)
-country.colors <- c("goldenrod1","goldenrod3")
-
-par(mfrow=c(1,1), mar=c(5,5,5,5))
-plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year))), ylim=c(0,max(tab_Country.Year)),
-     ylab="N Id Dead recovered", xlab="Years")
-lines(tab_Country.Year[,"N"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[1], lwd=2, pch=16, type="b")
-lines(tab_Country.Year[,"S"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[2], lwd=2, pch=16, type="b")
-legend("topright",c("N","S"), fill=country.colors)
-dev.off()
 
 
 
@@ -1253,52 +1244,65 @@ dev.off()
 
 ## ------     2.1. REDUCE THE AREA OF THE STATE-SPACE BASED ON DETECTIONS ------
 
-## DELINEATE A BUFFER AROUND ALL DEADRECO 
-BuffDead <- st_buffer(myFilteredData.spAllSex$dead.recovery, dist = HABITAT$habBuffer)
-BuffDead$idd <- 1
-BuffDead <- BuffDead %>% group_by(idd) %>% summarize()
+# ##-- DELINEATE A BUFFER AROUND ALL DEADRECO
+## [PD] USELESS!
+# BuffDead <- myFilteredData.sp$dead.recovery %>%
+#   st_buffer(., dist = HABITAT$habBuffer) %>%
+#   mutate(idd = 1) %>%
+#   group_by(idd) %>%
+#   summarize()
 
-## DELINEATE A BUFFER AROUND ALL DETECTIONS 
-BuffAlive <- st_buffer(myFilteredData.spAllSex$alive, dist = HABITAT$habBuffer*1.4)
-BuffAlive$idd <- 1
-myBufferedArea <- BuffAlive %>% group_by(idd) %>% summarize()
+##-- DELINEATE A BUFFER AROUND ALL NGS DETECTIONS 
+myBufferedArea <- myFilteredData.sp$alive %>%
+  st_buffer(., dist = HABITAT$habBuffer*1.4) %>%
+  mutate(idd = 1) %>%
+  group_by(idd) %>%
+  summarize()
 
-## CUT TO SWEDISH AND NORWEGIAN BORDERS
-myStudyArea <- st_intersection(myBufferedArea, myStudyArea)#[myStudyArea$ISO %in% c("SWE","NOR"), ])
+##-- CUT TO SWEDISH AND NORWEGIAN BORDERS
+myStudyArea <- st_intersection(myBufferedArea, myStudyArea) %>% 
+  mutate(idd = 1) %>%
+  group_by(idd) %>%
+  summarize()
 
-## plot check 
-par(mar = c(0,0,0,0))
-plot(st_geometry(myStudyArea))
-plot(st_geometry(myFilteredData.spAllSex$alive), pch=21, bg="red", cex=0.5,add=T)
-plot(st_geometry(myFilteredData.spAllSex$dead.recovery), pch=21, bg="blue", cex=0.5,add=T)
-plot(st_geometry(BuffDead), add = T, border = "blue")
-plot(st_geometry(myBufferedArea), border = "red", add=T)
-plot(st_geometry(myStudyArea), border = "grey", add=T)
+##-- PLOT CHECK
+if(plot.check){
+  par(mar = c(0,0,0,0))
+  plot( st_geometry(myStudyArea))
+  plot( st_geometry(myFilteredData.sp$alive), 
+        pch = 21, bg = "red", cex = 0.5, add = T)
+  plot( st_geometry(myFilteredData.sp$dead.recovery),
+        pch = 21, bg = "blue", cex = 0.5, add = T)
+  plot( st_geometry(BuffDead), add = T, border = "blue")
+  plot( st_geometry(myBufferedArea), border = "red", add = T)
+  plot( st_geometry(myStudyArea), border = "grey", add = T)
+}
 
 
 
 ## ------     2.2. GENERATE HABITAT CHARACTERISTICS FROM THE NEW HABITAT DEFINITION ------
 
-myHabitat <- MakeHabitatFromRastersf(
+myHabitat <- MakeHabitatFromRaster(
   poly = myStudyArea,
   habitat.r = habitatRasters[["Habitat"]],
   buffer = HABITAT$habBuffer,                               
   plot.check = T)
 
-## RETRIEVE HABITAT WINDOWS BOUNDARIES
+##-- Retrieve habitat windows boundaries
+## [PD] USELESS!
 lowerHabCoords <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] - 0.5*HABITAT$habResolution
 upperHabCoords <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] + 0.5*HABITAT$habResolution
 nHabCells <- dim(lowerHabCoords)[1]
 
-## CREATE HABITAT GRID 
+##-- CREATE HABITAT GRID 
+## [PD] USELESS !
 habIDCells.mx <- myHabitat$IDCells.mx 
 habIDCells.mx[] <- 0
 scaledHabGridCenters <- scaleCoordsToHabitatGrid(
   coordsData = myHabitat$habitat.xy,
   coordsHabitatGridCenter = myHabitat$habitat.xy,
-  scaleToGrid =F )$coordsHabitatGridCenterScaled
-
-scaledHabGridCenters <- scaledHabGridCenters[myHabitat$habitat.r[]==1,]
+  scaleToGrid = F )$coordsHabitatGridCenterScaled
+scaledHabGridCenters <- scaledHabGridCenters[myHabitat$habitat.r[] == 1, ]
 for(i in 1:nrow(scaledHabGridCenters)){
   habIDCells.mx[trunc(scaledHabGridCenters[i,2])+1,
                 trunc(scaledHabGridCenters[i,1])+1] <- i
@@ -1309,25 +1313,20 @@ image(habIDCells.mx)
 
 ## ------       2.2.1. SUBSET DETECTIONS BASED ON HABITAT EXTENT ------ 
 
-## Remove samples outside the STUDY AREA 
-myStudyArea$idd <- 1
-myStudyAreaAggregated <- myStudyArea %>% group_by(idd) %>% summarize()
-
-whichOut <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$alive, myStudyAreaAggregated))))
-if(length(whichOut)>0){
+whichOut <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$alive, myStudyArea))))
+if(length(whichOut) > 0){
   myFilteredData.sp$alive <- myFilteredData.sp$alive[whichOut, ]
-  
 }
-myFilteredData.sp$alive$Id <- droplevels( myFilteredData.sp$alive$Id)
+#myFilteredData.sp$alive$Id <- droplevels( myFilteredData.sp$alive$Id)
 
 ## REMOVE DEAD RECOVERIES OUTSIDE THE HABITAT #[CM] 
 whichOutBuff <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$dead.recovery, myHabitat$buffered.habitat.poly))))
-if(length(whichOutBuff)>0){
+if(length(whichOutBuff) > 0){
   myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[whichOutBuff, ]
 }
 
 
-## PLOT CHECK
+##-- PLOT CHECK
 if(plot.check){
   # par(mfrow = c(1,2))#[CM]
   plot(myHabitat$habitat.r)
@@ -1339,66 +1338,66 @@ if(plot.check){
 }
 
 
-### check correlation number of detetions ~ between monitoring season
-myFilteredData.sp$dead.recovery$Id <- as.character(  myFilteredData.sp$dead.recovery$Id)
-myFilteredData.sp$alive$Id <- as.character( myFilteredData.sp$alive$Id)
+##-- check correlation number of detections ~ between monitoring season
 deadID <- unique(myFilteredData.sp$dead.recovery$Id)
 ndet <- NULL
 timeDiff <- NULL
-i=36
 for(i in 1:length(deadID)){
-  tmpYear <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Id %in% deadID[i],]$Year
+  tmpYear <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Id %in% deadID[i], ]$Year
   
-  timeDiff[i] <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Id %in% deadID[i],]$Date-
+  timeDiff[i] <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Id %in% deadID[i], ]$Date-
     as.POSIXct(strptime(paste("01-12",tmpYear,sep="-"), "%d-%m-%Y")) 
   
   ndet[i] <- length(myFilteredData.sp$alive[myFilteredData.sp$alive$Id %in% deadID[i] & 
                                               myFilteredData.sp$alive$Year %in% tmpYear,])
 }
 
-## PLOT CHECK
-pdf(file = file.path(working.dir, "figures/Prop id detected_Time available.pdf"))
-plot( ndet ~ timeDiff,
-      ylab = "Total number of detections",
-      xlab = "Number of days between dec 1 and dead recovery")
-hh <- hist(timeDiff[ndet>0], breaks = seq(0,400,by=25))
-hh1 <- hist(timeDiff[ndet==0], breaks = seq(0,400,by=25))
-barplot(rbind(hh$counts/(hh$counts+hh1$counts),
-              hh1$counts/(hh$counts+hh1$counts)),
-        names.arg = hh$breaks[1:(length(hh$breaks)-1)],
-        xlab = "number of days between dead reco and start monitoring",
-        ylab = "%")
-legend( "topright",
-        fill = c(grey(0.2), grey(0.8)),
-        legend = c("detected","notDetected"))
-dev.off()
-
+##-- PLOT CHECK
+if(plot.check){
+  pdf(file = file.path(working.dir, "figures/Prop id detected_Time available.pdf"))
+  plot( ndet ~ timeDiff,
+        ylab = "Total number of detections",
+        xlab = "Number of days between dec 1 and dead recovery")
+  hh <- hist(timeDiff[ndet>0], breaks = seq(0,400,by=25))
+  hh1 <- hist(timeDiff[ndet==0], breaks = seq(0,400,by=25))
+  barplot(rbind(hh$counts/(hh$counts+hh1$counts),
+                hh1$counts/(hh$counts+hh1$counts)),
+          names.arg = hh$breaks[1:(length(hh$breaks)-1)],
+          xlab = "number of days between dead reco and start monitoring",
+          ylab = "%")
+  legend( "topright",
+          fill = c(grey(0.2), grey(0.8)),
+          legend = c("detected","notDetected"))
+  dev.off()
+}
 
 
 ## ------     2.3. GENERATE HABITAT-LEVEL COVARIATES ------
 
 ## ------       2.3.1. DEN COUNTS ------
 
-DEN.sp <-  st_as_sf(DEN, coords = c("UTM33_X", "UTM33_Y"))
+DEN.sp <- st_as_sf(DEN, coords = c("UTM33_X", "UTM33_Y"))
 st_crs(DEN.sp) <- st_crs(myFilteredData.sp$alive)
 DEN.sp$id  <- rep(1,nrow(DEN.sp))
-DEN.sp <- DEN.sp[,("id")]
+DEN.sp <- DEN.sp[ ,("id")]
 
 DEN.r <- raster(
-  estUDm2spixdf(
-    kernelUD(as(DEN.sp,"Spatial"), h = 30000,#H[h],#[CM]
-             grid = as(myHabitat$habitat.r, 'SpatialPixels'))
+  adehabitatHR::estUDm2spixdf(
+    adehabitatHR::kernelUD( as(DEN.sp, "Spatial"),
+                            h = 30000,
+                            grid = as(myHabitat$habitat.r, 'SpatialPixels'))
   )
 )
 
+##-- PLOT CHECK
 if(plot.check){
-  plot(DEN.r)#,main=paste("Sum Den-2013:2018Kernel H=", H[h], sep=""))
+  plot(DEN.r)
   plot(st_geometry(myStudyArea), add = TRUE, border = "black")
 }
 
-##EXTRACT COVARIATEs
+##-- EXTRACT COVARIATES
 denCounts <- DEN.r[myHabitat$habitat.r[ ]==1]
-denCounts <- round(scale(denCounts),digits = 2)
+denCounts <- round(scale(denCounts), digits = 2)
 
 
 
@@ -1413,16 +1412,12 @@ habitat.subdetectors <- disaggregate(
 
 
 ## GENERATE NGS DETECTORS BASED ON THE STUDY AREA
-myDetectors <- myDetectors.dead <- MakeSearchGridsf( 
-  data = habitat.subdetectors
-  ,
-  resolution = DETECTORS$detResolution
-  ,
-  div = (DETECTORS$detResolution/DETECTORS$detSubResolution)^2
-  ,
+myDetectors <- myDetectors.dead <- MakeSearchGrid( 
+  data = habitat.subdetectors,
+  resolution = DETECTORS$detResolution,
+  div = (DETECTORS$detResolution/DETECTORS$detSubResolution)^2,
   plot = FALSE
-  ,
-  fasterize = TRUE
+  #,fasterize = TRUE
 )
 
 ## EXTRACT NUMBERS OF DETECTORS
@@ -1813,7 +1808,7 @@ plot(ds.brickCont[[t]], main="Binary after smoothing",axes=F,box=F)
 ## ------          3.2.6.5. COLOR CELLS WHERE HAIR TRAP COLLECTED ------
 
 #IDENTIFY HAIR SAMPLES
-tmpHair <- myFilteredData.spAllSex$alive[which(myFilteredData.spAllSex$alive$DNAID%in% HairTrapSamples$DNAID),]
+tmpHair <- myFilteredData.sp$alive[which(myFilteredData.sp$alive$DNAID%in% HairTrapSamples$DNAID),]
 #MANNUALLY FIND THE HAIR SMAPLES AND COLOR THE CELL. 
 tmpyr <- unique(tmpHair$Year)
 for( i in 1:length(tmpyr)){
@@ -2019,7 +2014,7 @@ if(DATA$sex=="Hann"){
 
 ## ------     4.2. GENERATE NGS & DEAD RECOVERIES : y.alive[i,j,t] & y.dead[i,t] ------
 
-#ALL SAMPLES
+##-- ALL SAMPLES
 y.ar <- MakeYsf( myData = myData.alive$myData.sp,
                  myDetectors = myDetectors$main.detector.sp,
                  method = "Binomial",
@@ -2029,7 +2024,7 @@ y.ar <- MakeYsf( myData = myData.alive$myData.sp,
 y.ar.ALIVE <- y.ar$y.ar
 dimnames(y.ar.ALIVE) <- dimnames(y.ar$y.ar)
 
-#STRUCTURED
+##-- STRUCTURED
 y.arStruc <- MakeYsf( myData = myData.aliveStruc$myData.sp,
                       myDetectors = myDetectors$main.detector.sp,
                       method = "Binomial",
@@ -2039,7 +2034,7 @@ y.arStruc <- MakeYsf( myData = myData.aliveStruc$myData.sp,
 y.ar.ALIVEStruc <- y.arStruc$y.ar
 dimnames(y.ar.ALIVEStruc) <- dimnames(y.arStruc$y.ar)
 
-#OTHERS
+##-- OTHERS
 y.arOth <- MakeYsf( myData = myData.aliveOthers$myData.sp,
                     myDetectors = myDetectors$main.detector.sp,
                     method = "Binomial",
@@ -2049,17 +2044,18 @@ y.arOth <- MakeYsf( myData = myData.aliveOthers$myData.sp,
 y.ar.ALIVEOth <- y.arOth$y.ar
 dimnames(y.ar.ALIVEOth) <- dimnames(y.arOth$y.ar)
 
-### MAKE SURE THE Y HAVE THE SAME DIMENSIONS#
+##-- MAKE SURE THE Y HAVE THE SAME DIMENSIONS#
 y.ar.ALIVEOthers <- y.ar.ALIVEStructured <- y.ar.ALIVE
 y.ar.ALIVEOthers[] <- y.ar.ALIVEStructured[] <- 0
-## FILL IN THE Y ARRAYS 
+
+##-- FILL IN THE Y ARRAYS 
 y.ar.ALIVEOthers[dimnames(y.ar.ALIVEOth)[[1]],,] <-  y.ar.ALIVEOth
 y.ar.ALIVEStructured[dimnames(y.ar.ALIVEStruc)[[1]],,] <-  y.ar.ALIVEStruc
 
 sum(y.ar.ALIVEOthers[1307,,8])
 sum(y.ar.ALIVEStructured[1307,,8])
 
-## PROJECT THE DEATH TO THE NEXT OCCASION.
+##-- PROJECT THE DEATH TO THE NEXT OCCASION.
 y.ar.DEADProjected <- y.ar$y.ar2 
 y.ar.DEADProjected[] <- 0
 for(t in 2:n.years){y.ar.DEADProjected[,,t] <- y.ar$y.ar2[,,t-1]}
@@ -2080,7 +2076,8 @@ dim(y.ar$y.ar2)
 distances <- list()
 for(t in 1:n.years){
   print(paste("------ ", t ," -------", sep = "" ))
-  distances[[t]] <- CheckDistanceDetectionsV2sf( y = y.ar.ALIVE[,,t], 
+  distances[[t]] <- CheckDistanceDetectionsV2sf( 
+    y = y.ar.ALIVE[,,t], 
                                                  detector.xy = detector.xy, 
                                                  max.distance = DETECTIONS$maxDetDist,
                                                  method = "pairwise",
@@ -2117,7 +2114,7 @@ for(t in 1:n.years){
       }#i
     }#if
   }#if plot.check
-  ## REMOVE DETECTIONS THAT ARE FURTHER THAN  THE THRESHOLD
+  ##-- REMOVE DETECTIONS THAT ARE FURTHER THAN  THE THRESHOLD
   y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
   y.ar.ALIVEOthers[,,t] <- y.ar.ALIVEOthers[,,t] * (1-distances[[t]]$y.flagged)
   y.ar.ALIVEStructured[,,t] <- y.ar.ALIVEStructured[,,t] * (1-distances[[t]]$y.flagged)
@@ -2206,23 +2203,24 @@ for(t in 1:n.years){
 
 ## ------     4.4. GENERATE INDIVIDUAL-LEVEL COVARIATES ------
 
-## ------       4.4.1. T RAP-RESPONSE ------
+## ------       4.4.1. TRAP-RESPONSE ------
 
-## Make matrix of previous capture indicator
+##-- Make matrix of previous capture indicator
 already.detected <- MakeTrapResponseCovsf(data=myFullData.sp$alive,
                                           data.dead=myFullData.sp$dead.recovery)
-## Subset to focal years
+##-- Subset to focal years
 already.detected <- already.detected[ ,dimnames(already.detected)[[2]] %in% dimnames(y.ar.ALIVE)[[3]]]
-## Subset to focal individuals
+##-- Subset to focal individuals
 already.detected <- already.detected[dimnames(already.detected)[[1]] %in% dimnames(y.ar.ALIVE)[[1]], ]
 
-## Plot an image of the matrix
+##-- Plot an image of the matrix
 if(plot.check){
   par(mfrow = c(1,1))
   barplot(colSums(apply(y.ar.ALIVE, c(1,3),function(x)any(x>0))))
   barplot(colSums(already.detected), add = TRUE, col = "gray40")
-  legend(x = 0, y = 250, legend = c("newly Det", "already Det"),
-         fill = c("gray80", "gray40"))
+  legend( x = 0, y = 250, 
+          legend = c("newly Det", "already Det"),
+          fill = c("gray80", "gray40"))
 }
 
 
@@ -2265,21 +2263,30 @@ image(t(age))
 
 ## ------   5. MAKE AUGMENTATION ------
 
-## DATA ARRAYS
+##-- DATA ARRAYS
 y.alive <- MakeAugmentation(y = y.ar.ALIVE, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
 y.dead <- MakeAugmentation(y = y.ar.DEAD, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
 y.aliveOthers <- MakeAugmentation(y = y.ar.ALIVEOthers, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
 y.aliveStructured <- MakeAugmentation(y = y.ar.ALIVEStructured, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
 
-## INDIVIDUAL COVARIATES
+##-- INDIVIDUAL COVARIATES
 already.detected <- MakeAugmentation(y = already.detected, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
-# dispersalToggle <- MakeAugmentation(y = dispersalToggle, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
 age <- MakeAugmentation(y = age, aug.factor = DETECTIONS$aug.factor, replace.value = NA)
 min.age <- MakeAugmentation(y = min.age, aug.factor = DETECTIONS$aug.factor, replace.value = NA)
 precapture <- MakeAugmentation(y = precapture, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
 
 
 
+
+##------------------------------------------------------------------------------
+##------------------------------------------------------------------------------
+
+
+## PICK UP HERE ON THURSDAY 10.07.2025
+
+
+##------------------------------------------------------------------------------
+##------------------------------------------------------------------------------
 ##------------------------------------------------------------------------------
 
 ## ------ III. MODEL SETTING AND RUNNING ------- 
@@ -2292,7 +2299,7 @@ modelCode <- nimbleCode({
   
   dmean ~ dunif(0,100)
   lambda <- 1/dmean
-  betaDens  ~ dnorm(0.0,0.01)
+  betaDens ~ dnorm(0.0,0.01)
   habIntensity[1:numHabWindows] <- exp(betaDens * denCounts[1:numHabWindows,1])
   sumHabIntensity <- sum(habIntensity[1:numHabWindows])
   logHabIntensity[1:numHabWindows] <- log(habIntensity[1:numHabWindows])
@@ -2315,7 +2322,7 @@ modelCode <- nimbleCode({
         s = sxy[i,1:2,t-1],
         lambda = lambda,
         baseIntensities = habIntensity[1:numHabWindows],
-        habitatGrid =  habitatGrid[1:y.max,1:x.max],
+        habitatGrid = habitatGrid[1:y.max,1:x.max],
         numGridRows = y.max,
         numGridCols = x.max,
         numWindows= numHabWindows)
@@ -2389,6 +2396,7 @@ modelCode <- nimbleCode({
     }#c  
   }#t
   
+  
   ## Individual response
   pResponse ~ dunif(0, 1)
   
@@ -2420,25 +2428,25 @@ modelCode <- nimbleCode({
         detResponse = detResponse[i,t])
       
       
-      
-      y.aliveOth[i,1:nMaxDetectorsOth,t] ~ dbin_LESS_Cached_MultipleCovResponse(  sxy = sxy[i,1:2,t],
-                                                                                  sigma = sigma[t],
-                                                                                  nbDetectionsOth[i,t],
-                                                                                  yDets = yDetsOth[i,1:nMaxDetectorsOth,t],
-                                                                                  detector.xy =  detector.xy[1:n.detectors,1:2],
-                                                                                  trials = trials[1:n.detectors],
-                                                                                  detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
-                                                                                  nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
-                                                                                  ResizeFactor = ResizeFactor,
-                                                                                  maxNBDets = maxNBDets,
-                                                                                  habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
-                                                                                  indicator = isAlive[i,t],
-                                                                                  p0Oth[1:n.countries,t],
-                                                                                  detCountries[1:n.detectors,t],
-                                                                                  detCov = detCovsOth[1:n.detectors,t,1:n.covsOth],
-                                                                                  betaCov = betaCovsOth[1:n.covsOth,t],
-                                                                                  BetaResponse = betaResponseOth[t],
-                                                                                  detResponse = detResponse[i,t])
+      y.aliveOth[i,1:nMaxDetectorsOth,t] ~ dbin_LESS_Cached_MultipleCovResponse(  
+        sxy = sxy[i,1:2,t],
+        sigma = sigma[t],
+        nbDetectionsOth[i,t],
+        yDets = yDetsOth[i,1:nMaxDetectorsOth,t],
+        detector.xy =  detector.xy[1:n.detectors,1:2],
+        trials = trials[1:n.detectors],
+        detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
+        nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
+        ResizeFactor = ResizeFactor,
+        maxNBDets = maxNBDets,
+        habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
+        indicator = isAlive[i,t],
+        p0Oth[1:n.countries,t],
+        detCountries[1:n.detectors,t],
+        detCov = detCovsOth[1:n.detectors,t,1:n.covsOth],
+        betaCov = betaCovsOth[1:n.covsOth,t],
+        BetaResponse = betaResponseOth[t],
+        detResponse = detResponse[i,t])
     }#i
   }#t
   
@@ -2446,15 +2454,13 @@ modelCode <- nimbleCode({
   
   ##---------- DERIVED PARAMETERS ----------##
   
-  for(i in 1:n.individuals){ 
-    isAlive[i,1] <- (z[i,1] == 2) 
-    for(t in 1:n.years1){
-      isAlive[i,t+1] <- (z[i,t+1] == 2) 
-    }
-  }
   for(t in 1:n.years){
+    for(i in 1:n.individuals){ 
+      isAlive[i,t] <- (z[i,t] == 2) 
+    }#i
     N[t] <- sum(isAlive[1:n.individuals,t])
   }#t
+
 })
 
 
@@ -2491,10 +2497,6 @@ z <- t(apply(z, 1, function(zz){
   return(zz)
 }))
 
-
-
-## ------   4. GENERATE z INITIAL values------
-
 z.init <- t(apply(z, 1, function(zz){
   out <- zz
   out[] <- 1
@@ -2509,7 +2511,10 @@ z.init <- t(apply(z, 1, function(zz){
 
 z.init <- ifelse(!is.na(z), NA, z.init)
 
-#LATENT VARIABLE DET RESPONSE
+
+
+## ------       3.2. LATENT VARIABLE DET RESPONSE ------
+
 detResponse <- already.detected 
 detResponse[rownames(detResponse) %in% "Augmented" ,1]  <- NA
 InitsDetResponse <- detResponse
@@ -2627,77 +2632,28 @@ nimConstants$nMaxDetectorsOth <- SparseYOth$nMaxDetectors
 # sxy
 #create a data.frame with all detection of all Individuals detected
 #project death to the next year
-myData.deadProj <- myData.dead[,c("Id","Year")]
-myData.deadProj$Year <- myData.deadProj$Year +1#project dead reco to the next year
+myData.deadProj <- myData.dead[ ,c("Id","Year")]
+myData.deadProj$Year <- myData.deadProj$Year + 1#project dead reco to the next year
 #remove dead reco occuring the last year (not used)
-myData.deadProj <- myData.deadProj[!myData.deadProj$Year %in% max(myData.deadProj$Year ),]
+myData.deadProj <- myData.deadProj[!myData.deadProj$Year %in% max(myData.deadProj$Year), ]
 
-AllDets <- rbind(myData.alive$myData.sp[,c("Id","Year")],
-                 myData.deadProj[,c("Id","Year")])
+AllDets <- rbind(myData.alive$myData.sp[ ,c("Id","Year")],
+                 myData.deadProj[ ,c("Id","Year")])
 AllDetections <- as.data.frame(AllDets)
 AllDetsxy <- st_coordinates(AllDets) 
 colnames(AllDetsxy) <- c("x","y")
-AllDetsxyscaled <- scaleCoordsToHabitatGrid(coordsData = AllDetsxy,
-                                            coordsHabitatGridCenter = myHabitat$habitat.xy,
-                                            scaleToGrid =T )$coordsDataScaled
+AllDetsxyscaled <- scaleCoordsToHabitatGrid(
+  coordsData = AllDetsxy,
+  coordsHabitatGridCenter = myHabitat$habitat.xy,
+  scaleToGrid =T )$coordsDataScaled
 
 AllDetections <- cbind(AllDetections, AllDetsxyscaled)
 
-idAugmented <- which(rownames(z) %in%"Augmented")
-Id.vector <-   y.ar$Id.vector
+idAugmented <- which(rownames(z) %in% "Augmented")
+Id.vector <- y.ar$Id.vector
 lowerCoords = nimData$lowerHabCoords
 upperCoords = nimData$upperHabCoords
 habitatGrid = nimData$habitatGrid
-
-# "id 586 t 10 j 1"
-# [1] "id 945 t 10 j 1"
-# [1] "id 1340 t 10 j 1"
-# [1] "id 1601 t 10 j 1"
-# [1] "id 1620 t 10 j 1"
-# [1] "id 1631 t 10 j 1"
-# [1] "id 1631 t 10 j 2"
-# [1] "id 1649 t 10 j 1"
-# [1] "id 1649 t 10 j 2"
-# [1] "id 1650 t 10 j 1"
-# [1] "id 1674 t 10 j 1"
-# [1] "id 1682 t 10 j 1"
-# [1] "id 1692 t 10 j 1"
-# >   
-# 
-# AllDetections[AllDetections$Id %in% Id.vector[586],]
-# 
-# i=945
-# dimnames(y.aliveStructured)[[1]][i]#[1] "JI413571 Ind5343"
-# Id.vector[i]
-# tmp <- AllDetections[AllDetections$Id %in% Id.vector[945] & AllDetections$Year %in%c(2023),]
-# plot(COUNTRIES$geometry)
-# plot(tmp$geometry,add=T,col="red",pc=16)
-# 
-# par(mfrow=c(2,5),mar=c(0,0,0,0))
-# for(t in 1:n.years){
-#   plot(COUNTRIES$geometry)
-#   
-# points(sxy.initscaled[which(dimnames(sxy.init)[[1]]%in% Id.vector[i]),2,t]~
-#          sxy.initscaled[which(dimnames(sxy.init)[[1]]%in% Id.vector[i]),1,t],col="red",pch=16)
-# 
-#   tmp <- AllDetections[AllDetections$Id %in% Id.vector[i] & AllDetections$Year %in%years[t],]
-#   plot(tmp$geometry,add=T,col="blue",pch=16)
-#   
-#   
-#   YDET <- nimData$yDets[i,1:nimConstants$nMaxDetectors, t]
-#   YDETOth <- nimData$yDetsOth[i,1:nimConstants$nMaxDetectorsOth, t]
-#   
-#   points(detector.xy[YDET[1:nimData$nbDetections[i, t]],2]~
-#            detector.xy[YDET[1:nimData$nbDetections[i, t]],1], col="green", pch=16)
-#   points(detector.xy[YDETOth[1:nimData$nbDetectionsOth[i, t]],2]~
-#            detector.xy[YDETOth[1:nimData$nbDetectionsOth[i, t]],1], col="purple", pch=16)
-#   
-#   
-#   
-#   
-# }
-
-
 
 sxy.init <- getSInits( AllDetections = AllDetections,
                        Id.vector = Id.vector,
@@ -2711,12 +2667,13 @@ sxy.init <- getSInits( AllDetections = AllDetections,
 
 
 
-## ------     8.1 calculate realized phi########
+## ------     8.1 calculate realized phi ------
 
 # get location of individuals 
-sxy.initscaled <- scaleCoordsToHabitatGrid(coordsData = sxy.init,
-                                           coordsHabitatGridCenter = myHabitat$habitat.xy,
-                                           scaleToGrid =F )$coordsDataScaled
+sxy.initscaled <- scaleCoordsToHabitatGrid(
+  coordsData = sxy.init,
+  coordsHabitatGridCenter = myHabitat$habitat.xy,
+  scaleToGrid =F )$coordsDataScaled
 
 ####
 #initialize objects 
@@ -2895,7 +2852,7 @@ for(c in 1:4){
                     "betaResponseOth" = runif(dim(y.alive)[3], -0.1, 0.1),
                     "betaResponse" = runif(dim(y.alive)[3], -0.1, 0.1),
                     "detResponse" = InitsDetResponse,
-                    "pResponse"  = runif(1,0.4,0.5),
+                    "pResponse" = runif(1,0.4,0.5),
                     "phi" = runif(dim(y.alive)[3]-1,0.1,0.3)) 
   
   ### TEST IF THE LESS RESTRICTION ON DETECTORS WILL WORK 
