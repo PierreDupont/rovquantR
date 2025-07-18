@@ -12,10 +12,10 @@ getInits.s(
   habitatGrid,
   known.s = NULL,
   baseIntensities = NULL,
-  sd,
+  sd = 2,
   detNums = NULL,
   detIndices = NULL,
-  radius = NULL
+  radius = 10
 )
 }
 \arguments{
@@ -43,6 +43,8 @@ When the habitat grid only consists of a single row or column of windows, an add
 \item{detNums}{an \code{integer} denoting the number of detections of the focal individual.}
 
 \item{detIndices}{a vector of length \emph{detNums} denoting the IDs of the detectors where the focal individual was detected.}
+
+\item{radius}{a \code{numeric} denoting the IDs of the detectors where the focal individual was detected.}
 }
 \value{
 This function returns a 2- or 3-dimensional array of initial AC locations.

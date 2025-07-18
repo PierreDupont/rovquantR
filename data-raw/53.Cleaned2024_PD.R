@@ -101,31 +101,30 @@ dir.dropbox <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant"
 
 ## ------ 1. GENERAL VARIABLES DECLARATION ------
 
-## HABITAT SPECIFICATIONS
+##-- HABITAT SPECIFICATIONS
 HABITAT = list( countries =  c("SWE","NOR"),
                 habResolution = 20000,
                 habBuffer = 60000)
 
-## DETECTORS SPECIFICATIONS
+##-- DETECTORS SPECIFICATIONS
 DETECTORS = list( detSubResolution = 2000,
                   detResolution = 10000,
                   detDeadResolution = 15000)
 
-## DATA GENERATION
+##-- DATA GENERATION
 DETECTIONS = list( maxDetDist = 40000,
                    resizeFactor = 3,
                    aug.factor = 0.8) 
 
-## MISCELLANEOUS
+##-- MISCELLANEOUS
 plot.check = TRUE
 
 
-## NGS DATA SPECIFICATIONS
+##-- NGS DATA SPECIFICATIONS
 years <- 2014:2023
 n.years <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
-species = c("Jerv")  
-
+species <- "Jerv"
 aug.factor <- 0.8
 sampling.months <- list(12,1:6)
 habitat.res <- 20000 
@@ -394,22 +393,22 @@ SNOW <- raster::crop(SNOW, c(0,40,55,75))
 #   ## SUBSET GPS TRACKS TO THE SAMPLING PERIOD
 #   TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr %in% YEARS[[t]][1] & ALL_TRACKS$Mth %in% sampling.months[[1]], ]
 #   TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr %in% YEARS[[t]][2] & ALL_TRACKS$Mth %in% sampling.months[[2]], ]
-#   TRACKS <- rbind(TRACKS_1, TRACKS_2)
+#   tmpTRACKS <- rbind(TRACKS_1, TRACKS_2)
 #   ## SIMPLIFY TRACKS SHAPES
-#   # TRACKS <- st_simplify(TRACKS, T, 100)
-#   TRACKS <- st_intersection(TRACKS, st_as_sf(myStudyArea))
+#   # tmpTRACKS <- st_simplify(tmpTRACKS, T, 100)
+#   tmpTRACKS <- st_intersection(tmpTRACKS, st_as_sf(myStudyArea))
 #   ## NAME TRACKS
-#   TRACKS$ID <- 1:nrow(TRACKS)
-#   TRACKS_YEAR[[t]] <- TRACKS
+#   tmpTRACKS$ID <- 1:nrow(tmpTRACKS)
+#   TRACKS_YEAR[[t]] <- tmpTRACKS
 #   TRACKS_YEAR[[t]]$RovbaseID <- as.character(TRACKS_YEAR[[t]]$RovbaseID)
 # }#t
 # 
-# rm(list = c("TRACKS_1", "TRACKS_2", "TRACKS", "ALL_TRACKS"))
+# TRACKS <- do.call(rbind,TRACKS_YEAR)
+#
+# save( TRACKS, file = file.path(working.dir, "data/searchTracks.RData"))
 # 
-# save( TRACKS_YEAR, file = file.path(working.dir, "data/searchTracks.RData"))
-# 
-# rm("TRACKS_YEAR")
-# 
+# rm("TRACKS_YEAR", "TRACKS_1", "TRACKS_2", "ALL_TRACKS", "tmpTRACKS"))
+
 
 
 ##------------------------------------------------------------------------------
@@ -534,7 +533,6 @@ DNA <- suppressWarnings(readMostRecent( path = data.dir,
 
 # ##-- Translate Scandinavian characters
 # colnames(DNA) <- translateForeignCharacters(dat = colnames(DNA))
-
 # #drop a column that makes cleanDataNew to fail
 # DNA <- DNA[ ,-which(colnames(DNA) %in% "Kjoenn (Individ)")]
 # sum(is.na(DNA$Individ))
@@ -610,10 +608,10 @@ dim(myData)
 
 
 ##-- Convert dates to biological years
-#myData$Date <- as.POSIXct(strptime(myData$Date, "%d.%m.%Y"))
+# myData$Date <- as.POSIXct(strptime(myData$Date, "%d.%m.%Y"))
 myData$Year <- as.numeric(format(myData$Date,"%Y"))
 myData$Month <- as.numeric(format(myData$Date,"%m"))
-myData <- myData[!is.na(myData$Year), ]                                      ## Delete NA dates
+myData <- myData[!is.na(myData$Year), ]           ## Delete NA dates
 if(!is.null(unlist(sampling.months)[1] )){
   myData$Year[myData$Month < unlist(sampling.months)[1]] <- myData$Year[myData$Month < unlist(sampling.months)[1]] - 1
 }#if 
@@ -840,7 +838,6 @@ if(sum(myFullData.sp$dead.recovery$Age %in% 0 &
                                 myFullData.sp$dead.recovery$Month > 2,  ]
 }
 
-
 table(myFullData.sp$alive$Year)
 
 
@@ -878,9 +875,8 @@ detectors <- list( resolution = detector.res,
                    resize.factor = resize.factor)
 
 ##-- Set up list of Data characteristics
-data <- list( #sex = sex,
-  aug.factor = aug.factor,
-  sampling.months = sampling.months)
+data <- list( aug.factor = aug.factor,
+              sampling.months = sampling.months)
 
 
 
@@ -889,39 +885,56 @@ data <- list( #sex = sex,
 myFilteredData.sp <- myFullData.sp
 dim(myFilteredData.sp$alive)
 
-## Subset to years of interest
+##-- Subset to years of interest
 myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years, ]
+table(myFilteredData.sp$alive$Year)
 dim(myFilteredData.sp$alive)
+
 myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year %in% years, ]
+table(myFilteredData.sp$dead.recovery$Year)
 dim(myFilteredData.sp$dead.recovery)
 
-## Subset to months of interest
+##-- Subset to months of interest
 myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in% unlist(sampling.months), ]
-lapply(myFilteredData.sp,dim)
+table(myFilteredData.sp$alive$Year)
 
 
 
 ## ------     2. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016-17, 2017-18, 2018-19 and 2023-24 ------ 
 
 # COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten",]
-COUNTIESNorrbotten <- REGIONS %>%
-  filter(county %in% "Norrbotten") %>%
-  group_by(county) %>%
+
+COMMUNES_NOR <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp", sep = ""))   ## Communal map of Norway
+COMMUNES_SWE <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp", sep = ""))    ## Communal map of Sweden
+## POLYGONS OF COUNTIES IN SWEDEN & NORWAY
+COUNTIESNorrbotten <- rbind(COMMUNES_NOR, COMMUNES_SWE) %>%
+  filter(NAME_1 %in% "Norrbotten") %>%
+  group_by(NAME_1) %>%
   summarize()
+
+## [PD] : USING REGIONS INSTEAD OF COMMUNES WILL LEAD TO DIFFERENT NUMBERS OF 
+## SAMPLES REMOVED ON DIFFERENT YEARS BECAUSE OF SLIGHT DIFFERENCES IN (APPROX. 10 samples OVERALL)
+# COUNTIESNorrbotten2 <- REGIONS %>%
+#   filter(county %in% "Norrbotten") %>%
+#   group_by(county) %>%
+#   summarize()
+# plot(st_geometry(COUNTIESNorrbotten))
+# plot(st_geometry(COUNTIESNorrbotten2),border="red",add=T)
 
 yearsSampledNorrb <- c(2016:2018,2023)
 is.Norr <- as.numeric(st_intersects(myFilteredData.sp$alive, COUNTIESNorrbotten))
 sum(is.Norr,na.rm=T)
 
-## Check how many detections are removed.
+##-- Check how many detections are removed.
 table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
-                                      !is.na(is.Norr)), ]$Year)
+                                      !is.na(is.Norr)), ]$Year) %>% sum()
 
 
-## subset
-myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
+##-- Subset
+myFilteredData.sp$alive <- myFilteredData.sp$alive[-which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
                                                              !is.na(is.Norr)), ]
 dim(myFilteredData.sp$alive)
+table(myFilteredData.sp$alive$Year)
 
 # ## plot check
 # for(t in 1:n.years){
@@ -966,50 +979,59 @@ dim(myFilteredData.sp$alive)
 
 ## ------     3. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
 
-## ------       3.1. ASSIGN SAMPLES TO TRACKS ------
+# ------       3.1. ASSIGN SAMPLES TO TRACKS ------
 
-# message("Assigning DNA samples to GPS tracks... ")
-# message("This can take several minutes... ")
-# 
-# 
-# ##-- Load pr-processed GPS search tracks
-# load(file.path(working.dir, "data/searchTracks.RData"))
-# 
-# ##-- ASSIGN ROVBASE ID
-# myFilteredData.sp$alive$TrackID <- NA
-# myFilteredData.sp$alive$TrackDist <- NA
-# 
-# 
-# ## ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
-# dnatemp <- st_as_sf(myFilteredData.sp$alive)
-# 
-# ## CREATE A BUFFER AROUND EACH DETECTION
-# tmp <- st_buffer(dnatemp, dist = 750)
-# 
-# ##-- Loop over detections
-# for(i in 1:nrow(myFilteredData.sp$alive)){
-#   t <- which(years %in% tmp[i, ]$Year)
-#   
-#   ##-- If not tracks on the same date ==> next sample
-#   whichSameDate <- which(as.character(TRACKS_YEAR[[t]]$Dato) == as.character(myFilteredData.sp$alive$Date[i]))
-#   if(length(whichSameDate) == 0){next}
-#   
-#   ##-- If not tracks on the same date within 750m of the NGS sample ==> next sample
-#   tmpTRACKS <- st_intersection(TRACKS_YEAR[[t]][whichSameDate, ], tmp[i, ])
-#   if(nrow(tmpTRACKS) == 0){next}
-#   
-#   ##-- Calculate distance to matching tracks
-#   dist <- st_distance(dnatemp[i,], tmpTRACKS, by_element = F)
-#   
-#   ##-- Assign sample to the closest matching track
-#   myFilteredData.sp$alive$TrackID[i] <- tmpTRACKS$RovbaseID[which.min(dist)]
-#   myFilteredData.sp$alive$TrackDist[i] <- min(dist)
-#   
-#   print(i)
-# }#i
-# 
-# ##-- SAVE THE FOR FASTER LOADING
-# save(myFilteredData.sp, file = file.path(working.dir, "data/myFilteredData.sp.RData"))
+message("Assigning DNA samples to GPS tracks... ")
+message("This can take several minutes... ")
+
+##-- Load pr-processed GPS search tracks
+load(file.path(working.dir, "data/searchTracks.RData"))
+
+
+##-- ASSIGN ROVBASE ID
+myFilteredData.sp$alive$TrackID <- NA
+myFilteredData.sp$alive$TrackDist <- NA
+
+
+##-- ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
+dnatemp <- st_as_sf(myFilteredData.sp$alive)
+
+##-- CREATE A BUFFER AROUND EACH DETECTION
+tmp <- st_buffer(dnatemp, dist = 750)
+
+##-- Loop over detections
+for(i in 1:1000){#nrow(myFilteredData.sp$alive)){
+  t <- which(years %in% tmp[i, ]$Year)
+
+  ##-- If no tracks on the same date ==> next sample
+  whichSameDate <- which(as.character(TRACKS_YEAR[[t]]$Dato) == as.character(myFilteredData.sp$alive$Date[i]))
+  if(length(whichSameDate) == 0){next}
+
+  ##-- If no tracks on the same date within 750m of the NGS sample ==> next sample
+  tmpTRACKS <- st_intersection(TRACKS_YEAR[[t]][whichSameDate, ], tmp[i, ])
+  if(nrow(tmpTRACKS) == 0){next}
+
+  ##-- Calculate distance to matching tracks
+  dist <- st_distance(dnatemp[i,], tmpTRACKS, by_element = F)
+
+  ##-- Assign sample to the closest matching track
+  myFilteredData.sp$alive$TrackID[i] <- tmpTRACKS$RovbaseID[which.min(dist)]
+  myFilteredData.sp$alive$TrackDist[i] <- min(dist)
+
+  print(i)
+}#i
+Rprof(NULL)
+summaryRprof("assignTracks2.out")
+
+Rprof("assignTracks.out")
+test <- assignSearchTracks( data = myFilteredData.sp$alive[1:1000, ],
+                            tracks = TRACKS,
+                            dist = 750)
+Rprof(NULL)
+summaryRprof("assignTracks.out")
+
+##-- SAVE THE FOR FASTER LOADING
+save(myFilteredData.sp, file = file.path(working.dir, "data/myFilteredData.sp.RData"))
 load(file.path(working.dir, "data/myFilteredData.sp.RData"))
 
 
@@ -1030,17 +1052,21 @@ myFilteredData.sp$alive <- myFilteredData.sp$alive %>%
   mutate( hairTrap = DNAID %in% HairTrapSamples$DNAID,
           structured = Collector %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") & 
             !is.na(TrackID) &  
-            TrackDist <= distanceThreshold & 
-            !hairTrap )
+            TrackDist <= distanceThreshold )
 
-table(myFilteredData.sp$alive$Collector,useNA = "always")
+whichStructured <- myFilteredData.sp$alive$Collector %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
+  !is.na(myFilteredData.sp$alive$TrackID) &
+  myFilteredData.sp$alive$TrackDist <= distanceThreshold
+
+table(whichStructured, useNA = "always")
+table(myFilteredData.sp$alive$structured, useNA = "always")
 
 ##-- PLOT CHECK
 if(plot.check){
   plot(REGIONS[REGIONS$county %in% "Norrbotten",]$geometry)
   tmp <- myFilteredData.sp$alive %>%
     filter(hairTrap)
-  plot(tmp$geometry, add=T, col="red",pch=16)
+  plot(tmp$geometry, add = T, col = "red", pch = 16)
   if(length(which(myFilteredData.sp$alive$DNAID[myFilteredData.sp$alive$structured] %in% HairTrapSamples$DNAID))>0){
     print("WARNING SAMPLES FROM HAIR TRAPS ASSIGNED TO STRUCTURED")
   }
