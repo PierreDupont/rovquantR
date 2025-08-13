@@ -371,7 +371,7 @@ makeRovquantData_bear <- function(
     fact = raster::res(habitat$habitat.r)[1]/detectors$resolution.sub)
   
   ##-- Generate NGS detectors based on the raster of sub-detectors
-  detectors <- MakeSearchGrid( 
+  detectors <- makeSearchGrid( 
     data = subdetectors.r,
     resolution = detectors$detResolution,
     div = (detectors$resolution/detectors$resolution.sub)^2,
@@ -819,11 +819,11 @@ makeRovquantData_bear <- function(
     
     ## ------     7.2. GENERATE DETECTION HISTORY ARRAYS -----
     
-    y.ar <- MakeY( myData = data.alive$data.sp,
-                   myDetectors = detectors$main.detector.sp,
+    y.ar <- makeY( data = data.alive$data.sp,
+                   detectors = detectors$main.detector.sp,
                    method = "Binomial",
-                   myData2 = data.dead,
-                   myDetectors2 = detectors$main.detector.sp,
+                   data2 = data.dead,
+                   detectors2 = detectors$main.detector.sp,
                    returnIdvector = TRUE)
     y.ar.ALIVE <- y.ar$y.ar
     dimnames(y.ar.ALIVE) <- dimnames(y.ar$y.ar)
