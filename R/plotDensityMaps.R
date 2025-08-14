@@ -98,7 +98,8 @@ plotDensityMaps <- function(
           }}}}
     ncols <- ceiling(L/nrows)
     
-    grDevices::png(filename = file.path(path, paste0(name,"_TimeSeries.png")),
+    grDevices::png(filename = file.path( path, "figures",
+                                        paste0(name,"_TimeSeries.png")),
                    width = ncols*2, height = nrows*4,
                    units = "in", pointsize = 12,
                    res = 300, bg = NA)
@@ -177,7 +178,8 @@ plotDensityMaps <- function(
   ##-- Last year's density map
   if("last.year" %in% type){
     
-    grDevices::png(filename = file.path(path, paste0(name,"_LastYear.png")),
+    grDevices::png(filename = file.path( path, "figures",
+                                        paste0(name,"_LastYear.png")),
         width = 8, height = 8, units = "in", pointsize = 12,
         res = 300, bg = NA)
     
@@ -231,7 +233,8 @@ plotDensityMaps <- function(
       ##-- Plot last year's density map
       # grDevices::pdf(file = file.path(path, paste0(name,"_Summary.pdf")),
       #                width = 8, height = 8, pointsize = 12)
-      grDevices::png(filename = file.path(path, paste0(name,"_Summary.png")),
+      grDevices::png(filename = file.path( path, "figures",
+                                          paste0(name,"_Summary.png")),
                      width = 8, height = 8, units = "in", pointsize = 12,
                      res = 300, bg = NA)
       
@@ -388,7 +391,8 @@ plotDensityMaps <- function(
       ##-- Plot last year's density map
       # grDevices::pdf(file = file.path(path, paste0(name,"_Summary.pdf")),
       #                width = 8, height = 8, pointsize = 12)
-      grDevices::png(filename = file.path(path, paste0(name,"_Summary_NOR.png")),
+      grDevices::png(filename = file.path( path, "figures",
+                                           paste0(name,"_Summary_NOR.png")),
                      width = 8, height = 8, units = "in", pointsize = 12,
                      res = 300, bg = NA)
       
