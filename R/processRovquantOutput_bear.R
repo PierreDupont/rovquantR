@@ -632,7 +632,7 @@ processRovquantOutput_bear <- function(
   
   
   
-  ## ------   4.7. NGS, Dead recoveries & Carnivore obs ------
+  ## ------   4.3. NGS, Dead recoveries & Carnivore obs ------
   
   ##-- Plot NGS & Dead recovery maps
   # pdf(file = file.path(working.dir, "figures", "NGS_DR_maps.pdf"),
@@ -1309,6 +1309,8 @@ processRovquantOutput_bear <- function(
   isAvail <- resultsSXYZ_MF$sims.list$z == 1 
   isAlive <- resultsSXYZ_MF$sims.list$z == 2 
   
+  norRaster <- extraction.raster[["Countries"]]
+  norRaster[norRaster[] != 2] <- NA
   
   ##-- Calculate % of the Norwegian bear population detected 
   prop <- matrix(NA,3,n.years)
