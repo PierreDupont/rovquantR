@@ -197,17 +197,17 @@ knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"
 knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
 ```
 
-## Vital rates
+<!-- ## Vital rates -->
 
-The OPSCR model produced annual estimates of legal hunting mortality, mortality associated with all other causes (Fig.4), and per capita recruitment rates (Fig.4).
+<!-- The OPSCR model produced annual estimates of legal hunting mortality, mortality associated with all other causes (Fig.4), and per capita recruitment rates (Fig.4). -->
 
-```{r, Fig4, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 4: Mortality probabilities due to legal culling and all other causes for female and male ", engSpeciess, ". Darker and lighter bars show the 50% and 95% credible intervals, respectively. Shown are overall estimates throughout the study area. Estimates refer to deaths occurring between the start of one sampling season and the start of the next."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/Mortality.png"))
-```
+<!-- ```{r, Fig4, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 4: Mortality probabilities due to legal culling and all other causes for female and male ", engSpeciess, ". Darker and lighter bars show the 50% and 95% credible intervals, respectively. Shown are overall estimates throughout the study area. Estimates refer to deaths occurring between the start of one sampling season and the start of the next."), echo = FALSE} -->
+<!-- knitr::include_graphics(file.path(working.dir, "figures/Mortality.png")) -->
+<!-- ``` -->
 
-```{r, Fig5, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 5: Estimated annual number of recruits for female and male ", engSpeciess, ". Recruitment represents the number of new individuals present in the population on ", firstMonth, " 1 (i.e., individuals that were born between the two consecutive monitoring seasons and survived to ", firstMonth, " 1, or that immigrated in the study area). Darker and lighter bars show the 50% and 95% credible intervals, respectively.."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/NumRecruitTotal.png"))
-```
+<!-- ```{r, Fig5, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 5: Estimated annual number of recruits for female and male ", engSpeciess, ". Recruitment represents the number of new individuals present in the population on ", firstMonth, " 1 (i.e., individuals that were born between the two consecutive monitoring seasons and survived to ", firstMonth, " 1, or that immigrated in the study area). Darker and lighter bars show the 50% and 95% credible intervals, respectively.."), echo = FALSE} -->
+<!-- knitr::include_graphics(file.path(working.dir, "figures/NumRecruitTotal.png")) -->
+<!-- ``` -->
 
 ## Detection probability
 

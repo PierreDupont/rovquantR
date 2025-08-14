@@ -98,7 +98,7 @@ plotDensityMaps <- function(
           }}}}
     ncols <- ceiling(L/nrows)
     
-    grDevices::png(filename = file.path(path, "figures", paste0(name,"_TimeSeries.png")),
+    grDevices::png(filename = file.path(path, paste0(name,"_TimeSeries.png")),
                    width = ncols*2, height = nrows*4,
                    units = "in", pointsize = 12,
                    res = 300, bg = NA)
