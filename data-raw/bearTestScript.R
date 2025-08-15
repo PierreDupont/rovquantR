@@ -50,10 +50,10 @@ library(nimbleSCR)
 ##-- DATA DIRECTORY
 ##-- Directory containing the raw data necessary for the analysis
 ##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
-data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Data"
+data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2024/Analysis_report"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/temp"
 
 
 ##------------------------------------------------------------------------------
@@ -146,7 +146,7 @@ Cmcmc <- compiledList$mcmc
 ##-- RUN NIMBLE MCMC IN SUCCESSIVE BITES
 system.time(runMCMCbites( mcmc = Cmcmc,
                           bite.size = 100,
-                          bite.number = 5,
+                          bite.number = 10,
                           path = file.path(working.dir,"nimbleOutfiles/female")))
 
 
@@ -169,7 +169,7 @@ model <- nimbleModel( code = modelCode,
                       calculate = FALSE) 
 model$calculate()
 
-åcmodel <- compileNimble(model)
+cmodel <- compileNimble(model)
 conf <- configureMCMC(model,
                       monitors = nimParams,
                       thin = 1,
@@ -184,8 +184,8 @@ Cmcmc <- compiledList$mcmc
 ##-- RUN NIMBLE MCMC IN SUCCESSIVE BITES
 system.time(runMCMCbites( mcmc = Cmcmc,
                           bite.size = 100,
-                          bite.number = 5,
-                          path = file.path(working.dir,"nimbleOutfiles/Hann")))
+                          bite.number = 10,
+                          path = file.path(working.dir,"nimbleOutfiles/male")))
 
 
 
@@ -203,7 +203,7 @@ processRovquantOutput(
   ,
   nburnin = 0
   ,
-  niter = 500
+  niter = 100
   ,
   extraction.res = 5000
   ,
