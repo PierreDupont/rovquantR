@@ -1,5 +1,5 @@
 ---
-title: "rovquantR :  a R package to reproduce RovQuant analyses"
+title: "rovquantR : a R package to reproduce RovQuant analyses"
 subtitle : "Norwegian bear population"
 author: "Pierre Dupont"
 date: "`r Sys.Date()`"
@@ -21,88 +21,88 @@ knitr::opts_chunk$set(
 )
 ```
 
-Large carnivores are rare, elusive, and controversial. Their populations are difficult to monitor and manage. For over 10 years, Swedish and Norwegian authorities have been accumulating monitoring data in [**Rovbase 3.0**](https://rovbase.no/), an international large carnivore database.
+Large carnivores are rare, elusive, and controversial.
+Their populations are difficult to monitor and manage.
+For over 10 years, Swedish and Norwegian authorities have been accumulating monitoring data in [**Rovbase**](https://rovbase.no/), an international large carnivore database.
 Today, the database contains records from thousands of non-invasive genetic samples, observations, and dead recoveries of bears, wolves, and wolverines, collected by managers, researchers, hunters, and other members of the public in Scandinavia.
 
-Since 2017, the [**RovQuant project**](https://www.nmbu.no/en/research/projects/rovquant) from the **Applied Quantitative Ecology Group** ([**AQEG**](https://www.nmbu.no/en/research/groups/applied-quantitative-ecology-group-aqeg)) has developed and tested statistical methods for the analysis of the data contained in this database, i.e. large carnivore monitoring data at very large spatial scales. These methods are based on the Spatial Capture-Recapture (SCR) methodology and involve large-scale analysis of individual-based datasets in a Bayesian framework. 
+Since 2017, project [**RovQuant**](https://www.nmbu.no/en/research/projects/rovquant) from the Applied Quantitative Ecology Group ([**AQEG**](https://www.nmbu.no/en/research/groups/applied-quantitative-ecology-group-aqeg)) has developed and tested statistical methods for the analysis of this unique database.
+The goals of this international research project are to:
 
-The goal of this international research project is to use these data to provide estimates of population sizes, survival, and reproduction of carnivores in Sweden and Norway.
+1.  **Estimate carnivore population sizes and map carnivore densities.** RovQuant provides population size estimates for wolves, bears, and wolverines throughout Norway and Swede annually.
+    RovQuant also generates carnivore density surfaces - maps of the density of wolverines, wolves, and bears - across Norway and Sweden.
+    These maps and the underlying data are freely available.
 
+2.  **Estimate population vital rates.** Population vital rates drive the change in wildlife population over time.
+    These dynamics are the result of a combination of mortality, recruitment, immigration, and emigration.
+    Monitoring conducted over multiple years allows RovQuant to estimate vital rates of large carnivores in Scandinavia.
+    These estimates, in turn, are a prerequisite for population forecasting.
 
+3.  **Further develop monitoring protocols**.
+    RovQuant aims to help authorities develop protocols for the cost-efficient collection of non-invasive sampling data.
+    Properly designed and executed monitoring leads to reliable data, and reliable data are a pre-requisite for producing trustworthy estimates and conclusions.
+    This is particularly important when scientific results inform policy decisions and wildlife management.
+    This work is done in collaboration with those leading the data collection effort in Scandinavia, including *Rovdata*, *Wildlife Damage Centre (VSC),* *The Swedish Museum of Natural History (NRM)*, and other organizations.
 
-These methods are based on the Spatial Capture-Recapture (SCR) methodology which uses the spatial information contained in individual detections, for example, DNA samples left behind by wildlife, to estimate the location of activity centers of individuals. SCR models produce density estimates and density surfaces, accounting for the fact that not all individuals are detected.
+4.  **Collaborate with managers.** The project results are published annually in technical reports.
+    In addition, we attend meetings and workshops to ensure that RovQuant remains up-to-date on current and emerging challenges in large carnivore monitoring and management.
 
+The methods developed during project RovQuant are based on the Spatial Capture-Recapture (SCR) methodology and involve large-scale analysis of individual-based datasets in a Bayesian framework.
+Spatial Capture-Recapture (SCR) methods use the spatial information contained in individual detections, for example, DNA samples left behind by wildlife, to estimate the location of activity centers of all individuals in the population, including those never detected.
+SCR models thus produce density estimates and density surfaces, while accounting for the fact that not all individuals are detected.
 Furthermore, abundance estimates produced by SCR models take into account that animals move across the landscape and may be detected in multiple locations – for example, a bear living near the Swedish-Norwegian border may contribute partially to population size estimates in both countries.
+These developments were conducted in collaboration with the [**NIMBLE**](https://r-nimble.org/) development team, and led to the publication of the [**nimbleSCR**](https://cran.r-project.org/web/packages/nimbleSCR/index.html) R package, compiling a set of custom functions and distributions allowing to build custom SCR models to analyse large-scale datasets.
 
-These developments were conducted in collaboration with the [**NIMBLE**](https://r-nimble.org/) development team, and led to the publication of the [**nimbleSCR**](https://cran.r-project.org/web/packages/nimbleSCR/index.html) R package, compiling a set of custom functions and distributions.
-
-In addition, the **rovquantR** package has been developed to facilitate the reproduction of the analyses performed by the .
-
-This vignette presents a workflow of the analysis of the Norwegian portion of the Brown bear non-invasive genetic monitoring data using package **rovquantR**.
-It consists in the Open-Population Spatial Capture-Recapture (OPSCR) analysis of the non-invasive genetic sampling and dead recovery data collected by the Norwegian authorities and made available in the transnational large carnivore database [**Rovbase 3.0**](https://rovbase.no/).
-
-
-
-#### 1. Develop monitoring protocols
-
-We study monitoring designs and help authorities develop protocols for the cost-efficient collection of non-invasive sampling data.
-Properly designed and executed monitoring leads to reliable data, and reliable data are a pre-requisite for producing trustworthy estimates and conclusions.
-This is particularly important when scientific results inform policy decisions and wildlife management.
-RovQuant uses existing data in combination with simulations to develop protocols that allow managers to collect reliable data, while at the same time making monitoring more cost-effective
-This work is done in collaboration with those leading the data collection effort in Scandinavia, including *Rovdata*, *Wildlife Damage Centre (VSC),* *The Swedish Museum of Natural History (NRM)*, and other organizations.
-
-#### 2. Monitor carnivores at large spatial scales
-
-
-#### 3. Map carnivore densities
-
-RovQuant generates carnivore density surfaces - maps of the density of wolverines, wolves, and bears - across Norway and Sweden.
-These maps and the underlying data are freely available.
-
-#### 4. Estimate carnivore population sizes
-
-“How many are there?”
-This is one of the main questions asked by wildlife managers and policy makers.
-RovQuant provides population size estimates for wolves, bears, and wolverines throughout Norway and Sweden.
-We estimate carnivore population sizes at regional and national levels, as well as for subnational jurisdictions such as carnivore management units and counties
-
-#### 5. Estimate population vital rates
-
-Population vital rates drive the change in wildlife population over time.
-These dynamics are the result of a combination of mortality, recruitment, immigration, and emigration.
-Monitoring conducted over multiple years allows RovQuant to estimate vital rates of large carnivores in Scandinavia.
-These estimates, in turn, are a prerequisite for population forecasting.
-
-#### 6. Collaborate with managers
-
-The project results are published annually in technical reports.
-In addition, we attend meetings and workshops to ensure that RovQuant remains up-to-date on current and emerging challenges in large carnivore monitoring and management.
-
-
+In addition, the **rovquantR** package has been recently developed to facilitate the reproduction of the latest analyses performed by the RovQuant team.
+This vignette presents the RovQuant workflow for the analysis of the Norwegian portion of the Brown bear non-invasive genetic monitoring data using package **rovquantR**.
+It consists in the Open-Population Spatial Capture-Recapture (OPSCR) analysis of the non-invasive genetic sampling and dead recovery data collected by the Norwegian authorities and made available in the transnational large carnivore database **Rovbase** as of June 2025.
 
 # Package Installation
 
-First, you need to make sure you have **Rtools** installed.
+Before we can start the analysis, we need to make sure that the necessary ***R*** libraries are installed.
+The first step is to check if ***Rtools*** is installed.
+Note that ***Rtools*** is not a ***R*** package *per se* and needs to be installed separately from the [Rtools CRAN page](https://cran.r-project.org/bin/windows/Rtools/).
+To check if ***Rtools*** is correctly installed, we use the function *has_rtools()* from the *pkgbuild* package.
 
-```{r Rtools, echo = FALSE}
-rm(list = ls()) 
+```{r Rtools, eval = FALSE}
+install.packages("pkgbuild")
+library(pkgbuild)
+has_rtools()
 ```
 
-# 
+Once we have ensured ***Rtools*** is available, we can install and load the *nimbleSCR* package:
 
-Then, you simply have to use the following line after replacing ptah
-
-```{r libraries, echo = FALSE}
-devtools::install_github("PierreDupont/rovquantR")
-
-
+```{r libraries, eval = FALSE}
+install.packages("nimbleSCR")
+library(nimbleSCR)
 ```
 
-# 
+Now, we can install the *rovquantR* package.
+Because it is not yet available on CRAN, we have to install it from the GitHub repository using the *devtools* package :
+
+```{r gitinstall, eval = FALSE}
+install.packages("devtools")
+library(devtools)
+install_github("PierreDupont/rovquantR")
+```
+
+Alternatively, we can install it from the **.tar.gz** file that was provided:
+
+```{r tarinstall, eval = FALSE}
+install.packages( "C:/My_documents/rovquantR/rovquantR_0.1.tar.gz",
+                  repos = NULL,
+                  type = "source") 
+```
+
+Finally, we can load the rovquantR package and start the analysis:
+
+```{r tarinstall, eval = FALSE}
+library(rovquantR)
+```
 
 # Data Preparation
 
-We start by loading the different R packages necessary for the analysis, and in particular the 'rovquantR' package, which contains a set of wrapper functions to facilitate the analysis.
+We start by loading the different ***R*** packages necessary for the analysis, and in particular the 'rovquantR' package, which contains a set of wrapper functions to facilitate the analysis.
 
 ```{r library, warning = FALSE, message = FALSE}
 library(nimbleSCR)
@@ -115,7 +115,15 @@ Next, we need to set-up the general working environment for the analysis.
 This includes the location of the raw data files (imported from RovBase) and the directory chosen for the analysis.
 The first directory is called 'data.dir' and corresponds to the folder where the raw data is located.
 
-It contains the different files necessary for the OPSCR analysis: \* an excel file of all the brown bear DNA samples available from Rovbase \* an excel file of all the brown bear dead recoveries available from Rovbase \* an excel file of all large carnivore observations available from Skandobs \* multiple spatial covariates (in the 'GIS' folder)
+It contains the different files necessary for the OPSCR analysis:
+
+-   an excel file of all the brown bear DNA samples available from Rovbase
+
+-   an excel file of all the brown bear dead recoveries available from Rovbase
+
+-   an excel file of all large carnivore observations available from Skandobs
+
+-   multiple spatial covariates (in the 'GIS' folder)
 
 Note that this is NOT the working directory.
 For all intent and purposes, it should be treated as a 'read-only' directory.
@@ -161,7 +169,6 @@ For this reason, it is very difficult/impossible to automatize this process and 
 
 
 ```
-
 
 ## Data cleaning
 
