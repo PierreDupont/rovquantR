@@ -82,7 +82,7 @@ library(pkgbuild)
 has_rtools()
 ```
 
-```{r Rtools2, echo = FALSE, eval = TRUE}
+```{r Rtools2, echo = FALSE, eval = FALSE}
 library(pkgbuild) 
 has_rtools()
 ```
@@ -94,7 +94,7 @@ install.packages("nimbleSCR")
 library(nimbleSCR)
 ```
 
-```{r nimbleSCR2, echo = FALSE, eval = TRUE}
+```{r nimbleSCR2, echo = FALSE, eval = FALSE}
 library(nimbleSCR)
 ```
 
@@ -109,7 +109,7 @@ install_github("PierreDupont/rovquantR")
 
 Alternatively, we can install it from the **.tar.gz** file that was provided:
 
-```{r tarInstall, eval = TRUE}
+```{r tarInstall, eval = FALSE}
 install.packages( "C:/My_documents/rovquantR/rovquantR_0.1.tar.gz",
                   repos = NULL,
                   type = "source") 
@@ -117,7 +117,7 @@ install.packages( "C:/My_documents/rovquantR/rovquantR_0.1.tar.gz",
 
 Finally, we can load the `rovquantR` package and start the analysis:
 
-```{r rovquantR, eval = TRUE}
+```{r rovquantR, eval = FALSE}
 library(rovquantR)
 ```
 
@@ -146,7 +146,7 @@ For this, we need to set-up two paths:
 data.dir <- "./Data"  
 ```
 
-```{r set-up1.2, eval = TRUE, echo = FALSE}
+```{r set-up1.2, eval = FALSE, echo = FALSE}
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/Data"
 ```
 
@@ -156,7 +156,7 @@ data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/Data
 working.dir <- "./BearVignette"
 ```
 
-```{r set-up2.2, eval = TRUE, echo = FALSE}
+```{r set-up2.2, eval = FALSE, echo = FALSE}
 working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/BearVignette"
 ```
 
@@ -172,7 +172,7 @@ For simplicity, the cleaning process was packaged in the `cleanRovbaseData` func
 This function creates the adequate folder structure in `working.dir` to store all files and outputs linked with the analysis, performs the initial cleaning of the Rovbase data files, and prints out a report in `.html` format summarizing the content of the cleaned dataset.
 This report can be found in the `report` folder of the working directory, labeled with the date corresponding to the last modification date of the raw data.
 
-```{r cleanRovbaseData, eval = TRUE}
+```{r cleanRovbaseData, eval = FALSE}
 cleanRovbaseData( 
   species = "bear",
   years = 2020:2025,
@@ -188,7 +188,7 @@ This process can be quite opaque and complex and this is why we have created the
 
 Similar to the `cleanRovbaseData` function, this function produces an `.html` report in the `report` folder, which summarizes the different steps required to prepare the data for the OPSCR analysis, as well as the content of the data going into the model.
 
-```{r makeRovquantData, eval = TRUE}
+```{r makeRovquantData, eval = FALSE}
 makeRovquantData(    
   species = "bear",
   data.dir = data.dir,
@@ -200,7 +200,7 @@ makeRovquantData(
 The next step is to fit the OPSCR model to the prepared bear data using NIMBLE.
 In this example, as in most cases in the [**RovQuant**](https://www.nmbu.no/en/research/projects/rovquant) project, we fit sex-specific models.
 
-```{r run_females1.1, eval=TRUE}
+```{r run_females1.1, eval = FALSE}
 
 ##-- List all prepared input files
 inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/female"),
@@ -240,7 +240,7 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 
 The first step when fitting a statistical model using NIMBLE is to create a model object, containing the model code, the constants/dimensions, data and initial values used in the model.
 
-```{r run_females2, eval=TRUE}
+```{r run_females2, eval = FALSE}
 model <- nimbleModel( code = modelCode,
                       constants = nimConstants,
                       inits = nimInits,
@@ -251,13 +251,13 @@ model <- nimbleModel( code = modelCode,
 
 The second step is to compile the model in C++.
 
-```{r run_females3, eval=TRUE}
+```{r run_females3, eval = FALSE}
 cmodel <- compileNimble(model)
 ```
 
 Next, we need to configure and compile the MCMC algorithm that will be used to sample posterior samples.
 
-```{r run_females4, eval=TRUE}
+```{r run_females4, eval = FALSE}
 conf <- configureMCMC( model,
                        monitors = nimParams,
                        thin = 1,
@@ -274,7 +274,7 @@ Finally, once the MCMC algorithm and the model are prepared and compiled, we can
 This function will split up the MCMC chain in multiple bites and save posterior samples as the MCMC algorithm is running.
 This presents the double advantage of i) using less memory when fitting large scale models, and ii) allowing to check for the advancement of the MCMC process as sampling goes on (and also allowing to restart the MCMC chain should something go wrong).
 
-```{r run_females5, eval=TRUE}
+```{r run_females5, eval = FALSE}
 system.time(runMCMCbites( mcmc = Cmcmc,
                           bite.size = 100,
                           bite.number = 5,
@@ -284,7 +284,7 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 
 And now, we can do the same for males:
 
-```{r run_males, eval=TRUE}
+```{r run_males, eval = FALSE}
 ##-- List all prepared input files
 inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/male"),
                          full.names = T)
@@ -326,7 +326,7 @@ Last but not least, we can now process the MCMC outputs generated by NIMBLE to e
 Again, this last function prints out a `.html` report summarinzing the most important results from the model.
 Additional results (like the traceplots allowing to check the convergence of the model) are saved in the `figures` and `tables` folders, and raster files of the population density maps are saved in the `rasters`folder.
 
-```{r processRovquantOutput, eval = TRUE}
+```{r processRovquantOutput, eval = FALSE}
 processRovquantOutput(   
   species = "Brown bear",
   data.dir = data.dir,

@@ -11,9 +11,10 @@ plotDensityMaps(
   mask,
   background = NULL,
   type = c("time.series", "last.year", "summary"),
-  path = file.path(getwd(), "figures"),
+  path = getwd(),
   species = NULL,
   q95 = NULL,
+  export.raster = TRUE,
   name = "UD_Density"
 )
 }
