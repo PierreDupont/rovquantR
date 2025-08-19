@@ -370,6 +370,7 @@ processRovquantOutput_bear <- function(
         z = resultsSXYZ_MF$sims.list$z[ , ,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }#t
@@ -389,6 +390,7 @@ processRovquantOutput_bear <- function(
         z = resultsSXYZ_MF$sims.list$z[ ,IDMales,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }#t
@@ -408,6 +410,7 @@ processRovquantOutput_bear <- function(
         z = resultsSXYZ_MF$sims.list$z[ ,IDFemales,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }
@@ -445,6 +448,7 @@ processRovquantOutput_bear <- function(
         sigma = sigma[ ,IDMales],
         habitatxy = densityInputRegions$habitat.xy,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = regionID,
         display_progress = T,
         returnPosteriorCells = F)
@@ -466,6 +470,7 @@ processRovquantOutput_bear <- function(
         sigma = sigma[ ,IDFemales],
         habitatxy = densityInputRegions$habitat.xy,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = regionID,
         display_progress = T,
         returnPosteriorCells = F)
@@ -485,6 +490,7 @@ processRovquantOutput_bear <- function(
         sigma = sigma,
         habitatxy = densityInputRegions$habitat.xy,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = regionID,
         display_progress = T,
         returnPosteriorCells = F)
@@ -538,7 +544,7 @@ processRovquantOutput_bear <- function(
   #   path = working.dir,
   #   name = "AC_Density")
   
-  ##-- UD-density maps
+  ##-- UD-density maps 
   plotDensityMaps( 
     input = inputRaster,
     estimates = UDdensity,
