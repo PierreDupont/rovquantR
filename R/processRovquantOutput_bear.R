@@ -548,7 +548,7 @@ processRovquantOutput_bear <- function(
     type = c("time.series", "last.year"),#, "summary","summary_NOR"
     species = "bear",
     q95 = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")],
-    path = file.path(working.dir),
+    path = working.dir,
     name = "UD_Density")
   
   
