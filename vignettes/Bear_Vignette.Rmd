@@ -23,13 +23,8 @@ knitr::opts_chunk$set(
 )
 ```
 
-# rovquantR <a href="https://www.nmbu.no/en/research/projects/rovquant"><img src="inst/images/RovQuant.png" align="right" height="180"/></a>
+<img src="inst/images/RovQuant.png" align="center" height="180"/></a>
 
-<h4 align="center">
-
-A user-friendly interface to reproduce RovQuant's analyses.
-
-</h4>
 
 ------------------------------------------------------------------------
 
@@ -82,7 +77,7 @@ library(pkgbuild)
 has_rtools()
 ```
 
-```{r Rtools2, echo = FALSE, eval = FALSE}
+```{r Rtools2, echo = FALSE, eval = TRUE}
 library(pkgbuild) 
 has_rtools()
 ```
