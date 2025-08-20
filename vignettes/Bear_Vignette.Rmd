@@ -2,15 +2,14 @@
 title: "Norwegian bear OPSCR analysis"
 subtitle : "An introduction to 'rovquantR': <br> a R package to reproduce RovQuant analyses"
 author: "Pierre Dupont"
-date: "`r Sys.Date()`"
 output:
    rmarkdown::html_vignette:
-    fig_width: 6
-    fig_height: 6
+    fig_height: 3
     fig_caption: true
+    df_print: kable
 bibliography: references.bib  
 vignette: >
-  %\VignetteIndexEntry{Brown Bear vignette}
+  %\VignetteIndexEntry{Norwegian bear OPSCR analysis}
   %\VignetteEncoding{UTF-8}
   %\VignetteEngine{knitr::rmarkdown}
 editor_options: 
@@ -34,7 +33,7 @@ The different goals of this international research project are to:
 
 2.  **Estimate population vital rates.** Population dynamics are the result of the combination of mortality, recruitment, immigration, and emigration.
     Population vital rates thus drive changes in wildlife population over time.
-    Monitoring conducted over multiple years allows RovQuant to estimate vital rates of large carnivores in Scandinavia.
+    Monitoring conducted over multiple years allows RovQuant to use Open-Population Spatial Capture-Recapture models (OPSCR) [@ergon2014separating; @bischof2016; @chandler2018characterizing; @dupont2021deadreco] to estimate vital rates of large carnivores in Scandinavia.
     These estimates, in turn, are a prerequisite for population forecasting.
 
 3.  **Further develop monitoring protocols**.
@@ -42,14 +41,14 @@ The different goals of this international research project are to:
     Properly designed and executed monitoring leads to reliable data, and reliable data are a pre-requisite for producing trustworthy estimates and conclusions.
     This is particularly important when scientific results inform policy decisions and wildlife management.
 
-4.  **Collaborate with managers.** The project results are published annually in technical reports.
+4.  **Collaborate with managers.** The project results are published annually in technical reports [@milleret2024wolverine; @milleret2025wolf; @dupontNorBear2023].
     In addition, members from the project's team regularly attend meetings and workshops to ensure that RovQuant remains up-to-date on current and emerging challenges in large carnivore monitoring and management.
 
-The methods developed by the RovQuant team are based on the Spatial Capture-Recapture (SCR) methodology and involve large-scale analysis of individual-based datasets in a Bayesian framework.
+The methods developed by the RovQuant team are based on the Spatial Capture-Recapture (SCR) methodology and involve large-scale analysis of individual-based datasets in a Bayesian framework [ @bischof2020estimating; @wei2022; @turek2021efficient].
 Spatial Capture-Recapture (SCR) methods use the spatial information contained in individual detections, for example DNA samples left behind by wildlife, to estimate the location of activity centers of all individuals in the population, including those never detected.
 SCR models thus produce density estimates and density surfaces, while accounting for the fact that not all individuals are detected.
 Furthermore, abundance estimates produced by SCR models take into account that animals move across the landscape and may be detected in multiple locations – for example, a bear living near the Swedish-Norwegian border may contribute partially to population size estimates in both countries.
-These developments were conducted in collaboration with the [**NIMBLE**](https://r-nimble.org/) development team, and led to the publication of the [`nimbleSCR`](https://cran.r-project.org/web/packages/nimbleSCR/index.html) `R` package, which compiles a set of custom functions and distributions allowing to build custom SCR models and fit them to large-scale datasets in an efficient manner.
+These developments were conducted in collaboration with the [**NIMBLE**](https://r-nimble.org/) development team [@nimble2019], and led to the publication of the [`nimbleSCR`](https://cran.r-project.org/web/packages/nimbleSCR/index.html) `R` package [@nimbleSCR2021], which compiles a set of custom functions and distributions allowing to build custom SCR models and fit them to large-scale datasets in an efficient manner.
 
 In addition, the RovQuant team has recently developed the `rovquantR` package to facilitate the reproduction of their most recent analyses.
 In this vignette, we present the workflow used for the analysis of the Norwegian portion of the Brown bear non-invasive genetic monitoring data using the `rovquantR` package.
@@ -60,7 +59,7 @@ This analysis consists in the Open-Population Spatial Capture-Recapture (OPSCR) 
 # Package Installation
 
 Before we can start the analysis, we need to make sure that our `R` session is adequately configured and that we have all the `R` libraries required.
-The first requirement is to have `Rtools` is installed.
+The first requirement is to have `Rtools` installed.
 To check if `Rtools` is correctly installed, we can use the function `has_rtools()` from the `pkgbuild` package.
 Note that `Rtools` is not a `R` package *per se* and cannot be installed directly from your `R` session.
 If it is not already installed, please refer to the [Rtools CRAN page](https://cran.r-project.org/bin/windows/Rtools/) for instructions.
@@ -83,7 +82,7 @@ install.packages("nimbleSCR")
 library(nimbleSCR)
 ```
 
-```{r nimbleSCR2, echo = FALSE, eval = FALSE}
+```{r nimbleSCR2, echo = FALSE, eval = TRUE, message = FALSE}
 library(nimbleSCR)
 ```
 
@@ -106,7 +105,7 @@ install.packages( "C:/My_documents/rovquantR/rovquantR_0.1.tar.gz",
 
 Finally, we can load the `rovquantR` package and start the analysis:
 
-```{r rovquantR, eval = FALSE}
+```{r rovquantR, eval = TRUE, message = FALSE, warning = FALSE}
 library(rovquantR)
 ```
 
@@ -137,7 +136,7 @@ For this, we need to set-up two paths:
 data.dir <- "./Data"  
 ```
 
-```{r set-up1.2, eval = FALSE, echo = FALSE}
+```{r set-up1.2, eval = TRUE, echo = FALSE}
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/Data"
 ```
 
@@ -147,8 +146,8 @@ data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/Data
 working.dir <- "./BearVignette"
 ```
 
-```{r set-up2.2, eval = FALSE, echo = FALSE}
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/BearVignette"
+```{r set-up2.2, eval = TRUE, echo = FALSE}
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/temp"
 ```
 
 ## Data cleaning
@@ -172,6 +171,12 @@ cleanRovbaseData(
   print.report = TRUE)
 ```
 
+```{r makeDirectories, eval = TRUE, echo = FALSE}
+makeDirectories( path =  "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/BearVignette",
+                 subFolders = c("female","male"),
+                 show.dir = TRUE)
+```
+
 ## Data preparation
 
 Now that we have cleaned out the data, it is time to format it for analysis using `nimbleSCR`.
@@ -191,8 +196,9 @@ makeRovquantData(
 The next step is to fit the OPSCR model to the prepared bear data using NIMBLE.
 In this example, as in most cases in the [**RovQuant**](https://www.nmbu.no/en/research/projects/rovquant) project, we fit sex-specific models.
 
-```{r run_females1.1, eval = FALSE}
+When fitting a statistical model using NIMBLE, you first need to create a model object, containing the model code, the constants/dimensions, data and initial values for the model. Here, we load the first input file we created, corresponding to one MCMC chain.
 
+```{r run_females2, eval = FALSE}
 ##-- List all prepared input files
 inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/female"),
                           full.names = T)
@@ -201,35 +207,6 @@ inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/female"),
 load(inputFiles[1]) 
 
 ##-- Build nimble model object
-model <- nimbleModel( code = modelCode,
-                      constants = nimConstants,
-                      inits = nimInits,
-                      data = nimData,
-                      check = FALSE,
-                      calculate = FALSE) 
-model$calculate()
-cmodel <- compileNimble(model)
-conf <- configureMCMC( model,
-                       monitors = nimParams,
-                       thin = 1,
-                       monitors2 = nimParams2,
-                       thin2 = 5)
-Rmcmc <- buildMCMC(conf)
-compiledList <- compileNimble( list(model = model,
-                                    mcmc = Rmcmc),
-                               showCompilerOutput = F)
-Cmcmc <- compiledList$mcmc
-
-##-- Run nimble MCMC in successive bites
-system.time(runMCMCbites( mcmc = Cmcmc,
-                          bite.size = 100,
-                          bite.number = 10,
-                          path = file.path(working.dir,"nimbleOutfiles/female")))
-```
-
-The first step when fitting a statistical model using NIMBLE is to create a model object, containing the model code, the constants/dimensions, data and initial values used in the model.
-
-```{r run_females2, eval = FALSE}
 model <- nimbleModel( code = modelCode,
                       constants = nimConstants,
                       inits = nimInits,
@@ -266,8 +243,8 @@ This presents the double advantage of i) using less memory when fitting large sc
 ```{r run_females5, eval = FALSE}
 system.time(runMCMCbites( mcmc = Cmcmc,
                           bite.size = 100,
-                          bite.number = 5,
-                          path = file.path(working.dir,"nimbleOutfiles/Hunn")))
+                          bite.number = 10,
+                          path = file.path(working.dir,"nimbleOutfiles/female")))
 ```
 
 And now, we can do the same for males:
@@ -275,7 +252,7 @@ And now, we can do the same for males:
 ```{r run_males, eval = FALSE}
 ##-- List all prepared input files
 inputFiles <- list.files( file.path(working.dir, "nimbleInFiles/male"),
-                         full.names = T)
+                          full.names = T)
 
 ##-- Load the first one
 load(inputFiles[1]) 
@@ -308,7 +285,7 @@ system.time(runMCMCbites( mcmc = Cmcmc,
                           path = file.path(working.dir,"nimbleOutfiles/male")))
 ```
 
-# Output processing
+## Output processing
 
 Last but not least, we can now process the MCMC outputs generated by NIMBLE to extract results in a more meaningful manner.
 Again, this last function prints out a `.html` report summarizing the most important results from the model.
@@ -325,3 +302,94 @@ processRovquantOutput(
   print.report = TRUE,
   overwrite = FALSE)
 ```
+
+# Results
+
+## Non-invasive genetic samples and dead recoveries
+
+```{r, ngs data, echo = FALSE, collapse = TRUE}
+
+DATE <- getMostRecent( 
+    path = file.path(working.dir, "data"),
+    pattern = "CleanData_bear")
+  
+##-- Load results tables
+N_LastYear <- read.csv(file.path( working.dir, "tables/N_LastYearPerSex_region.csv"), check.names = F, row.names = 1)
+N_All <- read.csv(file.path( working.dir, "tables/N_AllYears_region.csv"),check.names = F, row.names = 1)
+
+##-- Extract abundances for the last year
+CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Total"]), "-")[[1]])
+CI_F <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Females"]), "-")[[1]])
+CI_M <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Males"]), "-")[[1]])
+
+##-- Detectors
+load(file.path( working.dir, "data", paste0("Detectors_bear_", DATE, ".RData")))
+years <- as.numeric(dimnames(detectors$covariates)[[3]])
+n.years <- length(years) 
+
+##-- Load filtered data
+load(file.path( working.dir, "data", paste0("FilteredData_bear_", DATE, ".RData")))
+ngs <- data.alive$data.sp
+
+##-- Number of NGS samples collected per sex and per year 
+numDet_sexYear <- table(ngs$Sex,ngs$Year)
+if(length(dim(numDet_sexYear)) > 1){
+  numDet_sexYear <- cbind(numDet_sexYear,rowSums(numDet_sexYear))
+  colnames(numDet_sexYear) <- c(years,"Total")
+  numDet_sexYear <- rbind(numDet_sexYear,colSums(numDet_sexYear))
+  rownames(numDet_sexYear) <- c("female","male","Total")
+}
+
+##-- Number of NGS samples collected per country
+percCountry <- table(data.alive$data.sp$Country_sample)
+percCountry <- round(percCountry[1]/sum(percCountry)*100)
+
+##-- Number of individuals detected per sex and per year
+numId_sexYear <- apply(table(ngs$Id,ngs$Sex,ngs$Year) > 0, c(2,3), sum)
+if(length(dim(numId_sexYear)) > 1){
+  numId_sexYear <- cbind(numId_sexYear,colSums(table(ngs$Id,ngs$Sex) > 0))
+  colnames(numId_sexYear) <- c(years,"Total")
+  numId_sexYear <- rbind(numId_sexYear,colSums(numId_sexYear))
+  rownames(numId_sexYear) <- c("female","male","Total")
+}
+```
+
+A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped bear genetic samples were included in the analysis, of which `r percCountry`% originated from Norway .
+These samples were associated with `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals.
+We did not include individuals with unknown sex in this analysis.
+
+```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: Annual distribution of brown bear non-invasive genetic samples (NGS, yellow crosses) and dead recoveries (purple crosses) between ", years[1], " and ", years[n.years], " and included in the OPSCR analyses. We included only samples collected within the study area during the primary monitoring period."), out.height = "500px", out.width = "750px", echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/NGS_DR_maps.png"))
+```
+
+## Density and abundance
+
+We estimated that, within its primary range (`r round(detectors$n.detectors*(detectors$resolution/1000)^2)` $km^{2}$), the brown bear population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males.
+
+
+```{r, Tab1, echo = FALSE, collapse = TRUE}
+N_LastYear %>%
+  kableExtra::kable( format = "html",
+         align = "ccc",
+         table.attr = "style='width:80%;'",
+         caption = paste0("Table 1. Brown bear population size estimates in ", years[n.years]," within the study area by sex and large carnivore management region. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
+  kableExtra::kable_classic(full_width = T, html_font = "Cambria") %>%
+    kableExtra::row_spec(c(0,nrow(N_All)), bold = T)
+```
+
+```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 2: Brown bear density in Norway in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is available as a geo-referenced raster in the 'raster' folder of the working directory"), out.height = "800px", out.width = "800px", echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
+```
+
+```{r, Fig3, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 3: Brown bear population size estimates within the study area between ", years[1], " and ", years[length(years)], ". Darker and lighter bars show the 50% and 95% credible intervals, respectively. Credible intervals indicate uncertainty in estimates given the model and data used to generate the estimates. Light grey bars in the background show the total number of individuals detected within the entire study area."), out.height = "400px", out.width = "600px", echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
+```
+
+------------------------------------------------------------------------
+
+# References
+
+::: {#refs}
+:::
+
+------------------------------------------------------------------------
