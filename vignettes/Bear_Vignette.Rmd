@@ -308,11 +308,6 @@ processRovquantOutput(
 ## Non-invasive genetic samples and dead recoveries
 
 ```{r, ngs data, echo = FALSE, collapse = TRUE}
-
-DATE <- getMostRecent( 
-    path = file.path(working.dir, "data"),
-    pattern = "CleanData_bear")
-  
 ##-- Load results tables
 N_LastYear <- read.csv(file.path( working.dir, "tables/N_LastYearPerSex_region.csv"), check.names = F, row.names = 1)
 N_All <- read.csv(file.path( working.dir, "tables/N_AllYears_region.csv"),check.names = F, row.names = 1)
@@ -323,12 +318,12 @@ CI_F <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Fem
 CI_M <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Males"]), "-")[[1]])
 
 ##-- Detectors
-load(file.path( working.dir, "data", paste0("Detectors_bear_", DATE, ".RData")))
+load(file.path( working.dir, "data", paste0("Detectors_bear_2025-08-14.RData")))
 years <- as.numeric(dimnames(detectors$covariates)[[3]])
 n.years <- length(years) 
 
 ##-- Load filtered data
-load(file.path( working.dir, "data", paste0("FilteredData_bear_", DATE, ".RData")))
+load(file.path( working.dir, "data", paste0("FilteredData_bear_2025-08-14.RData")))
 ngs <- data.alive$data.sp
 
 ##-- Number of NGS samples collected per sex and per year 

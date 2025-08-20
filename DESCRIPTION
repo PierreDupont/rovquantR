@@ -24,7 +24,6 @@ Imports:
     ggplot2,
     graphics,
     grDevices,
-    kableExtra,
     magrittr,
     methods,
     nimbleSCR,
@@ -47,6 +46,8 @@ Imports:
 Suggests: 
     basicMCMCplots,
     knitr,
+    kableExtra,
+    pkgbuild,
     testthat (>= 3.0.0)
 LinkingTo: 
     Rcpp,

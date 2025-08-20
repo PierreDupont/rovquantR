@@ -13,8 +13,11 @@
 #' @param background A \code{sf} object of the overall region for which density should be plotted.
 #' @param type A \code{character} string denoting the type of plot to be printed. Can be one of \code{"last.year"}, \code{"time.series"} or \code{"all"}.
 #' @param path A \code{path} denoting where to save the density maps.
+#' @param species (optional) A \code{character} string with the name of the species to be displayed (only used with \code{type = "summary"}). 
+#' @param q95 (optional) A \code{numeric} vector with the boundaries of the 95% credible interval for the population size estimates to be displayed (only used with \code{type = "summary"}).
+#' @param export.raster A \code{logical}; whether to save density rasters as .tif files or not.
 #' @param name A \code{character} string with the name to be used when saving .png and .tif files.
-#' 
+
 #' @return This function prints out \code{.png} image of density maps in the specified folder.
 #' 
 #' @author Pierre Dupont

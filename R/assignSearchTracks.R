@@ -1,23 +1,22 @@
-#' Assign DNA samples to search tracks bite-size NIMBLE MCMC algorithms
+#' Assign DNA samples to search tracks 
 #' 
-#' the \code{assignSearchtTracks} function is a R function used to match RovBase
+#' The \code{assignSearchtTracks} function is a R function used to match RovBase
 #' DNA samples to the corresponding search track. Matching is based on date 
-#' (exact match) and distance (within a given threshold).
-#' samples on the fly.
+#' (exact match) and distance (within a given distance; see the \code{dist} argument below).
 #' 
 #' @name assignSearchtTracks
 #' 
-#' @param data A \code{sf} object containing the detection data
-#' @param detectors A \code{tracks} of sf objects containing the search tracks
-#' @param dist a \code{numeric} value denoting the maximum distance to consider for tracks assignment. 
+#' @param data A \code{sf} object containing the detection data.
+#' @param tracks A \code{sf} object containing the search tracks.
+#' @param dist a \code{numeric} value denoting the maximum distance (in meters) to consider for tracks assignment. 
 #' Any detection further than \code{dist} m from any track will not be assigned to any track. Instead it will get a 'NA'.
 #' @param progress.bar a \code{logical}, whether to display a progress bar or not. 
 #' 
-#' @return A \code{sf} object with the x and y locations of the different detections with associated tracks Id 
+#' @return A \code{sf} object with the x and y locations of the different detections with associated tracks ID. 
 #'
 #' @author Pierre Dupont
 #' 
-#'@importFrom sf st_intersection st_as_sf st_buffer
+#' @importFrom sf st_intersection st_as_sf st_buffer st_distance
 #' @importFrom utils txtProgressBar setTxtProgressBar
 #' 
 NULL

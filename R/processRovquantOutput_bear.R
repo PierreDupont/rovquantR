@@ -5,17 +5,16 @@
 #' and processes MCMC outputs from NIMBLE models and produces figures,
 #' tables and rasters of interest (e.g. population density maps)
 #' 
-#' @param data.dir A \code{path}
-#' @param working.dir A \code{path}
-#' @param nburnin An \code{integer} denoting the number of iterations to be removed from each MCMC as burnin.
+#' @param data.dir A \code{path} to the directory containing the clean Rovbase data, as prepared by \code{cleanRovBaseData}.
+#' @param working.dir A \code{path} to the directory for this analysis containing the \code{nimbleInputFiles} folder to store the prepared data. 
+#' @param nburnin An \code{integer} denoting the number of MCMC bites to be removed from each MCMC chain as burnin.
 #' @param niter An \code{integer} denoting the number of MCMC iterations to be used for density extraction.
 #' @param extraction.res A \code{integer} denoting the raster resolution for density extraction.
+#' @param overwrite A \code{logical} Whether to overwrite (TRUE) or ask before overwriting potentially existing output files (FALSE).
 #' 
 #' @return 
-#' A \code{.RData} file with the clean NGS and dead recovery data objects
-#' for the species and period specified.
-#' A \code{html} report summarizing the data cleaning process
-#' Additional \code{.png} images that can be reused somewhere else.
+#' Multiple \code{.RData} files with the processed MCMC outputs and density outputs.
+#' Additional \code{.png} images and \code{.csv} that can be reused somewhere else.
 #'
 #' @author Pierre Dupont
 #' 
@@ -36,7 +35,7 @@
 #' @rdname processRovquantOutput_bear
 #' @export
 processRovquantOutput_bear <- function(
-    ##-- paths
+  ##-- paths
   data.dir = getwd(),
   working.dir = NULL,
   ##-- MCMC
@@ -450,8 +449,7 @@ processRovquantOutput_bear <- function(
         aliveStates = 2,
         display_progress = FALSE,
         regionID = regionID,
-        display_progress = T,
-        returnPosteriorCells = F)
+        returnPosteriorCells = FALSE)
     }#t
     names(UDdensityM) <- years
     
@@ -472,8 +470,7 @@ processRovquantOutput_bear <- function(
         aliveStates = 2,
         display_progress = FALSE,
         regionID = regionID,
-        display_progress = T,
-        returnPosteriorCells = F)
+        returnPosteriorCells = FALSE)
     }#t
     names(UDdensityF) <- years
     
@@ -492,8 +489,7 @@ processRovquantOutput_bear <- function(
         aliveStates = 2,
         display_progress = FALSE,
         regionID = regionID,
-        display_progress = T,
-        returnPosteriorCells = F)
+        returnPosteriorCells = FALSE)
     }#t
     names(UDdensity) <- years
     

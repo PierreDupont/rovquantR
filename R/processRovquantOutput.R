@@ -14,24 +14,22 @@
 #' \item An indicator to shortcut calculations for individuals unavailable for detection.
 #' }
 #' 
-#' @param species A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.
-#' @param data.dir A \code{path} to the directory containing the clean Rovbase data,
-#'  as prepared by \code{cleanRovBaseData}.
-#' @param working.dir A \code{path} to the directory for this analysis containing
-#'  the \code{nimbleInputFiles} folder to store the prepared data.  
-#' @param nburnin An \code{integer} denoting the number of MCMC  dead recovery should be included (TRUE) or not (FALSE)
-#' @param niter A \code{logical} Whether dead recovery should be included (TRUE) or not (FALSE)
-#' @param extraction.res A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
-#' @param print.report A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
-#' @param output_dir A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)
-#' @param Rmd_template A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
-#'
+#' @param data.dir A \code{path} to the directory containing the clean Rovbase data, as prepared by \code{cleanRovBaseData}.
+#' @param working.dir A \code{path} to the directory for this analysis containing the \code{nimbleInputFiles} folder to store the prepared data. 
+#' @param species A \code{character} denoting the species; can be one of "bear", "wolf" or "wolverine.
+#' @param nburnin An \code{integer} denoting the number of MCMC bites to be removed from each MCMC chain as burnin.
+#' @param niter An \code{integer} denoting the number of MCMC iterations to be used for density extraction.
+#' @param extraction.res A \code{numeric} denoting the resolution (in meters) to use for density extraction.
+#' @param print.report A \code{logical}  Whether an .html report summarizingf the results should be printed (TRUE) or not (FALSE).
+#' @param Rmd.template (optional) A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
+#' @param output.dir (optional) A \code{path} where to print the report. Default is to print in the 'reports' folder of the working directory.
+#' @param overwrite A \code{logical} Whether to overwrite (TRUE) or ask before overwriting potentially existing .html reports (FALSE).
+#' 
 #' @return This function returns:
 #' \enumerate{
-#' \item A \code{.RData} file with the clean NGS and dead recovery data objects
-#'  for the species and period specified.
+#' \item Multiple \code{.RData} files with the processed MCMC outputs and density outputs.
 #' \item A \code{.html} report summarizing the data cleaning process. 
-#' \item Additional \code{.png} images that can be reused somewhere else.
+#' \item Additional \code{.png} images and \code{.csv} that can be reused somewhere else.
 #' }
 #'
 #' @author Pierre Dupont
