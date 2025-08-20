@@ -133,7 +133,7 @@ This analysis provides the following information:
 
 -   Annual maps of `r engSpecies` density throughout the species’ primary range in Scandinavia.
 
--   Annual estimates of survival, cause-specific mortality, recruitment, and population growth rate (with credible intervals).
+<!-- -   Annual estimates of survival, cause-specific mortality, recruitment, and population growth rate (with credible intervals). -->
 
 -   Estimated proportion of individuals detected through non-invasive genetic sampling (with credible intervals).
 
@@ -189,7 +189,7 @@ N_LastYear %>%
     row_spec(c(0,nrow(N_All)), bold = T)
 ```
 
-```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 2: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is freely available as a geo-referenced raster file from the GitHub repository of project RovQuant https://github.com/richbi/RovQuantPublic"), echo = FALSE}
+```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 2: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is available as a geo-referenced raster in the 'raster' folder of the working directory"), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
 ```
 
@@ -211,7 +211,26 @@ knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png
 
 ## Detection probability
 
-The overall proportion of detected individuals in the study area was likely between 77% and 88% in 2023/2024 (Table A.11). The baseline detection probability for the structured and unstructured sampling varied both in time and space (Figure A.5 and Figure A.6). More specifically, the length of recorded search tracks positively affected detection probability of the structured sampling (2023/2024; males: β2Structured =0.17, CrI: 0.12 - 0.22; females: β2Structured = 0.28, CrI: 0.19 - 0.38; Table A.9). However, the previous detection of individuals and the average proportion of snow cover had no strong effect on detection probability for the structured sampling (Table A.9). Unstructured search effort derived using the observation data in Skandobs and Rovbase had a strong positive effect on detection probability during unstructured sampling (2023/2024; males: β4Unstructured = 1.35, CrI: 0.78 - 2.06; females: β4Unstructured = 1.67, CrI: 1.08 - 2.34; Table A.10). The effect of previous detection also tended to have a positive effect on detection probability during unstructured sampling, but the pattern was not consistent across years (Table A.10).
+```{r, propDetected1, echo = FALSE, collapse = TRUE}
+
+propDet <- read.csv(file.path( working.dir, "tables/PropDetectedNorway.csv"), check.names = F, row.names = 1)
+
+##-- Extract proportion detected for the last year
+CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', propDet["Total",n.years]), "-")[[1]])
+```
+
+The overall proportion of detected individuals in the study area was likely between `r round(CI[1]*100)`% and `r round(CI[2]*100)`% in `r years[n.years]`.
+
+```{r, Tab2, echo = FALSE, collapse = TRUE}
+propDet %>%
+  kable( format = "html",
+         escape = F,
+         align = paste0(c(rep("c",length(years)))),
+         caption =  paste0("Table 2. Annual ", engSpecies, " proportion of individuals detected in the population. Estimates are based on activity center locations estimated by the open-population spatial capture-recapture (OPSCR) model. Credible intervals (95%) are shown in parentheses.")) %>%
+  kable_classic(full_width = T, html_font = "Cambria") %>%
+  kable_styling(font_size = 8) %>%
+  row_spec(c(0,nrow(N_All)), bold = T)
+```
 
 ------------------------------------------------------------------------
 
