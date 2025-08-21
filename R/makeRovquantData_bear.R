@@ -250,8 +250,8 @@ makeRovquantData_bear <- function(
     sf::st_intersection(., COUNTIES) %>%
     sf::st_as_sf()
   
-  ##-- Make habitat from predefined Scandinavian raster of suitable habitat
-  habitat <- MakeHabitatFromRaster(
+  ##-- make habitat from predefined Scandinavian raster of suitable habitat
+  habitat <- makeHabitatFromRaster(
     poly = studyArea,
     habitat.r = habRaster,
     buffer = habitat$buffer,
@@ -271,7 +271,7 @@ makeRovquantData_bear <- function(
     "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
     "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
   
-  ##-- Make a spatial grid from polygon
+  ##-- make a spatial grid from polygon
   habitat$grid <- sf::st_as_sf(raster::rasterToPolygons(habitat$habitat.r,
                                                         fun = function(x){x>0}))
   habitat$grid$id <- 1:nrow(habitat$grid)
@@ -389,7 +389,7 @@ makeRovquantData_bear <- function(
     "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
     "size" = n.trials)
   
-  ##-- Make a spatial grid from polygon
+  ##-- make a spatial grid from polygon
   detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
     x = raster::aggregate( x = subdetectors.r,
                            fact = detectors$resolution/detectors$resolution.sub),
@@ -868,12 +868,12 @@ makeRovquantData_bear <- function(
     
     ## ------     7.4. AUGMENT DETECTION HISTORIES -----
     
-    y.alive <- MakeAugmentation( 
+    y.alive <- makeAugmentation( 
       y = y.ar.ALIVE,
       aug.factor = data$aug.factor,
       replace.value = 0)
     
-    y.dead.ar <- MakeAugmentation( 
+    y.dead.ar <- makeAugmentation( 
       y = y.ar.DEAD,
       aug.factor = data$aug.factor,
       replace.value = 0)
@@ -1043,7 +1043,7 @@ makeRovquantData_bear <- function(
     ## ------     3.1. RECONSTRUCT z -----
     
     ##-- Reconstruct monthly z based on ALL detections and dead recoveries
-    zMonths <- MakeZfromScratch( 
+    zMonths <- makeZfromScratch( 
       data.alive = myFullData.sp$alive,
       data.dead = myFullData.sp$dead.recovery,
       samplingMonths = unlist(sampling.months))
@@ -1055,7 +1055,7 @@ makeRovquantData_bear <- function(
     zMonths <- zMonths[dimnames(zMonths)[[1]] %in% dimnames(y.alive)[[1]], , ]
     
     ##-- Augment zMonths
-    zMonths <- MakeAugmentation( y = zMonths,
+    zMonths <- makeAugmentation( y = zMonths,
                                  aug.factor = data$aug.factor,
                                  replace.value = NA)
     

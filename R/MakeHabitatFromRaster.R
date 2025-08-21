@@ -1,7 +1,7 @@
 #' @title Create a list of objects to define the habitat from a predefined habitat raster 
 #'
 #' @description
-#' \code{MakeHabitatFromRaster} returns a \code{List} of objects necessary to define the habitat in SCR (can be slow for large habitat...)
+#' \code{makeHabitatFromRaster} returns a \code{List} of objects necessary to define the habitat in SCR (can be slow for large habitat...)
 #'
 #' @param poly A \code{sf} object with the study area
 #' @param buffer A \code{Numeric} with the size of the buffer area around the study area (in meters in poly is UTM).
@@ -33,9 +33,9 @@
 #' @importFrom dplyr group_by summarise
 #' @importFrom graphics plot
 #'    
-#' @rdname MakeHabitatFromRaster
+#' @rdname makeHabitatFromRaster
 #' @export
-MakeHabitatFromRaster <- function( 
+makeHabitatFromRaster <- function( 
     poly,
     habitat.r, 			  
     buffer = NULL, 		 

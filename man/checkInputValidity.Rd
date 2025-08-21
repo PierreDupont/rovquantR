@@ -2,7 +2,8 @@
 % Please edit documentation in R/checkInputValidity.R
 \name{checkInputValidity}
 \alias{checkInputValidity}
-\title{Detectors Assignment Function}
+\alias{checkInputValidity_lite}
+\title{Input checking function}
 \usage{
 checkInputValidity(
   id = NULL,
@@ -23,6 +24,23 @@ checkInputValidity(
   printReport = FALSE,
   pathReport = NULL
 )
+
+checkInputValidity_lite(
+  id = NULL,
+  s,
+  y,
+  z,
+  lowerHabCoords,
+  upperHabCoords,
+  localHabWindowIndices = NULL,
+  numLocalHabWindows = NULL,
+  trapCoords,
+  localTrapsIndices = NULL,
+  localTrapsNum = NULL,
+  resizeFactor = 1,
+  habitatGrid,
+  habitatGridLocal = NULL
+)
 }
 \arguments{
 \item{data}{A \code{sf} object containing the detection data}
@@ -39,5 +57,5 @@ A \code{sf} object with the x and y locations of the
  different detections with associated detector's Id
 }
 \description{
-\code{checkInputValidity} identifies and assigns the closest detector to each detection in \code{data}.
+\code{checkInputValidity} checks the validity of the nimbleSCR input fro OPSCR models.
 }

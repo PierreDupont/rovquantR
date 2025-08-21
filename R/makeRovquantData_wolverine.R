@@ -272,8 +272,8 @@ data <- list( sex = sex,
     sf::st_intersection(., COUNTRIES) %>%
     sf::st_as_sf() 
   
-  ##-- Make habitat from predefined scandinavian raster of suitable habitat
-  habitat <- MakeHabitatFromRaster(
+  ##-- make habitat from predefined scandinavian raster of suitable habitat
+  habitat <- makeHabitatFromRaster(
     poly = studyArea,
     habitat.r = habRaster,
     buffer = habitat$buffer,
@@ -293,7 +293,7 @@ data <- list( sex = sex,
     "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
     "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
   
-  ##-- Make a spatial grid from polygon
+  ##-- make a spatial grid from polygon
   habitat$grid <- sf::st_as_sf(raster::rasterToPolygons(habitat$habitat.r,
                                                         fun = function(x){x>0}))
   habitat$grid$id <- 1:nrow(habitat$grid)
@@ -470,7 +470,7 @@ data <- list( sex = sex,
     fact = raster::res(habitat$habitat.r)[1]/detectors$resolution.sub)
   
   ##-- Generate NGS detectors based on the raster of sub-detectors
-  detectors <- MakeSearchGrid( 
+  detectors <- makeSearchGrid( 
     data = subdetectors.r,
     resolution = detectors$detResolution,
     div = (detectors$resolution/detectors$resolution.sub)^2,
@@ -488,7 +488,7 @@ data <- list( sex = sex,
     "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
     "size" = n.trials)
   
-  ##-- Make a spatial grid from polygon
+  ##-- make a spatial grid from polygon
   detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
     x = raster::aggregate( x = subdetectors.r,
                            fact = detectors$resolution/detectors$resolution.sub),
@@ -797,11 +797,11 @@ data <- list( sex = sex,
     
     ## ------     7.2. GENERATE DETECTION HISTORY ARRAYS -----
     
-    y.ar <- MakeY( myData = data.alive$myData.sp,
-                   myDetectors = detectors$main.detector.sp,
+    y.ar <- makeY( data = data.alive$data.sp,
+                   detectors = detectors$main.detector.sp,
                    method = "Binomial",
-                   myData2 = data.dead,
-                   myDetectors2 = detectors$main.detector.sp,
+                   data2 = data.dead,
+                   detectors2 = detectors$main.detector.sp,
                    returnIdvector = TRUE)
     y.ar.ALIVE <- y.ar$y.ar
     dimnames(y.ar.ALIVE) <- dimnames(y.ar$y.ar)
@@ -877,12 +877,12 @@ data <- list( sex = sex,
     
     ## ------     7.4. AUGMENT DETECTION HISTORIES -----
     
-    y.alive <- MakeAugmentation( 
+    y.alive <- makeAugmentation( 
       y = y.ar.ALIVE,
       aug.factor = data$aug.factor,
       replace.value = 0)
     
-    y.dead.ar <- MakeAugmentation( 
+    y.dead.ar <- makeAugmentation( 
       y = y.ar.DEAD,
       aug.factor = data$aug.factor,
       replace.value = 0)
@@ -1076,7 +1076,7 @@ data <- list( sex = sex,
     ## ------     3.1. RECONSTRUCT z -----
     
     ##-- Reconstruct monthly z based on ALL detections and dead recoveries
-    zMonths <- MakeZfromScratch( 
+    zMonths <- makeZfromScratch( 
       data.alive = myFullData.sp$alive,
       data.dead = myFullData.sp$dead.recovery,
       samplingMonths = unlist(sampling.months))
@@ -1088,7 +1088,7 @@ data <- list( sex = sex,
     zMonths <- zMonths[dimnames(zMonths)[[1]] %in% dimnames(y.alive)[[1]], , ]
     
     ##-- Augment zMonths
-    zMonths <- MakeAugmentation( y = zMonths,
+    zMonths <- makeAugmentation( y = zMonths,
                                  aug.factor = data$aug.factor,
                                  replace.value = NA)
     
