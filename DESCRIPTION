@@ -45,9 +45,9 @@ Imports:
     xtable
 Suggests: 
     basicMCMCplots,
+    kableExtra,
     knitr,
     testthat (>= 3.0.0)
-    kableExtra,
 LinkingTo: 
     Rcpp,
     RcppArmadillo,

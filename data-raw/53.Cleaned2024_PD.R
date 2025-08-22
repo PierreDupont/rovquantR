@@ -270,7 +270,7 @@ SNOW <- raster::crop(SNOW, c(0,40,55,75))
 # 
 # # ## REMOVE HELICOPTER TRACKS
 # # ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Helikopter=="0", ]
-# # 
+# #
 # # ## KEEP ONLY WOLVERINE TRACKS
 # # ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Jerv == "1", ]
 # 
@@ -291,10 +291,10 @@ SNOW <- raster::crop(SNOW, c(0,40,55,75))
 # }#t
 # 
 # TRACKS <- do.call(rbind,TRACKS_YEAR)
-#
+# 
 # save( TRACKS, file = file.path(working.dir, "data/searchTracks.RData"))
 # 
-# rm("TRACKS_YEAR", "TRACKS_1", "TRACKS_2", "ALL_TRACKS", "tmpTRACKS"))
+# rm(list = c("TRACKS_YEAR", "TRACKS_1", "TRACKS_2", "ALL_TRACKS", "tmpTRACKS"))
 
 load(file = file.path(working.dir, "data/searchTracks.RData"))
 
@@ -883,8 +883,8 @@ message("This can take several minutes... ")
 
 # ##-- Load pr-processed GPS search tracks
 # load(file.path(working.dir, "data/searchTracks.RData"))
-#
-# myFilteredData.sp$alive <- assignSearchTracks( 
+# 
+# myFilteredData.sp$alive <- assignSearchTracks(
 #   data = myFilteredData.sp$alive,
 #   tracks = TRACKS)
 # 
@@ -1205,25 +1205,29 @@ myHabitat <- makeHabitatFromRaster(
   buffer = buffer.size,                               
   plot.check = T)
 
+##-- EXTRACT NUMBERS OF DETECTORS
+# n.detectors.dead <- dim(myDetectors$main.detector.sp)[1]
+
+##-- FORMAT DETECTOR LOCATIONS & NUMBER OF TRIALS PER DETECTOR IN ARRAYS/MATRICES
+habitat.xy <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] 
+n.habCells <- nrow(myDetectors$main.detector.sp)[1]
+
+
 # ## [PD] USELESS!
 # ##-- Retrieve habitat windows boundaries
 # lowerHabCoords <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] - 0.5*HABITAT$habResolution
 # upperHabCoords <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] + 0.5*HABITAT$habResolution
 # nHabCells <- dim(lowerHabCoords)[1]
 
+
 # ## [PD] USELESS !
-# ##-- CREATE HABITAT GRID 
-# habIDCells.mx <- myHabitat$IDCells.mx 
-# habIDCells.mx[] <- 0
-# scaledHabGridCenters <- scaleCoordsToHabitatGrid(
-#   coordsData = myHabitat$habitat.xy,
-#   coordsHabitatGridCenter = myHabitat$habitat.xy,
-#   scaleToGrid = F )$coordsHabitatGridCenterScaled
-# scaledHabGridCenters <- scaledHabGridCenters[myHabitat$habitat.r[] == 1, ]
-# for(i in 1:nrow(scaledHabGridCenters)){
-#   habIDCells.mx[trunc(scaledHabGridCenters[i,2])+1,
-#                 trunc(scaledHabGridCenters[i,1])+1] <- i
-# }
+##-- CREATE HABITAT GRID
+habIDCells.mx <- myHabitat$IDCells.mx
+habIDCells.mx[] <- 0
+for(i in 1:nrow(lowerHabCoords)){
+  habIDCells.mx[trunc(lowerHabCoords[i,2])+1,
+                trunc(lowerHabCoords[i,1])+1] <- i
+}
 # image(habIDCells.mx)
 
 
@@ -1404,7 +1408,7 @@ if(plot.check){
 ## ------     3.2. RESCALE COORDINATES ------
 
 scaledCoords <-  scaleCoordsToHabitatGrid(coordsData = detector.xy,
-                                          coordsHabitatGridCenter = myHabitat$habitat.xy)
+                                          coordsHabitatGridCenter = habitat.xy)
 
 ##-- Scaled habitat window boundaries
 lowerHabCoords <- scaledCoords$coordsHabitatGridCenterScaled - 0.5
@@ -1428,9 +1432,9 @@ maxDistReCalc <- 2.1*detectors$maxDist #+ sqrt(2*(DETECTIONS$resizeFactor*HABITA
 #   plot.check = TRUE)
 
 DetectorIndexLESS <- getLocalObjects(
-  habitat.mx = myHabitat$habitat.mx,
-  detectors.xy = scaledDetCoords,
-  maxDist = maxDistReCalc/res(myHabitat$habitat.r)[1],
+  habitatMask = myHabitat$habitat.mx,
+  coords = scaledDetCoords,
+  dmax = maxDistReCalc/res(myHabitat$habitat.r)[1],
   resizeFactor = 1,
   plot.check = TRUE)
 
@@ -2151,7 +2155,7 @@ for(t in 1:n.years){
   print(paste("------ ", t ," -------", sep = "" ))
   
   ##-- CALCULATE DISTANCES BETWEEN PAIRS OF DETECTIONS
-  distances[[t]] <- checkDistanceDetections( 
+  distances[[t]] <- CheckDistanceDetections( 
     y = y.ar$y.ar[,,t], 
     detector.xy = detector.xy, 
     max.distance = detectors$maxDist,
@@ -2500,10 +2504,10 @@ modelCode <- nimbleCode({
       #   betaCov = betaCovs[1:n.covs,t],
       #   BetaResponse = betaResponse[t],
       #   detResponse = detResponse[i,t])
-      y.alive[i,1:nMaxDetectors,t] ~ dbinomLocal_normalCovsResponse( 
-        detNums = nbDetections[i,t],
-        detIndices = yDets[i,1:nMaxDetectors,t],
-        size = trials[1:n.detectors],
+      y[i,1:maxDetNums,t] ~ dbinomLocal_normalCovsResponse( 
+        detNums = detNums[i,t],
+        detIndices = detIndices[i,1:maxDetNums,t],
+        size = size[1:n.detectors],
         p0State = p0[1:n.counties,t],
         sigma = sigma[t],
         s = sxy[i,1:2,t],
@@ -2511,7 +2515,7 @@ modelCode <- nimbleCode({
         localTrapsIndices = detectorIndex[1:n.cellsSparse,1:maxNBDets],
         localTrapsNum = nDetectorsLESS[1:n.cellsSparse],
         resizeFactor = resizeFactor,
-        lengthYCombined = maxNBDets,
+        lengthYCombined = lengthYCombined,
         habitatGrid = habitatIDDet[1:y.maxDet,1:x.maxDet],
         indicator = isAlive[i,t],
         trapCountries = detCounties[1:n.detectors],
@@ -2539,10 +2543,10 @@ modelCode <- nimbleCode({
       #   betaCov = betaCovsOth[1:n.covsOth,t],
       #   BetaResponse = betaResponseOth[t],
       #   detResponse = detResponse[i,t])
-      y.aliveOth[i,1:nMaxDetectorsOth,t] ~ dbinomLocal_normalCovsResponse( 
-        detNums = nbDetectionsOth[i,t],
-        detIndices = yDetsOth[i,1:nMaxDetectorsOth,t],
-        size = trials[1:n.detectors],
+      y.Oth[i,1:maxDetNumsOth,t] ~ dbinomLocal_normalCovsResponse( 
+        detNums = detNumsOth[i,t],
+        detIndices = detIndicesOth[i,1:maxDetNumsOth,t],
+        size = size[1:n.detectors],
         p0State = p0Oth[1:n.counties,t],
         sigma = sigma[t],
         s = sxy[i,1:2,t],
@@ -2550,7 +2554,7 @@ modelCode <- nimbleCode({
         localTrapsIndices = detectorIndex[1:n.cellsSparse,1:maxNBDets],
         localTrapsNum = nDetectorsLESS[1:n.cellsSparse],
         resizeFactor = resizeFactor,
-        lengthYCombined = maxNBDets,
+        lengthYCombined = lengthYCombined.Oth,
         habitatGrid = habitatIDDet[1:y.maxDet,1:x.maxDet],
         indicator = isAlive[i,t],
         trapCountries = detCountries[1:n.detectors],
@@ -2580,25 +2584,23 @@ modelCode <- nimbleCode({
 
 nimConstants <- list( 
   n.individuals = dim(y.alive)[1],
-  n.detectors = dim(y.alive)[2],  
+  n.detectors = dim(y.alive)[2],
+  numHabWindows = nrow(lowerHabCoords)[1],
   n.years = dim(y.alive)[3], 
   n.years1 = dim(y.alive)[3]-1, 
   n.covs = dim(detCovs)[3],
-  n.covsOth = dim(detCovsOth)[3],
-  numHabWindows = nHabCells,
+  n.covs.Oth = dim(detCovsOth)[3],
   n.countries = max(detCountries)+1,
   n.counties = max(detCounties),
   y.max = dim(habIDCells.mx)[1],
   x.max = dim(habIDCells.mx)[2],
-  resizeFactor = DetectorIndexLESS$ResizeFactor,
-  y.maxDet = dim(DetectorIndexLESS$habitatID)[1],
-  x.maxDet = dim(DetectorIndexLESS$habitatID)[2],
+  resizeFactor = DetectorIndexLESS$resizeFactor,
+  y.maxDet = dim(DetectorIndexLESS$habitatGrid)[1],
+  x.maxDet = dim(DetectorIndexLESS$habitatGrid)[2],
   n.cellsSparse = dim(DetectorIndexLESS$detectorIndex)[1],
-  maxNBDets = DetectorIndexLESS$maxNBDets
-  )
-
-nimConstants$nMaxDetectors <- SparseY$nMaxDetectors
-nimConstants$nMaxDetectorsOth <- SparseYOth$nMaxDetectors
+  maxNBDets = DetectorIndexLESS$maxNBDets,
+  maxDetNums = y.sparse$maxDetNums,
+  maxDetNums.Oth = y.sparseOth$maxDetNums)
 
 
 
@@ -2656,12 +2658,12 @@ InitsDetResponse[!is.na(detResponse)] <- NA
 
 nimData <- list( 
   z = z,   
-  y.alive = y.sparse$y,
-  yDets = y.sparse$yDets,
-  nbDetections = y.sparse$nbDetections,
-  y.aliveOth = y.sparseOth$y, 
-  yDetsOth = y.sparseOth$yDets,
-  nbDetectionsOth = y.sparseOth$nbDetections,
+  y = y.sparse$y,
+  detIndices = y.sparse$detIndices,
+  detNums = y.sparse$detNums,
+  y.Oth = y.sparseOth$y, 
+  detIndicesOth = y.sparseOth$detIndices,
+  detNumsOth = y.sparseOth$detNums,
   lowerHabCoords = lowerHabCoords, 
   upperHabCoords = upperHabCoords, 
   detCounties = detCounties,
@@ -2670,10 +2672,10 @@ nimData <- list(
   detCovsOth = detCovsOth,
   detResponse = detResponse,
   denCounts = denCounts,
-  detectorIndex = DetectorIndexLESS$detectorIndex,
-  nDetectorsLESS = DetectorIndexLESS$nDetectorsLESS,
-  habitatIDDet = DetectorIndexLESS$habitatID,
-  trials = n.trials,
+  detectorIndex = DetectorIndexLESS$localIndices,
+  nDetectorsLESS = DetectorIndexLESS$numLocalIndices,
+  habitatIDDet = DetectorIndexLESS$habitatGrid,
+  size = n.trials,
   alpha = rep(1,2),
   detector.xy = scaledDetCoords,
   #sxy = sxy.data,

@@ -45,9 +45,9 @@ if(Sys.info()['user'] == 'dturek') {
 
 
 ## ------ DOCUMENT PACKAGE ------
-document(baseDir)
-Rcpp::compileAttributes()           # this updates the Rcpp layer from C++ to R
-roxygen2::roxygenize(roclets="rd") 
+# document(baseDir)
+# Rcpp::compileAttributes()           # this updates the Rcpp layer from C++ to R
+# roxygen2::roxygenize(roclets="rd") 
 
 #useDynLib(rovquantR, .registration = TRUE)
 
@@ -71,7 +71,7 @@ system(paste0('R CMD INSTALL --build ', lastTarFile))
 
 
 ## ------ (ALTERNATIVE) INSTALL PACKAGE FROM GITHUB ------
-devtools::install_github("PierreDupont/rovquantR")
+devtools::install_github("PierreDupont/rovquantR@devel")
 
 
 ## ------ NOW QUIT R -----
