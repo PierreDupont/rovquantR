@@ -105,7 +105,7 @@ load(file.path( working.dir, "data", paste0("FilteredData_", engSpecies, "_", da
 
 ##-- Load results tables
 N_LastYear <- read.csv(file.path( working.dir, "tables/N_LastYearPerSex_region.csv"), check.names = F, row.names = 1)
-N_All <- read.csv(file.path( working.dir, "tables/N_AllYears_region.csv"),check.names = F, row.names = 1)
+#N_All <- read.csv(file.path( working.dir, "tables/N_AllYears_region.csv"),check.names = F, row.names = 1)
 
 ##-- Extract abundances for the last year
 CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Total"]), "-")[[1]])
@@ -231,25 +231,6 @@ propDet %>%
   kable_styling(font_size = 8) %>%
   row_spec(row = 0, bold = T) %>%
   column_spec(column = 1, bold = T) 
-```
-
-------------------------------------------------------------------------
-
-# Appendices
-
-```{r, TabS1, echo = FALSE, collapse = TRUE}
-N_All %>%
-  kable( format = "html",
-         escape = F,
-         align = paste0(c(rep("c",length(years)))),
-         caption =  paste0("Table 2. Annual ", engSpecies, " abundance estimates by large carnivore management region. Estimates are based on activity center locations estimated by the open-population spatial capture-recapture (OPSCR) model. Credible intervals (95%) are shown in parentheses. Small deviations between the total estimate and the sum of abundance estimates from the constituent subregions may arise due to rounding.")) %>%
-  kable_classic(full_width = T, html_font = "Cambria") %>%
-  kable_styling(font_size = 8) %>%
-  row_spec(c(0,nrow(N_All)), bold = T)
-```
-
-```{r, FigS1, fig.align = "center", fig.cap = paste0("Figure 4: ", species, " density between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
 ```
 
 ------------------------------------------------------------------------
