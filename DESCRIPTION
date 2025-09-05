@@ -45,6 +45,8 @@ Imports:
     xtable
 Suggests: 
     basicMCMCplots,
+    ggmap,
+    mapview,
     knitr,
     kableExtra,
     pkgbuild,

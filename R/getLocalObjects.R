@@ -106,8 +106,8 @@ getLocalObjects <- function( habitatMask,
      warning("dmax value too small. All habitat grid cells should have at least one local object within a radius of dmax.")
    }
   
-  ## STORE LOCAL  INDICES IN A MATRIX 
-  Index <- matrix(NA, nrow = length(localIndices), ncol = maxLocalIndices)
+  ## STORE LOCAL INDICES IN A MATRIX 
+  Index <- matrix(-1, nrow = length(localIndices), ncol = maxLocalIndices)
   for(j in 1:length(localIndices)){
     if(length(localIndices[[j]])!=0){
       Index[j, 1:numLocalIndices[j]] <- localIndices[[j]]
@@ -119,7 +119,6 @@ getLocalObjects <- function( habitatMask,
     SXY <- as.numeric(habitatCoords[sample(1:dim(habitatCoords)[1], size = 1), ])
     sxyID <- habitatID[trunc(SXY[2]/resizeFactor)+1, trunc(SXY[1]/resizeFactor)+1]
     index <- Index[sxyID, 1:numLocalIndices[sxyID]]
-    
     plot(habitatCoords[ ,2] ~ habitatCoords[ ,1], pch = 16, cex = 0.1)
     points(habitatCoords[sxyID,2] ~ habitatCoords[sxyID,1], pch = 16, cex = 0.4, col = "orange")
     points(coords[ ,2] ~ coords[ ,1], pch = 16, cex = 0.2, col = "red")
