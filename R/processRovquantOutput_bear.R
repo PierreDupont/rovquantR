@@ -547,7 +547,7 @@ processRovquantOutput_bear <- function(
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES[1, ],
-    type = c("time.series", "last.year"),#, "summary","summary_NOR"
+    type = c("last.year"),#"time.series", "summary","summary_NOR"
     species = "bear",
     q95 = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")],
     path = working.dir,
@@ -758,19 +758,19 @@ processRovquantOutput_bear <- function(
   idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
   row.names(NCarRegionEstimates) <- idregion1
   
-  ##-- print .csv
-  write.csv(NCarRegionEstimates,
-            file = file.path(working.dir, "tables/N_AllYears_region.csv"))
-  
-  ##-- print .tex
-  row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
-  print(xtable::xtable( NCarRegionEstimates,
-                        type = "latex",
-                        align = paste(c("l",rep("c",ncol(NCarRegionEstimates))), collapse = "")),
-        floating = FALSE,
-        sanitize.text.function = function(x){x},
-        add.to.row = list(list(seq(1, nrow(NCarRegionEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables/N_AllYears_region.tex"))
+  # ##-- print .csv
+  # write.csv(NCarRegionEstimates,
+  #           file = file.path(working.dir, "tables/N_AllYears_region.csv"))
+  # 
+  # ##-- print .tex
+  # row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
+  # print(xtable::xtable( NCarRegionEstimates,
+  #                       type = "latex",
+  #                       align = paste(c("l",rep("c",ncol(NCarRegionEstimates))), collapse = "")),
+  #       floating = FALSE,
+  #       sanitize.text.function = function(x){x},
+  #       add.to.row = list(list(seq(1, nrow(NCarRegionEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
+  #       file = file.path(working.dir, "tables/N_AllYears_region.tex"))
   
   
   
@@ -905,20 +905,20 @@ processRovquantOutput_bear <- function(
   idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
   row.names(NCarRegionEstimatesAllSex) <- c("", idregion1)
   
-  ##-- print .csv
-  write.csv(NCarRegionEstimatesAllSex,
-            file = file.path(working.dir, "tables/N_AllYearsPerSex_region.csv"))
-  
-  
-  ##-- print .tex
-  row.names(NCarRegionEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
-  
-  print(xtable::xtable(NCarRegionEstimatesAllSex, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCarRegionEstimatesAllSex))),collapse = "")),
-        sanitize.text.function = function(x){x},
-        floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_AllYearsPerSex_region.tex"))
+  # ##-- print .csv
+  # write.csv(NCarRegionEstimatesAllSex,
+  #           file = file.path(working.dir, "tables/N_AllYearsPerSex_region.csv"))
+  # 
+  # 
+  # ##-- print .tex
+  # row.names(NCarRegionEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
+  # 
+  # print(xtable::xtable(NCarRegionEstimatesAllSex, type = "latex",
+  #                      align = paste(c("l",rep("c",ncol(NCarRegionEstimatesAllSex))),collapse = "")),
+  #       sanitize.text.function = function(x){x},
+  #       floating = FALSE,
+  #       add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
+  #       file = file.path(working.dir, "tables/N_AllYearsPerSex_region.tex"))
   
   
   
@@ -957,18 +957,18 @@ processRovquantOutput_bear <- function(
   row.names(NCountyEstimates) <- idcounty1
   
   ##-- print .csv
-  write.csv(NCountyEstimates,
-            file = file.path(working.dir, "tables/N_AllYears_county.csv"))
-  
-  ##-- print .tex
-  row.names(NCountyEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
-  print(xtable::xtable( NCountyEstimates,
-                        type = "latex",
-                        align = paste(c("l",rep("c",ncol(NCountyEstimates))),collapse = "")),
-        floating = FALSE,
-        sanitize.text.function = function(x){x},
-        add.to.row = list(list(seq(1, nrow(NCountyEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables/N_AllYears_county.tex"))
+  # write.csv(NCountyEstimates,
+  #           file = file.path(working.dir, "tables/N_AllYears_county.csv"))
+  #  
+  # ##-- print .tex
+  # row.names(NCountyEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
+  # print(xtable::xtable( NCountyEstimates,
+  #                       type = "latex",
+  #                       align = paste(c("l",rep("c",ncol(NCountyEstimates))),collapse = "")),
+  #       floating = FALSE,
+  #       sanitize.text.function = function(x){x},
+  #       add.to.row = list(list(seq(1, nrow(NCountyEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
+  #       file = file.path(working.dir, "tables/N_AllYears_county.tex"))
   
   
   
@@ -1102,19 +1102,19 @@ processRovquantOutput_bear <- function(
   idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
   row.names(NCountyEstimatesAllSex) <- c("", idcounty1)
   
-  ##-- print .csv
-  write.csv(NCountyEstimatesAllSex,
-            file = file.path(working.dir, "tables/N_AllYearsPerSex_county.csv"))
-  
-  ##-- print .tex
-  row.names(NCountyEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
-  
-  print(xtable::xtable(NCountyEstimatesAllSex, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSex))),collapse = "")),
-        sanitize.text.function = function(x){x},
-        floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_AllYearsPerSex_county.tex"))
+  # ##-- print .csv
+  # write.csv(NCountyEstimatesAllSex,
+  #           file = file.path(working.dir, "tables/N_AllYearsPerSex_county.csv"))
+  # 
+  # ##-- print .tex
+  # row.names(NCountyEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
+  # 
+  # print(xtable::xtable(NCountyEstimatesAllSex, type = "latex",
+  #                      align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSex))),collapse = "")),
+  #       sanitize.text.function = function(x){x},
+  #       floating = FALSE,
+  #       add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
+  #       file = file.path(working.dir, "tables/N_AllYearsPerSex_county.tex"))
   
   
   

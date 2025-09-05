@@ -105,7 +105,7 @@ load(file.path( working.dir, "data", paste0("FilteredData_", engSpecies, "_", da
 
 ##-- Load results tables
 N_LastYear <- read.csv(file.path( working.dir, "tables/N_LastYearPerSex_region.csv"), check.names = F, row.names = 1)
-N_All <- read.csv(file.path( working.dir, "tables/N_AllYears_region.csv"),check.names = F, row.names = 1)
+#N_All <- read.csv(file.path( working.dir, "tables/N_AllYears_region.csv"),check.names = F, row.names = 1)
 
 ##-- Extract abundances for the last year
 CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Total"]), "-")[[1]])
@@ -186,7 +186,7 @@ N_LastYear %>%
          table.attr = "style='width:80%;'",
          caption = paste0("Table 1. ", SPECIES, " population size estimates in ", years[n.years]," within the study area by sex and large carnivore management region. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
   kable_classic(full_width = T, html_font = "Cambria") %>%
-    row_spec(c(0,nrow(N_All)), bold = T)
+    row_spec(row = c(0,nrow(N_LastYear)), bold = T)
 ```
 
 ```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 2: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is available as a geo-referenced raster in the 'raster' folder of the working directory"), echo = FALSE}
@@ -226,29 +226,11 @@ propDet %>%
   kable( format = "html",
          escape = F,
          align = paste0(c(rep("c",length(years)))),
-         caption =  paste0("Table 2. Annual ", engSpecies, " proportion of individuals detected in the population. Estimates are based on activity center locations estimated by the open-population spatial capture-recapture (OPSCR) model. Credible intervals (95%) are shown in parentheses.")) %>%
+         caption = paste0("Table 2. Annual ", engSpecies, " proportion of individuals detected in the population. Estimates are based on activity center locations estimated by the open-population spatial capture-recapture (OPSCR) model. Credible intervals (95%) are shown in parentheses.")) %>%
   kable_classic(full_width = T, html_font = "Cambria") %>%
   kable_styling(font_size = 8) %>%
-  row_spec(c(0,nrow(N_All)), bold = T)
-```
-
-------------------------------------------------------------------------
-
-# Appendices
-
-```{r, TabS1, echo = FALSE, collapse = TRUE}
-N_All %>%
-  kable( format = "html",
-         escape = F,
-         align = paste0(c(rep("c",length(years)))),
-         caption =  paste0("Table 2. Annual ", engSpecies, " abundance estimates by large carnivore management region. Estimates are based on activity center locations estimated by the open-population spatial capture-recapture (OPSCR) model. Credible intervals (95%) are shown in parentheses. Small deviations between the total estimate and the sum of abundance estimates from the constituent subregions may arise due to rounding.")) %>%
-  kable_classic(full_width = T, html_font = "Cambria") %>%
-  kable_styling(font_size = 8) %>%
-  row_spec(c(0,nrow(N_All)), bold = T)
-```
-
-```{r, FigS1, fig.align = "center", fig.cap = paste0("Figure 4: ", species, " density between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
+  row_spec(row = 0, bold = T) %>%
+  column_spec(column = 1, bold = T) 
 ```
 
 ------------------------------------------------------------------------
