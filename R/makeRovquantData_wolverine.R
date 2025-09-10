@@ -69,45 +69,160 @@ makeRovquantData_wolverine <- function(
   detector.res = 10000,
   subdetector.res = 2000,
   max.det.dist = 84000,
-  resize.factor = 2 
+  resize.factor = 1 
 ){
   ## ---------------------------------------------------------------------------
   
   ## ------ 0. BASIC SET-UP ------
   
-##-- Set default values for the wolverine model
-if(is.null(aug.factor)){aug.factor <- 0.8}
-if(is.null(sampling.months)){sampling.months <- list(12,1:6)}
-if(is.null(habitat.res)){habitat.res <- 20000} 
-if(is.null(buffer.size)){buffer.size <- 60000}
-if(is.null(detector.res)){detector.res <- 10000}
-if(is.null(subdetector.res)){subdetector.res <- 2000}
-if(is.null(max.det.dist)){max.det.dist <- 40000}
-if(is.null(resize.factor)){resize.factor <- 3}
-
-##-- Set up list of Habitat characteristics
-habitat <- list( resolution = habitat.res,
-                 buffer = buffer.size)
-
-##-- Set up list of Detectors characteristics
-detectors <- list( resolution = detector.res,
-                   resolution.sub = subdetector.res,
-                   maxDist = max.det.dist,
-                   resize.factor = resize.factor)
-
-##-- Set up list of Data characteristics
-data <- list( sex = sex,
-              aug.factor = aug.factor,
-              sampling.months = sampling.months)
-
-
+  ##-- Set default values for the wolverine model
+  if(is.null(aug.factor)){aug.factor <- 0.8}
+  if(is.null(sampling.months)){sampling.months <- list(12,1:6)}
+  if(is.null(habitat.res)){habitat.res <- 20000} 
+  if(is.null(buffer.size)){buffer.size <- 60000}
+  if(is.null(detector.res)){detector.res <- 10000}
+  if(is.null(subdetector.res)){subdetector.res <- 2000}
+  if(is.null(max.det.dist)){max.det.dist <- 84000}
+  if(is.null(resize.factor)){resize.factor <- 1}
+  
+  ##-- Set up list of Habitat characteristics
+  habitat <- list( resolution = habitat.res,
+                   buffer = buffer.size)
+  
+  ##-- Set up list of Detectors characteristics
+  detectors <- list( resolution = detector.res,
+                     resolution.sub = subdetector.res,
+                     maxDist = max.det.dist,
+                     resize.factor = resize.factor)
+  
+  ##-- Set up list of Data characteristics
+  data <- list( sex = sex,
+                aug.factor = aug.factor,
+                sampling.months = sampling.months)
+  
   
   
   ## ---------------------------------------------------------------------------
   
   ## ------ I. LOAD AND SELECT DATA ------
   
-  ## ------   1. NGS DATA -----
+  ## ------   1. HABITAT DATA -----
+  
+  ##-- Load pre-defined habitat rasters and shapefiles
+  data(COUNTRIES, envir = environment()) 
+  data(COUNTIES, envir = environment()) 
+  data(habitatRasters, envir = environment()) 
+  data(GLOBALMAP, envir = environment()) 
+  data(REGIONS, envir = environment())
+
+  
+  ##-- Disaggregate habitat raster to the desired resolution
+  habRaster <- raster::disaggregate(
+    x = habitatRasters[["Habitat"]],
+    fact = raster::res(habitatRasters[["Habitat"]])/habitat.res)
+  
+  
+  ##-- Merge counties for practical reasons
+  # COUNTIES_AGGREGATED <- COUNTIES
+  # COUNTIES_AGGREGATED$id <- 1:nrow(COUNTIES_AGGREGATED)
+  # COUNTIES_AGGREGATED$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
+  # COUNTIES_AGGREGATED$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
+  # COUNTIES_AGGREGATED$id[c(19)] <- 1
+  # COUNTIES_AGGREGATED$id[c(35)] <- 2
+  # COUNTIES_AGGREGATED$id[c(17,28)] <- 5
+  # COUNTIES_AGGREGATED$id[c(18)] <- 7
+  # COUNTIES_AGGREGATED$id[c(30)] <- 8
+  # COUNTIES_AGGREGATED <- COUNTIES_AGGREGATED %>%
+  #   dplyr::group_by(id) %>%
+  #   dplyr::summarise() 
+  COUNTIES_AGGREGATED <- REGIONS %>%
+    mutate(id = case_when(
+      county %in% c("Norrbotten") ~ 1,
+      county %in% c("Västerbotten") ~ 2,
+      county %in% c("Blekinge","Dalarna","Gävleborg","Gotland","Halland","Jämtland",
+                    "Jönköping","Kalmar","Kronoberg","Örebro","Östergötland","Skåne",
+                    "Södermanland","Stockholm","Uppsala","Värmland","Västernorrland",
+                    "Västmanland","Västra Götaland") ~ 3,
+      county %in% c("Agder","Akershus","Buskerud","Innlandet","Møre og Romsdal",
+                    "Oppland","Oslo","Østfold","Rogaland","Vestland","Telemark",
+                    "Vestfold") ~ 4,
+      county %in% c("Trøndelag") ~ 5,
+      county %in% c("Finnmark") ~ 6,
+      county %in% c("Nordland") ~ 7,
+      county %in% c("Troms") ~ 8)) %>%
+    group_by(id) %>%
+    summarize() %>%
+    st_simplify( ., preserveTopology = T, dTolerance = 500)
+  
+  COUNTIES_AGGREGATED$id <- as.character(1:nrow(COUNTIES_AGGREGATED))
+  
+  
+  
+  ## ------   2. DETECTORS DATA ----- 
+  
+  ## ------     2.1. DISTANCE TO ROADS -----
+  
+  ##-- Load map of distance to roads (1km resolution)
+  DistAllRoads <- raster::raster(file.path(data.dir,"GIS/Roads/MinDistAllRoads1km.tif"))
+  
+  ##-- Fasterize to remove values that fall in the sea
+  r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)
+  r[!is.na(r)] <- DistAllRoads[!is.na(r)]
+  DistAllRoads <- r
+  
+  
+  
+  ## ------     2.2. SKANDOBS ------
+  
+  ##-- Load the last SkandObs data file
+  skandObs <- readMostRecent( 
+    path = file.path(data.dir, "Skandobs"),
+    extension = ".xlsx",
+    pattern = "Skandobs")
+  
+  ##-- Replace scandinavian characters
+  colnames(skandObs) <- translateForeignCharacters(data = colnames(skandObs))
+  
+  skandObs <- skandObs %>%
+    ##-- Extract important info (e.g. month, year)
+    dplyr::mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
+                   year = as.numeric(format(date,"%Y")),
+                   month = as.numeric(format(date,"%m")),
+                   species = stringi::stri_trans_general(species, "Latin-ASCII")) %>%
+    ##-- Turn into spatial points object
+    sf::st_as_sf(., coords = c("longitude","latitude")) %>%
+    sf::st_set_crs(. , value = "EPSG:4326") %>%
+    sf::st_transform(. ,sf::st_crs(COUNTIES))
+  
+  
+  
+  ## ------     2.3. ROVBASE OBS ------
+  
+  ##-- GET ALL SAMPLES COLLECTED (all species)
+  rovbaseObs <- readMostRecent( path = data.dir,
+                                extension = ".xls",
+                                pattern = "all_samples") %>%
+    ##-- Deal with Scandinavian characters
+    dplyr::mutate(Species = stringi::stri_trans_general(Species, "Latin-ASCII")) %>%
+    ##-- Filter out samples without coordinates
+    dplyr::filter( !is.na(East_UTM33),
+                   Species %in% c("Bjorn","Fjellrev","Gaupe","Hund","Jerv","Rodrev","Ulv"),
+                   Sample_type %in% c("Ekskrement","Har","Urin","Valpeekskrement (Ulv)",
+                                      "Sekret (Jerv)","Saliv/Spytt")) %>%
+    ##-- Extract important info (e.g. month, year, country of collection)
+    dplyr::mutate( Sample_type = translateForeignCharacters(data = Sample_type),
+                   Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
+                   year = as.numeric(format(Date,"%Y")),
+                   month = as.numeric(format(Date,"%m")),
+                   country = substrRight(County,3)) %>%
+    ##-- Turn into spatial points object
+    sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
+    sf::st_set_crs(. , sf::st_crs(COUNTIES))
+  
+  
+  
+  ## ------   3. NGS DATA -----
+
   ##-- Extract date from the last cleaned data file
   DATE <- getMostRecent( 
     path = file.path(working.dir, "data"),
@@ -122,40 +237,71 @@ data <- list( sex = sex,
   ##-- List years
   if(is.null(years)){
     years <- sort(unique(c(myFullData.sp$alive$Year,
-                             myFullData.sp$dead.recovery$Year)))
+                           myFullData.sp$dead.recovery$Year)))
   }
   data$years <- years
   n.years <- length(years)
   YEARS <- lapply(years, function(x)c(x,x+1))
+  
+  
+  
+  ## ---------------------------------------------------------------------------
+  
+  ## ------   1. GENERATE HABITAT ------
+  
+  message("Preparing habitat characteristics... ")
+  
+  ## ------     1.2. GENERATE HABITAT CHARACTERISTICS ------
+  
+  
+  ##-- DELINEATE A BUFFER AROUND ALL NGS DETECTIONS 
+  myBufferedArea <- myFilteredData.sp$alive %>%
+    st_buffer(., dist = buffer.size*1.4) %>%
+    mutate(idd = 1) %>%
+    group_by(idd) %>%
+    summarize()
+  
+  ##-- CUT TO SWEDISH AND NORWEGIAN BORDERS
+  myStudyArea <- st_intersection(myBufferedArea, myStudyArea) %>% 
+    mutate(idd = 1) %>%
+    group_by(idd) %>%
+    summarize()
+  
+  ##-- PLOT CHECK
+  if(plot.check){
+    par(mar = c(0,0,0,0))
+    plot( st_geometry(myStudyArea))
+    plot( st_geometry(myFilteredData.sp$alive), 
+          pch = 21, bg = "red", cex = 0.5, add = T)
+    plot( st_geometry(myFilteredData.sp$dead.recovery),
+          pch = 21, bg = "blue", cex = 0.5, add = T)
+    #plot( st_geometry(BuffDead), add = T, border = "blue")
+    plot( st_geometry(myBufferedArea), border = "red", add = T)
+    plot( st_geometry(myStudyArea), border = "grey", add = T)
+  }
+  
+  ##-- Generate habitat characteristics from raster
+  myHabitat <- makeHabitatFromRaster(
+    poly = myStudyArea,
+    habitat.r = habitatRasters[["Habitat"]],
+    buffer = buffer.size,                               
+    plot.check = T)
 
-    
   
-  ## ------   2. HABITAT DATA -----
+  ##-- FORMAT DETECTOR LOCATIONS & NUMBER OF TRIALS PER DETECTOR IN ARRAYS/MATRICES
+  habitat.xy <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] 
+  n.habCells <- nrow(myDetectors$main.detector.sp)[1]
+
   
-  ##-- Load pre-defined habitat rasters and shapefiles
-  data(COUNTRIES, envir = environment()) 
-  data(COUNTIES, envir = environment()) 
-  data(habitatRasters, envir = environment()) 
-  data(GLOBALMAP, envir = environment()) 
-  
-  ##-- Disaggregate habitat raster to the desired resolution
-  habRaster <- raster::disaggregate(
-    x = habitatRasters[["Habitat"]],
-    fact = raster::res(habitatRasters[["Habitat"]])/habitat.res)
-  
-  ##-- Merge Norwegian counties for practical reasons
-  COUNTIES_AGGREGATED <- COUNTIES
-  COUNTIES_AGGREGATED$id <- 1:nrow(COUNTIES_AGGREGATED)
-  COUNTIES_AGGREGATED$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
-  COUNTIES_AGGREGATED$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
-  COUNTIES_AGGREGATED$id[c(19)] <- 1
-  COUNTIES_AGGREGATED$id[c(35)] <- 2
-  COUNTIES_AGGREGATED$id[c(17,28)] <- 5
-  COUNTIES_AGGREGATED$id[c(18)] <- 7
-  COUNTIES_AGGREGATED$id[c(30)] <- 8
-  COUNTIES_AGGREGATED <- COUNTIES_AGGREGATED %>%
-    dplyr::group_by(id) %>%
-    dplyr::summarise() 
+  ## [PD] USELESS !
+  ##-- CREATE HABITAT GRID
+  habIDCells.mx <- myHabitat$IDCells.mx
+  habIDCells.mx[] <- 0
+  for(i in 1:nrow(lowerHabCoords)){
+    habIDCells.mx[trunc(lowerHabCoords[i,2])+1,
+                  trunc(lowerHabCoords[i,1])+1] <- i
+  }
+  # image(habIDCells.mx)
   
   
   
@@ -1050,7 +1196,7 @@ data <- list( sex = sex,
       }#t
       
     })
-
+    
     
     
     ## ------   2. NIMBLE CONSTANTS -----

@@ -649,6 +649,7 @@ makeRovquantData_bear <- function(
     habitatMask = habitat$habitat.mx,
     coords = detectors$scaledCoords,
     dmax = detectors$maxDist/habitat$resolution,
+    resizeFactor = resize.factor,
     plot.check = F)
   
   

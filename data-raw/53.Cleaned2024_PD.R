@@ -302,7 +302,7 @@ load(file = file.path(working.dir, "data/searchTracks.RData"))
 
 ##------------------------------------------------------------------------------
 
-## ------ II. cleanRovBaseData() ------
+## ------ cleanRovBaseData() ------
 
 # CleanDataNew2sf( 
 #   dna_samples = DNA,
@@ -749,7 +749,7 @@ table(myFullData.sp$alive$Year)
 ## ------ END OF cleanRovBaseData() ------ 
 
 ##------------------------------------------------------------------------------
-## ------ III. makeRovquantData_wolverine() ------
+## ------ makeRovquantData_wolverine() ------
 
 ##-- Set default values for the wolverine model
 aug.factor <- 0.8
@@ -776,6 +776,7 @@ data <- list( aug.factor = aug.factor,
               sampling.months = sampling.months)
 
 
+## ------ I. LOAD AND SELECT DATA ------
 
 ## ------   1. FILTER NGS & DEAD RECOVERY DATA FOR DATES ------
 
@@ -1157,7 +1158,10 @@ if(plot.check){
 
 
 
-## ------   2. GENERATE HABITAT ------
+
+## ------   1. GENERATE HABITAT ------
+
+message("Preparing habitat characteristics... ")
 
 ## ------     2.1. REDUCE THE AREA OF THE STATE-SPACE BASED ON DETECTIONS ------
 
@@ -1330,9 +1334,11 @@ denCounts <- round(scale(denCounts), digits = 2)
 
 
 
-## ------   3. GENERATE DETECTORS ------
+## ------   2. GENERATE DETECTORS -----
 
-## ------     3.1. GENERATE DETECTORS CHARACTERISTICS ------
+message("Preparing detectors characteristics... ")
+
+## ------     2.1. GENERATE DETECTORS CHARACTERISTICS -----
 
 ##-- GENERATE NGS DETECTORS BASED ON THE STUDY AREA
 habitat.subdetectors <- disaggregate(
@@ -1405,48 +1411,18 @@ if(plot.check){
 
 
 
-## ------     3.2. RESCALE COORDINATES ------
-
-scaledCoords <-  scaleCoordsToHabitatGrid(coordsData = detector.xy,
-                                          coordsHabitatGridCenter = habitat.xy)
-
-##-- Scaled habitat window boundaries
-lowerHabCoords <- scaledCoords$coordsHabitatGridCenterScaled - 0.5
-upperHabCoords <- scaledCoords$coordsHabitatGridCenterScaled + 0.5
-
-##-- Scaled detectors coordinates
-scaledDetCoords <- scaledCoords$coordsDataScaled
-
-
-
-## ------     3.3. CREATE CACHED DETECTORS OBJECTS ------
-
-## [CM] reduce multiplicator to 3 
-maxDistReCalc <- 2.1*detectors$maxDist #+ sqrt(2*(DETECTIONS$resizeFactor*HABITAT$habResolution)^2)
-
-# DetectorIndexLESS <- GetDetectorIndexLESS(
-#   habitat.mx = myHabitat$habitat.mx,
-#   detectors.xy = nimData$detector.xy,
-#   maxDist = maxDistReCalc/res(myHabitat$habitat.r)[1],
-#   ResizeFactor = 1,
-#   plot.check = TRUE)
-
-DetectorIndexLESS <- getLocalObjects(
-  habitatMask = myHabitat$habitat.mx,
-  coords = scaledDetCoords,
-  dmax = maxDistReCalc/res(myHabitat$habitat.r)[1],
-  resizeFactor = 1,
-  plot.check = TRUE)
-
-
-
-## ------     3.4. GENERATE DETECTOR-LEVEL COVARIATES ------
-
+## ------     2.2. GENERATE DETECTOR-LEVEL COVARIATES -----
 ## ------       3.4.1. EXTRACT COUNTRIES ------
 
 dist <- st_distance(myDetectors$main.detector.sp, COUNTRIES, by_element = F )
 detCountries <- apply(dist,1, function(x) which.min(x))
 detCountries <- as.numeric(as.factor(detCountries))
+
+detCountries <- myDetectors$main.detector.sp %>%
+  st_distance(., COUNTRIES, by_element = F ) %>%
+  apply(., 1, function(x) which.min(x)) %>%
+  as.numeric(.)%>%
+  as.factor(.)
 
 ##-- PLOT CHECK 
 if(plot.check){
@@ -1463,8 +1439,9 @@ if(plot.check){
 
 ## ------       3.4.2. EXTRACT COUNTIES ------
 
-dist <- st_distance(myDetectors$main.detector.sp, COUNTIES_AGGREGATED, by_element = F )
-detCounties <- apply(dist, 1, function(x) which.min(x))
+detCounties <- myDetectors$main.detector.sp %>%
+  st_distance(., COUNTIES_AGGREGATED, by_element = F) %>%
+  apply(., 1, function(x) which.min(x))
 COUNTIES_AGGREGATEDSubset <- COUNTIES_AGGREGATED[unique(detCounties),]
 COUNTIES_AGGREGATEDSubset$idunique <- as.numeric(as.factor(unique(detCounties)))
 detCounties <- as.numeric(as.factor(detCounties))
@@ -1935,9 +1912,63 @@ if(plot.check){
 
 
 
-## ------   4. GENERATE y DETECTION ARRAYS ------
+## ------   3. RESCALE COORDINATES ------
 
-## ------     4.1. ASSIGN SAMPLES TO DETECTORS -----
+# ##-- Rescale detector coordinates to the habitat 
+# scaledCoords <-  scaleCoordsToHabitatGrid(coordsData = detector.xy,
+#                                           coordsHabitatGridCenter = habitat.xy)
+# ##-- Scaled habitat windows boundaries
+# lowerHabCoords <- scaledCoords$coordsHabitatGridCenterScaled - 0.5
+# upperHabCoords <- scaledCoords$coordsHabitatGridCenterScaled + 0.5
+# ##-- Scaled detectors coordinates
+# scaledDetCoords <- scaledCoords$coordsDataScaled
+
+##-- Rescale coordinates
+scaledCoords <- nimbleSCR::scaleCoordsToHabitatGrid(
+  coordsData = detectors$detectors.df[ ,c("x","y")],
+  coordsHabitatGridCenter = habitat$habitat.df[ ,c("x","y")])
+
+##-- Scaled habitat window coordinates
+habitat$scaledCoords <- scaledCoords$coordsHabitatGridCenterScaled
+habitat$scaledLowerCoords <- habitat$scaledCoords - 0.5
+habitat$scaledUpperCoords <- habitat$scaledCoords + 0.5
+
+##-- Scaled detector coordinates
+detectors$scaledCoords <- scaledCoords$coordsDataScaled
+
+
+
+## ------   4. CREATE LOCAL OBJECTS -----
+
+## [CM] reduce multiplicator to 3 
+maxDistReCalc <- 2.1*detectors$maxDist #+ sqrt(2*(DETECTIONS$resizeFactor*HABITAT$habResolution)^2)
+
+# DetectorIndexLESS <- GetDetectorIndexLESS(
+#   habitat.mx = myHabitat$habitat.mx,
+#   detectors.xy = nimData$detector.xy,
+#   maxDist = maxDistReCalc/res(myHabitat$habitat.r)[1],
+#   ResizeFactor = 1,
+#   plot.check = TRUE)
+
+DetectorIndexLESS <- getLocalObjects(
+  habitatMask = myHabitat$habitat.mx,
+  coords = scaledDetCoords,
+  dmax = maxDistReCalc/res(myHabitat$habitat.r)[1],
+  resizeFactor = 1,
+  plot.check = TRUE)
+
+##-- Get local detectors
+detectors$localObjects <- getLocalObjects(
+  habitatMask = habitat$habitat.mx,
+  coords = detectors$scaledCoords,
+  dmax = detectors$maxDist/habitat$resolution,
+  resizeFactor = detectors$resize.factor,
+  plot.check = F)
+
+
+## ------   5. GENERATE y DETECTION ARRAYS ------
+
+## ------     5.1. ASSIGN SAMPLES TO DETECTORS -----
 
 ##-- ALL SAMPLES
 myData.alive <- assignDetectors( 
@@ -1965,7 +1996,7 @@ myData.dead <- assignDetectors(
 
 
 
-## ------     4.2. FIX DETECTIONS IN NORRBOTTEN ------
+## ------     5.2. FIX DETECTIONS IN NORRBOTTEN ------
 
 ### MAKE SURE THAT INDIVIDUALS DETECTED OUTSIDE OF NORRBOTTEN DO NOT GET 
 ### ASSIGNED TO A DETECTOR IN NORRBOTTEN IN YEARS WERE THERE IS NO SAMPLING.
@@ -2092,7 +2123,7 @@ sum(myData.alive$data.sp$Detector[!myData.alive$data.sp$Year %in% yearsSampledNo
 
 
 
-## ------     4.3. GENERATE DETECTION HISTORIES : y.alive[i,j,t] & y.dead[i,t] ------
+## ------     5.3. GENERATE DETECTION HISTORIES : y.alive[i,j,t] & y.dead[i,t] ------
 
 ##-- ALL SAMPLES
 y.ar <- makeY( data = myData.alive$data.sp,
@@ -2147,7 +2178,7 @@ dimnames(y.ar.DEAD) <- list(dimnames(y.ar$y.ar2)[[1]], dimnames(y.ar$y.ar2)[[3]]
 
 
 
-## ------     4.4. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------
+## ------     5.4. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------
 
 distances <- list()
 for(t in 1:n.years){
@@ -2257,9 +2288,9 @@ for(t in 1:n.years){
 
 
 
-## ------     4.5. GENERATE INDIVIDUAL-LEVEL COVARIATES ------
+## ------     5.5. GENERATE INDIVIDUAL-LEVEL COVARIATES ------
 
-## ------       4.5.1. TRAP-RESPONSE ------
+## ------       5.5.1. TRAP-RESPONSE ------
 
 ##-- Make matrix of previous capture indicator
 already.detected <- makeTrapResponseCov(
@@ -2284,7 +2315,7 @@ if(plot.check){
 
 
 
-## ------       4.5.2. AGE ------
+## ------       5.5.2. AGE ------
 
 min.age <- age <- precapture <- matrix( NA, dim(y.ar$y.ar)[1], dim(y.ar$y.ar)[3],
                                         dimnames = list(y.ar$Id.vector, years))
@@ -2326,7 +2357,7 @@ image(t(age))
 
 
 
-## ------   5. MAKE AUGMENTATION ------
+## ------   6. MAKE AUGMENTATION ------
 
 ##-- DATA ARRAYS
 y.alive <- makeAugmentation( y = y.ar$y.ar,
@@ -2362,7 +2393,7 @@ already.detected <- makeAugmentation( y = already.detected,
 
 
 
-## ------   6. TRANSFORM Y TO SPARSE MATRICES ------
+## ------   7. TRANSFORM Y TO SPARSE MATRICES ------
 
 ##-- STRUCTURED
 #SparseY <- GetSparseY(y.aliveStructured)
