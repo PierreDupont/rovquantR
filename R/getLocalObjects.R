@@ -38,12 +38,13 @@
 #' localObject.list <- getLocalObjects(habitatMask, coords,  dmax = 7,resizeFactor = 1)
 #'
 #' @export
-getLocalObjects <- function( habitatMask,
-                             coords,
-                             dmax,
-                             resizeFactor = 1,
-                             plot.check = TRUE
-){
+getLocalObjects <- function( 
+    habitatMask,
+    coords,
+    dmax,
+    resizeFactor = 1,
+    plot.check = TRUE)
+{
   ## STORE THE COORDINATES OF THE ORIGINAL HABITAT CELLS
   oldCoords <- which(habitatMask > 0, arr.ind = T) - 0.5
   oldCoords <- cbind(oldCoords[,2], oldCoords[,1])
@@ -103,8 +104,8 @@ getLocalObjects <- function( habitatMask,
   
   ## FOR ALL HABITAT GRIDS, THE LOCAL EVALUATION SHOULD BE LARGE ENOUGH TO OVERLAP WITH > 0 TRAP
   if(any(numLocalIndices %in% 0)){
-     warning("dmax value too small. All habitat grid cells should have at least one local object within a radius of dmax.")
-   }
+    warning("dmax value too small. All habitat grid cells should have at least one local object within a radius of dmax.")
+  }
   
   ## STORE LOCAL  INDICES IN A MATRIX 
   Index <- matrix(NA, nrow = length(localIndices), ncol = maxLocalIndices)

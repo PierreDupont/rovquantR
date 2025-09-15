@@ -18,12 +18,14 @@
 #'
 #' @rdname plotQuantiles
 #' @export
-plotQuantiles <- function(x, 
-                          at,
-                          width = 0.15, 
-                          quantiles = c(0.0275,0.975),
-                          quantiles2 = c(0.25,0.75),
-                          col = adjustcolor("firebrick3",0.5)){
+plotQuantiles <- function(
+    x, 
+    at,
+    width = 0.15, 
+    quantiles = c(0.0275,0.975),
+    quantiles2 = c(0.25,0.75),
+    col = adjustcolor("firebrick3",0.5))
+{
   q1 <- quantile(x, prob = quantiles)
   polygon(x = c(at - width, at + width, at + width, at - width),
           y = c(q1[1], q1[1],  q1[2], q1[2]), 

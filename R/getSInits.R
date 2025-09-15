@@ -24,19 +24,20 @@
 #' 
 #' @rdname getSInits
 #' @export
-getSInits <- function( AllDetections = AllDetections,
-                       Id.vector = Id.vector, # vector with the id of the individuals in the same order than in Y
-                       idAugmented = idAugmented,#Id in the Id.vector that are augemented individuals 
-                       lowerCoords = lowerCoords,
-                       upperCoords = upperCoords,
-                       habitatGrid = habitatGrid,
-                       intensity = NULL,
-                       sd = 4,
-                       movementMethod = "dbernppACmovement_normal")
-  {
+getSInits <- function( 
+    AllDetections = AllDetections,
+    Id.vector = Id.vector, # vector with the id of the individuals in the same order than in Y
+    idAugmented = idAugmented,#Id in the Id.vector that are augemented individuals 
+    lowerCoords = lowerCoords,
+    upperCoords = upperCoords,
+    habitatGrid = habitatGrid,
+    intensity = NULL,
+    sd = 4,
+    movementMethod = "dbernppACmovement_normal")
+{
   #compile R nimble function for faster runs 
   if(movementMethod == "dbernppACmovement_normal"){
-  crbernppACmovement_normal <- compileNimble(rbernppACmovement_normal)
+    crbernppACmovement_normal <- compileNimble(rbernppACmovement_normal)
   }
   crbernppAC <- compileNimble(rbernppAC)
   
@@ -44,7 +45,7 @@ getSInits <- function( AllDetections = AllDetections,
   AllDetections$Id <- as.character(AllDetections$Id) 
   years <- sort(unique(AllDetections[,"Year"]))
   n.years <- length(years)
- 
+  
   
   detected <- table(AllDetections[,"Id"],AllDetections[,"Year"])
   #reorder the table to follow the vector
@@ -56,7 +57,7 @@ getSInits <- function( AllDetections = AllDetections,
     Id.vector <- Id.vector[whichNoDetections]
     
   }else{
-  detected <- detected[Id.vector,]
+    detected <- detected[Id.vector,]
   }
   
   n.detected <- length(Id.vector)
@@ -76,16 +77,16 @@ getSInits <- function( AllDetections = AllDetections,
   #Intensity vector/matrix
   if(is.null(intensity)){
     intensity <- matrix(2,nrow=numHabWindows,ncol=n.years)
-      for(t in 1:n.years){
+    for(t in 1:n.years){
       intensity[,t] <- rep(2,numHabWindows)
-      }
+    }
   }
   if(is.null(dim(intensity))){
     intensity1 <- matrix(2,nrow=numHabWindows,ncol=n.years)
-      for(t in 1:n.years){
-        intensity1[,t] <- intensity
-      }
-        intensity <- intensity1
+    for(t in 1:n.years){
+      intensity1[,t] <- intensity
+    }
+    intensity <- intensity1
   }
   
   logIntensities <- log(intensity)
@@ -97,17 +98,17 @@ getSInits <- function( AllDetections = AllDetections,
     whereDetections <- which(detected[i,]>0)
     detNums <- detected[Id.vector[i],whereDetections]
     for(t in whereDetections){
-        tmp <- AllDetections[AllDetections$Id %in% Id.vector[i] &
-                         AllDetections$Year %in% years[t],]
-        s[Id.vector[i],,t] <- colMeans(tmp[,c("x","y")])
-        
-        #if out of habitat, find the closest habitat cell
-        sxyID <- habitatGrid[trunc(s[Id.vector[i],2,t])+1, trunc(s[Id.vector[i],1,t])+1]
-        if(sxyID==0){
-          which.minhab <- which.min(abs(s[Id.vector[i],c("x"),t]-lowerCoords[,c("x")]) + 
-                                      abs(s[Id.vector[i],c("y"),t]-lowerCoords[,c("y")]))
-          s[Id.vector[i],,t] <- lowerCoords[which.minhab,]
-        }
+      tmp <- AllDetections[AllDetections$Id %in% Id.vector[i] &
+                             AllDetections$Year %in% years[t],]
+      s[Id.vector[i],,t] <- colMeans(tmp[,c("x","y")])
+      
+      #if out of habitat, find the closest habitat cell
+      sxyID <- habitatGrid[trunc(s[Id.vector[i],2,t])+1, trunc(s[Id.vector[i],1,t])+1]
+      if(sxyID==0){
+        which.minhab <- which.min(abs(s[Id.vector[i],c("x"),t]-lowerCoords[,c("x")]) + 
+                                    abs(s[Id.vector[i],c("y"),t]-lowerCoords[,c("y")]))
+        s[Id.vector[i],,t] <- lowerCoords[which.minhab,]
+      }
     }
     yrs <- 1:n.years
     whichYearNotDet <- yrs[which(!(detected[i,]>0))]
@@ -117,34 +118,34 @@ getSInits <- function( AllDetections = AllDetections,
     
     if(sum(whichYearDet%in%1)==1){
       for(t in whichYearNotDet){
-      s[Id.vector[i],,t] <- crbernppACmovement_normal(
-        n = 1,
-        lowerCoords = lowerCoords,
-        upperCoords = upperCoords, 
-        s = s[Id.vector[i],1:2,t-1],
-        sd = 4,
-        baseIntensities = intensity[,t],
-        habitatGrid =  habitatGrid,
-        numGridRows = numGridRows,
-        numGridCols = numGridCols,
-        numWindows= numHabWindows)
+        s[Id.vector[i],,t] <- crbernppACmovement_normal(
+          n = 1,
+          lowerCoords = lowerCoords,
+          upperCoords = upperCoords, 
+          s = s[Id.vector[i],1:2,t-1],
+          sd = 4,
+          baseIntensities = intensity[,t],
+          habitatGrid =  habitatGrid,
+          numGridRows = numGridRows,
+          numGridCols = numGridCols,
+          numWindows= numHabWindows)
       }#t
     } else {
       #backward
       for(t in minYearDet:2){
-      s[Id.vector[i],,t-1] <- crbernppACmovement_normal(
-        n = 1,
-        lowerCoords = lowerCoords,
-        upperCoords = upperCoords,
-        s = s[Id.vector[i], 1:2, t],
-        sd = 4,
-        baseIntensities = intensity[,t],
-        habitatGrid =  habitatGrid,
-        numGridRows = numGridRows,
-        numGridCols = numGridCols,
-        numWindows = numHabWindows)
+        s[Id.vector[i],,t-1] <- crbernppACmovement_normal(
+          n = 1,
+          lowerCoords = lowerCoords,
+          upperCoords = upperCoords,
+          s = s[Id.vector[i], 1:2, t],
+          sd = 4,
+          baseIntensities = intensity[,t],
+          habitatGrid =  habitatGrid,
+          numGridRows = numGridRows,
+          numGridCols = numGridCols,
+          numWindows = numHabWindows)
       }#t
-     # Forward
+      # Forward
       #remove the first year
       whichYearNotDet <- whichYearNotDet[-1]
       
@@ -163,8 +164,8 @@ getSInits <- function( AllDetections = AllDetections,
       }#t
     }
   }
-    
-#Augmented ids 
+  
+  #Augmented ids 
   for(i in 1:n.augmentedId){
     s[aug.vect[i],,1] <- crbernppAC(
       n = 1,
@@ -175,7 +176,7 @@ getSInits <- function( AllDetections = AllDetections,
       habitatGrid = habitatGrid,
       numGridRows = numGridRows,
       numGridCols = numGridCols)
-  #t>1
+    #t>1
     for(t in 2:n.years){
       s[aug.vect[i],,t] <- crbernppACmovement_normal(
         n = 1,
@@ -189,7 +190,7 @@ getSInits <- function( AllDetections = AllDetections,
         numGridCols = numGridCols,
         numWindows= numHabWindows)
     }#t
-}#i
+  }#i
   
   return(s)
   

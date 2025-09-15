@@ -18,8 +18,8 @@
 makeZfromScratch <- function(
     data.alive,
     data.dead = NULL, 
-    samplingMonths = 1:12
-    ){
+    samplingMonths = 1:12)
+{
   
   ##-- MAKE SURE ONLY ONE DEAD RECOVERY PER INDIVIDUAL
   if(sum(duplicated(data.dead$Id))>0){stop("INDIVIDUALS CANNOT BE DEAD TWICE!!!!")}

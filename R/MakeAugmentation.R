@@ -19,8 +19,8 @@ makeAugmentation <- function(
     y,
     aug.factor= NULL,
     aug.years = NULL,
-    replace.value = NA
-){
+    replace.value = NA)
+{
   
   ## Vector Data augmentation
   if(is.vector(y)){

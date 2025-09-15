@@ -9,7 +9,7 @@
 #'  \item{removing samples flagged as unusable by RovData/Mike}
 #' }
 #'  
-#' Additionally, it can produce a \code{html} report describing the content of the data in terms of number of samples, individuals, etc... 
+#' Additionally, it can produce a \code{.html} report describing the content of the data in terms of number of samples, individuals, etc... 
 #'
 #' @name cleanRovbaseData
 #' 

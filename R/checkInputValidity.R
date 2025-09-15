@@ -3,7 +3,7 @@
 #' @name checkInputValidity
 #' 
 #' @description
-#' \code{checkInputValidity} checks the validity of the nimbleSCR input fro OPSCR models.
+#' \code{checkInputValidity} checks the validity of the nimbleSCR input for OPSCR models.
 #'
 #' @param data A \code{sf} object containing the detection data
 #' @param detectors A \code{list} of sf objects containing the detector locations

@@ -21,10 +21,11 @@
 NULL
 #' @rdname assignSearchTracks
 #' @export
-assignSearchTracks <- function( data,
-                                tracks,
-                                #dist = 500,
-                                progress.bar = T)
+assignSearchTracks <- function( 
+    data,
+    tracks,
+    #dist = 500,
+    progress.bar = T)
 {
   ##-- Initialise track ID and distance
   data$trackID <- NA

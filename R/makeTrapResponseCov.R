@@ -20,8 +20,9 @@
 makeTrapResponseCov <- function(
     data,
     data.dead = NULL,
-    IDs = NULL){
-  # 
+    IDs = NULL)
+{
+  
   # ##-- LIST ALL INDIVIDUALS
   # if(is.null(IDs)){
   #   dummyId <- unique(as.character(data$Id))
@@ -45,38 +46,38 @@ makeTrapResponseCov <- function(
   # D_Year <- rep.int(dummyYears, rep(N_dummyId, N_dummyYears))
   # dummy <- cbind.data.frame(Id = D_Id, Year = D_Year)
   # 
-  # ##-- CREATE THE COMBINED DETECTION ARRAY OF ALIVE & DUMMY DETECTIONS
+  # ##-- CREATE THE COMBINED DETECTION ARRAY OF ALIVE & DUMMY DETECTIONSdata:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABIAAAASCAYAAABWzo5XAAAAbElEQVR4Xs2RQQrAMAgEfZgf7W9LAguybljJpR3wEse5JOL3ZObDb4x1loDhHbBOFU6i2Ddnw2KNiXcdAXygJlwE8OFVBHDgKrLgSInN4WMe9iXiqIVsTMjH7z/GhNTEibOxQswcYIWYOR/zAjBJfiXh3jZ6AAAAAElFTkSuQmCC
   # dummy <- rbind(dummy, data.frame(data)[ ,c("Id", "Year")])
   # tab <- table(dummy$Id, dummy$Year)
   # tab.ar <- matrix(0, dim(tab)[1], dim(tab)[2])
   # tab.ar[ ,2:dim(tab)[2]] <- tab[ ,1:(dim(tab)[2]-1)] - 1
   # tab.ar[tab.ar > 0] <- 1
   # dimnames(tab.ar) <- dimnames(tab)
-
-
+  
+  
   
   ##-- LIST INDIVIDUALS
   if(is.null(IDs)){
     IDs <- unique(c(as.character(data$Id), as.character(data.dead$Id)))
   }
-
+  
   ##-- LIST YEARS
   #Years <- sort(unique(c(data$Year, data.dead$Year)))#[RB] ADDED SORTING 2019-07-30 - reason: ran into problems with bear data
   Years <- min(data$Year):max(data$Year)
-
+  
   ##-- CREATE A DUMMY DATASET
   dummy <- data[ ,c("Id","Year")]
   dummy$Id <- factor(dummy$Id, IDs)
   dummy$Year <- factor(dummy$Year, Years)
   temp <- table(dummy$Id, dummy$Year)
-
+  
   ##-- CREATE THE TRAP RESPONSE COVARIATE MATRIX
   ## [PD] CHANGE TO   tab.ar <- matrix(NA, dim(temp)[1], dim(temp)[2]) ???
   tab.ar <- matrix(0, dim(temp)[1], dim(temp)[2])
   tab.ar[ ,2:dim(temp)[2]] <- temp[ ,1:(dim(temp)[2]-1)]
   tab.ar[tab.ar > 0] <- 1
   dimnames(tab.ar) <- dimnames(temp)
-
+  
   return(tab.ar)
 }
 

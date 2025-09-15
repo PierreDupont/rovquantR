@@ -27,7 +27,8 @@ makeSearchGrid <- function(
     resolution,
     div = 1,
     center = T,
-    plot = TRUE){
+    plot = TRUE)
+  {
   
   ##-- if the data is already a raster   
   subdetector.r <- data

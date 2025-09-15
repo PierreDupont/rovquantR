@@ -34,10 +34,11 @@
 #'
 #' @rdname getDensityInput
 #' @export
-getDensityInput <- function( regions, 
-                             habitat,
-                             s = NULL,
-                             plot.check = TRUE
+getDensityInput <- function( 
+    regions, 
+    habitat,
+    s = NULL,
+    plot.check = TRUE
 ){
   ##-- 1. If a raster is provided as input, use its resolution.
   ##-- Else, turn spatial object 'regions' into a raster with the desired 
@@ -95,9 +96,9 @@ getDensityInput <- function( regions,
   regions.rgmx[is.na(regions.rgmx)] <- 0
   if(is.factor(regions)){##
     row.names(regions.rgmx) <- raster::factorValues(regions, regionsNames)[,1]
-    }else{
-      row.names(regions.rgmx) <- regionsNames
-    }
+  }else{
+    row.names(regions.rgmx) <- regionsNames
+  }
   
   ##-- Identify which cells are habitat
   isHabitat <- which(!is.na(newRaster[]))
@@ -109,7 +110,7 @@ getDensityInput <- function( regions,
     regions.rgmx <-  matrix(regions.rgmx, nrow = 1)
     rownames(regions.rgmx) <- regionsNames
   }
-    
+  
   ##-- 6. Create a matrix of habitat cell IDs
   cellIDs <- rep(NA, ncell(habitat))
   cellIDs[isHabitat] <- 1:length(isHabitat)
@@ -124,8 +125,8 @@ getDensityInput <- function( regions,
   ##-- 8. Rescale activity center x- and y- coordinates
   if(!is.null(s)){
     rescaled_s <- nimbleSCR::scaleCoordsToHabitatGrid( coordsData = s,
-                                            coordsHabitatGridCenter = coordinates(regions),
-                                            scaleToGrid = T)
+                                                       coordsHabitatGridCenter = coordinates(regions),
+                                                       scaleToGrid = T)
     
     
     whereXY <- which(unlist(lapply(dimnames(rescaled_s$coordsDataScaled), function(x)any(x %in% c("x","y")))))
@@ -140,14 +141,14 @@ getDensityInput <- function( regions,
     
   }else{
     rescaled_hab <- nimbleSCR::scaleCoordsToHabitatGrid( coordsData = coordinates(regions),
-                                            coordsHabitatGridCenter = coordinates(regions),
-                                            scaleToGrid = T)$coordsHabitatGridCenterScaled
+                                                         coordsHabitatGridCenter = coordinates(regions),
+                                                         scaleToGrid = T)$coordsHabitatGridCenterScaled
     
     habitat.xy  <- rescaled_hab[isHabitat,]
     
     rescaled_s <- nimbleSCR::scaleCoordsToHabitatGrid( coordsData = s,
-                                            coordsHabitatGridCenter = coordinates(regions),
-                                            scaleToGrid = T)$coordsDataScaled
+                                                       coordsHabitatGridCenter = coordinates(regions),
+                                                       scaleToGrid = T)$coordsDataScaled
     
     output <- list( regions.r = newRaster,
                     habitat.id = habitat.id,

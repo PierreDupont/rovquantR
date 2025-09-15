@@ -40,19 +40,20 @@ makeHabitatFromRaster <- function(
     habitat.r, 			  
     buffer = NULL, 		 
     plot.check = TRUE, 
-    tolerance = NULL){ 
+    tolerance = NULL)
+{ 
   
   if(is.null(tolerance)){
     tolerance <- (raster::res(habitat.r)[1]/5)
-    }
+  }
   
   ##-- Create buffer around study area polygon
   polyBuffered <- sf::st_buffer(poly, dist = buffer)
-
+  
   ##-- Mask and crop habitat with the buffer 
   habitat.r <- raster::mask(habitat.r, polyBuffered)
   buffered.habitat.poly <- sf::st_as_sf(stars::st_as_stars(habitat.r), 
-                                    as_points = FALSE, merge = TRUE)
+                                        as_points = FALSE, merge = TRUE)
   buffered.habitat.poly <- buffered.habitat.poly[buffered.habitat.poly$Habitat>0,]
   habitat.r <- raster::crop(habitat.r, buffered.habitat.poly)
   
@@ -71,7 +72,7 @@ makeHabitatFromRaster <- function(
   habitat.xy <- as.data.frame(habitat.xy)
   habitat.sp <- sf::st_as_sf(habitat.xy, coords = c("x", "y"))
   sf::st_crs(habitat.sp) <- sf::st_crs(poly)
-
+  
   poly$id <- 1
   polyAggregated <- poly %>%
     dplyr::group_by(id) %>%
@@ -89,7 +90,7 @@ makeHabitatFromRaster <- function(
   lower.hab.sp <- sf::st_as_sf(lower.hab.sp, coords = c("x", "y"))
   sf::st_crs(lower.hab.sp) <- sf::st_crs(poly)
   sf::st_crs(upper.hab.sp) <- sf::st_crs(poly)
-
+  
   ##-- Create an habitat raster without buffer
   polyBuffered$id <- 1
   polyBuffAggregated <- polyBuffered %>% 
@@ -108,7 +109,7 @@ makeHabitatFromRaster <- function(
   ##-- Give cells in the buffer a NA
   habitat.rWthBuffer[whichFarFromBufferInHabitat] <- NA
   habitat.rSearchedAndBuffer[whichFarFromBufferInHabitat] <- 2
-
+  
   ##-- Visual plotting to check if everything is right 
   if(plot.check){
     raster::plot(habitat.r, col = c("white","green"), legend = F)							    
