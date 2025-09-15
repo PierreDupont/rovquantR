@@ -17,7 +17,7 @@ makeRovquantData_wolverine(
   detector.res = 10000,
   subdetector.res = 2000,
   max.det.dist = 84000,
-  resize.factor = 2
+  resize.factor = 1
 )
 }
 \arguments{

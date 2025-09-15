@@ -1,4 +1,5 @@
 ## ------ IMPORT REQUIRED LIBRARIES ------
+
 rm(list=ls())
 gc()
 #.libPaths(new=c(.libPaths(),"C:\\PROJECTS\\R\\LIBRARY"))
@@ -21,33 +22,33 @@ library(ggplot2)
 library(stars)
 
 
+
 ## ------ SET REQUIRED WORKING DIRECTORIES ------
-#source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/myWorkingDirectories.R")
+
 source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
-# source("C:/PROJECTS/RovQuant/Temp/RB/myWorkingDirectories.R")
+
 
 
 ## ------ SOURCE THE REQUIRED FUNCTIONS ------
+
 sourceDirectory(dir.function, modifiedOnly = FALSE)
 sourceDirectory(dir.function.nimble, modifiedOnly = FALSE)
 load(paste(dir.dropbox,"/DATA/MISC DATA/age.lookup.table.RData",sep=""))
 
 
 ## ------ SOURCE THE NIMBLE FUNCTION ------
-#source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/functions/Nimble/dbin_LESS_Cached_MultipleCovResponse.R")
+
 source("C:/My_documents/RovQuant/Temp/CM/functions/Nimble/dbin_LESS_Cached_MultipleCovResponse.R")
 
 
+
 ## -----------------------------------------------------------------------------
+
 ## ------ 0.SET ANALYSIS CHARACTERISTICS -----
-## -----------------------------------------------------------------------------
-### ==== 1. GENERAL VARIABLES DECLARATION ====
+
 myVars <- list(
   ## WORKING DIRECTORY & MODEL NAME
-  # WD = "C:/My_documents/NIMBLE/WOLVERINE",
   WD = "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025",
-  # WD = "C:/My_documents/rovquant/analyses/Rgit/jags.models/wolf/OpenPop/Final",
-  # WD = "C:/PROJECTS/Rgit/DATA/rovquant/WOLF OPSCR v2.1/NIMBLE",
   modelName = "Test",
   
   # HABITAT SPECIFICATIONS
@@ -87,7 +88,7 @@ if(!dir.exists(file.path(myVars$WD, myVars$modelName))){dir.create(file.path(myV
 
 ## -----------------------------------------------------------------------------
 ## ------ I.LOAD AND SELECT DATA ------
-## -----------------------------------------------------------------------------
+
 ### ==== 1. HABITAT DATA ====
 ### ====    1.1.LOAD RAW SHAPEFILES ====
 ## POLYGONS OF THE REGION
@@ -243,6 +244,8 @@ for(t in 1:nYears){
   TRACKS_YEAR[[t]] <- TRACKS
 }#t
 
+
+
 ### ====    3.2.DISTANCE TO ROADS ====
 ## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
 DistAllRoads <- raster(paste(dir.dropbox,"/DATA/GISData/Roads/MinDistAllRoads1km.tif", sep=""))
@@ -256,6 +259,8 @@ if(myVars$plot.check){
   plot(myStudyArea,add=T)
 }
 
+
+
 ### ====    3.3.DAYS OF SNOW ====
 # ## SEASONAL MAPS (CREATED IN TEMP/CM/GIS/snowMODIS)
 SNOW <- stack(paste(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2008_2024_Wolf.tif", sep=""))
@@ -264,6 +269,8 @@ names(SNOW) <- paste(2008:2023,(2008:2023)+1, sep="_")
 ## SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
 SNOW <- SNOW[[paste("X", years, "_", years+1, sep="")]]
 SNOW <- raster::crop(SNOW, c(0,40,55,75))
+
+
 
 # ## ====    3.4.SAVE SEARCH EFFORT OBJECTS FOR FASTER RUNS ====
 # save(TRACKS_YEAR, SNOW, DistAllRoads, file = file.path(myVars$WD, "TRACKS20122024Cleaned.RData"))
@@ -279,9 +286,10 @@ load(paste(dir.dropbox,"/DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweC
 plot(habitatRasters,"Habitat")
 plot(myStudyArea,add=T)
 
+
+
 ## -----------------------------------------------------------------------------
 ## ------ II.CREATE SCR DATA ------
-## -----------------------------------------------------------------------------
 ### ==== 1.CLEAN AND FILTER NGS DATA ====
 ## Remove DEAD entries from the DNA data [HB]
 DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
@@ -1789,20 +1797,11 @@ min.age <- MakeAugmentation(y = min.age, aug.factor = myVars$DETECTIONS$aug.fact
 precapture <- MakeAugmentation(y = precapture, aug.factor = myVars$DETECTIONS$aug.factor, replace.value = 0)
 
 
-##------------------------------------------------------------------------------
-##------------------------------------------------------------------------------
 
 
-## PICK UP HERE ON THURSDAY 10.07.2025
 
-
-##------------------------------------------------------------------------------
-##------------------------------------------------------------------------------
-
-
-## ----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## ------ III.MODEL SETTING AND RUNNING ------- 
-## ----------------------------------------------------------------------------------------------
 ### ==== 1. NIMBLE MODEL DEFINITION ====
 modelCode <- nimbleCode({
   ##--------------------------------------------------------------------------------------------
@@ -2166,21 +2165,7 @@ lowerCoords = nimData$lowerHabCoords
 upperCoords = nimData$upperHabCoords
 habitatGrid = nimData$habitatGrid
 
-# "id 586 t 10 j 1"
-# [1] "id 945 t 10 j 1"
-# [1] "id 1340 t 10 j 1"
-# [1] "id 1601 t 10 j 1"
-# [1] "id 1620 t 10 j 1"
-# [1] "id 1631 t 10 j 1"
-# [1] "id 1631 t 10 j 2"
-# [1] "id 1649 t 10 j 1"
-# [1] "id 1649 t 10 j 2"
-# [1] "id 1650 t 10 j 1"
-# [1] "id 1674 t 10 j 1"
-# [1] "id 1682 t 10 j 1"
-# [1] "id 1692 t 10 j 1"
-# >   
-# 
+
 # AllDetections[AllDetections$Id %in% Id.vector[586],]
 # 
 # i=945
@@ -2208,25 +2193,18 @@ habitatGrid = nimData$habitatGrid
 #            detector.xy[YDET[1:nimData$nbDetections[i, t]],1], col="green", pch=16)
 #   points(detector.xy[YDETOth[1:nimData$nbDetectionsOth[i, t]],2]~
 #            detector.xy[YDETOth[1:nimData$nbDetectionsOth[i, t]],1], col="purple", pch=16)
-#   
-#   
-#   
-#   
 # }
 
-
-
-sxy.init <- getSInits( AllDetections = AllDetections,
-                       Id.vector = Id.vector,
-                       idAugmented = idAugmented,
-                       lowerCoords = lowerCoords,
-                       upperCoords = upperCoords,
-                       habitatGrid = habitatGrid,
-                       intensity = NULL,
-                       sd = 4,
-                       movementMethod = "dbernppACmovement_normal"
-                       
-)
+sxy.init <- getSInits(
+  AllDetections = AllDetections,
+  Id.vector = Id.vector,
+  idAugmented = idAugmented,
+  lowerCoords = lowerCoords,
+  upperCoords = upperCoords,
+  habitatGrid = habitatGrid,
+  intensity = NULL,
+  sd = 4,
+  movementMethod = "dbernppACmovement_normal")
 ###
 
 
@@ -2536,16 +2514,16 @@ for(c in 1:4){
   }
   
   ### ==== 7. SAVE NIMBLE INPUT ====
-  # save(nimData,
-  #      nimConstants,
-  #      y.dead,
-  #      nimParams,
-  #      nimParams2,
-  #      modelCode,
-  #      nimInits,
-  #      file = file.path(myVars$WD, myVars$modelName,
-  #                       paste(myVars$modelName,"Chain", c, ".RData", sep = "")))
-  #####
+  save(nimData,
+       nimConstants,
+       y.dead,
+       nimParams,
+       nimParams2,
+       modelCode,
+       nimInits,
+       file = file.path(myVars$WD, myVars$modelName,
+                        paste(myVars$modelName,"Chain", c, ".RData", sep = "")))
+  ####
 }#c
 
 ### ==== 8. SAVE NECESSARY OBJECTS ====
@@ -2566,31 +2544,8 @@ save(myHabitat.list, myDetectors, COUNTRIES, myStudyArea.poly, COMMUNES,COUNTIES
 
 
 
-
 ### ==== 8. NIMBLE RUN ====
 ### ====    8.1 CONFIGURE NIMBLE MODEL ====
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/dbernPPAC.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/integrateIntensity_normal.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/calcWindowSizes.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/stratRejectionSampler_normal.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/dbernppACmovement_normal.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/integrateIntensityLocal_normal.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/dbernppLocalACmovement_normal.R")
-# 
-
-### ==== 8. NIMBLE RUN ====
-### ====    8.1 CONFIGURE NIMBLE MODEL ====
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/dbernPPAC.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/integrateIntensity_normal.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/calcWindowSizes.R")
-# 
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/stratRejectionSampler_normal.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/dbernppACmovement_normal.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/integrateIntensityLocal_normal.R")
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/WZ/ppSCR_Code_Cleaned/dbernppLocalACmovement_normal.R")
-# 
-
-
 for(c in 2:4){
   load(file.path(myVars$WD, myVars$modelName,
                  paste(myVars$modelName,"Chain", c, ".RData", sep = "")))
@@ -3203,9 +3158,9 @@ for(nb in 1:bite.number){
   gc() ## run R's garbage collector
 }#nb
 
-## -----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
 ## ------ IV.PROCESS RESULTS ------
-## -----------------------------------------------------------------------------------------------
+
 ### ==== 1. LOAD & PROCESS NIMBLE OPSCR OUTPUTS ====
 # List the directories containing bite outputs
 myVars$modelName <- myVars$modelName#"23.J_Fa"

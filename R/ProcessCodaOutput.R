@@ -1,10 +1,10 @@
 #' @title Process coda output 
 #'
 #' @description
-#' \code{ProcessCodaOutput} Process a coda output to make it readable. Those functions
+#' \code{processCodaOutput} Process a coda output to make it readable. Those functions
 #'  are from https://github.com/kenkellner/jagsUI/blob/master/R/processoutput.R  
 #'  
-#' @name ProcessCodaOutput
+#' @name processCodaOutput
 #'
 #' @param x A \code{mcmc.list} object.
 #' @param DIC A \code{logical} if DIC statistics should be computed or not. 
@@ -17,9 +17,9 @@
 #' @importFrom stats var sd
 #' 
 NULL
-#' @rdname ProcessCodaOutput
+#' @rdname processCodaOutput
 #' @export
-ProcessCodaOutput <- function( x,
+processCodaOutput <- function( x,
                                DIC = F,
                                params.omit = NULL,
                                verbose = TRUE)

@@ -169,9 +169,9 @@ processRovquantOutput_bear <- function(
     grDevices::dev.off()
     
     ##-- Process MCMC output
-    results_F <- ProcessCodaOutput( nimOutput_F$samples,
+    results_F <- processCodaOutput( nimOutput_F$samples,
                                     params.omit = c("sxy","z"))
-    resultsSXYZ_F <- ProcessCodaOutput(nimOutput_F$samples2)
+    resultsSXYZ_F <- processCodaOutput(nimOutput_F$samples2)
     
     ##-- Remove unnecessary objects from memory
     rm(list = c("nimOutput_F"))
@@ -202,9 +202,9 @@ processRovquantOutput_bear <- function(
     dev.off()
     
     ##-- Process MCMC output
-    results_M <- ProcessCodaOutput( nimOutput_M$samples,
+    results_M <- processCodaOutput( nimOutput_M$samples,
                                     params.omit = c("sxy","z"))
-    resultsSXYZ_M <- ProcessCodaOutput(nimOutput_M$samples2)
+    resultsSXYZ_M <- processCodaOutput(nimOutput_M$samples2)
     
     ##-- Remove unnecessary objects from memory
     rm(list = c("nimOutput_M"))

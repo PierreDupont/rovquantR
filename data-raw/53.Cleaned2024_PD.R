@@ -802,8 +802,8 @@ table(myFilteredData.sp$alive$Year)
 
 # COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten",]
 
-COMMUNES_NOR <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp", sep = ""))   ## Communal map of Norway
-COMMUNES_SWE <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp", sep = ""))    ## Communal map of Sweden
+COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))   ## Communal map of Norway
+COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))    ## Communal map of Sweden
 ## POLYGONS OF COUNTIES IN SWEDEN & NORWAY
 COUNTIESNorrbotten <- rbind(COMMUNES_NOR, COMMUNES_SWE) %>%
   filter(NAME_1 %in% "Norrbotten") %>%
@@ -1214,7 +1214,7 @@ myHabitat <- makeHabitatFromRaster(
 
 ##-- FORMAT DETECTOR LOCATIONS & NUMBER OF TRIALS PER DETECTOR IN ARRAYS/MATRICES
 habitat.xy <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] 
-n.habCells <- nrow(myDetectors$main.detector.sp)[1]
+n.habCells <- nrow(habitat.xy)[1]
 
 
 # ## [PD] USELESS!
@@ -1341,18 +1341,26 @@ message("Preparing detectors characteristics... ")
 ## ------     2.1. GENERATE DETECTORS CHARACTERISTICS -----
 
 ##-- GENERATE NGS DETECTORS BASED ON THE STUDY AREA
-habitat.subdetectors <- disaggregate(
+subdetectors.r <- disaggregate(
   myHabitat$habitat.rWthBuffer,
   fact = res(myHabitat$habitat.r)[1]/detectors$resolution.sub)
 
 ##-- GENERATE NGS DETECTORS BASED ON THE STUDY AREA
 myDetectors <- makeSearchGrid( 
-  data = habitat.subdetectors,
+  data = subdetectors.r,
   resolution = detectors$resolution,
   div = (detectors$resolution/detectors$resolution.sub)^2,
   plot = FALSE)
 
-##-- EXTRACT NUMBERS OF DETECTORS
+##-- Generate NGS detectors based on the raster of sub-detectors
+detectors <- makeSearchGrid( 
+  data = subdetectors.r,
+  resolution = detectors$detResolution,
+  div = (detectors$resolution/detectors$resolution.sub)^2,
+  plot = FALSE) %>%
+  append(detectors,.)
+
+ ##-- EXTRACT NUMBERS OF DETECTORS
 n.detectors <- dim(myDetectors$main.detector.sp)[1]
 # n.detectors.dead <- dim(myDetectors$main.detector.sp)[1]
 
@@ -1377,14 +1385,12 @@ distDetsCounties <- st_distance( myDetectors$main.detector.sp,
                                  byid = T)
 detsNorrbotten <- which(apply(distDetsCounties, 1, which.min) == 3)
 
-
 # ## [PD] USELESS!
 # ##-- RETRIEVE DETECTION WINDOWS BOUNDARIES
 # lowerDetCoords <- detector.xy - 0.5 * detectors$resolution
 # upperDetCoords <- detector.xy + 0.5 * detectors$resolution
 # lowerDetCoords.dead <- detector.dead.xy - 0.5 * DETECTORS$detDeadResolution
 # upperDetCoords.dead <- detector.dead.xy + 0.5 * DETECTORS$detDeadResolution
-
 
 ## PLOT CHECK
 if(plot.check){
@@ -1647,7 +1653,7 @@ if(plot.check){
 
 
 ##-- RASTERIZE AT THE DETECTOR LEVEL
-r.detector <- aggregate( habitat.subdetectors,
+r.detector <- aggregate( subdetectors.r,
                          fact = (detectors$resolution/detectors$resolution.sub))
 r.list <- lapply(years, function(y){
   rl <- raster::rasterize(skandObs[skandObs$monitoring.season %in% y, 1], r.detector , fun="count")[[1]]
@@ -1724,7 +1730,7 @@ subsetSpace <- !is.na(as.numeric(st_intersects(rovbaseObs.sp, habitat.rWthBuffer
 rovbaseObs.sp <- rovbaseObs.sp[subsetSpace,] 
 
 ## RASTERIZE 
-r.detector <- aggregate( habitat.subdetectors,
+r.detector <- aggregate( subdetectors.r,
                          fact = (detectors$resolution/detectors$resolution.sub))
 r.list <- lapply(years, function(y){
   rl <- raster::rasterize(rovbaseObs.sp[rovbaseObs.sp$monitoring.season %in% y, 1], r.detector , fun="count")[[1]]
