@@ -33,6 +33,7 @@
 #' @param path.rds (optional) a \code{path} to the folder containing the last MCMC model state file.
 #' @param burnin an \code{integer} denoting the number of MCMC bites to be removed 
 #' as burn-in. 
+#' @param thin,thin2 (optional) \code{integers} denoting the thinning rates to be used when collecting MCMC bites.
 #' @param pattern a \code{character string} denoting the name of the object containing
 #' MCMC samples in each .R Data bite file.
 #' @param param.omit a \code{character vector} denoting the names of parameters 
@@ -207,6 +208,8 @@ NULL
 collectMCMCbites <- function(
     path,
     burnin = 0,
+    thin = NULL,
+    thin2 = NULL,
     pattern = "mcmcSamples",
     param.omit = NULL,
     progress.bar = T)
@@ -268,7 +271,12 @@ collectMCMCbites <- function(
       ## Remove parameters to ignore (optional) 
       paramSimple <- sapply(strsplit(colnames(out), split = '\\['), '[', 1)
       paramInd <- which(! paramSimple %in% param.omit)
-      out.list[[b]] <- out[ ,paramInd] 
+      if(is.null(thin)){
+        out.list[[b]] <- out[ ,paramInd] 
+      } else {
+        thisSeq <- seq(1, nrow(out), by = thin)
+        out.list[[b]] <- out[thisSeq,paramInd] 
+      }
       
       ## Get the mcmc samples 2 object (only if thin2 used)
       objInd2 <- which(ls() == paste0(pattern,"2"))
@@ -277,8 +285,14 @@ collectMCMCbites <- function(
         out2 <- get(ls()[objInd2])
         paramSimple2 <- sapply(strsplit(colnames(out2), split = '\\['), '[', 1)
         paramInd2 <- which(! paramSimple2 %in% param.omit)
-        out.list2[[b]] <- out2[ ,paramInd2]   
+        if(is.null(thin2)){
+          out.list2[[b]] <- out2[ ,paramInd2] 
+        } else {
+          thisSeq <- seq(1, nrow(out2), by = thin2)
+          out.list2[[b]] <- out2[thisSeq,paramInd2] 
+        }
       }
+      
       ## Print progress bar
       if(progress.bar){ utils::setTxtProgressBar(pb,b) }
     }#b
