@@ -336,7 +336,7 @@ plotDensityMaps <- function(
                                          side = 2, font = 1, line = 0, cex = 1))
         
         ##-- Add bear silhouette 
-        picSpecies <- png::readPNG( system.file("images", "wolverine.png", package = "rovquantR"))
+        picSpecies <- png::readPNG( system.file("images", "wolf.png", package = "rovquantR"))
         picSize <- dim(picSpecies)
         xPos <- legend.x + 0.01 * xRange
         xSize <- 0.25 * xRange
