@@ -336,7 +336,7 @@ plotDensityMaps <- function(
                                          side = 2, font = 1, line = 0, cex = 1))
         
         ##-- Add bear silhouette 
-        picSpecies <- png::readPNG( system.file("images", "bear.png", package = "rovquantR"))
+        picSpecies <- png::readPNG( system.file("images", "wolverine.png", package = "rovquantR"))
         picSize <- dim(picSpecies)
         xPos <- legend.x + 0.01 * xRange
         xSize <- 0.25 * xRange
@@ -368,7 +368,7 @@ plotDensityMaps <- function(
              cex = 1.2, font = 2)
         
         ##-- Add caption
-        mtext(text = paste0("Density map and ranges of abundance \nestimated for brown bears in Norway in ",
+        mtext(text = paste0("Density map and ranges of abundance \nestimated for wolves in ",
                             names(estimates)[length(density)]),
               side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
       } 
@@ -378,14 +378,14 @@ plotDensityMaps <- function(
       if(species == "wolverine") {
         
         ##-- Add km scale 
-        legend.x <- xLims[1] + 0.65 * xRange
+        legend.x <- xLims[1] + 0.75 * xRange
         legend.y <- yLims[1] + 0.2 * yRange
         graphics::segments(
           x0 = legend.x, x1 = legend.x,
           y0 = legend.y-250000, y1 = legend.y + 250000,
           col = "gray30", lwd = 4, lend = 2)
         graphics::text(
-          x = legend.x - 0.05 * xRange,
+          x = legend.x - 0.03 * xRange,
           y = legend.y,
           labels = "500 km", srt = 90, cex = 1.4)
         
@@ -401,7 +401,7 @@ plotDensityMaps <- function(
                                          side = 2, font = 1, line = 0, cex = 1))
         
         ##-- Add bear silhouette 
-        picSpecies <- png::readPNG( system.file("images", "bear.png", package = "rovquantR"))
+        picSpecies <- png::readPNG( system.file("images", "wolverine.png", package = "rovquantR"))
         picSize <- dim(picSpecies)
         xPos <- legend.x + 0.01 * xRange
         xSize <- 0.25 * xRange
@@ -413,10 +413,10 @@ plotDensityMaps <- function(
                      ybottom = yPos,
                      ytop = yPos + ySize)
         
-        ##-- Add Norwegian flag 
-        norFlag <- png::readPNG( system.file("images", "nor.png", package = "rovquantR"))
+        ##-- Add Swedish flag 
+        norFlag <- png::readPNG( system.file("images", "swe.png", package = "rovquantR"))
         norSize <- dim(norFlag)
-        xPos <- xLims[1] + 0.05 * xRange
+        xPos <- xLims[1] + 0.03 * xRange
         xSize <- 0.1 * xRange
         yPos <- yLims[1] + 0.8 * yRange
         ySize <- xSize*picSize[1]/picSize[2]
@@ -433,7 +433,7 @@ plotDensityMaps <- function(
              cex = 1.2, font = 2)
         
         ##-- Add caption
-        mtext(text = paste0("Density map and ranges of abundance \nestimated for brown bears in Norway in ",
+        mtext(text = paste0("Density map and ranges of abundance \nestimated for wolverines in Sweden in ",
                             names(estimates)[length(density)]),
               side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
       } 
