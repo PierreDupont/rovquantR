@@ -211,6 +211,7 @@ makeRovquantData_bear <- function(
   
   
   ## ------   3. NGS DATA -----
+  
   ##-- Extract date from the last cleaned data file
   DATE <- getMostRecent( 
     path = file.path(working.dir,"data"),
@@ -357,7 +358,9 @@ makeRovquantData_bear <- function(
   
   ## ------       1.2.3. PLOTS -----
   
+  ##-- [PD]: NEED TO ADD PLOTS OF HABITAT COVARIATES
  
+  
   
   ## ------   2. GENERATE DETECTORS -----
   

@@ -87,7 +87,7 @@ cleanRovbaseData <- function(
   
   ##-- Species
   if(length(species) > 1) {
-    stop('This function can only deal with one species at a time... \nPlease, use one of "bear", "wolf", or "wolverine" for the n target species.')
+    stop('This function can only deal with one species at a time... \nPlease, use one of "bear", "wolf", or "wolverine" for the target species.')
   }
   if(sum(grep("bear", species, ignore.case = T)) > 0|
      sum(grep("bjørn", species, ignore.case = T)) > 0|

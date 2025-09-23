@@ -1,7 +1,7 @@
 #' @title RovQuant OPSCR wolverine data preparation.
 #'
 #' @description
-#' \code{makeRovquantData_wolverine} formats the available bear data for the OPSCR analysis using nimble and nimbleSCR.
+#' \code{makeRovquantData_wolverine} formats the available wolverine data for the OPSCR analysis using nimble and nimbleSCR.
 #' The data preparation process is composed of three main steps:
 #'  - defining and formatting habitat characteristics
 #'  - defining and formatting detectors characteristics
@@ -50,7 +50,7 @@ NULL
 #' @rdname makeRovquantData_wolverine
 #' @export
 makeRovquantData_wolverine <- function(
-    ##-- paths
+  ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
   
@@ -69,10 +69,9 @@ makeRovquantData_wolverine <- function(
   detector.res = 10000,
   subdetector.res = 2000,
   max.det.dist = 84000,
-  resize.factor = 1 
-){
-  ## ---------------------------------------------------------------------------
-  
+  resize.factor = 1)
+{
+
   ## ------ 0. BASIC SET-UP ------
   
   ##-- Set default values for the wolverine model
@@ -114,7 +113,7 @@ makeRovquantData_wolverine <- function(
   data(habitatRasters, envir = environment()) 
   data(GLOBALMAP, envir = environment()) 
   data(REGIONS, envir = environment())
-
+  
   
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
@@ -222,7 +221,7 @@ makeRovquantData_wolverine <- function(
   
   
   ## ------   3. NGS DATA -----
-
+  
   ##-- Extract date from the last cleaned data file
   DATE <- getMostRecent( 
     path = file.path(working.dir, "data"),
@@ -252,7 +251,6 @@ makeRovquantData_wolverine <- function(
   message("Preparing habitat characteristics... ")
   
   ## ------     1.2. GENERATE HABITAT CHARACTERISTICS ------
-  
   
   ##-- DELINEATE A BUFFER AROUND ALL NGS DETECTIONS 
   myBufferedArea <- myFilteredData.sp$alive %>%
@@ -286,12 +284,12 @@ makeRovquantData_wolverine <- function(
     habitat.r = habitatRasters[["Habitat"]],
     buffer = buffer.size,                               
     plot.check = T)
-
+  
   
   ##-- FORMAT DETECTOR LOCATIONS & NUMBER OF TRIALS PER DETECTOR IN ARRAYS/MATRICES
   habitat.xy <- coordinates(myHabitat$habitat.r)[myHabitat$habitat.r[]==1,] 
   n.habCells <- nrow(myDetectors$main.detector.sp)[1]
-
+  
   
   ## [PD] USELESS !
   ##-- CREATE HABITAT GRID

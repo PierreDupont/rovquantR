@@ -48,8 +48,10 @@ assignSearchTracks <- function(
     ##-- Print progress bar
     if(progress.bar){ utils::setTxtProgressBar(pb,i) }
     
-    ##-- If no tracks on the same date ==> next sample
+    ##-- Subset search tracks to the day the sample was collected
     theseTracks <- tracks %>% filter(Dato == as.character(data$Date[i]))
+    
+    ##-- If no tracks on the same day, move to next sample...
     if(nrow(theseTracks) == 0){next}
     
     ##-- INTERSECT BUFFERED POINT WITH TRACKS RAN THE SAME DAY
@@ -59,13 +61,13 @@ assignSearchTracks <- function(
     # ##-- If no match, move on...
     # if(nrow(theseTracks) == 0){next}
     
-    ##-- ... Else, find the closest track
+    ##-- ... Else, find the closest track, and retrieve track ID and distance
     dist <- st_distance(data[i, ], theseTracks, by_element = F)
     data$trackID[i] <- theseTracks$RovbaseID[which.min(dist)]
     data$trackDist[i] <- min(dist)
   }#i
   
-  if(progress.bar)close(pb)  
+  if(progress.bar){ close(pb) }
   return(data)
 }
 
