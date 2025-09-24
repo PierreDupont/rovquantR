@@ -19,7 +19,7 @@
 #'
 #' @rdname addPopSize
 #' @export
-addPopSize <- function(x, y, size){
+addPopSize <- function(x, y, size){ 
   
   ##-- Initial checks
   if(!inherits(x,"list")){ x <- list(x) }
@@ -67,4 +67,4 @@ addPopSize <- function(x, y, size){
                       names(estimates)[length(density)]),
         side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
 } 
-}
+
