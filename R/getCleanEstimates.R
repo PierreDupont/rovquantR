@@ -14,6 +14,9 @@
 #'
 #' @importFrom stats quantile median
 #' 
+#' @examples
+#' getCleanEstimates(rnorm(1000), "mean", quantiles = c(0.025,0.975))
+#' 
 #' @rdname getCleanEstimates
 #' @export
 getCleanEstimates <- function(

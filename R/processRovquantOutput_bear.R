@@ -536,8 +536,7 @@ processRovquantOutput_bear <- function(
     background = COUNTRIES[1, ],
     type = c("time.series", "last.year"),
     path = working.dir,
-    name = "AC_Density", 
-    extraction.raster = FALSE)
+    name = "AC_Density")
   
   ##-- UD-density maps
   plotDensityMaps( 
@@ -548,7 +547,9 @@ processRovquantOutput_bear <- function(
     background = COUNTRIES[1, ],
     type = c("time.series", "last.year","summary","summary_NOR"),
     species = "bear",
-    q95 = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")],
+    labels = list("nor" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")]),
+    x.labels = 0.3,
+    y.labels = 0.8,
     path = working.dir,
     name = "UD_Density")
   
