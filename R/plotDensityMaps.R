@@ -38,6 +38,7 @@ plotDensityMaps <- function(
     labels = NULL,
     x.labels = NULL,
     y.labels = NULL,
+    caption = NULL,
     export.raster = TRUE,
     name = "UD_Density")
 {
@@ -271,7 +272,7 @@ plotDensityMaps <- function(
       
       ##-- Add km scale 
       addScale(x = 0.75, y = 0.25, size = 500000)
-      
+
       ##-- Add species silhouette 
       addPNG( x = 0.8, y = 0.5, name = species, size = 0.2)
       
@@ -279,12 +280,14 @@ plotDensityMaps <- function(
       if(!is.null(labels)){addPopSize( x = x.labels, y = y.labels, labels = labels)}
       
       ##-- Add caption
-      mtext(text = paste0("Density map and ranges of abundance \nestimated for ",
-                          engSpecies,
-                          " in ",
+      if(is.null(caption)){
+      mtext(text = paste0("Density map and estimated ", engSpecies,
+                          "\nabundance range estimated in ",
                           names(estimates)[length(density)]),
             side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
-      
+      } else {
+        mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
+      }
       dev.off()
     }
   }
@@ -335,11 +338,14 @@ plotDensityMaps <- function(
       if(!is.null(labels)){addPopSize( x = x.labels, y = y.labels, labels = labels)}
       
       ##-- Add caption
+      if(is.null(caption)){
       mtext(text = paste0("Kart som viser tetthet av ", norSpecies,
-                          " med \nintervaller for estimert antall ", engSpecies,
+                          " med \nintervall for estimert antall ", norSpecies,
                           " i ", names(estimates)[length(density)]),
             side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
-      
+        } else {
+          mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
+        }
       dev.off()
     }
   }
