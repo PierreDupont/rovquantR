@@ -303,7 +303,7 @@ plotDensityMaps <- function(
               cex = 1.2, font = 2)
         
         ##-- Add caption
-        mtext(text = paste0("Density map and ranges of abundance \nestimated for brown bears in Norway in ",
+        mtext(text = paste0("Density map and estimated abundance range \nestimated for brown bears in Norway in ",
                             names(estimates)[length(density)]),
               side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
       } 
@@ -368,7 +368,7 @@ plotDensityMaps <- function(
              cex = 1.2, font = 2)
         
         ##-- Add caption
-        mtext(text = paste0("Density map and ranges of abundance \nestimated for wolves in ",
+        mtext(text = paste0("Density map and estimated wolf abundance range \nestimated for wolves in ",
                             names(estimates)[length(density)]),
               side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
       } 
@@ -433,7 +433,7 @@ plotDensityMaps <- function(
              cex = 1.2, font = 2)
         
         ##-- Add caption
-        mtext(text = paste0("Density map and ranges of abundance \nestimated for wolverines in Sweden in ",
+        mtext(text = paste0("Density map and estimated wolverine abundance range \nin Sweden during winter ",
                             names(estimates)[length(density)]),
               side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
       } 
