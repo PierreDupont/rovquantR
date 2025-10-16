@@ -343,7 +343,7 @@ plotDensityMaps <- function(
                           " med \nintervall for estimert antall ", norSpecies,
                           " i ", names(estimates)[length(density)]),
             side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
-        else {
+        } else {
           mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
         }
       dev.off()
