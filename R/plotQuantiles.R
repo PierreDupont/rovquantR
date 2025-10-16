@@ -15,7 +15,12 @@
 #'
 #' @importFrom graphics polygon 
 #' @importFrom stats quantile
-#'
+#' @importFrom grDevices adjustColor
+#' 
+#' @examples   
+#' plot(1, xlim = c(0, 2), ylim = c(0,100), type = "n")
+#' plotQuantiles(x = rnorm(1000, 60, sd = 12), at = 1, width = 0.18, quantiles2 = c(0.25,0.75))
+#' 
 #' @rdname plotQuantiles
 #' @export
 plotQuantiles <- function(

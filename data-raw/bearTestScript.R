@@ -34,7 +34,7 @@ gc()
 ## ------ INSTALL 'rovquantR' FROM GITHUB ------
 
 ## Ctrl + Shift + F10 (to restart R session)
-devtools::install_github("PierreDupont/rovquantR")
+devtools::install_github("PierreDupont/rovquantR@devel")
 
 
 
@@ -50,10 +50,10 @@ library(nimbleSCR)
 ##-- DATA DIRECTORY
 ##-- Directory containing the raw data necessary for the analysis
 ##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
-data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/Data"
+data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/2025/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/Analysis_report"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/PopFlow/PopExpansion_bear"
 
 
 ##------------------------------------------------------------------------------
