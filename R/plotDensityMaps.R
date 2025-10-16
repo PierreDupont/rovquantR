@@ -38,6 +38,7 @@ plotDensityMaps <- function(
     labels = NULL,
     x.labels = NULL,
     y.labels = NULL,
+    caption = NULL,
     export.raster = TRUE,
     name = "UD_Density")
 {
@@ -287,7 +288,6 @@ plotDensityMaps <- function(
       } else {
         mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
       }
-      
       dev.off()
     }
   }
@@ -338,11 +338,14 @@ plotDensityMaps <- function(
       if(!is.null(labels)){addPopSize( x = x.labels, y = y.labels, labels = labels)}
       
       ##-- Add caption
+      if(is.null(caption)){
       mtext(text = paste0("Kart som viser tetthet av ", norSpecies,
                           " med \nintervall for estimert antall ", norSpecies,
                           " i ", names(estimates)[length(density)]),
             side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
-      
+        else {
+          mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
+        }
       dev.off()
     }
   }
