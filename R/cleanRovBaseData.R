@@ -289,7 +289,10 @@ cleanRovbaseData <- function(
     ##-- Rename columns to facilitate manipulation
     dplyr::rename(., any_of(rename.list)) %>%
     ##-- Filter to the focal species
-    dplyr::filter(., Species %in% norSpecies) %>%
+    dplyr::filter(.,
+                  Species %in% norSpecies,
+                  #!substr(RovbaseID_sample,1,1) %in% "M"
+                  ) %>%
     ##-- Remove any duplicates
     dplyr::distinct(., .keep_all = TRUE) %>%
     ##-- Turn potential factors into characters 
@@ -353,7 +356,10 @@ cleanRovbaseData <- function(
     ##-- Rename columns to facilitate manipulation
     dplyr::rename(., any_of(rename.list)) %>%
     ##-- Filter to the focal species
-    dplyr::filter(., Species %in% norSpecies) %>%
+    dplyr::filter(.,
+                  Species %in% norSpecies,
+                  #!grepl( pattern = "Påskutt", x = as.character(Outcome))
+                  ) %>%
     ##-- Remove any duplicates
     dplyr::distinct(., .keep_all = TRUE) %>%
     ##-- Turn potential factors into characters 

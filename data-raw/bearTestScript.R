@@ -21,7 +21,7 @@
 ##------------------------------------------------------------------------------
 ##
 ## Notes: 
-## This is based on 'rovquantR' beta version 0.2
+## This is based on 'rovquantR' beta version 0.1
 ##   
 ##------------------------------------------------------------------------------
 
@@ -35,7 +35,6 @@ gc()
 
 ## Ctrl + Shift + F10 (to restart R session)
 devtools::install_github("PierreDupont/rovquantR@devel")
-
 
 
 ## ------ LOAD REQUIRED LIBRARIES ------

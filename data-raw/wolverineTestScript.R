@@ -1,10 +1,10 @@
 ##------------------------------------------------------------------------------
 ##
-## Script name: RovQuant BEAR OPSCR analysis 
+## Script name: RovQuant WOLVERINE OPSCR analysis 
 ##
 ## Purpose of script: 
 ## This R script performs:
-## 1. the initial cleaning of the Brown bear NGS data downloaded from RovBase.3.0
+## 1. the initial cleaning of the wolverine NGS data downloaded from RovBase.3.0
 ## 2. the data preparation for the RovQuant OPSCR analysis with the 'nimbleSCR' package
 ## 3. the model fitting using 'nimble' and 'nimbleSCR'
 ## 4. the post-processing of the MCMC output
@@ -12,16 +12,16 @@
 ## Author: Pierre Dupont
 ## Email: pierre.dupont@nmbu.no
 ##
-## Date Created: `r paste(Sys.Date())`
+## Date Created: 26/09/2025
 ##
-## Copyright (c) Applied Quantitative Ecology Group (AQEG), `r paste(format(Sys.Date(), "%Y"))`
+## Copyright (c) Applied Quantitative Ecology Group (AQEG), 2025
 ## Faculty of Environmental Sciences and Natural Resource Management (MINA)
 ## Norwegian University of Life Sciences (NMBU), Ås, Norway 
 ##
 ##------------------------------------------------------------------------------
 ##
 ## Notes: 
-## This is based on 'rovquantR' beta version 0.2
+## This is based on 'rovquantR' beta version 0.1
 ##   
 ##------------------------------------------------------------------------------
 rm(list = ls())
@@ -30,8 +30,12 @@ gc()
 
 ## ------ IMPORT REQUIRED LIBRARIES ------
 
-devtools::install_github("PierreDupont/rovquantR")
 ## Ctrl + Shift + F10 (to restart R session)
+devtools::install_github("PierreDupont/rovquantR@devel")
+
+
+## ------ LOAD REQUIRED LIBRARIES ------
+
 library(rovquantR)
 library(nimbleSCR)
 
@@ -43,10 +47,10 @@ library(nimbleSCR)
 ##-- DATA DIRECTORY
 ##-- Directory containing the raw data necessary for the analysis
 ##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
-data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/wolverine/Data"
+data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/wolverine/2024"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Test.0.2"
 
 
 
@@ -55,7 +59,7 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/rovquantR/w
 
 cleanRovbaseData( 
   species = "wolverine",
-  years = 2015:2024,
+  years = 2014:2023,
   data.dir = data.dir,
   working.dir = working.dir)
 
