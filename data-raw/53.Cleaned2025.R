@@ -1,7 +1,31 @@
-## ------ IMPORT REQUIRED LIBRARIES ------
+##------------------------------------------------------------------------------
+##
+## Script name: RovQuant WOLVERINE OPSCR analysis 2025 
+##
+## This R script reproduces the OPSCR analysis of the wolverine data as performed
+## by RovQuant in 2024.
+##
+## NOTES : Two main updates from last year's script ('53.Cleaned2024.R')
+##  1. Added a step to remove duplicated GPS tracks (from Asun)
+##  2. Added dead recovery states ('recovered dead legal' and 'recovered dead other') 
+##     as in the last wolf ('40.F_2024_sf.R') and bear analyses ('Bear_NORWAY_2015-2024.R').
+##
+## Author: Pierre Dupont
+## Email: pierre.dupont@nmbu.no
+##
+## Date Created: 20/10/2025
+##
+## Copyright (c) Applied Quantitative Ecology Group (AQEG), 2025
+## Faculty of Environmental Sciences and Natural Resource Management (MINA)
+## Norwegian University of Life Sciences (NMBU), Ås, Norway 
+##   
+##------------------------------------------------------------------------------
 
 rm(list=ls())
 gc()
+
+## ------ IMPORT REQUIRED LIBRARIES ------
+
 library(raster)
 library(coda)
 library(nimble)
@@ -26,7 +50,6 @@ library(stars)
 source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
 
 
-
 ## ------ SOURCE THE REQUIRED FUNCTIONS ------
 
 sourceDirectory(dir.function, modifiedOnly = FALSE)
@@ -34,11 +57,9 @@ sourceDirectory(dir.function.nimble, modifiedOnly = FALSE)
 load(paste(dir.dropbox,"/DATA/MISC DATA/age.lookup.table.RData",sep=""))
 
 
-
 ## ------ SOURCE THE NIMBLE FUNCTION ------
 
 source("C:/My_documents/RovQuant/Temp/CM/functions/Nimble/dbin_LESS_Cached_MultipleCovResponse.R")
-
 
 
 ##------------------------------------------------------------------------------
@@ -48,25 +69,25 @@ source("C:/My_documents/RovQuant/Temp/CM/functions/Nimble/dbin_LESS_Cached_Multi
 myVars <- list(
   ## WORKING DIRECTORY & MODEL NAME
   WD = "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025",
-  modelName = "Test",
+  modelName = "Test2025",
   
-  # HABITAT SPECIFICATIONS
+  ## HABITAT SPECIFICATIONS
   HABITAT = list( countries =  c("SWE","NOR"),
                   habResolution = 20000,
                   habBuffer = 60000),
   
-  # NGS DATA SPECIFICATIONS
+  ## NGS DATA SPECIFICATIONS
   DATA = list( years = 2014:2023,
-               species = c("Jerv"),               ## "Ulv","Jerv","Bjorn"
-               sex = c("Hunn"),                   ## "Hann","Hunn","Ukjent"
-               samplingMonths = list(12,1:6)),    ## list(10:12,1:4), list(1:XXX), list(XX:XX,YY:YY)
+               species = c("Jerv"),              
+               sex = c("Hunn"),                   
+               samplingMonths = list(12,1:6)),   
   
-  # DETECTORS SPECIFICATIONS
+  ## DETECTORS SPECIFICATIONS
   DETECTORS = list( detSubResolution = 2000,
                     detResolution = 10000,
                     detDeadResolution = 15000),
   
-  # DATA GENERATION
+  ## DATA GENERATION
   DETECTIONS = list( maxDetDist = 40000,
                      resizeFactor = 1,
                      aug.factor = 0.8),
@@ -95,21 +116,26 @@ if(!dir.exists(file.path(myVars$WD, myVars$modelName))){dir.create(file.path(myV
 ### ====    1.1.LOAD RAW SHAPEFILES ====
 
 ## POLYGONS OF THE REGION
-GLOBALMAP <- st_read(paste(dir.dropbox,"/DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp",sep="")) ## Map of Scandinavia (including Finland & parts of Russia)
+GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) 
 GLOBALMAP <- GLOBALMAP[GLOBALMAP$area > 80000000, ]
 GLOBALMAP <- st_crop(GLOBALMAP, st_bbox(extent(c(-70000,1200000,5100000,8080000))))
 
 ## POLYGONS OF SWEDEN & NORWAY
 COUNTRIES <- GLOBALMAP[GLOBALMAP$ISO %in% c("SWE","NOR"), ]
-COUNTRIES <- COUNTRIES %>%    group_by(ISO) %>%summarize()
+COUNTRIES <- COUNTRIES %>%
+  group_by(ISO) %>%
+  summarize()
 
 ## POLYGONS OF COMMUNES IN SWEDEN & NORWAY
-COMMUNES_NOR <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp", sep = ""))   ## Communal map of Norway
-COMMUNES_SWE <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp", sep = ""))    ## Communal map of Sweden
+COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))   
+COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))   
 COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
 
 ## POLYGONS OF COUNTIES IN SWEDEN & NORWAY
-COUNTIES <- COMMUNES %>% group_by(NAME_1) %>% summarize()
+COUNTIES <- COMMUNES %>%
+  group_by(NAME_1) %>%
+  summarize()
+
 ## AGGREGATE COUNTIES (OPTIONAL)
 COUNTIES_AGGREGATE <- COUNTIES
 #COUNTIES_AGGREGATED <- gSimplify(COUNTIES_AGGREGATED,tol=500, topologyPreserve = TRUE)
@@ -161,6 +187,8 @@ if(myVars$plot.check){
 
 ### ====    2.1.LOAD ROVBASE FILES ====
 
+## [[ PD : UPDATE WITH NEW FILE NAMES!!!! ]]
+
 DNA <- read.csv( file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/dna_wolverines.csv"),
                  fileEncoding = "latin1") ## NGS data from RovBase#[CM update to 20190627]
 
@@ -205,32 +233,97 @@ rovbaseObs$Proevetype <- translateForeignCharacters(dat=rovbaseObs$Proevetype, d
 
 ### ====    3.1.GPS SEARCH TRACKS ====
 
+## LOAD GPS SEARCH TRACKS
 TRACKS_SINGLE <- read_sf(file.path(dir.dropbox,
-                                   "DATA/RovbaseData/TRACK DATA FROM BOUVET 20240830/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp"))
+                                   "DATA/RovbaseData/ROVBASE DOWNLOAD 20250915/eksport_rovquant_aktivitetslogg_20250908/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250908.shp"))
 TRACKS_MULTI <- read_sf(file.path(dir.dropbox,
-                                  "DATA/RovbaseData/TRACK DATA FROM BOUVET 20240830/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))
+                                  "DATA/RovbaseData/ROVBASE DOWNLOAD 20250915/eksport_rovquant_aktivitetslogg_20250908/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250908.shp"))
 
-## COMBINE ALL TRACKS
-ALL_TRACKS <- rbind(TRACKS_SINGLE, TRACKS_MULTI)
-## REMOVE HELICOPTER TRACKS
-ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Helikopter == "0", ]
-# KEEP ONLY WOLVERINE TRACKS
-ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Jerv == "1", ]
+## COMBINE ALL TRACKS AND FIX DATES
+ALL_TRACKS <- rbind(TRACKS_SINGLE, TRACKS_MULTI) %>%
+  mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
+          Yr = as.numeric(format(Dato,"%Y")),
+          Mth = as.numeric(format(Dato,"%m")),
+          Dato = as.character(Dato)) %>%
+  dplyr::filter(
+    ## REMOVE HELICOPTER TRACKS
+    Helikopter == "0",
+    ## KEEP ONLY WOLVERINE TRACKS
+    Jerv == "1")
+
+## Check that we only have wolverine tracks
+table(ALL_TRACKS$Jerv) == nrow(ALL_TRACKS)
+## check
+hist(ALL_TRACKS$Yr)
 
 ## SELECT TRACKS YEAR
-TRACKS_YEAR <- TRACKS_YEAR.sp <- list()
+myStudyArea.extent <- st_bbox(extent(myStudyArea))
+st_crs(myStudyArea.extent) <- st_crs(COUNTRIES)
+
+## REMOVE DUPLICATED TRACKS
+dupIDs <- dupDist <- TRACKS_YEAR <- list()
+
 for(t in 1:nYears){
-  ## SUBSET GPS TRACKS TO THE SAMPLING PERIOD
-  TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][1] & ALL_TRACKS$Mth%in%myVars$DATA$samplingMonths[[1]], ]
-  TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][2] & ALL_TRACKS$Mth%in%myVars$DATA$samplingMonths[[2]], ]
-  TRACKS <- rbind(TRACKS_1, TRACKS_2)
-  ## SIMPLIFY TRACKS SHAPES
-  # TRACKS <- st_simplify(TRACKS, T, 100)
-  TRACKS <- st_intersection(TRACKS, st_as_sf(myStudyArea))
+  
+  TRACKS <- ALL_TRACKS %>% 
+    ## SUBSET GPS TRACKS TO THE SAMPLING PERIOD
+    filter( Yr%in%YEARS[[t]][1] & Mth %in% myVars$DATA$samplingMonths[[1]] |
+              Yr%in%YEARS[[t]][2] & Mth%in%myVars$DATA$samplingMonths[[2]]) %>%
+    ## SUBSET TRACKS TO THE STUDY AREA
+    st_intersection(., st_as_sfc(myStudyArea.extent)) 
+  
   ## NAME TRACKS
   TRACKS$ID <- 1:nrow(TRACKS)
-  TRACKS_YEAR[[t]] <- TRACKS
+  ## CALCULATE LENGTH OF EACH TRACK TO IDENTIFY DUPLICATES
+  TRACKS$dist <- st_length(TRACKS, byid = T)
+  ## CALCULATE CENTROIDS TO AVOID KEEPING TRACKS WITH THE SAME LENGTHS BUT IN DIFFERENT LOCATIONS
+  TRACKS$centroidx <- st_coordinates(st_centroid(TRACKS))[ ,1]
+  
+  ## FIND DUPLICATES BASED ON PERSON, DISTANCE and DATE
+  df <- data.frame( Dato = TRACKS$Dato,
+                    Person = TRACKS$Person,
+                    dist = TRACKS$dist,
+                    centroidx = TRACKS$centroidx)
+  dupIDs[[t]] <- TRACKS$ID[duplicated(df)]
+  dupDist[[t]] <- TRACKS$dist[duplicated(df)]
+  
+  ## STORE CLEAN TRACKS IN A LIST
+  TRACKS_YEAR[[t]] <- TRACKS[-dupIDs[[t]], ]
+  
+  # try a fast way to identify duplicated tracks
+  # turn to dataframe and identify them
+  # sub_tracks_filter <- TRACKS_YEAR[[t]] %>%
+  #   distinct(Dato, dist, .keep_all = T)
+  # distinct(Person, Dato, dist, .keep_all = T)
+
 }#t
+
+
+## PLOT CHECK
+if(myVars$plot.check){
+  
+  par(mfrow = c(2,2))
+  
+  ## Length of tracks searched per year
+  lengthPerYear <- unlist(lapply(TRACKS_YEAR,function(x) sum(x$dist)/1000))
+  names(lengthPerYear) <- years
+  barplot(lengthPerYear, ylab = "Track length (km)", main = "Length of tracks searched per year")
+  
+  ## Number of tracks searched per year
+  numPerYear <- unlist(lapply(TRACKS_YEAR,function(x) length(unique(x$ID))))
+  names(numPerYear) <- years
+  barplot(numPerYear, ylab = "Number of tracks", main = "Number of tracks searched per year")
+  
+  ## Length of tracks duplicated per year
+  dupdist <- unlist(lapply(dupDist,function(x) sum(x)/1000))
+  names(dupdist) <- years
+  barplot(dupdist,ylab = "Track length (km)", main = "Length of tracks duplicated per year")
+  
+  ## Number of tracks duplicated per year
+  dup <- unlist(lapply(dupIDs,length))
+  names(dup) <- years
+  barplot(dup, ylab = "Number of tracks", main = "Number of tracks duplicated per year")
+}
 
 
 
@@ -239,15 +332,18 @@ for(t in 1:nYears){
 ## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
 DistAllRoads <- raster(file.path( dir.dropbox,
                                   "DATA/GISData/Roads/MinDistAllRoads1km.tif"))
-r   <- fasterize(st_as_sf(myStudyArea), DistAllRoads)
+
+## RASTERIZE DISTANCE TO ROADS
+r <- fasterize(st_as_sf(myStudyArea), DistAllRoads)
 r[!is.na(r)] <- DistAllRoads[!is.na(r)]
 DistAllRoads <- r
 DistAllRoads <- crop(DistAllRoads, myStudyArea)
 
 ## PLOT CHECK
 if(myVars$plot.check){
+  par(mfrow= c(1,1))
   plot(DistAllRoads)
-  plot(myStudyArea,add=T)
+  plot(st_geometry(myStudyArea), add = T)
 }
 
 
@@ -265,27 +361,24 @@ SNOW <- raster::crop(SNOW, c(0,40,55,75))
 
 
 
-### ====    3.4.SAVE SEARCH EFFORT OBJECTS FOR FASTER RUNS ====
-# save(TRACKS_YEAR, SNOW, DistAllRoads, file = file.path(myVars$WD, "TRACKS20122024Cleaned.RData"))
-#load(file.path(myVars$WD, "TRACKS20122024Cleaned.RData"))
-#load("C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Test.0.1/data/searchTracks.RData")
+### ====    3.4. LOAD SCANDINAVIAN 20KM HABITAT ====
 
-
-
-### ====    3.5. LOAD SCANDINAVIAN 20KM HABIAT ====
 load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20km.RData"))
 load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
 
 plot(habitatRasters,"Habitat")
-plot(myStudyArea,add=T)
+plot(st_geometry(myStudyArea),add=T)
 
 
 
 ##------------------------------------------------------------------------------
 ## ------ II.CREATE SCR DATA ------
+
 ### ==== 1. CLEAN AND FILTER NGS DATA ====
+
 ## Remove DEAD entries from the DNA data [HB]
 DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
+dim(DNA)
 
 ## Remove un-verified dead recoveries [HB]
 ## ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
@@ -354,7 +447,6 @@ if(length(IdDoubleDead) > 0){
   }#i
   myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-duplicatedDeath, ]
 }#if
-
 
 unique(myFullData.sp$dead.recovery$DeathCause)
 unique(myFullData.sp$dead.recovery$DeathCause_2)
@@ -2798,7 +2890,7 @@ modelCode1 <- nimbleCode({
     
   }#i
   
-
+  
   ##----------------------------------------## 
   ##---------- DERIVED PARAMETERS ----------##
   ##----------------------------------------##
@@ -2860,7 +2952,7 @@ for(ch in 1:4){
     nimData$yDets <- rbind(nimData$yDets, matrix(0,nrow =sumDets, nimConstants$nMaxDetectors))
     nimData$yDetsOth <- nimData$yDetsOth[detected[,t],,t]
     nimData$yDetsOth <- rbind(nimData$yDetsOth, matrix(0,nrow =sumDets, nimConstants$nMaxDetectorsOth))
-
+    
     ## detResponse 
     nimData$detResponse <- nimData$detResponse[detected[,t],t]
     nimData$detResponse  <- c(nimData$detResponse, rep(NA,sumDets))## HERE IT IS ASSUMING IT IS A LATENT INDIVIDUAL COVARIATE
@@ -2881,7 +2973,7 @@ for(ch in 1:4){
     ## z
     nimInits$z <- nimInits$z[detected[,t],t]  
     nimInits$z <- c(nimInits$z, rbinom(sumDets,1,0.5))
-
+    
     ## detResponse
     ## HERE IT IS TREATED AS A LATENT COVARIATE
     nimInits$detResponse  <- c(rep(NA,sum(detected[,t])), rbinom(sumDets,1,0.5))
@@ -2921,7 +3013,7 @@ for(ch in 1:4){
     # get the new number of indivudals 
     nimConstants$n.individuals <- nrow(nimInits$sxy)
     
-
+    
     ##Nimble parameters
     nimParams <- c("N", "psi", "pResponse","p0Oth","betaCovsOth","betaResponseOth",
                    "p0", "sigma", "betaDens", "betaCovs","betaResponse","betaResponseOth")
@@ -3262,251 +3354,156 @@ myResults <- ProcessCodaOutput(nimOutput,params.omit = c("sxy","z"))
   # pdf(file = file.path( myVars$WD,
   # myVars$modelName,paste(myVars$modelName,".pdf",sep="")
   # ))
-
-### ====    2.1.PLOT DETECTIONS ====
-myLayOut.mx <- cbind(c(2,1), c(1,1))
-myLayOut <- layout(myLayOut.mx, width = c(1,2), heights = c(1,2))
-#layout.show(myLayOut)
-
-## PLOT STUDY AREA
-par(mar = c(0,0,0,0))
-#plot(myHabitat$buffered.habitat.poly,  col = rgb(34/250, 139/250, 34/250, alpha = 0))
-plot(st_geometry(GLOBALMAP), col = "gray80")#, add = TRUE)
-plot(st_geometry(myHabitat$habitat.poly), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-plot(st_geometry(myHabitat$buffered.habitat.poly), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
-
-## PLOT DETECTIONS
-plot(st_geometry(myFilteredData.sp$alive), pch = 3, col = "darkred", cex = 0.5,add=T)
-plot(st_geometry(myFilteredData.sp$dead.recovery), pch = 3, col = "darkblue", cex = 0.5,add=T)
-
-## ADD NUMBER OF DETECTIONS
-graphics::text(x = 190000, y = 7820000, cex = 1.5,
-               labels = paste(dim(myFilteredData.sp$alive)[1], "NGS samples"))
-
-## ADD NUMBER OF INDIVIDUALS DETECTED
-graphics::text(x = 190000, y = 7880000, cex = 1.5,
-               labels = paste(length(unique(myFilteredData.sp$alive$Id)), "Individuals"))
-
-# ## PLOT GLOBAL MAP
-# par(mar = c(0,0,0,0))
-# plot(GLOBALMAP, col = "gray80")
-# plot(myStudyArea, col = "red", add = TRUE)
-
-### ====    2.1.N ==== 
-par(mfrow = c(1,1), mar = c(5,5,5,5))
-plot(10, xlim = c(0, nYears+1), ylim = c(200,1200), type ="n", xaxt="n", xlab = "Years", ylab = "N")
-axis(1, c(1:nYears),labels = years)
-for(t in 1:nYears){
-  plot.violins(list(myResults$sims.list$N[,t]),
-               x = t,
-               at = t,
-               violin.width = 0.3,
-               col = "firebrick3",
-               add = T,
-               alpha = 0.3,
-               border.col = "firebrick3")
-}#t
-
-params <- dimnames(nimOutput[[1]])[[2]][grep("N",dimnames(nimOutput[[1]])[[2]])]
-for(i in 1:length(params)){
-  PlotJagsParams(jags.samples = nimOutput, params = params[i])
-}
-
-### ====    2.2.h ==== 
-# par(mfrow = c(1,1))
-# plot(10, xlim = c(0, nYears), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "h")
-# axis(1, c(1:nYears),labels = years)
-# myCol <- "firebrick3"
-# for(t in 1:(nYears-1)){
-#   plot.violins(list(myResults$sims.list$h[ ,t]),
-#                x = t,
-#                at = t,
-#                violin.width = 0.3,
-#                col = myCol,
-#                add = T,
-#                alpha = 0.3,
-#                border.col = myCol)
-# }#t
-# 
-# params <- dimnames(nimOutput[[1]])[[2]][grep("h\\[",dimnames(nimOutput[[1]])[[2]])]
-# for(i in 1:length(params)){
-#   PlotJagsParams(jags.samples = nimOutput, params = params[i])
-# }
-
-### ====    2.3.gamma ==== 
-par(mfrow = c(1,1))
-plot(10, xlim = c(0, nYears), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "gamma")
-axis(1, c(1:nYears),labels = years)
-myCol <- "firebrick3"
-for(t in 1:(nYears-1)){
-  plot.violins(list(myResults$sims.list$gamma[ ,t]),
-               x = t,
-               at = t,
-               violin.width = 0.3,
-               col = myCol,
-               add = T,
-               alpha = 0.3,
-               border.col = myCol)
-}#t
-
-params <- dimnames(nimOutput[[1]])[[2]][grep("gamma",dimnames(nimOutput[[1]])[[2]])]
-for(i in 1:length(params)){
-  PlotJagsParams(jags.samples = nimOutput, params = params[i])
-}
-
-### ====    2.4.w ==== 
-# par(mfrow = c(1,1))
-# plot(10, xlim = c(0, nYears+1), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "w")
-# axis(1, c(1:nYears),labels = years)
-# for(t in 1:(nYears-1)){
-#   plot.violins(list(myResults$sims.list$w[ ,t]),
-#                x = t,
-#                at = t,
-#                violin.width = 0.3,
-#                col = myCol,
-#                add = T,
-#                alpha = 0.3,
-#                border.col = myCol)
-# }#t
-# 
-# params <- dimnames(nimOutput[[1]])[[2]][grep("w",dimnames(nimOutput[[1]])[[2]])]
-# for(i in 1:length(params)){
-#   PlotJagsParams(jags.samples = nimOutput, params = params[i])
-# }
-
-### ====    2.5.phi ====  
-# ### ==== 8.CALCULATE TRANSITION RATES FROM Z ====
-load(file.path(myVars$WD, myVars$modelName,
-               paste(myVars$modelName,"Chain",1, ".RData", sep = "")))
-
-phi <- phiind1 <- culled<- recruit  <- 0
-
-recruit <- 0
-z_caculate <- nimData$z
-z_caculate[is.na(z_caculate)] <- 0
-for(t in 2:dim(nimData$z)[2]){
-  #phi
-  alivet <- which(z_caculate[,t-1] %in% c(2))
-  phi[t-1] <- sum(z_caculate[alivet,t] %in% c(2))/length(alivet)
-  #culled
-  #culled[t-1] <- sum(z_caculate[alivet,t] %in% c(3))/length(alivet)
   
-  #recru
-  notentered <- which(z_caculate[,t-1] == 0)
-  recruit[t-1] <- sum(z_caculate[notentered,t] %in% c(2))/sum(z_caculate[,t-1] %in% c(2))
+  ### ====    2.1.PLOT DETECTIONS ====
+  myLayOut.mx <- cbind(c(2,1), c(1,1))
+  myLayOut <- layout(myLayOut.mx, width = c(1,2), heights = c(1,2))
+  #layout.show(myLayOut)
   
-}
-phi        # overall phi
-recruit    # per capita recruitment based on all individuals present at t-1
-#culled
-par(mfrow = c(1,1))
-plot(-10, xlim = c(0,nYears), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized phi from z")
-axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
-yr <- c(1:(nYears-1))
-points(phi~yr,pch=16)
-
-
-par(mfrow = c(1,1))
-plot(-10, xlim = c(0,nYears), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "phi")
-axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
-myCol <- c("firebrick3")
-for(t in 1:(nYears-1)){
-  plot.violins(list(myResults$sims.list$phi[ ,t]),
-               x = t,
-               at = t,
-               violin.width = 0.2,
-               col = myCol,
-               add = T,
-               alpha = 0.3,
-               border.col = myCol)
-}#t
-
-params <- dimnames(nimOutput[[1]])[[2]][grep("phi",dimnames(nimOutput[[1]])[[2]])]
-for(i in 1:length(params)){
-  PlotJagsParams(jags.samples = nimOutput, params = params[i])
-}
-
-### ====    2.6.p0 ====  
-## by country and trap-response
-par(mfrow = c(1,2))
-myDev <- c(-0.3, 0.3)
-myCol <- c("blue4", "yellow3")
-
-COUNTIES_AGGREGATEDSubsetsimp <- st_simplify(COUNTIES_AGGREGATEDSubset, dTolerance = 500,preserveTopology =  T)
-COUNTIES_AGGREGATEDSubsetsimp$idunique <- COUNTIES_AGGREGATEDSubset$idunique
-
-for(c in 1:dim(myResults$sims.list$p0)[2]){
-  plot(st_geometry(myStudyArea))
-  plot(st_geometry(COUNTIES_AGGREGATEDSubset[COUNTIES_AGGREGATEDSubsetsimp$idunique %in% c, ]), add=T, col="red")
+  ## PLOT STUDY AREA
+  par(mar = c(0,0,0,0))
+  #plot(myHabitat$buffered.habitat.poly,  col = rgb(34/250, 139/250, 34/250, alpha = 0))
+  plot(st_geometry(GLOBALMAP), col = "gray80")#, add = TRUE)
+  plot(st_geometry(myHabitat$habitat.poly), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
+  plot(st_geometry(myHabitat$buffered.habitat.poly), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
   
+  ## PLOT DETECTIONS
+  plot(st_geometry(myFilteredData.sp$alive), pch = 3, col = "darkred", cex = 0.5,add=T)
+  plot(st_geometry(myFilteredData.sp$dead.recovery), pch = 3, col = "darkblue", cex = 0.5,add=T)
   
-  plot(-10, xlim = c(0,nYears+1), ylim=c(0,0.06), type ="n", xaxt="n", xlab = "Years", ylab = "p0")
-  axis(1, at = 1:(nYears), labels = years[1:(nYears)])
+  ## ADD NUMBER OF DETECTIONS
+  graphics::text(x = 190000, y = 7820000, cex = 1.5,
+                 labels = paste(dim(myFilteredData.sp$alive)[1], "NGS samples"))
   
+  ## ADD NUMBER OF INDIVIDUALS DETECTED
+  graphics::text(x = 190000, y = 7880000, cex = 1.5,
+                 labels = paste(length(unique(myFilteredData.sp$alive$Id)), "Individuals"))
+  
+  # ## PLOT GLOBAL MAP
+  # par(mar = c(0,0,0,0))
+  # plot(GLOBALMAP, col = "gray80")
+  # plot(myStudyArea, col = "red", add = TRUE)
+  
+  ### ====    2.1.N ==== 
+  par(mfrow = c(1,1), mar = c(5,5,5,5))
+  plot(10, xlim = c(0, nYears+1), ylim = c(200,1200), type ="n", xaxt="n", xlab = "Years", ylab = "N")
+  axis(1, c(1:nYears),labels = years)
   for(t in 1:nYears){
-    plot.violins(list(myResults$sims.list$p0[ ,c,t]),
-                 x = t ,
-                 at = t ,
-                 violin.width = 0.2,
-                 col = "red",
+    plot.violins(list(myResults$sims.list$N[,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
                  add = T,
                  alpha = 0.3,
-                 border.col = "red")
-    # }#g
+                 border.col = "firebrick3")
   }#t
-}#c
-# legend(x = 0, y = 0.25, legend = c("Norway", "Sweden"), fill= myCol)
-
-par(mfrow = c(1,2))
-myDev <- c(-0.3, 0.3)
-myCol <- c("blue4", "yellow3")
-
-# COUNTIES_AGGREGATEDSubsetsimp <- gSimplify(COUNTIES_AGGREGATEDSubset,tol = 500,topologyPreserve = T)
-# COUNTIES_AGGREGATEDSubsetsimp$idunique <- COUNTIES_AGGREGATEDSubset$idunique
-# 
-for(c in 1:(dim(myResults$sims.list$p0Oth)[2])){
-  plot(st_geometry(myStudyArea))
-  if(c %in% 3){ 
-    plot(st_geometry(myDetectors$main.detector.sp[detCounties %in% 1,]), add=T, col="red")
-    
-  }else{
-    plot(st_geometry(COUNTRIES[c, ]), add=T, col="red")
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("N",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
   }
   
-  plot(-10, xlim = c(0,nYears+1), ylim=c(0,0.06), type ="n", xaxt="n", xlab = "Years", ylab = "p0")
-  axis(1, at = 1:(nYears), labels = years[1:(nYears)])
+  ### ====    2.2.h ==== 
+  # par(mfrow = c(1,1))
+  # plot(10, xlim = c(0, nYears), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "h")
+  # axis(1, c(1:nYears),labels = years)
+  # myCol <- "firebrick3"
+  # for(t in 1:(nYears-1)){
+  #   plot.violins(list(myResults$sims.list$h[ ,t]),
+  #                x = t,
+  #                at = t,
+  #                violin.width = 0.3,
+  #                col = myCol,
+  #                add = T,
+  #                alpha = 0.3,
+  #                border.col = myCol)
+  # }#t
+  # 
+  # params <- dimnames(nimOutput[[1]])[[2]][grep("h\\[",dimnames(nimOutput[[1]])[[2]])]
+  # for(i in 1:length(params)){
+  #   PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  # }
   
-  for(t in 1:nYears){
-    plot.violins(list(myResults$sims.list$p0Oth[ ,c,t]),
-                 x = t ,
-                 at = t ,
-                 violin.width = 0.2,
-                 col = "red",
+  ### ====    2.3.gamma ==== 
+  par(mfrow = c(1,1))
+  plot(10, xlim = c(0, nYears), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "gamma")
+  axis(1, c(1:nYears),labels = years)
+  myCol <- "firebrick3"
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$gamma[ ,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = myCol,
                  add = T,
                  alpha = 0.3,
-                 border.col = "red")
-    # }#g
+                 border.col = myCol)
   }#t
-}#c
-
-
-params <- dimnames(nimOutput[[1]])[[2]][grep("p0", dimnames(nimOutput[[1]])[[2]])[-1]]
-for(i in 1:length(params)){
-  PlotJagsParams(jags.samples = nimOutput, params = params[i])
-}
-
-### ====    2.7.the rest ====
-#structured<
-
-par(mfrow = c(1,1))
-trapCovs <- c("Tracks","Snow")
-for(b in 1:dim(myResults$sims.list$betaCovs)[2]){
-  plot(-10, xlim = c(0,nYears+0.5), ylim=c(-2,2), type ="n", xaxt="n", xlab = "beta Structured", ylab = "beta",main=trapCovs[b])
-  abline(h=0)
-  axis(1, at = 1:nYears , labels = years)
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("gamma",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  ### ====    2.4.w ==== 
+  # par(mfrow = c(1,1))
+  # plot(10, xlim = c(0, nYears+1), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "w")
+  # axis(1, c(1:nYears),labels = years)
+  # for(t in 1:(nYears-1)){
+  #   plot.violins(list(myResults$sims.list$w[ ,t]),
+  #                x = t,
+  #                at = t,
+  #                violin.width = 0.3,
+  #                col = myCol,
+  #                add = T,
+  #                alpha = 0.3,
+  #                border.col = myCol)
+  # }#t
+  # 
+  # params <- dimnames(nimOutput[[1]])[[2]][grep("w",dimnames(nimOutput[[1]])[[2]])]
+  # for(i in 1:length(params)){
+  #   PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  # }
+  
+  ### ====    2.5.phi ====  
+  # ### ==== 8.CALCULATE TRANSITION RATES FROM Z ====
+  load(file.path(myVars$WD, myVars$modelName,
+                 paste(myVars$modelName,"Chain",1, ".RData", sep = "")))
+  
+  phi <- phiind1 <- culled<- recruit  <- 0
+  
+  recruit <- 0
+  z_caculate <- nimData$z
+  z_caculate[is.na(z_caculate)] <- 0
+  for(t in 2:dim(nimData$z)[2]){
+    #phi
+    alivet <- which(z_caculate[,t-1] %in% c(2))
+    phi[t-1] <- sum(z_caculate[alivet,t] %in% c(2))/length(alivet)
+    #culled
+    #culled[t-1] <- sum(z_caculate[alivet,t] %in% c(3))/length(alivet)
+    
+    #recru
+    notentered <- which(z_caculate[,t-1] == 0)
+    recruit[t-1] <- sum(z_caculate[notentered,t] %in% c(2))/sum(z_caculate[,t-1] %in% c(2))
+    
+  }
+  phi        # overall phi
+  recruit    # per capita recruitment based on all individuals present at t-1
+  #culled
+  par(mfrow = c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized phi from z")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  yr <- c(1:(nYears-1))
+  points(phi~yr,pch=16)
+  
+  
+  par(mfrow = c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "phi")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
   myCol <- c("firebrick3")
-  for(t in 1:dim(myResults$sims.list$betaCovs)[3]){
-    plot.violins(list(myResults$sims.list$betaCovs[ ,b,t]),
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$phi[ ,t]),
                  x = t,
                  at = t,
                  violin.width = 0.2,
@@ -3515,17 +3512,131 @@ for(b in 1:dim(myResults$sims.list$betaCovs)[2]){
                  alpha = 0.3,
                  border.col = myCol)
   }#t
-}
-#other
-par(mfrow = c(1,1))
-trapCovs <- c("Snow","Road","Skandobs")
-for(b in 1:dim(myResults$sims.list$betaCovsOth)[2]){
-  plot(-10, xlim = c(0,nYears+0.5), ylim=c(-2,2), type ="n", xaxt="n", xlab = "beta Other", ylab = "beta",main=trapCovs[b])
-  abline(h=0)
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("phi",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  ### ====    2.6.p0 ====  
+  ## by country and trap-response
+  par(mfrow = c(1,2))
+  myDev <- c(-0.3, 0.3)
+  myCol <- c("blue4", "yellow3")
+  
+  COUNTIES_AGGREGATEDSubsetsimp <- st_simplify(COUNTIES_AGGREGATEDSubset, dTolerance = 500,preserveTopology =  T)
+  COUNTIES_AGGREGATEDSubsetsimp$idunique <- COUNTIES_AGGREGATEDSubset$idunique
+  
+  for(c in 1:dim(myResults$sims.list$p0)[2]){
+    plot(st_geometry(myStudyArea))
+    plot(st_geometry(COUNTIES_AGGREGATEDSubset[COUNTIES_AGGREGATEDSubsetsimp$idunique %in% c, ]), add=T, col="red")
+    
+    
+    plot(-10, xlim = c(0,nYears+1), ylim=c(0,0.06), type ="n", xaxt="n", xlab = "Years", ylab = "p0")
+    axis(1, at = 1:(nYears), labels = years[1:(nYears)])
+    
+    for(t in 1:nYears){
+      plot.violins(list(myResults$sims.list$p0[ ,c,t]),
+                   x = t ,
+                   at = t ,
+                   violin.width = 0.2,
+                   col = "red",
+                   add = T,
+                   alpha = 0.3,
+                   border.col = "red")
+      # }#g
+    }#t
+  }#c
+  # legend(x = 0, y = 0.25, legend = c("Norway", "Sweden"), fill= myCol)
+  
+  par(mfrow = c(1,2))
+  myDev <- c(-0.3, 0.3)
+  myCol <- c("blue4", "yellow3")
+  
+  # COUNTIES_AGGREGATEDSubsetsimp <- gSimplify(COUNTIES_AGGREGATEDSubset,tol = 500,topologyPreserve = T)
+  # COUNTIES_AGGREGATEDSubsetsimp$idunique <- COUNTIES_AGGREGATEDSubset$idunique
+  # 
+  for(c in 1:(dim(myResults$sims.list$p0Oth)[2])){
+    plot(st_geometry(myStudyArea))
+    if(c %in% 3){ 
+      plot(st_geometry(myDetectors$main.detector.sp[detCounties %in% 1,]), add=T, col="red")
+      
+    }else{
+      plot(st_geometry(COUNTRIES[c, ]), add=T, col="red")
+    }
+    
+    plot(-10, xlim = c(0,nYears+1), ylim=c(0,0.06), type ="n", xaxt="n", xlab = "Years", ylab = "p0")
+    axis(1, at = 1:(nYears), labels = years[1:(nYears)])
+    
+    for(t in 1:nYears){
+      plot.violins(list(myResults$sims.list$p0Oth[ ,c,t]),
+                   x = t ,
+                   at = t ,
+                   violin.width = 0.2,
+                   col = "red",
+                   add = T,
+                   alpha = 0.3,
+                   border.col = "red")
+      # }#g
+    }#t
+  }#c
+  
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("p0", dimnames(nimOutput[[1]])[[2]])[-1]]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  ### ====    2.7.the rest ====
+  #structured<
+  
+  par(mfrow = c(1,1))
+  trapCovs <- c("Tracks","Snow")
+  for(b in 1:dim(myResults$sims.list$betaCovs)[2]){
+    plot(-10, xlim = c(0,nYears+0.5), ylim=c(-2,2), type ="n", xaxt="n", xlab = "beta Structured", ylab = "beta",main=trapCovs[b])
+    abline(h=0)
+    axis(1, at = 1:nYears , labels = years)
+    myCol <- c("firebrick3")
+    for(t in 1:dim(myResults$sims.list$betaCovs)[3]){
+      plot.violins(list(myResults$sims.list$betaCovs[ ,b,t]),
+                   x = t,
+                   at = t,
+                   violin.width = 0.2,
+                   col = myCol,
+                   add = T,
+                   alpha = 0.3,
+                   border.col = myCol)
+    }#t
+  }
+  #other
+  par(mfrow = c(1,1))
+  trapCovs <- c("Snow","Road","Skandobs")
+  for(b in 1:dim(myResults$sims.list$betaCovsOth)[2]){
+    plot(-10, xlim = c(0,nYears+0.5), ylim=c(-2,2), type ="n", xaxt="n", xlab = "beta Other", ylab = "beta",main=trapCovs[b])
+    abline(h=0)
+    axis(1, at = 1:nYears , labels = years)
+    myCol <- c("firebrick3")
+    for(t in 1:dim(myResults$sims.list$betaCovsOth)[3]){
+      plot.violins(list(myResults$sims.list$betaCovsOth[ ,b,t]),
+                   x = t,
+                   at = t,
+                   violin.width = 0.2,
+                   col = myCol,
+                   add = T,
+                   alpha = 0.3,
+                   border.col = myCol)
+    }#t
+  }
+  
+  
+  par(mfrow = c(1,1))
+  plot(-10, xlim = c(0,nYears+0.5), ylim=c(0,10000), type ="n", xaxt="n",
+       xlab = "beta Other", ylab = "sigma")
+  #abline(h=0)
   axis(1, at = 1:nYears , labels = years)
   myCol <- c("firebrick3")
-  for(t in 1:dim(myResults$sims.list$betaCovsOth)[3]){
-    plot.violins(list(myResults$sims.list$betaCovsOth[ ,b,t]),
+  for(t in 1:dim(myResults$sims.list$sigma)[2]){
+    plot.violins(list(myResults$sims.list$sigma[ ,t]*myHabitat$resolution),
                  x = t,
                  at = t,
                  violin.width = 0.2,
@@ -3534,87 +3645,68 @@ for(b in 1:dim(myResults$sims.list$betaCovsOth)[2]){
                  alpha = 0.3,
                  border.col = myCol)
   }#t
-}
-
-
-par(mfrow = c(1,1))
-plot(-10, xlim = c(0,nYears+0.5), ylim=c(0,10000), type ="n", xaxt="n",
-     xlab = "beta Other", ylab = "sigma")
-#abline(h=0)
-axis(1, at = 1:nYears , labels = years)
-myCol <- c("firebrick3")
-for(t in 1:dim(myResults$sims.list$sigma)[2]){
-  plot.violins(list(myResults$sims.list$sigma[ ,t]*myHabitat$resolution),
-               x = t,
-               at = t,
-               violin.width = 0.2,
-               col = myCol,
-               add = T,
-               alpha = 0.3,
-               border.col = myCol)
-}#t
-
-par(mfrow = c(1,1))
-plot(-10, xlim = c(0,nYears+0.5), ylim=c(-2,2), type ="n", xaxt="n",
-     xlab = "beta Other", ylab = "betaResponse")
-abline(h=0)
-axis(1, at = 1:nYears , labels = years)
-myCol <- c("firebrick3")
-for(t in 1:dim(myResults$sims.list$betaResponse)[2]){
-  plot.violins(list(myResults$sims.list$betaResponse[ ,t]),
-               x = t,
-               at = t,
-               violin.width = 0.2,
-               col = myCol,
-               add = T,
-               alpha = 0.3,
-               border.col = myCol)
-}#t
-
-
-par(mfrow = c(1,1))
-plot(-10, xlim = c(0,nYears+0.5), ylim=c(-2,2), type ="n", xaxt="n",
-     xlab = "beta Other", ylab = "betaResponseOth")
-abline(h=0)
-axis(1, at = 1:nYears , labels = years)
-myCol <- c("firebrick3")
-for(t in 1:dim(myResults$sims.list$betaResponseOth)[2]){
-  plot.violins(list(myResults$sims.list$betaResponseOth[ ,t]),
-               x = t,
-               at = t,
-               violin.width = 0.2,
-               col = myCol,
-               add = T,
-               alpha = 0.3,
-               border.col = myCol)
-}#t
-
-# par(mfrow = c(1,1))
-# plot(-10, xlim = c(0,nYears+0.5), ylim=c(-2,2), type ="n", xaxt="n",
-#      xlab = "beta Other", ylab = "beta Dens")
-# abline(h=0)
-# axis(1, at = 1:nYears , labels = years)
-# myCol <- c("firebrick3")
-# for(t in 1:dim(myResults$sims.list$betaDens)[2]){
-#   plot.violins(list(myResults$sims.list$betaDens[ ,t]),
-#                x = t,
-#                at = t,
-#                violin.width = 0.2,
-#                col = myCol,
-#                add = T,
-#                alpha = 0.3,
-#                border.col = myCol)
-# }#t
-
-
-
-
-
-params <- c( "lambda",  "betaDens")
-for(i in 1:length(params)){
-  PlotJagsParams(jags.samples = nimOutput, params = params[i])
-}#i
-dev.off()
+  
+  par(mfrow = c(1,1))
+  plot(-10, xlim = c(0,nYears+0.5), ylim=c(-2,2), type ="n", xaxt="n",
+       xlab = "beta Other", ylab = "betaResponse")
+  abline(h=0)
+  axis(1, at = 1:nYears , labels = years)
+  myCol <- c("firebrick3")
+  for(t in 1:dim(myResults$sims.list$betaResponse)[2]){
+    plot.violins(list(myResults$sims.list$betaResponse[ ,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.2,
+                 col = myCol,
+                 add = T,
+                 alpha = 0.3,
+                 border.col = myCol)
+  }#t
+  
+  
+  par(mfrow = c(1,1))
+  plot(-10, xlim = c(0,nYears+0.5), ylim=c(-2,2), type ="n", xaxt="n",
+       xlab = "beta Other", ylab = "betaResponseOth")
+  abline(h=0)
+  axis(1, at = 1:nYears , labels = years)
+  myCol <- c("firebrick3")
+  for(t in 1:dim(myResults$sims.list$betaResponseOth)[2]){
+    plot.violins(list(myResults$sims.list$betaResponseOth[ ,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.2,
+                 col = myCol,
+                 add = T,
+                 alpha = 0.3,
+                 border.col = myCol)
+  }#t
+  
+  # par(mfrow = c(1,1))
+  # plot(-10, xlim = c(0,nYears+0.5), ylim=c(-2,2), type ="n", xaxt="n",
+  #      xlab = "beta Other", ylab = "beta Dens")
+  # abline(h=0)
+  # axis(1, at = 1:nYears , labels = years)
+  # myCol <- c("firebrick3")
+  # for(t in 1:dim(myResults$sims.list$betaDens)[2]){
+  #   plot.violins(list(myResults$sims.list$betaDens[ ,t]),
+  #                x = t,
+  #                at = t,
+  #                violin.width = 0.2,
+  #                col = myCol,
+  #                add = T,
+  #                alpha = 0.3,
+  #                border.col = myCol)
+  # }#t
+  
+  
+  
+  
+  
+  params <- c( "lambda",  "betaDens")
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }#i
+  dev.off()
 }#doall[CM]
 
 
