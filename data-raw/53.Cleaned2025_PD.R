@@ -540,34 +540,32 @@ dim(myFullData.sp$dead.recovery)
 
 ## Remove pups killed before recruitment based on weight (cf. Henrik)
 ## 1) remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
-sum(myFullData.sp$dead.recovery$Age_class %in% "Unge" &
-      myFullData.sp$dead.recovery$Month > 2 &
-      myFullData.sp$dead.recovery$Month < 12)
-
-myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-which(myFullData.sp$dead.recovery$Age_class %in% "Unge" &
-                                                                    myFullData.sp$dead.recovery$Month > 2 &
-                                                                    myFullData.sp$dead.recovery$Month < 12),]
-
+myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
+  filter(!(Age_class %in% "Unge" & Month > 2 & Month < 12))
+dim(myFullData.sp$dead.recovery)
 
 # 2) remove individuals that have a weight >0 and <4 between March and November
-# format the weight correctly
-myFullData.sp$dead.recovery$Weight_total <- as.character(myFullData.sp$dead.recovery$Weight_total)
-myFullData.sp$dead.recovery$Weight_slaughter <- as.character(myFullData.sp$dead.recovery$Weight_slaughter)
-
-## convert to decimals
-myFullData.sp$dead.recovery$Weight_total <- as.numeric(gsub(",", ".", myFullData.sp$dead.recovery$Weight_total))
-myFullData.sp$dead.recovery$Weight_slaughter <- as.numeric(gsub(",", ".", myFullData.sp$dead.recovery$Weight_slaughter))
-## get the two weight columns together.
-myFullData.sp$dead.recovery$weight <- ifelse(!is.na(myFullData.sp$dead.recovery$Weight_total),
-                                             myFullData.sp$dead.recovery$Weight_total,
-                                             myFullData.sp$dead.recovery$Weight_slaughter)
-#assign negative values to nas to avoid issues
-myFullData.sp$dead.recovery$weight[is.na(myFullData.sp$dead.recovery$weight)] <- -999
-dim(myFullData.sp$dead.recovery)
+# # format the weight correctly
+# myFullData.sp$dead.recovery$Weight_total <- as.character(myFullData.sp$dead.recovery$Weight_total)
+# myFullData.sp$dead.recovery$Weight_slaughter <- as.character(myFullData.sp$dead.recovery$Weight_slaughter)
+# ## convert to decimals
+# myFullData.sp$dead.recovery$Weight_total <- as.numeric(gsub(",", ".", myFullData.sp$dead.recovery$Weight_total))
+# myFullData.sp$dead.recovery$Weight_slaughter <- as.numeric(gsub(",", ".", myFullData.sp$dead.recovery$Weight_slaughter))
+# ## get the two weight columns together.
+# myFullData.sp$dead.recovery$weight <- ifelse(!is.na(myFullData.sp$dead.recovery$Weight_total),
+#                                              myFullData.sp$dead.recovery$Weight_total,
+#                                              myFullData.sp$dead.recovery$Weight_slaughter)
+##-- FORMAT WEIGHTS
+myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
+  mutate(
+    Weight_total = as.numeric(gsub(",", ".", as.character(Weight_total))),
+    Weight_slaughter =  as.numeric(gsub(",", ".", as.character(Weight_slaughter))),
+    weight = ifelse(!is.na(Weight_total), Weight_total, Weight_slaughter),
+    weight = ifelse(is.na(weight), -999, weight))
 
 # check with Henrik
 # this step does not remove dead recoveries on id with weight==0 should it?
-# WEIGTH DISTRIBUTION
+##-- WEIGTH DISTRIBUTION
 par(mfrow = c(4,3))
 for(t in 1:12){
   hist(myFullData.sp$dead.recovery$weight[(myFullData.sp$dead.recovery$weight >-1) &
@@ -578,7 +576,7 @@ for(t in 1:12){
 }
 
 ##-- AGE DISTRIBUTION
-par(mfrow=c(4,3))
+par(mfrow = c(4,3))
 for(t in 1:12){
   hist(myFullData.sp$dead.recovery$Age[(myFullData.sp$dead.recovery$Age >-1) &
                                          myFullData.sp$dead.recovery$Month%in% t],
@@ -588,15 +586,18 @@ for(t in 1:12){
 }
 
 ##-- check how many dead reco we remove and remove if more than 0
-if(sum(myFullData.sp$dead.recovery$weight > 0 &
-       myFullData.sp$dead.recovery$weight < 4 &
-       myFullData.sp$dead.recovery$Month < 12 &
-       myFullData.sp$dead.recovery$Month > 2)>0){
-  myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-which(myFullData.sp$dead.recovery$weight > 0 &
-                                                                      myFullData.sp$dead.recovery$weight < 4 &
-                                                                      myFullData.sp$dead.recovery$Month < 12 &
-                                                                      myFullData.sp$dead.recovery$Month > 2),]
-}
+# if(sum(myFullData.sp$dead.recovery$weight > 0 &
+#        myFullData.sp$dead.recovery$weight < 4 &
+#        myFullData.sp$dead.recovery$Month < 12 &
+#        myFullData.sp$dead.recovery$Month > 2)>0){
+#   myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-which(myFullData.sp$dead.recovery$weight > 0 &
+#                                                                       myFullData.sp$dead.recovery$weight < 4 &
+#                                                                       myFullData.sp$dead.recovery$Month < 12 &
+#                                                                       myFullData.sp$dead.recovery$Month > 2),]
+# }
+myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
+  filter(!(weight > 0 & weight < 4 & Month < 12 & Month > 2))
+dim(myFullData.sp$dead.recovery)
 
 ##-- check how many dead reco with a weight of 0 kg and recovered between march and november
 if(sum(myFullData.sp$dead.recovery$Age %in% 0 &
@@ -607,15 +608,13 @@ if(sum(myFullData.sp$dead.recovery$Age %in% 0 &
                                 myFullData.sp$dead.recovery$Month > 2,  ]
 }
 
-table(myFullData.sp$alive$Year)
-
 
 
 ###   4. DATA ISSUES -----
 
 ####    4.1. MULTIPLE DEATHS ------
 
-## Remove individuals that died twice
+##-- Remove individuals that died twice
 ## [CM] TO BE CHECKED BECAUSE "length(IdDoubleDead) < 0" and so it was deactivated
 myFullData.sp$dead.recovery$Id <- as.character(myFullData.sp$dead.recovery$Id)
 IdDoubleDead <- myFullData.sp$dead.recovery$Id[duplicated(myFullData.sp$dead.recovery$Id)]
@@ -631,7 +630,8 @@ if(length(IdDoubleDead) > 0){
 
 
 
-###   7. SAVE DATA ------
+###   5. SAVE DATA ------
+
 alive = myFullData.sp$alive
 dead.recovery = myFullData.sp$dead.recovery
 save( alive, 
@@ -639,6 +639,8 @@ save( alive,
       file = file.path( working.dir, "data", fileName))
 
 rm(list = c("myFullData.sp"))
+
+
 
 ## END OF cleanRovBaseData() ------ 
 
