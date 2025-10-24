@@ -106,6 +106,10 @@ if(is.null(myVars$modelName))stop("YOU SHOULD PROBABLY CHOOSE A NAME FOR THIS AN
 if(is.null(myVars$WD))stop("YOU SHOULD PROBABLY CHOOSE A WORKING DIRECTORY FOR THIS ANALYSIS/MODEL")
 if(!dir.exists(file.path(myVars$WD, myVars$modelName))){dir.create(file.path(myVars$WD, myVars$modelName))}
 
+##-- List months
+months = c("January","February","March","April","May","June",
+           "July","August","September","October","November","December")
+
 
 
 ##------------------------------------------------------------------------------
@@ -495,7 +499,8 @@ par(mfrow=c(4,3))
 for(t in 1:12){
   hist(myFullData.sp$dead.recovery$Age[(myFullData.sp$dead.recovery$Age >-1) &
                                          myFullData.sp$dead.recovery$Month%in% t],breaks=seq(-0.01,20.99,by=1),
-       main=t,xlab="Age")
+       main=t,
+       xlab="Age")
 }
 
 # check how many dead reco we remove and remove if more than 0
@@ -517,11 +522,19 @@ if(sum(myFullData.sp$dead.recovery$Age %in% 0 &
                                 myFullData.sp$dead.recovery$Month > 2,  ]
 }
 
+
+##-- Checks
+dim(myFullData.sp$alive)
 table(myFullData.sp$alive$Year)
+dim(myFullData.sp$dead.recovery)
+table(myFullData.sp$dead.recovery$Year)
+table(myFullData.sp$dead.recovery$DeathCause)
+table(myFullData.sp$dead.recovery$DeathCause_2)
 
 
 
 ### ====    1.3. FILTER NGS & DEAD RECOVERY DATA ====
+
 myFilteredData.sp <- myFullData.sp
 dim(myFullData.sp$alive)
 
@@ -537,6 +550,16 @@ dim(myFilteredData.sp$dead.recovery)
 ## Subset to months of interest
 myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in% unlist(myVars$DATA$samplingMonths), ]
 table(myFilteredData.sp$alive$Year)
+
+##-- Checks
+dim(myFilteredData.sp$alive)
+table(myFilteredData.sp$alive$Year)
+dim(myFilteredData.sp$dead.recovery)
+table(myFilteredData.sp$dead.recovery$Year)
+table(myFilteredData.sp$dead.recovery$DeathCause)
+table(myFilteredData.sp$dead.recovery$DeathCause_2)
+
+
 
 
 

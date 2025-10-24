@@ -59,11 +59,24 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2
 
 cleanRovbaseData( 
   species = "wolverine",
-  years = 2014:2023,
+  #years = 2014:2023,
   data.dir = data.dir,
   working.dir = working.dir)
 
 
+##-- Load the most recent clean wolverine data from RovBase
+myFullData.sp <- readMostRecent( 
+  path = file.path(working.dir, "data"),
+  pattern = "CleanData_wolverine",
+  extension = ".RData")
+
+##-- Checks
+dim(myFullData.sp$alive[myFullData.sp$alive$Country_sf %in% c("(N)","(S)"), ])
+table(myFullData.sp$alive$Season[myFullData.sp$alive$Country_sf %in% c("(N)","(S)")])
+dim(dead.recovery)
+table(dead.recovery$Season)
+table(dead.recovery$Death_cause)
+table(dead.recovery$Death_method)
 
 ##------------------------------------------------------------------------------
 ## ----- III. PREPARE OPSCR DATA ------

@@ -88,7 +88,7 @@ GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_wa
 
 
 ##-- POLYGONS OF SWEDEN & NORWAY
-COUNTRIES <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
+COUNTRIES <- GLOBALMAP %>%
   filter(ISO %in% c("SWE","NOR"), 
          area > 80000000) %>%
   group_by(ISO) %>%
