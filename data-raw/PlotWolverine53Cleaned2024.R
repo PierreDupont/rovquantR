@@ -1,10 +1,3 @@
-###################################################
-##### ------------- WOLF : OPSCR ------------ #####
-##### ------- AC[dbinomPP().dMNorm()] ------- #####
-##### --- Z[gamma(t).phi(state.t).psi(t)] --- #####
-##### ----- Y[p0(state.t).sigma(state)] ----- #####
-###################################################
-
 rm(list=ls())
 gc()
 
@@ -28,55 +21,53 @@ library(nimbleSCR)
 library(readxl)
 library(dplyr)
 library(ggplot2)
-
+library(colorspace)
 
 
 ## ------ SET REQUIRED WORKING DIRECTORIES ------
 
-#source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/myWorkingDirectories.R")
-source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")             
 # source("C:/PROJECTS/RovQuant/Temp/RB/myWorkingDirectories.R")   
+# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/myWorkingDirectories.R")
+source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")             
 
 
 ## ------ SOURCE THE REQUIRED FUNCTIONS ------
 
 sourceDirectory(dir.function, modifiedOnly = FALSE)
-load(paste(dir.dropbox,"/DATA/MISC DATA/age.lookup.table.RData",sep=""))
+load(file.path(dir.dropbox,"DATA/MISC DATA/age.lookup.table.RData"))
 source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/PD/FUNCTIONS/FunctionScripts/dbin_LESS_Cached_MultipleCov.R")
 
-# LOAD CPP FUNCTIONS 
+##-- LOAD CPP FUNCTIONS 
 for(i in list.files(dir.function.cpp)){sourceCpp(filePath(dir.function.cpp,i))}
-"C://Users//cymi//Dropbox (Old)//AQEG Dropbox//AQEG Team Folder//RovQuant"
+
 
 
 ##------------------------------------------------------------------------------
 
-## ------ 0.SET ANALYSIS CHARACTERISTICS -----
-
-### ==== 1. GENERAL VARIABLES DECLARATION ====
+## ------ 0. SET ANALYSIS CHARACTERISTICS -----
 
 myVars <- list( 
   ## WORKING DIRECTORY & MODEL NAME
-  WD = "C://Users//cymi//Dropbox (Old)//AQEG Dropbox//AQEG Team Folder//RovQuant//wolverine//CM//2024",
+  WD = file.path(dir.dropbox, "RovQuant/wolverine/CM/2024"),
   modelName = "plot53Cleaned2024",
   
-  # HABITAT SPECIFICATIONS
-  HABITAT = list( countries =  c("SWE","NOR"),
+  ## HABITAT SPECIFICATIONS
+  HABITAT = list( countries = c("SWE","NOR"),
                   habResolution = 20000, 
                   habBuffer = 60000),
   
-  # NGS DATA SPECIFICATIONS
+  ## NGS DATA SPECIFICATIONS
   DATA = list( years = 2014:2023,   
-               species = c("Jerv"),              
+               species = "Jerv",              
                sex = c("Hann"),                   
                samplingMonths = list(12,1:6)), 
   
-  # DETECTORS SPECIFICATIONS
+  ## DETECTORS SPECIFICATIONS
   DETECTORS = list( detSubResolution = 2000,
                     detResolution = 10000,
                     detDeadResolution = 15000),
   
-  # DATA GENERATION 
+  ## DATA GENERATION 
   DETECTIONS = list( maxDetDist = 40000,
                      resizeFactor = 3,
                      aug.factor = 0.8),
@@ -87,49 +78,51 @@ myVars <- list(
   ## MISCELLANEOUS
   plot.check = TRUE)
 
-
-#Name of the female and male models
+##-- Number of years
 years <- myVars$DATA$years
 nYears <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
 
-myVars$modelNameF <- "53.aJ_FaCleaned2024"
-myVars$modelNameM <- "53.aJ_MaCleaned2024"
+##-- Name of the female and male models
+modelNameF <- "53.aJ_FaCleaned2024"
+modelNameM <- "53.aJ_MaCleaned2024"
 
-if(is.null(myVars$modelName))stop("YOU SHOULD PROBABLY CHOOSE A NAME FOR THIS ANALYSIS/MODEL")
-if(is.null(myVars$WD))stop("YOU SHOULD PROBABLY CHOOSE A WORKING DIRECTORY FOR THIS ANALYSIS/MODEL")
-if(!dir.exists(file.path(myVars$WD, myVars$modelName))){dir.create(file.path(myVars$WD, myVars$modelName))}
+##-- SET DIRECTORY WHERE WOLF FIGURES WILL BE STORED
+WDFigures <- file.path(myVars$WD, myVars$modelName, "Figure")
+WDTables <- file.path(myVars$WD, myVars$modelName, "Table")
+if(!dir.exists(file.path(WDFigures))){dir.create(WDFigures)}
+if(!dir.exists(file.path(WDTables))){dir.create(WDTables)}
 
-# #SET DIRECTORY WHERE WOLF FIGURES WILL BE STORED
-myVars$WDFigures <- file.path(myVars$WD, myVars$modelName,"Figure")
-myVars$WDTables <- file.path(myVars$WD, myVars$modelName,"Table")
-if(!dir.exists(file.path(myVars$WDFigures))){dir.create(myVars$WDFigures)}
-if(!dir.exists(file.path(myVars$WDTables))){dir.create(myVars$WDTables)}
 
 
 ##------------------------------------------------------------------------------
 
-## ------ I.LOAD AND SELECT DATA ------
+## ------ I. LOAD & SELECT DATA ------
 
-### ==== 1. HABITAT DATA ====
+## ------   1. LOAD SHAPEFILES ------
 
-### ====    1.1.LOAD RAW SHAPEFILES ====
+##-- LOAD GLOBAL MAP
+GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
+  dplyr::filter(area > 80000000) %>%
+  st_crop(, st_bbox(extent(c(-70000,1200000,5100000,8080000))))
 
-## POLYGONS OF SWEDEN & NORWAY
-COUNTRIES <- GLOBALMAP[GLOBALMAP$ISO %in% c("SWE","NOR"), ]
-COUNTRIES <- COUNTRIES %>%    group_by(ISO) %>%summarize()
+##-- POLYGONS OF SWEDEN & NORWAY
+COUNTRIES <- GLOBALMAP %>%
+  dplyr::filter(ISO %in% c("SWE","NOR")) %>%
+  group_by(ISO) %>%
+  summarize()
 
-## POLYGONS OF COMMUNES IN SWEDEN & NORWAY
-COMMUNES_NOR <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp", sep = ""))   ## Communal map of Norway
-COMMUNES_SWE <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp", sep = ""))    ## Communal map of Sweden
+##-- POLYGONS OF COMMUNES IN SWEDEN & NORWAY
+COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) ## Communal map of Norway
+COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp")) ## Communal map of Sweden
 COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
 
-## POLYGONS OF COUNTIES IN SWEDEN & NORWAY
+##-- POLYGONS OF COUNTIES IN SWEDEN & NORWAY
 COUNTIES <- COMMUNES %>%   
  group_by(NAME_1) %>%
   summarize()
 
-## AGGREGATE COUNTIES (OPTIONAL)
+##-- AGGREGATE COUNTIES (OPTIONAL)
 COUNTIES_AGGREGATE <- COUNTIES
 COUNTIES_AGGREGATE$id <- 1:nrow(COUNTIES_AGGREGATE)
 COUNTIES_AGGREGATE$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
@@ -149,396 +142,346 @@ ggplot(COUNTIES_AGGREGATED) +
   geom_sf(aes(fill = id)) +
   geom_sf_label(aes(label = id))
 
+##-- SHAPEFILE OF NEW COUNTIES IN SWEDEN
+NewCountySwe <- readOGR(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/rk_lan_07_WGS84.shp"))
+plot(NewCountySwe, border="red")
 
-
-### ====    1.2.CREATE STUDY AREA POLYGON ====
-
-## CREATE STUDY AREA POLYGON BASED ON COUNTRY NAMES
-if(!is.null(myVars$HABITAT$countries)){
-  myStudyArea <- COUNTRIES[COUNTRIES$ISO %in% myVars$HABITAT$countries, ]
-
-  ## CREATE A POLYGON OF THE ACTUAL HABITAT POLYGON CONSIDERED (different from buffered.habitat.poly)
-  myBufferedArea <- st_buffer(st_as_sf(myStudyArea),
-                              dist = myVars$HABITAT$habBuffer) %>%
-    mutate(id = 1) %>%
-    group_by(id) %>%
-    st_intersection(., GLOBALMAP)
-}
-
-## PLOT CHECK
-if(myVars$plot.check){
-  par(mfrow = c(1,1))
-  plot(st_geometry(COUNTRIES))
-  plot(st_geometry(myBufferedArea), add = TRUE, col = rgb(0.72,0.14,0.14,0.3))
-  plot(st_geometry(myStudyArea), add = TRUE, col ="red")
-}
+##-- HABITAT RASTERS
+load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20kmNewSweCounties.RData"))
+load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
 
 
 
-### ==== 2. LOAD NECESSARY OBJECTS ====
+## ------   2. LOAD NECESSARY OBJECTS ------
 
-# LOAD OBJECTS
-load(file.path(myVars$WD, myVars$modelName, "NecessaryObjects.RData" ))
+##-- LOAD NECESSARY OBJECTS (INPUT DATA, HABITAT, DETECTORS, etc...)
+load(file.path(myVars$WD, myVars$modelName, "NecessaryObjects.RData"))
 
-#load the habitat 
-load(paste(dir.dropbox,"/DATA/GISData/spatialDomain/Habitat20kmNewSweCounties.RData",sep=""))
-load(paste(dir.dropbox,"/DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData",sep=""))
-
-#load a gis layer
-GLOBALMAP <- st_read(paste(dir.dropbox,"/DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp",sep="")) ## Map of Scandinavia (including Finland & parts of Russia)
-GLOBALMAP <- GLOBALMAP[GLOBALMAP$area > 80000000, ]
-GLOBALMAP <- st_crop(GLOBALMAP, st_bbox(extent(c(-70000,1200000,5100000,8080000))))
-
-## INFILES
-#FEMALES
-load(file.path(myVars$WD, myVars$modelNameF,paste(myVars$modelNameF,"Chain","1.RData",sep="")))
+##-- INFILES
+##-- FEMALES
+load(file.path( myVars$WD, modelNameF, paste0(modelNameF,"Chain1.RData")))
 nimDataF <- nimData
 
-#MALES
-load(file.path(myVars$WD, myVars$modelNameM,paste(myVars$modelNameM,"Chain","1.RData",sep="")))
+##-- MALES
+load(file.path(myVars$WD, modelNameM, paste0(modelNameM,"Chain1.RData")))
 nimDataM <- nimData
 
+##-- Remove nimData to avoid confusion
+rm(list = c("nimData"))
+   
+   
 
+##------------------------------------------------------------------------------
 
-# ====  8. TABLES OF #NGS SAMPLES, #DEAD RECOVERIES & #IDs DETECTED ====
+## ------ II. SUMMARY TABLES OF NGS SAMPLES, DEAD RECOVERIES & IDs DETECTED ------
 
-### ====    8.1 OVERALL NUMBERS ====
+## ------   1. OVERALL NUMBERS ------
 
 ##-- LOAD CLEANED DATASETS
-load(file.path(myVars$WD, myVars$modelNameM, paste(myVars$modelNameM,"_NGSData.RData", sep="")))
-load(file.path(myVars$WD, myVars$modelNameF, paste(myVars$modelNameF,"_NGSData.RData", sep="")))
+load(file.path(myVars$WD, modelNameM, paste0(modelNameM,"_NGSData.RData")))
+load(file.path(myVars$WD, modelNameF, paste0(modelNameF,"_NGSData.RData")))
 
-## --- SOME TALLIES TO CHECK THINGS
-# --- NGS
+##-- SOME TALLIES TO CHECK THINGS
+##-- NGS
 NGS <- rbind(myFilteredData.spF$alive, myFilteredData.spM$alive)
-table(NGS$Year)
-nrow(NGS)
+NGSStructured <- rbind( myFilteredData.spStructuredF, myFilteredData.spStructuredM)
+NGSOther <- rbind( myFilteredData.spOthersF, myFilteredData.spOthersM)
 
-NGSStructured <- rbind(myFilteredData.spStructuredF, myFilteredData.spStructuredM)
-NGSOther <- rbind(myFilteredData.spOthersF, myFilteredData.spOthersM)
-table(NGSStructured$Year)
-length(NGSStructured)+
-  length(NGSOther)
+##-- FOR REPORT SUMMARY
+length(NGS$Id)                                ## Number of NGS samples
+length(NGS$Id[NGS$Sex == "Hunn"])             ## Number of Female NGS samples
+length(NGS$Id[NGS$Sex == "Hann"])             ## Number of Male NGS samples
+length(NGS$Id[NGS$Country == "S"])/nrow(NGS)  ## Proportion of samples in Sweden
 
-# NGS.all <- rbind(myFullData.spF$alive,myFullData.spM$alive)
-# NGS.all <- NGS.all[NGS.all$Year%in%years, ]
-# table(NGS.all$Year)
-# length(NGS.all)
+length(unique(NGS$Id))                        ## Number of individuals
+length(unique(NGS$Id[NGS$Sex == "Hunn"]))     ## Number of Female individuals
+length(unique(NGS$Id[NGS$Sex == "Hann"]))     ## Number of Male individuals
 
-#### FOR REPORT SUMMARY
-length(NGS$Id)
-length(NGS$Id[NGS$Sex=="Hunn"])
-length(NGS$Id[NGS$Sex=="Hann"])
-length(NGS$Id[NGS$Country=="S"])/nrow(NGS)
-length(unique(NGS$Id))
-length(unique(NGS$Id[NGS$Sex=="Hunn"]))
-length(unique(NGS$Id[NGS$Sex=="Hann"]))
-
-#last year
-length(NGS$Id[NGS$Year %in% tail(years, n=1)])
-length(NGS$Id[NGS$Sex=="Hunn" & NGS$Year %in%tail(years, n=1)])
-length(NGS$Id[NGS$Sex=="Hann"& NGS$Year %in%tail(years, n=1)])
+## Last year
+length(NGS$Id[NGS$Year %in% tail(years, n = 1)])                     ## Number of NGS in the last year
+length(NGS$Id[NGS$Sex == "Hunn" & NGS$Year %in% tail(years, n = 1)]) ## Number of female NGS in the last year
+length(NGS$Id[NGS$Sex == "Hann" & NGS$Year %in% tail(years, n = 1)]) ## Number of Male NGS in the last year
 
 ## NGS structured
-length(NGSStructured$Id)
-length(NGSStructured$Id[NGSStructured$Sex=="Hunn"])
-length(NGSStructured$Id[NGSStructured$Sex=="Hann"])
+length(NGSStructured$Id)                            ## Number of structured NGS samples
+length(NGSStructured$Id[NGSStructured$Sex=="Hunn"]) ## Number of structured Female NGS samples
+length(NGSStructured$Id[NGSStructured$Sex=="Hann"]) ## Number of structured Male NGS samples
 
 ## NGS Other
-length(NGSOther$Id)
-length(NGSOther$Id[NGSOther$Sex=="Hunn"])
-length(NGSOther$Id[NGSOther$Sex=="Hann"])
-
-## NGS Sweden
-length(NGS$Id[NGS$Country=="S"])/nrow(NGS)
+length(NGSOther$Id)                           ## Number of other NGS samples
+length(NGSOther$Id[NGSOther$Sex=="Hunn"])     ## Number of other Female NGS samples
+length(NGSOther$Id[NGSOther$Sex=="Hann"])     ## Number of other Male NGS samples
 
 
-# --- DEAD RECOVERY
+##-- DEAD RECOVERY
 dead <- rbind(myFullData.spF$dead.recovery, myFullData.spM$dead.recovery)
 table(dead$Year)
-length(dead)
-length(unique(dead$Id[dead$Sex=="Hunn"]))
-length(unique(dead$Id[dead$Sex=="Hann"]))
+length(dead$Id)                               ## Number of individuals
+length(unique(dead$Id[dead$Sex=="Hunn"]))     ## Number of Female individuals
+length(unique(dead$Id[dead$Sex=="Hann"]))     ## Number of Male individuals
 
 
-###
-tmpdead <- dead[dead$Year %in% c(2018:2023),]
-tmpdead <- tmpdead[!duplicated(tmpdead$DNAID),]
-
-table(tmpdead$Year,tmpdead$Sex)
-table(tmpdead$Year,tmpdead$Month)
-table(tmpdead$Year)
-nrow(table(tmpdead$Year))
-duplicated(tmpdead$DNAID)
-
-mapview::mapview(tmpdead)
-
-
-
-tmpNGS <- NGS[NGS$Year %in% c(2018:2023),]
-table(tmpNGS$Year,tmpNGS$Sex)
-table(tmpNGS$Year,tmpNGS$Month)
-table(tmpNGS$Year)
-
-###HENRIK CHECK WITH PUBLIC SAMPLES
-idPublic <-
-c(
-'D555438',
-'D556590',
-'D553322',
-'D555239',
-'D554783',
-'D558440',
-'D555845',
-'D555412',
-'D556343',
-'D556344',
-'D556347',
-'D558235',
-'D557101')
-
-which(NGSStructured$DNAID%in%idPublic)
+##
+# tmpdead <- dead[dead$Year %in% c(2018:2023),]
+# tmpdead <- tmpdead[!duplicated(tmpdead$DNAID), ]
 # 
-# # NGSStructured[which(NGSStructured$DNAID%in%idPublic),]@data
-# # NGSOther[which(NGSOther$DNAID%in%idPublic),]@data
+# table(tmpdead$Year,tmpdead$Sex)
+# table(tmpdead$Year,tmpdead$Month)
+# table(tmpdead$Year)
+# nrow(table(tmpdead$Year))
+# duplicated(tmpdead$DNAID)
 # 
+# mapview::mapview(tmpdead)
 # 
-# idPublic1 <-
-#   c(
-#     'D555438')
-# NGSStructured[which(NGSStructured$DNAID%in%idPublic1),]@data
-# NGSOther[which(NGSOther$DNAID%in%idPublic1),]
+# tmpNGS <- NGS[NGS$Year %in% c(2018:2023), ]
+# table(tmpNGS$Year,tmpNGS$Sex)
+# table(tmpNGS$Year,tmpNGS$Month)
+# table(tmpNGS$Year)
+# 
+# ###HENRIK CHECK WITH PUBLIC SAMPLES
+# idPublic <- c(
+# 'D555438',
+# 'D556590',
+# 'D553322',
+# 'D555239',
+# 'D554783',
+# 'D558440',
+# 'D555845',
+# 'D555412',
+# 'D556343',
+# 'D556344',
+# 'D556347',
+# 'D558235',
+# 'D557101')
+# 
+# which(NGSStructured$DNAID%in%idPublic)
+# 
+# # # NGSStructured[which(NGSStructured$DNAID%in%idPublic),]@data
+# # # NGSOther[which(NGSOther$DNAID%in%idPublic),]@data
 # # 
-# mapview(
-# list(as(st_geometry(TRACKS_YEAR[[t]][TRACKS_YEAR[[t]]$RovbaseID %in% "T477952",]),"Spatial"),
-#         NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]),
-# layer.name = c("Franconian districts", "Franconian breweries")
-# )
-#         
-# mapview(as(st_geometry(TRACKS_YEAR[[t]][TRACKS_YEAR[[t]]$RovbaseID %in% "T477952",]),"Spatial"))+
-#   NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]
-# 
-# 
-# mapview(as(st_geometry(TRACKS[TRACKS$RovbaseID %in% "T477952",]),"Spatial"))+
-#   NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]
-# 
-# st_distance(st_geometry(TRACKS[TRACKS$RovbaseID %in% "T477952",]),
-#             st_as_sf(NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]))
-# 
-# 
-# 
-# 
-# plot(TRACKS_YEAR[[9]][TRACKS_YEAR[[9]]$RovbaseID %in% "T471191",]$geometry)
-# plot(TRACKSSimple_sf[[9]][TRACKSSimple_sf[[9]]$RovbaseID %in% "T471191",]$geometry)
-# plot(TRACKS[TRACKS$RovbaseID %in% "T471191",]$geometry,col="red",add=T)
-# points(NGSStructured[which(NGSStructured$DNAID%in%idPublic),],pch=16)
+# # idPublic1 <- c('D555438')
+# # NGSStructured[which(NGSStructured$DNAID%in%idPublic1),]@data
+# # NGSOther[which(NGSOther$DNAID%in%idPublic1),]
+# # 
+# # mapview(
+# # list(as(st_geometry(TRACKS_YEAR[[t]][TRACKS_YEAR[[t]]$RovbaseID %in% "T477952",]),"Spatial"),
+# #         NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]),
+# # layer.name = c("Franconian districts", "Franconian breweries")
+# # )
+# #         
+# # mapview(as(st_geometry(TRACKS_YEAR[[t]][TRACKS_YEAR[[t]]$RovbaseID %in% "T477952",]),"Spatial"))+
+# #   NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]
+# # 
+# # mapview(as(st_geometry(TRACKS[TRACKS$RovbaseID %in% "T477952",]),"Spatial"))+
+# #   NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]
+# # 
+# # st_distance(st_geometry(TRACKS[TRACKS$RovbaseID %in% "T477952",]),
+# #             st_as_sf(NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]))
+# # 
+# # plot(TRACKS_YEAR[[9]][TRACKS_YEAR[[9]]$RovbaseID %in% "T471191",]$geometry)
+# # plot(TRACKSSimple_sf[[9]][TRACKSSimple_sf[[9]]$RovbaseID %in% "T471191",]$geometry)
+# # plot(TRACKS[TRACKS$RovbaseID %in% "T471191",]$geometry,col="red",add=T)
+# # points(NGSStructured[which(NGSStructured$DNAID%in%idPublic),],pch=16)
 
 
-### ====    8.2. TABLE 1 NGS SAMPLES YEAR/COUNTRIES/SEX====
-### ====      8.2.1 ALL====
+
+## ------   2. TABLE 1 NGS SAMPLES YEAR/COUNTRIES/SEX ------
+
+## ------     2.1. ALL ------
+
 NGSCountrySEX <- matrix("", ncol = nYears*2, nrow = 4)
 row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")
-#colnames(NGSCountrySEX) <- unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) ))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
-colnames(NGSCountrySEX) <- unlist(lapply(YEARS, function(x) c(x[2],x[2])))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
+colnames(NGSCountrySEX) <- unlist(lapply(YEARS, function(x) c(x[2],x[2])))
+#colnames(NGSCountrySEX) <- unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) ))
 
-NGSCountrySEX[1,] <- rep(c("F","M"),nYears)
+NGSCountrySEX[1, ] <- rep(c("F","M"), nYears)
 sex <- c("Hunn","Hann")
 sex1 <- c(0,1)
-ye <- seq(1,nYears*2,by=2)
+ye <- seq(1, nYears*2, by = 2)
 for(s in 1:2){
   for(t in 1:nYears){
     temp <- NGS[NGS$Year == years[t] & NGS$Sex==sex[s], ]
-    
     NGSCountrySEX["Norway",ye[t] + sex1[s] ] <- nrow(temp[temp$Country %in% "N", ])
     NGSCountrySEX["Sweden",ye[t] + sex1[s]] <- nrow(temp[temp$Country %in% "S", ])
     NGSCountrySEX["Total",ye[t] + sex1[s]] <- nrow(temp[temp$Country %in% "S" | temp$Country %in% "N" , ])
   }#t
 }
 
-
+##-- Export .tex table
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
 addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGSCountrySEX))),
-                                    '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
+                                    '}', collapse=''), '\\\\'),
+                      rep("\\rowcolor[gray]{.95}",1))
 colnames(NGSCountrySEX) <- rep("", ncol(NGSCountrySEX))
-
-
-
 print(xtable(NGSCountrySEX, type = "latex",
-             align = paste(c("l",rep("c",ncol(NGSCountrySEX))),collapse = "")),
+             align = paste(c("l",rep("c",ncol(NGSCountrySEX))), collapse = "")),
       #scalebox = .8,
       floating = FALSE,include.colnames=F,
       add.to.row = addtorow,
-      file = file.path(myVars$WDTables,paste("NGSCountrySEX.tex",sep="")))
+      file = file.path(WDTables,"NGSCountrySEX.tex"))
 
-write.csv(NGSCountrySEX ,file = file.path(myVars$WDTables,paste("NGSCountrySEX.csv",sep="")))
+##-- Export .csv table
+write.csv(NGSCountrySEX ,file = file.path(WDTables,paste("NGSCountrySEX.csv",sep="")))
 
-sum(as.numeric(NGSCountrySEX["Total",]))
-sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "F"]))
-sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "M"]))
+# ##-- Checks
+# sum(as.numeric(NGSCountrySEX["Total",]))
+# sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "F"]))
+# sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "M"]))
 
-### ====      8.2.2 PER OBSERVATION PROCESS====
+
+
+## ------     2.2. PER OBSERVATION PROCESS ------
+
 NGSCountrySEXoBS <- matrix("", ncol = nYears*2+1, nrow = 7)
-row.names(NGSCountrySEXoBS) <- c("",rep(c("Norway","Sweden","Total"),each=2))
-#colnames(NGSCountrySEXoBS) <- c("",unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) )))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
-colnames(NGSCountrySEXoBS) <- c("",unlist(lapply(YEARS, function(x) c(x[2],x[2]))))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
+row.names(NGSCountrySEXoBS) <- c("", rep(c("Norway","Sweden","Total"), each = 2))
+colnames(NGSCountrySEXoBS) <- c("",unlist(lapply(YEARS, function(x) c(x[2],x[2]))))
 
-
-
-NGSCountrySEXoBS[1,] <- c("",rep(c("F","M"),nYears))
-NGSCountrySEXoBS[,1] <- c("",rep(c("Structured","Unstructured"),3))
+NGSCountrySEXoBS[1, ] <- c("", rep(c("F","M"), nYears))
+NGSCountrySEXoBS[ ,1] <- c("", rep(c("Structured","Unstructured"), 3))
 
 sex <- c("Hunn","Hann")
 sex1 <- c(0,1)
 ye <- seq(2,nYears*2,by=2)
 for(s in 1:2){
   for(t in 1:nYears){
-    ## structured
+    ## Structured
     tempStruc <- NGSStructured[NGSStructured$Year == years[t] & NGSStructured$Sex==sex[s], ]
-    
     NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[1], ye[t] + sex1[s] ] <- nrow(tempStruc[tempStruc$Country %in% "N", ])
     NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[1], ye[t] + sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "S", ])
-    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[1], ye[t] + sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "S" | tempStruc$Country %in% "N" , ])
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[1], ye[t] + sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "S" | tempStruc$Country %in% "N", ])
     
     ## Other
     tempOther <- NGSOther[NGSOther$Year == years[t] & NGSOther$Sex==sex[s], ]
-    
     NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[2], ye[t] + sex1[s] ] <- nrow(tempOther[tempOther$Country %in% "N", ])
     NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[2], ye[t] + sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S", ])
-    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[2], ye[t] + sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S" | tempOther$Country %in% "N" , ])
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[2], ye[t] + sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S" | tempOther$Country %in% "N", ])
     
-    ###TOTAL 
-    
-    
+    ## TOTAL ????
   }#t
-}
+}#s
 
-
+##-- Export .tex table
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
-addtorow$command <- c(paste0("& \\multicolumn{1}{c}{}",paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGSCountrySEXoBS)[2:ncol(NGSCountrySEXoBS)])),
-                                                              '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
+addtorow$command <- c(paste0('& \\multicolumn{1}{c}{} & \\multicolumn{2}{c}{',
+                             sort(unique(colnames(NGSCountrySEXoBS)[2:ncol(NGSCountrySEXoBS)])),
+                             '}\\\\'),
+                      rep("\\rowcolor[gray]{.95}",1))
 colnames(NGSCountrySEXoBS) <- rep("", ncol(NGSCountrySEXoBS))
-
-#"\\multirow{1}{*}{}",
 multirow <- paste0( paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Norway","Sweden","Total"), "}}"))
-multirowadd <- matrix(c("",multirow[1],"",multirow[2],"",multirow[3],""),ncol=1)
+multirowadd <- matrix(c("",multirow[1],"",multirow[2],"",multirow[3],""), ncol = 1)
 NGSCountrySEXoBS <- data.frame(cbind(multirowadd,NGSCountrySEXoBS))
-colnames(NGSCountrySEXoBS) <- c("",unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) )))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
-
-
-
-print(xtable(NGSCountrySEXoBS, type = "latex",
-             align = paste(c("l",rep("c",ncol(NGSCountrySEXoBS))),collapse = "")),
+colnames(NGSCountrySEXoBS) <- c("",unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),
+                                                                     paste(x,collapse = "/")))))
+print(xtable( NGSCountrySEXoBS,
+              type = "latex",
+              align = paste(c("l",rep("c",ncol(NGSCountrySEXoBS))), collapse = "")),
       #scalebox = .7, 
       floating = FALSE,
       add.to.row = addtorow,
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("NGSCountrySEXperObs.tex",sep="")))
+      file = file.path(WDTables,"NGSCountrySEXperObs.tex"))
 
-
-sum(as.numeric(NGSCountrySEX["Total",]))
-
-sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "F"]))
-sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "M"]))
-
-#PLOT CHECK 
-plot(myHabitat.list$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
-plot(st_geometry(NGSOther),pch=21,col="black",cex=0.5,bg="red",add=T)
-plot(st_geometry(NGSStructured),pch=21,col="black",cex=0.5,bg="red",add=T)
-
-par(mfrow=c(1,2),mar=c(0,0,0,0))
-plot(myHabitat.list$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
-plot(st_geometry(NGSStructured),pch=21,col="black",cex=0.5,bg="#E69F00",add=T)
-plot(myHabitat.list$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
-plot(st_geometry(NGSOther),pch=21,col="black",cex=0.5,bg="#009E73",add=T)
-
-dev.off()
+# ##-- Checks
+# sum(as.numeric(NGSCountrySEX["Total",]))
+# sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "F"]))
+# sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "M"]))
 # 
-NGSStructured$Year1 <- NGSStructured$Year+1
-NGSOther$Year1 <- NGSOther$Year+1
+# #PLOT CHECK 
+# plot(myHabitat.list$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
+# plot(st_geometry(NGSOther),pch=21,col="black",cex=0.5,bg="red",add=T)
+# plot(st_geometry(NGSStructured),pch=21,col="black",cex=0.5,bg="red",add=T)
+# 
+# par(mfrow=c(1,2),mar=c(0,0,0,0))
+# plot(myHabitat.list$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
+# plot(st_geometry(NGSStructured),pch=21,col="black",cex=0.5,bg="#E69F00",add=T)
+# plot(myHabitat.list$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
+# plot(st_geometry(NGSOther),pch=21,col="black",cex=0.5,bg="#009E73",add=T)
+# 
+# dev.off()
+# 
+# NGSStructured$Year1 <- NGSStructured$Year+1
+# NGSOther$Year1 <- NGSOther$Year+1
+# 
+# barplot(rbind(table(NGSStructured$Year1),table(NGSOther$Year1)),
+#         col=c("#E69F00","#009E73"))
+# legend("topleft",fill=c("#E69F00","#009E73"),legend=c("Structured","Other") )
 
-barplot(rbind(table(NGSStructured$Year1),table(NGSOther$Year1)),
-        col=c("#E69F00","#009E73"))
-legend("topleft",fill=c("#E69F00","#009E73"),legend=c("Structured","Other") )
-
-#GIVE FILE TO HENRIK
+##-- GIVE FILE TO HENRIK ([PD] for what????)
 tmp <- NGSOther[NGSOther$Year %in% c(2019,2020,2021),]
 tmp
+write.csv(tmp,file= file.path(WDTables,paste("Unstructured2020_2022.csv",sep="")))
 
-write.csv(tmp,file= file.path(myVars$WDTables,paste("Unstructured2020_2022.csv",sep="")))
 
 
-### ====    8.4. TABLE 2 NGS ID YEAR/COUNTRIES/SEX ====
-### ====      8.4.1 ALL ====
+## ------   3. TABLE 2 NGS ID YEAR/COUNTRIES/SEX ------
+
+## ------     3.1. ALL ------
 
 NGSidCountrySEX <- matrix("", ncol = nYears*2, nrow = 4)
 row.names(NGSidCountrySEX) <- c("","Norway","Sweden","Total")
-#colnames(NGSidCountrySEX) <- unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) ))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
-colnames(NGSidCountrySEX) <- c(unlist(lapply(YEARS, function(x) c(x[2],x[2]))))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
+colnames(NGSidCountrySEX) <- c(unlist(lapply(YEARS, function(x)c(x[2],x[2]))))
+#colnames(NGSidCountrySEX) <- unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) ))
 
-
-NGSidCountrySEX[1,] <- rep(c("F","M"),nYears)
+NGSidCountrySEX[1,] <- rep(c("F","M"), nYears)
 sex <- c("Hunn","Hann")
 sex1 <- c(0,1)
-ye <- seq(1,nYears*2,by=2)
+ye <- seq(1, nYears*2, by = 2)
 for(s in 1:2){
   for(t in 1:nYears){
-    temp <- NGS[NGS$Year == years[t] & NGS$Sex==sex[s], ]
-    
-    NGSidCountrySEX["Norway",ye[t] + sex1[s] ] <- length(unique(temp$Id[temp$Country %in% "N" ]))
+    temp <- NGS[NGS$Year == years[t] & NGS$Sex == sex[s], ]
+    NGSidCountrySEX["Norway",ye[t] + sex1[s] ] <- length(unique(temp$Id[temp$Country %in% "N"]))
     NGSidCountrySEX["Sweden",ye[t] + sex1[s]] <- length(unique(temp$Id[temp$Country %in% "S"]))
     NGSidCountrySEX["Total",ye[t] + sex1[s]] <- length(unique(temp$Id))
-    
   }#t
-  
-}
+}#s
 
-
+##-- Export .tex
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
 addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGSidCountrySEX))),
                                     '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
 colnames(NGSidCountrySEX) <- rep("", ncol(NGSidCountrySEX))
 
-
-write.csv(NGSidCountrySEX ,file = file.path(myVars$WDTables,paste("NGSidCountrySEX.csv",sep="")))
-
 print(xtable(NGSidCountrySEX, type = "latex",
-             align = paste(c("l",rep("c",ncol(NGSidCountrySEX))),collapse = "")),
+             align = paste0("l", rep("c", ncol(NGSidCountrySEX)))),
       #scalebox = .8, 
-      floating = FALSE,include.colnames=F,
+      floating = FALSE,
+      include.colnames = F,
       add.to.row = addtorow,
-      file = file.path(myVars$WDTables,paste("NGSidCountrySEX.tex",sep="")))
+      file = file.path(WDTables,"NGSidCountrySEX.tex"))
+
+##-- Export .csv
+write.csv(NGSidCountrySEX ,file = file.path(WDTables,"NGSidCountrySEX.csv"))
 
 
-### PRINT A CSV TABLE WITH THE NUMBER OF TOTAL IDS PER YEAR
+##-- Export .csv TABLE WITH THE NUMBER OF TOTAL IDS PER YEAR
 NGSidCountryTotal <- matrix(0, ncol = nYears, nrow = 1)
 row.names(NGSidCountryTotal) <- c("Total")
+colnames(NGSidCountryTotal) <- c(unlist(lapply(YEARS, function(x) c(x[2]))))
 #colnames(NGSidCountryTotal) <- unlist(lapply(YEARS,function(x) paste(x,collapse = "/") ))
-colnames(NGSidCountryTotal) <- c(unlist(lapply(YEARS, function(x) c(x[2]))))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
 
 for(t in 1:nYears){
   temp <- NGS[NGS$Year == years[t] , ]
   NGSidCountryTotal["Total", t] <- length(unique(temp$Id))
 }#t
-
-write.csv(NGSidCountryTotal,file = file.path(myVars$WDTables,paste("TotalIdDetected.csv",sep="")))
+write.csv(NGSidCountryTotal, file = file.path(WDTables,"TotalIdDetected.csv"))
 
 ### PRINT A CSV TABLE WITH THE NUMBER OF TOTAL IDS PER YEAR PER SEX
 
 
-### ====      8.4.2 PER OBSERVATION PROCESS====
+
+## ------     3.2. PER OBSERVATION PROCESS ------
+
 NGSCountrySEXoBSid <- matrix("", ncol = nYears*2+1, nrow = 7)
 row.names(NGSCountrySEXoBSid) <- c("",rep(c("Norway","Sweden","Total"),each=2))
-#colnames(NGSCountrySEXoBSid) <- c("",unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) )))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
-colnames(NGSCountrySEXoBSid) <- c("",unlist(lapply(YEARS, function(x) c(x[2],x[2]))))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
+colnames(NGSCountrySEXoBSid) <- c("",unlist(lapply(YEARS, function(x) c(x[2],x[2]))))
 
-
-NGSCountrySEXoBSid[1,] <- c("",rep(c("F","M"),nYears))
-NGSCountrySEXoBSid[,1] <- c("",rep(c("Structured","Unstructured"),3))
+NGSCountrySEXoBSid[1,] <- c("", rep(c("F","M"), nYears))
+NGSCountrySEXoBSid[,1] <- c("", rep(c("Structured","Unstructured"), 3))
 
 sex <- c("Hunn","Hann")
 sex1 <- c(0,1)
@@ -563,22 +506,20 @@ for(s in 1:2){
     
     
   }#t
-}
+}#s
 
 
+##-- Export .tex
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
 addtorow$command <- c(paste0("& \\multicolumn{1}{c}{}",paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGSCountrySEXoBSid)[2:ncol(NGSCountrySEXoBSid)])),
-                                                              '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
+                                                              '}', collapse=''), '\\\\'),
+                      rep("\\rowcolor[gray]{.95}",1))
 colnames(NGSCountrySEXoBSid) <- rep("", ncol(NGSCountrySEXoBSid))
-
-#"\\multirow{1}{*}{}",
 multirow <- paste0( paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Norway","Sweden","Total"), "}}"))
 multirowadd <- matrix(c("",multirow[1],"",multirow[2],"",multirow[3],""),ncol=1)
-NGSCountrySEXoBSid <- data.frame(cbind(multirowadd,NGSCountrySEXoBSid))
-colnames(NGSCountrySEXoBSid) <- c(unlist(lapply(YEARS, function(x) c(x[2]))))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
-
-
+NGSCountrySEXoBSid <- data.frame(cbind(multirowadd, NGSCountrySEXoBSid))
+colnames(NGSCountrySEXoBSid) <- c(unlist(lapply(YEARS, function(x) c(x[2]))))
 
 print(xtable(NGSCountrySEXoBSid, type = "latex",
              align = paste(c("l",rep("c",ncol(NGSCountrySEXoBSid))),collapse = "")),
@@ -588,22 +529,23 @@ print(xtable(NGSCountrySEXoBSid, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("NGSCountrySEXperObsid.tex",sep="")))
+      file = file.path(WDTables, "NGSCountrySEXperObsid.tex"))
 
 
 
-### ====    8.5. TABLE 3 DEAD CAUSE ID YEAR/COUNTRIES/SEX ====
+## ------   4. TABLE 3 DEAD CAUSE ID YEAR/COUNTRIES/SEX ------
+
 DeadidCountrySEX <- matrix(0, ncol = nYears*2+1, nrow = 6)
 row.names(DeadidCountrySEX) <- c("","other","other","legal culling","legal culling","")
-#colnames(DeadidCountrySEX) <- c("",unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")))))#c("",unlist(lapply(YEARS,function(x) c(x[2],x[2]))))#
-colnames(DeadidCountrySEX) <- c("",unlist(lapply(YEARS, function(x) c(x[2],x[2]))))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
-
+colnames(DeadidCountrySEX) <- c("",unlist(lapply(YEARS, function(x) c(x[2],x[2]))))
+#colnames(DeadidCountrySEX) <- c("", unlist(lapply(YEARS, function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")))))
 DeadidCountrySEX[1,] <- c("",rep(c("F","M"),nYears))
 DeadidCountrySEX[,1] <- c("","Norway","Sweden","Norway","Sweden","Total")
 sex <- c("Hunn","Hann")
 sex1 <- c(0,1)
-ye <- seq(1,nYears*2,by=2)
-###
+ye <- seq(1, nYears*2, by = 2)
+
+##-- Identify legal mortality causes
 MortalityNames <- unique(as.character(dead$DeathCause))
 table(as.character(dead$DeathCause))
 legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
@@ -612,77 +554,75 @@ legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
 legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
 legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
 legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
-## SEPARATE MORTALITIES
-cause <- c("other","legal culling")
+# legalCauses <- c(legalCauses, MortalityNames[grep("9", MortalityNames)])
+# legalCauses <- c(legalCauses, MortalityNames[grep("23", MortalityNames)])
+# legalCauses <- c(legalCauses, MortalityNames[grep("28", MortalityNames)])
+# legalCauses <- c(legalCauses, MortalityNames[grep("Rifle", MortalityNames)])
+# legalCauses <- c(legalCauses, MortalityNames[grep("18", MortalityNames)])
+# legalCauses <- c(legalCauses, MortalityNames[grep("17", MortalityNames)])
+# legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Uspesifisert", MortalityNames)])
+# legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Fellefangst", MortalityNames)])
+# legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Hagle", MortalityNames)])
 
+
+##-- SEPARATE MORTALITIES
+cause <- c("other","legal culling")
 for(t in 1:nYears){
   for(s in 1:2){
     for(d in 1:2){
-      if(d==1){temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & !(dead$DeathCause %in% legalCauses), ]
-      }else{
-        temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & dead$DeathCause %in% legalCauses, ]
+      if(d == 1){
+        temp <- dead[dead$Year == years[t] & dead$Sex == sex[s] & !(dead$DeathCause %in% legalCauses), ]
+      } else {
+        temp <- dead[dead$Year == years[t] & dead$Sex == sex[s] & dead$DeathCause %in% legalCauses, ]
       }
-      row <- which(rownames(DeadidCountrySEX)==cause[d] & DeadidCountrySEX[,1]=="Norway" )
-      DeadidCountrySEX[row,ye[t] + sex1[s]+1 ] <- length(unique(temp$Id[temp$Country %in% "N" ]))
+      row <- which(rownames(DeadidCountrySEX) == cause[d] & DeadidCountrySEX[,1] == "Norway" )
+      DeadidCountrySEX[row,ye[t]+sex1[s]+1] <- length(unique(temp$Id[temp$Country %in% "N"]))
       
-      row <- which(rownames(DeadidCountrySEX)==cause[d] & DeadidCountrySEX[,1]=="Sweden" )
-      DeadidCountrySEX[row,ye[t] + sex1[s]+1] <- length(unique(temp$Id[temp$Country %in% "S"]))
-    }#t
-    DeadidCountrySEX[6, ye[t] + sex1[s]+1] <-  sum(as.numeric(DeadidCountrySEX[2:6,ye[t] + sex1[s]+1]))
-  }
-}
+      row <- which(rownames(DeadidCountrySEX) == cause[d] & DeadidCountrySEX[,1] == "Sweden" )
+      DeadidCountrySEX[row,ye[t]+sex1[s]+1] <- length(unique(temp$Id[temp$Country %in% "S"]))
+    }#d
+    DeadidCountrySEX[6,ye[t]+sex1[s]+1] <- sum(as.numeric(DeadidCountrySEX[2:6,ye[t]+sex1[s]+1]))
+  }#s
+}#t
 
 
-##summary
-#Other causes
+##-- summary
+###-- Other causes
 sum(as.numeric(DeadidCountrySEX[2:3,2:ncol(DeadidCountrySEX)]))
 sum(as.numeric(DeadidCountrySEX[2:3,which(DeadidCountrySEX[1,]=="F")]))
 sum(as.numeric(DeadidCountrySEX[2:3,which(DeadidCountrySEX[1,]=="M")]))
-#legal
+##-- legal
 sum(as.numeric(DeadidCountrySEX[4:5,2:ncol(DeadidCountrySEX)]))
 sum(as.numeric(DeadidCountrySEX[4:5,which(DeadidCountrySEX[1,]=="F")]))
 sum(as.numeric(DeadidCountrySEX[4:5,which(DeadidCountrySEX[1,]=="M")]))
-
 sum(as.numeric(DeadidCountrySEX[c(2,3),2:ncol(DeadidCountrySEX)]))/
   sum(as.numeric(DeadidCountrySEX[c(2:5),2:ncol(DeadidCountrySEX)]))
 
-
-## %of dead reco (legal) in norway
+##-- %of dead reco (legal) in Norway
 sum(as.numeric(DeadidCountrySEX[4,2:ncol(DeadidCountrySEX)]))/
   sum(as.numeric(DeadidCountrySEX[c(4,5),2:ncol(DeadidCountrySEX)]))
 
+##-- ?? 
+sum(as.numeric(DeadidCountrySEX[c(3,5),2:ncol(DeadidCountrySEX)]))/
+  sum(as.numeric(DeadidCountrySEX[c(2:5),2:ncol(DeadidCountrySEX)]))
 
-
+##-- ??
 sum(as.numeric(DeadidCountrySEX[6,which(DeadidCountrySEX[1,]=="M")]))
 sum(as.numeric(DeadidCountrySEX[6,which(DeadidCountrySEX[1,]=="F")]))
 sum(as.numeric(DeadidCountrySEX[6,which(DeadidCountrySEX[1,] %in% c("F","M"))]))
 
-#write latex
+##-- Export. tex
 addtorow <- list()
-
 addtorow$pos <- list(c(0),0)
 uniqueYEAR <- sort(unique(colnames(DeadidCountrySEX)))
 uniqueYEAR <- uniqueYEAR[2:length(uniqueYEAR)]
 addtorow$command <- c(paste0("& \\multicolumn{1}{c}{Country}",paste0('& \\multicolumn{2}{c}{', uniqueYEAR,
-                                                                     '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
-# colnames(TableState) <- rep("", ncol(TableState))
-# REMOVE ROWS WHERE PARAMETERS ARE NOT STATE SPECIFIC
-
-
+                                                                     '}', collapse=''), '\\\\'),
+                      rep("\\rowcolor[gray]{.95}",1))
+##-- REMOVE ROWS WHERE PARAMETERS ARE NOT STATE SPECIFIC
 multirow <- paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Other","Legal culling"), "}}")
 multirowadd <- matrix(c("",multirow[1],"",multirow[2],"","{\\textbf{Total}}"),ncol=1)
 DeadidCountrySEX <- data.frame(cbind(multirowadd,DeadidCountrySEX))
-# addtorow$pos <- list(c(0),0)
-# addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(TableState))),
-#                                     '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
-# colnames(TableState) <- rep("", ncol(TableState))
-
-# xTableState <- xtable(TableState)
-
-# rownames(TableState)[2:5] <- c("$\\rho$","$\\phi$","h","w")
-
-# rownames(TableState)[2:8] <- c("$\\gamma$","$\\phi$","   ","h","  ","w","  ")
-
 
 print(xtable(DeadidCountrySEX, type = "latex",
              align = paste(rep("c", ncol(DeadidCountrySEX)+1), collapse = "")),
@@ -692,30 +632,32 @@ print(xtable(DeadidCountrySEX, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("DeadidCountrySEX.tex", sep="")))
+      file = file.path(WDTables, "DeadidCountrySEX.tex"))
 
-
-#check 
+# check 
 # tmp <- dead[dead$Year == 2019 & 
 #               !dead$DeathCause %in% legalCauses &
-#               dead$Country %in% "N"& 
+#               dead$Country %in% "N" & 
 #               dead$Sex %in% "Hunn", ]
 # length(unique(tmp$Id))
 # unique(tmp$Id)
-# 
 # DeadidCountrySEX[,"X2022"]
 # DeadidCountrySEX[,"X2022.1"]
-# 
 # dead[dead$Id %in% "JI416817 Ind7303 +",]$Sex
-# 
 # plot(COUNTRIES$geometry)
 # plot(tmp$geometry,add=T,col="red",pch=16)
 
-### ====    8.6. GET THE DETECTED INDIVIDUALS ====
-n.detected <- read.csv(file.path(myVars$WDTables, paste("TotalIdDetected.csv",sep="")))
+
+
+## ------   5. GET THE DETECTED INDIVIDUALS ------
+
+n.detected <- read.csv(file.path(WDTables, "TotalIdDetected.csv"))
 n.detected <- n.detected[1,2:ncol(n.detected)]
 
-### ====    8.7. SUMMARY DETECTED INDIVIDUALS PER COUNTIES ====
+
+
+## ------   6. SUMMARY DETECTED INDIVIDUALS PER COUNTIES ------
+
 # myFilteredData.sp$alive$COUNTIES  <- st_intersects(myFilteredData.sp$alive[,1], COUNTIES_AGGREGATED[,1])
 # myFilteredData.sp$alive$COUNTIES <- as.numeric(myFilteredData.sp$alive$COUNTIES)
 # 
@@ -736,19 +678,14 @@ n.detected <- n.detected[1,2:ncol(n.detected)]
 # text(st_coordinates(st_centroid(COUNTIES_AGGREGATED$geometry))[,1],
 #      st_coordinates(st_centroid(COUNTIES_AGGREGATED$geometry))[,2],
 #      COUNTIES_AGGREGATED$id,col="red",font=2)
-# 
-# 
-# 
-# 
-# 
-# 
+#
 # ## NSAMPLES
 # summa <- myFilteredData.sp$alive %>%
 #   group_by(counties1,Year) %>%
 #   summarise(n=n()) %>%
 #   st_drop_geometry()
 # summa <- summa[summa$counties1>0,]
-# #2023
+# ##-- 2023
 # tmp <- summa[summa$Year %in% 2023,]
 # COUNTIES_AGGREGATED$nSampl2023 <- tmp$n#[1:8,"n"]
 # #2022
@@ -762,36 +699,31 @@ n.detected <- n.detected[1,2:ncol(n.detected)]
 # barplo <- barplot(bar,beside=T,ylab="N samples")
 # legend("topright",fill=c(grey(0.3),grey(0.6)),legend=c(2023,2024))
 # 
-# 
 # ## NdetectionsPerID 
 # #COUNT NUMBER IDS 
-# 
 # summa$n1 <- summa$NID <- 0
 # dpt <- unique(unlist(summa$counties1))
 # yearsss <- c(2022,2023)
 # for(t in 1:length(yearsss)){
 #   for(i in 1:length(dpt)){
 #     tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$counties1 %in% dpt[i] & myFilteredData.sp$alive$Year %in% yearsss[t],]
-#     
 #     summa[summa$counties1 %in% dpt[i] & summa$Year %in% yearsss[t], ]$n1 <- nrow(tmp)
 #     summa[summa$counties1 %in% dpt[i] & summa$Year %in% yearsss[t], ]$NID <-  length(unique(tmp$Id))
 #   }
 # }
-# #
+# 
 # summa$NdetPerIDDet <- summa$n1/summa$NID
 # 
-# #2023
+# ##-- 2023
 # tmp <- summa[summa$Year %in% 2023,]
 # COUNTIES_AGGREGATED$detPerID2023 <- tmp$NdetPerIDDet#[1:8,"n"]
 # #2022
 # tmp1 <- summa[summa$Year %in% 2022,]
 # COUNTIES_AGGREGATED$detPerID2022 <- tmp1$NdetPerIDDet#[1:8,"n"]
 # 
-# 
 # tmppp<- st_drop_geometry(COUNTIES_AGGREGATED[,c("detPerID2022","detPerID2023")])
 # bar <- t(as.matrix(tmppp[c(5,7,8),]))
 # colnames(bar) <- c(5,7,8)
-# 
 # 
 # par(mfrow=c(1,2))
 # par(mar=c(0,0,0,0))
@@ -805,68 +737,50 @@ n.detected <- n.detected[1,2:ncol(n.detected)]
 
 
 
+##------------------------------------------------------------------------------
 
-## ----------------------------------------------------------------------------------------------
-## ------ II.GET THE MCMC ESTIMATES  -----
-## ----------------------------------------------------------------------------------------------
-#Name of the female and male models
-## LOAD NECESSARY OBJECTS
-## INFILES
-#FEMALES
-load(file.path(myVars$WD, myVars$modelNameF,paste(myVars$modelNameF,"Chain","1.RData",sep="")))
-nimDataF <- nimData
-#MALES
-load(file.path(myVars$WD, myVars$modelNameM,paste(myVars$modelNameM,"Chain","1.RData",sep="")))
-nimDataM <- nimData
-# 
-# 
-# #SET DIRECTORY WHERE WOLF FIGURES WILL BE STORED
-myVars$WDFigures <- file.path(myVars$WD, myVars$modelName,"Figure")
-myVars$WDTables <- file.path(myVars$WD, myVars$modelName,"Table")
+## ------ III. PROCESS MODEL OUTPUTS -----
 
-if(!dir.exists(file.path(myVars$WDFigures))){dir.create(myVars$WDFigures)}
-if(!dir.exists(file.path(myVars$WDTables))){dir.create(myVars$WDTables)}
+## ------   1. GET AND COMPILE BITES ------
 
-
-
-### ====  1.GET AND COMPILE BITES ====
-# COMPILE CHARACTERISTICS 
+##-- COMPILE CHARACTERISTICS 
 bitesize <- 250
 burnin <- 10000
 NSkipBites <- burnin/bitesize
 nthinsxy <- 5 #thinnumber for the sxy AND z values (necessary to save memory) 
 
-
-# Retrieve the minimum number of bites per chain
-
-outDirectoriesF <- list.files(file.path(myVars$WD, myVars$modelNameF))[grep(paste("NimbleOutFOR", myVars$modelNameF,sep="") ,list.files(file.path(myVars$WD, myVars$modelNameF)))]
-path.listF <- file.path(myVars$WD, myVars$modelNameF, outDirectoriesF)
+##-- Retrieve the minimum number of bites per chain
+outDirectoriesF <- list.files(file.path(myVars$WD, modelNameF))[grep(paste0("NimbleOutFOR", modelNameF),
+                                                                     list.files(file.path(myVars$WD, modelNameF)))]
+path.listF <- file.path(myVars$WD, modelNameF, outDirectoriesF)
 numBitesF <- unlist(lapply(path.listF, function(x){
   files <- list.files(x)
   files <- files[grep(".RData", files)]
   length(files)/2
 }))
-outDirectoriesM <- list.files(file.path(myVars$WD, myVars$modelNameM))[grep(paste("NimbleOutFOR", myVars$modelNameM,sep="") ,list.files(file.path(myVars$WD, myVars$modelNameM)))]
-path.listM <- file.path(myVars$WD, myVars$modelNameM, outDirectoriesM)
+
+outDirectoriesM <- list.files(file.path(myVars$WD, modelNameM))[grep(paste0("NimbleOutFOR", modelNameM),
+                                                                     list.files(file.path(myVars$WD, modelNameM)))]
+path.listM <- file.path(myVars$WD, modelNameM, outDirectoriesM)
 numBitesM <- unlist(lapply(path.listM, function(x){
   files <- list.files(x)
   files <- files[grep(".RData", files)]
   length(files)/2
 }))
 
+##-- Identify min number of bites
 minBites <- floor(min(c(numBitesF,numBitesM)))
-#minBites <- 25
 
 
 
-### ====    1.1 FEMALES ====
+## ------     1.1. FEMALES ------
+
 ## GO TROUGH THE BITES AND GET THEM
 nimOutput <- nimOutputSXY <- RUNTIME <- list()
-#gc()
 for(p in 1:length(path.listF)){
   print(path.listF[p])
   outfiles <- list.files(path.listF[p])
-  out <- outSXYZ <- runtime <- list()#[CM]
+  out <- outSXYZ <- runtime <- list()
   for(x in NSkipBites:minBites){
     print(x)
     load(file.path(path.listF[p], paste("bite_", x, ".RData", sep = "")))
@@ -880,20 +794,18 @@ for(p in 1:length(path.listF)){
       this.sample <- this.sample[-id,]
       print(x)
       print("here")
-      
     }
     
     out[[x]] <- this.sample#[,parmIndex]#[ ,parmIndex]
     
-    # KEEP SXY AND Z, THINING
+    ##-- KEEP SXY AND Z, THINING
     #nthins <- seq(1,dim(this.sample)[1], by=nthinsxy)
     load(file.path(path.listF[p], paste("biteSxyZ_", x, ".RData", sep = "")))
     
     #parmIndex <- which(params.simple %in% c("sxy","z","N","sigma"))
     outSXYZ[[x]] <- this.sampleSxyZ#[nthins,parmIndex]#[ ,parmIndex]
-    
   }#x
-  RUNTIME[[p]] <- unlist(runtime)#[CM]
+  RUNTIME[[p]] <- unlist(runtime)
   out.mx <- do.call(rbind, out)
   out.mxSXY <- do.call(rbind, outSXYZ)
   
@@ -901,37 +813,35 @@ for(p in 1:length(path.listF)){
   nimOutputSXY[[p]] <- as.mcmc(out.mxSXY)
 }#p
 
-## COMPILE THE RESULTS
+##-- COMPILE THE RESULTS
 nimOutput <- as.mcmc.list(nimOutput)
 nimOutputSXY <- as.mcmc.list(nimOutputSXY)
 
-myResults_F <- ProcessCodaOutput(nimOutput,params.omit = c("sxy","z"))
-myResultsSXYZ_F <- ProcessCodaOutput(nimOutputSXY,params.omit = c("sxy","z"))
+myResults_F <- ProcessCodaOutput(nimOutput, params.omit = c("sxy","z"))
+myResultsSXYZ_F <- ProcessCodaOutput(nimOutputSXY, params.omit = c("sxy","z"))
 
 
 
-### ====    1.2 MALES ====
-## GO TROUGH THE BITES AND GET THEM
+## ------     1.2. MALES ------
+
+##-- GO TROUGH THE BITES AND GET THEM
 nimOutput <- nimOutputSXY <- RUNTIME <- list()
-#gc()
 for(p in 1:length(path.listM)){
   print(path.listM[p])
   outfiles <- list.files(path.listM[p])
-  out <- outSXYZ <- runtime <- list()#[CM]
+  out <- outSXYZ <- runtime <- list()
   for(x in NSkipBites:minBites){
     print(x)
     load(file.path(path.listM[p], paste("bite_", x, ".RData", sep = "")))
     runtime[[x]] <- RunTime[3]
-    #params.simple <- sapply(strsplit(colnames(this.sample), "\\["), "[", 1)
+    # params.simple <- sapply(strsplit(colnames(this.sample), "\\["), "[", 1)
     # REMOVE SXY AND Z, NO THINING
-    #parmIndex <- which(! params.simple %in% c("sxy","z"))
-    
+    # parmIndex <- which(! params.simple %in% c("sxy","z"))
     if(sum(is.na(this.sample))>0){
       id <- unique(which(is.na(this.sample),arr.ind = T)[,1])
       this.sample <- this.sample[-id,]
       print(x)
       print("here")
-      
     }
     
     out[[x]] <- this.sample#[,parmIndex]#[ ,parmIndex]
@@ -944,7 +854,7 @@ for(p in 1:length(path.listM)){
     outSXYZ[[x]] <- this.sampleSxyZ#[nthins,parmIndex]#[ ,parmIndex]
     
   }#x
-  RUNTIME[[p]] <- unlist(runtime)#[CM]
+  RUNTIME[[p]] <- unlist(runtime)
   out.mx <- do.call(rbind, out)
   out.mxSXY <- do.call(rbind, outSXYZ)
   
@@ -952,7 +862,7 @@ for(p in 1:length(path.listM)){
   nimOutputSXY[[p]] <- as.mcmc(out.mxSXY)
 }#p
 
-## COMPILE THE RESULTS
+##-- COMPILE THE RESULTS
 nimOutput <- as.mcmc.list(nimOutput)
 nimOutputSXY <- as.mcmc.list(nimOutputSXY)
 
@@ -1009,65 +919,60 @@ myResultsSXYZ_M <- ProcessCodaOutput(nimOutputSXY,params.omit = c("sxy","z"))
 # points(MIN1[3,]~years,col="orange",pch=16)
 # legend("topleft",legend=c("NDetected","NAlive Max","N Available","N state 3" ),col=c("black","red","blue","orange"),pch=16)
 # 
-
-
 # plot(myResultsSXYZ_M$sims.list$N[1:5600,1], type="l")
 # points(myResultsSXYZ_M$sims.list$N[5601:(5600+5600),1], type="l",col="red")
 # 
 # plot(myResultsSXYZ_F$sims.list$N[1:5600,1], type="l")
 # points(myResultsSXYZ_F$sims.list$N[5601:(5600+5600),1], type="l",col="red")
-# 
-# 
 # plot(myResultsSXYZ_F$sims.list$N[1:5600,1])
-## rescale coordinates
-### ====    1.3 RESCALE SXY SO THEY CAN BE COMPARED ====
-dimnames(myResultsSXYZ_F$sims.list$sxy)[[3]] <- c("x", "y")
-myResultsSXYZ_F$sims.list$sxy <- scaleCoordsToHabitatGrid(coordsData = myResultsSXYZ_F$sims.list$sxy,
-                                                          coordsHabitatGridCenter = myHabitat.list$habitat.xy,
-                                                          scaleToGrid = FALSE)$coordsDataScaled
-
-dimnames(myResultsSXYZ_M$sims.list$sxy)[[3]] <- c("x", "y")
-myResultsSXYZ_M$sims.list$sxy <- scaleCoordsToHabitatGrid(coordsData = myResultsSXYZ_M$sims.list$sxy,
-                                                          coordsHabitatGridCenter = myHabitat.list$habitat.xy,
-                                                          scaleToGrid = FALSE)$coordsDataScaled
 
 
-##QUICK CHECK
-t=9
-#Male
+
+## ------     1.3. RESCALE SXY SO THEY CAN BE COMPARED ------
+
+dimnames(myResultsSXYZ_F$sims.list$sxy)[[3]] <- c("x","y")
+myResultsSXYZ_F$sims.list$sxy <- scaleCoordsToHabitatGrid(
+  coordsData = myResultsSXYZ_F$sims.list$sxy,
+  coordsHabitatGridCenter = myHabitat.list$habitat.xy,
+  scaleToGrid = FALSE)$coordsDataScaled
+
+dimnames(myResultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
+myResultsSXYZ_M$sims.list$sxy <- scaleCoordsToHabitatGrid(
+  coordsData = myResultsSXYZ_M$sims.list$sxy,
+  coordsHabitatGridCenter = myHabitat.list$habitat.xy,
+  scaleToGrid = FALSE)$coordsDataScaled
+
+##-- QUICK CHECK
+t = 9
+##-- Male
 plot(st_geometry(myHabitat.list$buffered.habitat.poly))
-points(myResultsSXYZ_M$sims.list$sxy[1,myResultsSXYZ_M$sims.list$z[1,,t] %in% 2, 2, t]~
-         myResultsSXYZ_M$sims.list$sxy[1,myResultsSXYZ_M$sims.list$z[1,,t] %in% 2, 1, t], pch=16, col="red")
+points( myResultsSXYZ_M$sims.list$sxy[1,myResultsSXYZ_M$sims.list$z[1, ,t] %in% 2,2,t] ~
+         myResultsSXYZ_M$sims.list$sxy[1,myResultsSXYZ_M$sims.list$z[1, ,t] %in% 2,1,t],
+       pch = 16, col = "red")
 
-#Female
+##-- Female
 plot(st_geometry(myHabitat.list$buffered.habitat.poly))
-points(myResultsSXYZ_F$sims.list$sxy[1,myResultsSXYZ_F$sims.list$z[1,,t] %in% 2, 2, t]~
-         myResultsSXYZ_F$sims.list$sxy[1,myResultsSXYZ_F$sims.list$z[1,,t] %in% 2, 1, t], pch=16, col="red")
+points( myResultsSXYZ_F$sims.list$sxy[1,myResultsSXYZ_F$sims.list$z[1, ,t] %in% 2,2,t] ~
+         myResultsSXYZ_F$sims.list$sxy[1,myResultsSXYZ_F$sims.list$z[1 ,,t] %in% 2,1,t],
+       pch = 16, col = "red")
 
-#
-# 
 # which(myResultsSXYZ_M$sims.list$sxy[1,, 2, t]> 7930000)
 # id <- 690
 # myResultsSXYZ_M$sims.list$z[1,id,t]
-# 
 # nimDataM$yDets[id,,t]
-# 
 # points(myDetectors$main.detector.sp[nimDataM$yDets[id,1,t],],pch=16)
-# 
 # tmp <- myFilteredData.spM$alive[ myFilteredData.spM$alive$Id %in% row.names(nimDataM$z[])[id] &
 #                                  myFilteredData.spM$alive$Year %in%  years[t],]
-# 
-# 
 # points(tmp, pch=16,col="blue")
-# 
-# 
-# 
 # points(myResultsSXYZ_F$sims.list$sxy[1,,2,1]~myResultsSXYZ_F$sims.list$sxy[1,,1,1], pch=16, col="blue")
 
 
-### ====    1.4 IDENTIFY INDIVIDUALS IN THE BUFFER AND ASSIGN THEM A Z NOT ALIVE (Z==5) ====
-### ====       1.4.1 CREATE POLYGON WITHOUT BUFFER ====
-##MALES
+
+## ------     1.4. IDENTIFY INDIVIDUALS IN THE BUFFER AND ASSIGN THEM A Z NOT ALIVE (Z==5) ------
+
+## ------       1.4.1. CREATE POLYGON WITHOUT BUFFER ------
+
+##-- MALES
 # habitat.r <- myHabitat.listM$habitat.r
 # habitat.r[habitat.r!=1] <- NA
 # myStudyArea.polyMnoHoles <- RemoveHolesSp(myHabitat.listM$habitat.poly)
@@ -1079,7 +984,8 @@ points(myResultsSXYZ_F$sims.list$sxy[1,myResultsSXYZ_F$sims.list$z[1,,t] %in% 2,
 # plot(myHabitat.listM$habitat.rWthBuffer,add=T)
 
 habbRNobuffM <- myHabitat.list$habitat.rWthBuffer
-##FEMALES
+
+##-- FEMALES
 # habitat.r <- myHabitat.listF$habitat.r
 # habitat.r[habitat.r!=1] <- NA
 # myStudyArea.polyFnoHoles <- RemoveHolesSp(myHabitat.listF$habitat.poly)
@@ -1093,98 +999,108 @@ habbRNobuffF <- myHabitat.list$habitat.rWthBuffer
 # points(myResultsSXYZ_F$sims.list$sxy[i,1,2,t]~myResultsSXYZ_F$sims.list$sxy[i,1,1,t], col="red")
 # points(myResultsSXYZ_F$sims.list$sxy[i,3126,2,t]~myResultsSXYZ_F$sims.list$sxy[i,3126,1,t], col="red")
 
-### ====       1.4.2 IDENTIFY INDIVIDUALS IN THE BUFFER AND GIVE THEM A STATE 5 ====
-#MAKE A COPY 
+
+
+## ------       1.4.2. IDENTIFY INDIVIDUALS IN THE BUFFER AND GIVE THEM A STATE 5 ------
+
+##-- MAKE A COPY [PD] ?????
 myResultsSXYZ_F$sims.list$z1 <- myResultsSXYZ_F$sims.list$z 
-myResultsSXYZ_M$sims.list$z1  <- myResultsSXYZ_M$sims.list$z 
 
-
-##FEMALES
-dim(myResultsSXYZ_F$sims.list$sxy)
-dim( myResultsSXYZ_F$sims.list$z)
+##-- FEMALES
+gc()
 for(t in 1:nYears){
   for(i in 1:dim( myResultsSXYZ_F$sims.list$z)[1]){
-    whichNA <- which(is.na(habbRNobuffF[cellFromXY(habbRNobuffF, myResultsSXYZ_F$sims.list$sxy[i,,1:2,t])]))
+    whichNA <- which(is.na(habbRNobuffF[cellFromXY(habbRNobuffF, myResultsSXYZ_F$sims.list$sxy[i, ,1:2,t])]))
     myResultsSXYZ_F$sims.list$z[i,whichNA,t] <- 5
-  }
+  }#i
   print(t)
-}
+}#t
 
 
-###IDENTIFY INDIVIDUALS IN THE BUFFER AND GIVE THEM A STATE 5
-##MALES
+##-- MALES
 gc()
-dim(myResultsSXYZ_M$sims.list$sxy)
-dim( myResultsSXYZ_M$sims.list$z)
 for(t in 1:nYears){
   for(i in 1:dim( myResultsSXYZ_M$sims.list$z)[1]){
     whichNA <- which(is.na(habbRNobuffM[cellFromXY(habbRNobuffM,myResultsSXYZ_M$sims.list$sxy[i,,1:2,t])]))
     myResultsSXYZ_M$sims.list$z[i,whichNA,t] <- 5
   }
- # gc()
   print(t)
 }
 
-gc()
-### ====   1.4 COMBINE MALES AND FEMALES ====
-## ASSUMING THE SAME NUMBER OF CHAINS AND ITERATIONS/ WE CAN JUST ADD N ESIMAES OF FEMALES AND MALES
+
+
+## ------     1.5. COMBINE MALES & FEMALES ------
+
+##-- ASSUMING THE SAME NUMBER OF CHAINS AND ITERATIONS/ WE CAN JUST ADD N ESIMAES OF FEMALES AND MALES
 myResultsSXYZ_MF <- myResultsSXYZ_M
-## HERE I ONLY HAVE ONE CHAIN FOR THE MALES
+
+##-- HERE I ONLY HAVE ONE CHAIN FOR THE MALES
 dimmF <- dim(myResults_F$sims.list$N)[1]
 dimmFsxy <- dim(myResultsSXYZ_MF$sims.list$sxy)[1]
 
-myResultsSXYZ_MF$sims.list$N <- myResults_M$sims.list$NdimmF[1:dimmF[1],,] + myResults_F$sims.list$N
+myResultsSXYZ_MF$sims.list$N <- myResults_M$sims.list$NdimmF[1:dimmF[1], , ] + 
+  myResults_F$sims.list$N
 
-### ====   1.5 COMBINE SXY AND Z ====
-dim(myResultsSXYZ_M$sims.list$sxy)
-dim(myResultsSXYZ_F$sims.list$sxy)
 
-myResultsSXYZ_MF$sims.list$sxy <- abind(myResultsSXYZ_M$sims.list$sxy[1:dimmFsxy[1],,,],
-                                        myResultsSXYZ_F$sims.list$sxy, along = 2 )
+
+## ------     1.6. COMBINE SXY & Z ------
+
+##-- Activity centers
+myResultsSXYZ_MF$sims.list$sxy <- abind(
+  myResultsSXYZ_M$sims.list$sxy[1:dimmFsxy[1], , , ],
+  myResultsSXYZ_F$sims.list$sxy, along = 2)
 dimnames(myResultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x", "y")
-
-myResultsSXYZ_MF$sims.list$z <- abind(myResultsSXYZ_M$sims.list$z[1:dimmFsxy[1],,],
-                                      myResultsSXYZ_F$sims.list$z, along = 2 )
-myResultsSXYZ_MF$sims.list$z1 <- abind(myResultsSXYZ_M$sims.list$z1[1:dimmFsxy[1],,],
-                                       myResultsSXYZ_F$sims.list$z1, along = 2 )
-gc()
-myResultsSXYZ_MF$sims.list$sigma <- abind(myResults_M$sims.list$sigma[1:dimmF[1],] * res(myHabitat.list$habitat.r)[1],
-                                          myResults_F$sims.list$sigma* res(myHabitat.list$habitat.r)[1], along = 2 )
-
-
-#myResultsSXYZ_MF$sims.list$sigma <- abind(myResultsSXYZ_M$sims.list$sigma[1:dimmF[1]], myResultsSXYZ_F$sims.list$sigma, along = 2 )
-myResultsSXYZ_MF$sims.list$sex <- rep(c("M","F"), c(dim(myResultsSXYZ_M$sims.list$sxy)[2], 
-                                                    dim(myResultsSXYZ_F$sims.list$sxy)[2]))
-
-#EMPTY USELESS ARRAYS
-myResults_F$sims.list$z <-NULL
-myResults_M$sims.list$z <-NULL
-
-myResults_M$sims.list$N <-NULL
-myResults_F$sims.list$N <-NULL
-
-myResults_F$sims.list$sxy <-NULL
-myResults_M$sims.list$sxy <-NULL
-
 gc()
 
-# #select 100 iterations for RB
-dim(myResultsSXYZ_MF$sims.list$sxy)
-nit <- sample(dim(myResultsSXYZ_MF$sims.list$sxy)[1],100)
-sxy <- round(myResultsSXYZ_MF$sims.list$sxy[nit,,,],digits=5)
-z <- myResultsSXYZ_MF$sims.list$z[nit,,]
+##-- Individual states
+myResultsSXYZ_MF$sims.list$z <- abind(
+  myResultsSXYZ_M$sims.list$z[1:dimmFsxy[1], , ],
+  myResultsSXYZ_F$sims.list$z, along = 2)
+myResultsSXYZ_MF$sims.list$z1 <- abind(
+  myResultsSXYZ_M$sims.list$z1[1:dimmFsxy[1], , ],
+  myResultsSXYZ_F$sims.list$z1, along = 2)
+gc()
 
-save(sxy, z,
-     file = file.path(myVars$WDFigures, "Itera.RData"))
-#contains 100 iterations of "sxy" and "z"
-load("C://Users//cymi//Dropbox (Old)//AQEG Dropbox//AQEG Team Folder//RovQuant//wolverine//CM//2024/plot53Cleaned2024/Figure/Itera.RData")
+##-- Sigma
+myResultsSXYZ_MF$sims.list$sigma <- abind(
+  myResults_M$sims.list$sigma[1:dimmF[1], ] * res(myHabitat.list$habitat.r)[1],
+  myResults_F$sims.list$sigma * res(myHabitat.list$habitat.r)[1], along = 2)
+gc()
 
+##-- Individual sex
+myResultsSXYZ_MF$sims.list$sex <- rep(
+  c("M","F"),
+  c(dim(myResultsSXYZ_M$sims.list$sxy)[2], 
+    dim(myResultsSXYZ_F$sims.list$sxy)[2]))
 
-#MERGE RESULTS IN A LIST
-Results.list <- list(myResults_F,myResults_M)
+##-- EMPTY USELESS ARRAYS
+myResults_F$sims.list$z <- NULL
+myResults_M$sims.list$z <- NULL
+myResults_M$sims.list$N <- NULL
+myResults_F$sims.list$N <- NULL
+myResults_F$sims.list$sxy <- NULL
+myResults_M$sims.list$sxy <- NULL
+gc()
+
+# ##-- select 100 iterations for RB
+# dim(myResultsSXYZ_MF$sims.list$sxy)
+# nit <- sample(dim(myResultsSXYZ_MF$sims.list$sxy)[1],100)
+# sxy <- round(myResultsSXYZ_MF$sims.list$sxy[nit,,,],digits=5)
+# z <- myResultsSXYZ_MF$sims.list$z[nit,,]
+# 
+# save(sxy, z,
+#      file = file.path(WDFigures , "Itera.RData"))
+# #contains 100 iterations of "sxy" and "z"
+# load("C://Users//cymi//Dropbox (Old)//AQEG Dropbox//AQEG Team Folder//RovQuant//wolverine//CM//2024/plot53Cleaned2024/Figure/Itera.RData")
+
+##-- MERGE RESULTS IN A LIST
+Results.list <- list(myResults_F, myResults_M)
 names(Results.list) <- c("F","M")
 
-### ====   1.6 SAVE AND LOAD DATA ====
+
+
+## ------     1.7. SAVE AND LOAD DATA ------
+
 # save(Results.list, myResultsSXYZ_MF,
 #     file = file.path(paste(dir.dropbox,"/wolverine/CM/2022/plot25Cleaned/Figure/",sep=""), "MCMC.RData" ))
 # load(file.path(paste(dir.dropbox,"/wolverine/CM/2022/plot25Cleaned/Figure/",sep=""), "MCMC.RData" ))
@@ -1195,25 +1111,158 @@ Results.list[["M"]]$mean$sigma
 myResults_F <- Results.list[["F"]]
 myResults_M <- Results.list[["M"]]
 
-### ====   1.7 CHECK RHAT ====
+
+
+## ------     1.8. CHECK RHAT ------
+
 myResults_F$Rhat
 myResults_M$Rhat
-# basicMCMCplots::chainsPlot(nimOutput,var = "omeg1")
-# basicMCMCplots::chainsPlot(nimOutput,var = "N[1]")
 
-# WHAT STATES ARE CONSIDERED AS ALIVE IN THE MODEL
+
+
+## ------     1.9. rovquantR COMPARISON ------
+
+message("## Processing model MCMC outputs...")
+
+##-- Check that a file with that name does not already exist to avoid overwriting
+mcmcTest <- TRUE
+if (!overwrite) {
+  fileName <- paste0("MCMC_bear_", DATE, ".RData")
+  if (file.exists(file.path(working.dir, "data", fileName))) {
+    message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
+                   file.path(working.dir, "data")))
+    message("Do you want to proceed and overwrite the existing processed MCMC output file? (y/n) ")
+    question1 <- readLines(n = 1)
+    if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
+      message("Not overwriting existing files...")
+      message(paste0("Loading '", fileName, "' instead..."))
+      load(file.path(working.dir, "data", fileName))
+      mcmcTest <- FALSE
+    } else {
+      message(paste0("Now overwriting '", fileName,"'.\n"))
+    }
+  }
+} 
+
+if(mcmcTest){
+  ## ------   2.1. FEMALES -----
+  
+  ##-- Compile MCMC bites
+  nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
+                                   burnin = nburnin)
+  
+  ##-- Traceplots
+  grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
+  plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
+  grDevices::dev.off()
+  
+  ##-- Process MCMC output
+  results_F <- processCodaOutput( nimOutput_F$samples,
+                                  params.omit = c("sxy","z"))
+  resultsSXYZ_F <- processCodaOutput(nimOutput_F$samples2)
+  
+  ##-- Remove unnecessary objects from memory
+  rm(list = c("nimOutput_F"))
+  gc(verbose = FALSE)
+  
+  ##-- Rescale sxy to the original coordinate system
+  dimnames(resultsSXYZ_F$sims.list$sxy)[[3]] <- c("x","y")
+  resultsSXYZ_F$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
+    coordsData = resultsSXYZ_F$sims.list$sxy,
+    coordsHabitatGridCenter = habitat$habitat.xy,
+    scaleToGrid = FALSE)$coordsDataScaled
+  
+  ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+  results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
+  results_F$sims.list$tau <- results_F$sims.list$tau * raster::res(habitat$habitat.r)[1]
+  
+  
+  
+  ## ------   2.2. MALES -----
+  
+  ##-- Compile MCMC bites
+  nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/male"),
+                                   burnin = nburnin)
+  
+  ##-- Traceplots
+  grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
+  plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
+  dev.off()
+  
+  ##-- Process MCMC output
+  results_M <- processCodaOutput( nimOutput_M$samples,
+                                  params.omit = c("sxy","z"))
+  resultsSXYZ_M <- processCodaOutput(nimOutput_M$samples2)
+  
+  ##-- Remove unnecessary objects from memory
+  rm(list = c("nimOutput_M"))
+  gc(verbose = FALSE)
+  
+  
+  ##-- RESCALE SXY TO THE ORIGINAL COORDINATE SYSTEM
+  dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
+  resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
+    coordsData = resultsSXYZ_M$sims.list$sxy,
+    coordsHabitatGridCenter = habitat$habitat.df,
+    scaleToGrid = FALSE)$coordsDataScaled
+  
+  ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+  results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
+  results_M$sims.list$tau <- results_M$sims.list$tau * raster::res(habitat$habitat.r)[1]
+  
+  
+  
+  ## ------   2.3. COMBINE MALES & FEMALES -----
+  
+  resultsSXYZ_MF <- resultsSXYZ_M
+  
+  ##-- Get minimum number of iterations between model F and M
+  minIter <- min(dim(resultsSXYZ_F$sims.list$sxy)[1],
+                 dim(resultsSXYZ_M$sims.list$sxy)[1])
+  
+  ##-- sxy
+  resultsSXYZ_MF$sims.list$sxy <- abind::abind(resultsSXYZ_M$sims.list$sxy[1:minIter, , , ],
+                                               resultsSXYZ_F$sims.list$sxy[1:minIter, , , ],
+                                               along = 2)
+  dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x","y")
+  
+  ##-- z
+  resultsSXYZ_MF$sims.list$z <- abind::abind(resultsSXYZ_M$sims.list$z[1:minIter, , ],
+                                             resultsSXYZ_F$sims.list$z[1:minIter, , ],
+                                             along = 2)
+  
+  ##-- sigma
+  resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter],
+                                          results_F$sims.list$sigma[1:minIter])
+  dimnames(resultsSXYZ_MF$sims.list$sigma)[[2]] <- c("M","F")
+  
+  ##-- sex
+  resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
+                                      c(dim(resultsSXYZ_M$sims.list$sxy)[2],
+                                        dim(resultsSXYZ_F$sims.list$sxy)[2]))
+  
+  ##-- SAVE AND LOAD DATA
+  save( results_F, results_M, resultsSXYZ_MF,
+        file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
+}
+## ------   2. EXTRACT DENSITY (5km) ------
+
+##-- WHAT STATES ARE CONSIDERED AS ALIVE IN THE MODEL
 alive.states <- c(2) 
 
-#years not sampled in Norrbotten
+##-- years not sampled in Norrbotten
 yearsSampledNorrb <- c(2016:2018,2023)
 yearsNotSampled <- which(!years %in% yearsSampledNorrb)
 
 
-### ==== 2. AC BASED DENSITY  (5km) ====
-### REMOVE THE BUFFER FROM THE HABITAT ###
-### COUNTRIES 
+
+## ------   2. AC BASED DENSITY (5km) ------
+
+##-- REMOVE THE BUFFER FROM THE HABITAT 
+##-- COUNTRIES 
 rrCountries <- habitatRasterResolution$`5km`[["Countries"]]
-# REMOVE FINLAND AND RUSSIA 
+
+##-- REMOVE FINLAND AND RUSSIA 
 rrCountries[rrCountries%in% c(1,3)] <- NA
 plot(rrCountries)
 
@@ -1222,59 +1271,54 @@ habitat.rWthBuffer[habitat.rWthBuffer %in% 0] <- NA
 
 searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer), 
                                   as_points = FALSE, merge = TRUE)
-searchedPolygon <- searchedPolygon[searchedPolygon$Habitat>0,]
+searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
 # searchedPolygon <- rasterToPolygons(habitat.rWthBuffer, dissolve = T, function(x) x==1 )
 
 rrCountries <- mask(rrCountries, searchedPolygon)
 rrCountries <- crop(rrCountries, myHabitat.list$habitat.r)
 plot(rrCountries)
-### REGIONS AND COUNTIES 
-rrRegions <- habitatRasterResolution$`5km`[["Regions"]] 
-## deal with the special characters
-levels(rrRegions)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <-  c("Södermanland", "Östergötland","Jönköping", "Skåne", "VästraGötaland",
-                                                                    "Värmland","Örebro","Västmanland","Gävleborg",
-                                                                    "Västernorrland","Jämtland" ,"Västerbotten")
 
-# REMOVE FINLAND AND RUSSIA 
+##-- REGIONS & COUNTIES 
+rrRegions <- habitatRasterResolution$`5km`[["Regions"]] 
+
+##-- Deal with the special characters
+levels(rrRegions)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
+  "Södermanland", "Östergötland","Jönköping", "Skåne", "VästraGötaland",
+  "Värmland","Örebro","Västmanland","Gävleborg",
+  "Västernorrland","Jämtland" ,"Västerbotten")
+
+##-- REMOVE FINLAND & RUSSIA 
 rrRegions[habitatRasterResolution$`5km`[["Countries"]]%in% c(1, 3)] <- NA
 plot(rrRegions)
 rrRegions <- mask(rrRegions, searchedPolygon)
 rrRegions <- crop(rrRegions, myHabitat.list$habitat.r)
 
-# habitatPolygon <- rasterToPolygons(myHabitat.list$habitat.r, dissolve = T, function(x) x==1 )
+##-- habitatPolygon <- rasterToPolygons(myHabitat.list$habitat.r, dissolve = T, function(x) x==1 )
 habitatPolygon <- sf::st_as_sf(stars::st_as_stars(myHabitat.list$habitat.r), 
                                 as_points = FALSE, merge = TRUE)
-habitatPolygon <- habitatPolygon[habitatPolygon$Habitat>0,]
+habitatPolygon <- habitatPolygon[habitatPolygon$Habitat > 0, ]
 
 habitatPolygon5km <- mask(habitatRasterResolution$`5km`[["Habitat"]], habitatPolygon)
 habitatPolygon5km <- crop(habitatRasterResolution$`5km`[["Habitat"]], myHabitat.list$habitat.r)
-
 plot(rrRegions)
 plot(habitatPolygon5km)
 # points(myDetectors$main.detector.sp,pch=16,cex=0.5)
 
-
-### SWEDISH REGIONS 
+##-- SWEDISH REGIONS 
 rrRegionsSwe <- habitatRasterResolution$`5km`[["Regions"]]
-# REMOVE FINLAND AND RUSSIA 
-rrRegionsSwe[habitatRasterResolution$`5km`[["Countries"]]%in% c(1,2, 3)] <- NA
+
+##-- REMOVE FINLAND AND RUSSIA 
+rrRegionsSwe[habitatRasterResolution$`5km`[["Countries"]]%in% c(1,2,3)] <- NA
 plot(rrRegionsSwe)
 rrRegionsSwe <- mask(rrRegionsSwe, searchedPolygon)
 rrRegionsSwe <- crop(rrRegionsSwe, myHabitat.list$habitat.r)
-
 plot(rrRegionsSwe)
 rrRegionsSwe[]
 
-# dfLevel <- levels(rrRegionsSwe)[[1]]
-# dfLevel[c(18,19,20,21),"Regions"] <- "1"
-# dfLevel[c(13,17,16,14,15,12,22,3),"Regions"] <- "Midtre"
-# dfLevel[c(4,5,10,6,7,9,11,8),"Regions"] <- "SÃ¸ndre"
-# 
-
+##-- TRANSFORM INTO MANAGEMENT REGIONS 
 rrRegionsSwe[rrRegionsSwe[]%in% c(18,19,20,21)] <- 1
 rrRegionsSwe[rrRegionsSwe[]%in% c(13,17,16,14,15,12,22,3)] <- 2
 rrRegionsSwe[rrRegionsSwe[]%in% c(4,5,10,6,7,9,11,8)] <- 3
-
 rrRegionsSwe <- ratify(rrRegionsSwe)
 df <- data.frame("ID"=c(1,2,3), "Regions"= c("Nordre","Midtre","SÃ¸ndre"))
 levels(rrRegionsSwe)[[1]] <- df
@@ -1291,93 +1335,62 @@ plot(rrRegions)
 plot(rrCountries)
 
 
-#library(lattice)
-#lattice::levelplot(rrRegions, col.regions=rev(terrain.colors(20)), xlab="", ylab="")
-##
-# Nordre
-# Jämtland
-# Västernorrland
-##
-# Midtre
-# Värmland
-# Gävleborg
-# Dalarna
-# Örebro
-# Västmanland
-# Västra Götaland
-# Uppsala
-# Stockholm
-##
-# Søndre
-# Södermanland
-# Östergötland
-# Jönköping
-# Skåne
-
 gc()
-### GET THE OBJECTS TO RUN THE DENSITY FUNCTION 
-## COUNTRY
-densityInputCountries <- getDensityInput( regions = rrCountries
-                                          , 
-                                          habitat = habitatPolygon5km
-                                          ,
-                                          s = myResultsSXYZ_MF$sims.list$sxy
-                                          ,
-                                          plot.check = TRUE
-)
-### GET THE OBJECTS TO RUN THE DENSITY FUNCTION 
-## REGIONS
-densityInputRegions <- getDensityInput( regions = rrRegions
-                                        , 
-                                        habitat = habitatPolygon5km
-                                        ,
-                                        s = myResultsSXYZ_MF$sims.list$sxy
-                                        ,
-                                        plot.check = TRUE
-)
+##-- GET THE OBJECTS TO RUN THE DENSITY FUNCTION 
+##-- COUNTRY
+densityInputCountries <- getDensityInput(
+  regions = rrCountries, 
+  habitat = habitatPolygon5km,
+  s = myResultsSXYZ_MF$sims.list$sxy,
+  plot.check = TRUE)
 
-#Swedish Regions
-densityInputRegionsSwe <- getDensityInput( regions = rrRegionsSwe
-                                           , 
-                                           habitat = habitatPolygon5km
-                                           ,
-                                           s = myResultsSXYZ_MF$sims.list$sxy
-                                           ,
-                                           plot.check = TRUE
-)
+##-- GET THE OBJECTS TO RUN THE DENSITY FUNCTION 
+##-- REGIONS
+densityInputRegions <- getDensityInput( 
+  regions = rrRegions, 
+  habitat = habitatPolygon5km,
+  s = myResultsSXYZ_MF$sims.list$sxy,
+  plot.check = TRUE)
 
-## MERGE COUNTRY AND REGION MATRICES TO ALLOW SIMULTANEOUS EXTRACTION
-regionID <- rbind (densityInputCountries$regions.rgmx,
+##-- Swedish Regions
+densityInputRegionsSwe <- getDensityInput( 
+  regions = rrRegionsSwe, 
+  habitat = habitatPolygon5km,
+  s = myResultsSXYZ_MF$sims.list$sxy,
+  plot.check = TRUE)
+
+##-- MERGE COUNTRY AND REGION MATRICES TO ALLOW SIMULTANEOUS EXTRACTION
+regionID <- rbind( densityInputCountries$regions.rgmx,
                    densityInputRegions$regions.rgmx,
                    densityInputRegionsSwe$regions.rgmx)
 row.names(regionID) <- c(row.names(densityInputCountries$regions.rgmx),
                          row.names(densityInputRegions$regions.rgmx),
                          row.names(densityInputRegionsSwe$regions.rgmx))
 
-
-#Norwegian Counties
-densityInputRegionsNor <- getDensityInput( regions = rrCountiesNor
-                                           , 
-                                           habitat = habitatPolygon5km
-                                           ,
-                                           s = myResultsSXYZ_MF$sims.list$sxy
-                                           ,
-                                           plot.check = TRUE
-)
+##-- Norwegian Counties
+densityInputRegionsNor <- getDensityInput( 
+  regions = rrCountiesNor, 
+  habitat = habitatPolygon5km,
+  s = myResultsSXYZ_MF$sims.list$sxy,
+  plot.check = TRUE)
 
 
-### ====  2.1.1 GET THE % OF REGIONS COVERED BY THE ANALYSIS ====
+
+## ------     2.1. GET THE % OF REGIONS COVERED BY THE ANALYSIS ------
+
 ## Percentage of each county included in the analysis
 ## GET THE PERCENTAGE FOR ALL REGIONS 
 rrRegions1 <- habitatRasterResolution$`5km`[["Regions"]] 
-## deal with the special characters
-levels(rrRegions1)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <-  c("Södermanland", "Östergötland","Jönköping", "Skåne", "VästraGötaland",
+##-- Deal with the special characters
+levels(rrRegions1)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
+  "Södermanland", "Östergötland","Jönköping", "Skåne", "VästraGötaland",
                                                                      "Värmland","Örebro","Västmanland","Gävleborg",
                                                                      "Västernorrland","Jämtland" ,"Västerbotten")
-## CALCULATE AREA OF EACH COUNTY
+##-- CALCULATE AREA OF EACH COUNTY
 AreaStudiedRegion <- table(factorValues(rrRegions, rrRegions[]))*res(rrRegions)[1]*1e-6
 TotalArea <- table(factorValues(rrRegions1, rrRegions1[]))*res(rrRegions1)[1]*1e-6
-#Percentage of counties included in the analysis
+
+##-- Percentage of counties included in the analysis
 areaRegions <- AreaStudiedRegion/TotalArea[names(AreaStudiedRegion)]
 
 ## GET THE PERCENTAGE FOR THE 3 SWEDISH UNITS REGIONS 
@@ -1391,32 +1404,36 @@ rrRegionsSwe1[rrRegionsSwe1[]%in% c(13,17,16,14,15,12,22,3)] <- 2
 rrRegionsSwe1[rrRegionsSwe1[]%in% c(4,5,10,6,7,9,11,8)] <- 3
 
 rrRegionsSwe1 <- ratify(rrRegionsSwe1)
-df <- data.frame("ID"=c(1,2,3), "Regions"= c("Nordre","Midtre","SÃ¸ndre"))
-levels(rrRegionsSwe1)[[1]] <- df
+levels(rrRegionsSwe1)[[1]] <- data.frame( "ID" = c(1,2,3),
+                                          "Regions" = c("Nordre","Midtre","SÃ¸ndre"))
 plot(rrRegionsSwe1)
-## CALCULATE AREA OF EACH UNIT
+
+##-- CALCULATE AREA OF EACH UNIT
 AreaStudiedSwe <- table(factorValues(rrRegionsSwe, rrRegionsSwe[]))*res(rrRegionsSwe)[1]*1e-6
 TotalAreaSwe <- table(factorValues(rrRegionsSwe1, rrRegionsSwe1[]))*res(rrRegionsSwe1)[1]*1e-6#Percentage of counties included in the analysis
 areaRegionsSwe <- AreaStudiedSwe/TotalAreaSwe[names(AreaStudiedSwe)]
 
-## GET THE PERCENTAGE FOR THE COUNTRIES 
+##-- GET THE PERCENTAGE FOR THE COUNTRIES 
 rrCountries1 <- habitatRasterResolution$`5km`[["Countries"]]
-# REMOVE FINLAND AND RUSSIA 
+##-- REMOVE FINLAND AND RUSSIA 
 rrCountries1[rrCountries1%in% c(1,3)] <- NA
 TotalAreaCountry <- table(factorValues(rrCountries1, rrCountries1[]))*res(rrCountries1)[1]*1e-6
 AreaStudiedCountry <- table(factorValues(rrCountries, rrCountries[]))*res(rrCountries)[1]*1e-6
 TotalAreaCountry["Total"] <- sum(TotalAreaCountry)
 AreaStudiedCountry["Total"] <- sum(AreaStudiedCountry)
-## CALCULATE AREA OF EACH COUNTRY
+##-- CALCULATE AREA OF EACH COUNTRY
 areaCountry <- AreaStudiedCountry/TotalAreaCountry[names(AreaStudiedCountry)]
 
-### MERGE THE PERCENTAGE 
+##-- MERGE THE PERCENTAGE 
 areaAllRegions <- c(areaCountry, areaRegionsSwe, areaRegions)
 
-### ====   2.1 MALE AND FEMALES (5km) ====
-ite <- seq(1,dim(densityInputCountries$sx[,,t])[1],by=1)
-gc()
-## EXTRACT DENSITY 
+
+
+## ------     2.2 MALE & FEMALES (5km) ------
+
+ite <- seq(1,dim(densityInputCountries$sx[ , ,t])[1], by = 1)
+ 
+##-- EXTRACT DENSITY 
 DensityCountriesRegions <- list()
 for(t in 1:nYears){
   DensityCountriesRegions[[t]] <- GetDensity_PD(
@@ -1427,16 +1444,22 @@ for(t in 1:nYears){
     aliveStates = alive.states,
     regionID = regionID,
     returnPosteriorCells = F)
-}
-
+}#t
 DensityCountriesRegions[[t]]$summary
 
-## SAVE
-#save(DensityCountriesRegions, file = file.path(paste(dir.dropbox, "/wolverine/CM/2021/plot25Cleaned/Figure/",sep=""), "DensityCountriesRegions.RData" ))
+##-- SAVE .RData
+save( DensityCountriesRegions,
+      file = file.path( dir.dropbox,
+                        "wolverine/CM/2021/plot25Cleaned/Figure/DensityCountriesRegions.RData"))
 
-### ====   2.2 MALE (5km) ====
-IDMales <- which(myResultsSXYZ_MF$sims.list$sex=="M")
 
+
+## ------     2.3. MALE (5km) ------
+
+##-- Identify Males
+IDMales <- which(myResultsSXYZ_MF$sims.list$sex == "M")
+
+##-- EXTRACT DENSITY 
 DensityCountriesRegionsM <- list()
 for(t in 1:nYears){
   DensityCountriesRegionsM[[t]] <- GetDensity_PD(
@@ -1447,16 +1470,22 @@ for(t in 1:nYears){
     aliveStates = alive.states,
     regionID = regionID,
     returnPosteriorCells = F)
-}
-
+}#t
 DensityCountriesRegionsM[[t]]$summary
 
-## SAVE
-#save(DensityCountriesRegionsM, file = file.path(paste(dir.dropbox, "/wolverine/CM/2021/plot25Cleaned/Figure/",sep=""), "DensityCountriesRegionsM.RData" ))
+##-- SAVE .RData
+save( DensityCountriesRegionsM,
+      file = file.path( dir.dropbox,
+                       "wolverine/CM/2021/plot25Cleaned/Figure/DensityCountriesRegionsM.RData"))
 
-### ====   2.3 FEMALE (5km) ====
-IDFemales <- which(myResultsSXYZ_MF$sims.list$sex=="F")
 
+
+## ------     2.4. FEMALE (5km) ------
+
+##-- Identify Females
+IDFemales <- which(myResultsSXYZ_MF$sims.list$sex == "F")
+
+##-- EXTRACT DENSITY 
 DensityCountriesRegionsF <- list()
 for(t in 1:nYears){
   DensityCountriesRegionsF[[t]] <- GetDensity_PD(
@@ -1468,13 +1497,17 @@ for(t in 1:nYears){
     regionID = regionID,
     returnPosteriorCells = F)
 }
-
 DensityCountriesRegionsF[[t]]$summary
-## SAVE
-#save(DensityCountriesRegionsF, file = file.path(paste(dir.dropbox, "/wolverine/CM/2021/plot25Cleaned/Figure/",sep=""), "DensityCountriesRegionsF.RData" ))
+
+##-- SAVE .RData
+save( DensityCountriesRegionsF,
+      file = file.path( dir.dropbox,
+                       "wolverine/CM/2021/plot25Cleaned/Figure/DensityCountriesRegionsF.RData" ))
 
 
-### ====   2.4 COUNTIES NORWAY M AND F (5km)  ====
+
+## ------     2.5. COUNTIES NORWAY M & F (5km) ------
+
 DensityCountriesRegionsNOR <- list()
 for(t in 1:nYears){
   DensityCountriesRegionsNOR[[t]] <- GetDensity_PD(
@@ -1485,24 +1518,19 @@ for(t in 1:nYears){
     aliveStates = alive.states,
     regionID = densityInputRegionsNor$regions.rgmx,
     returnPosteriorCells = F)
-}
-
-# sum(DensityCountriesRegionsNOR[[t]]$summary[14:31,"mean"])
-# sum(DensityCountriesRegionsNOR[[t]]$summary[14:31,"mean"])
-# 
+}#t
 
 
 
-##
+## ------     2.6. SUMMARY TABLES ------
 
+## ------       2.6.1. ALL YEARS, BOTH SEX ------
 
-
-### ====   2.4 SUMMARY TABLES ====
-### ====    2.4.1 ALL YEARS, BOTH SEX ====
 idcounty <- row.names(DensityCountriesRegions[[t]]$summary)
-#REMOVE Finland, Norway, Russia, Sweden 
+
+##-- REMOVE Finland, Norway, Russia, Sweden 
 idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
-#GET NORWEGIAN VERSUS SWEDISH COUNTIES 
+##-- GET NORWEGIAN VERSUS SWEDISH COUNTIES 
 idcountyNOR <- idcounty[grep("Region",idcounty)]
 idcountySWE <- sort(idcounty[-grep("Region",idcounty)])
 idcountyTable <- c("Total","Norway", idcountyNOR, "Sweden" ,idcountySWE)
@@ -1519,16 +1547,14 @@ idcountyTable <- c("Total","Norway",
                    "Midtre",
                    idcountySWE[idcountySWE%in%CountyMiddle],
                    "SÃ¸ndre",
-                   idcountySWE[idcountySWE%in%CountySouth]
-)
+                   idcountySWE[idcountySWE%in%CountySouth])
 
-
-#CREATE TABLE TO STORE ABUNDANCE AND CI
+##-- CREATE TABLE TO STORE ABUNDANCE AND CI
 NCarRegionEstimates <- matrix("", ncol=nYears, nrow=length(idcountyTable))
 row.names(NCarRegionEstimates) <- c(idcountyTable)
 colnames(NCarRegionEstimates) <- unlist(lapply(YEARS ,function(x) x[2]))#
 
-#FILL IN THE TABLE 
+##-- FILL IN THE TABLE 
 for(t in 1:nYears){
   for( i in 1:length(idcountyTable)){
     NCarRegionEstimates[idcountyTable[i],t] <- paste(round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
@@ -1551,43 +1577,35 @@ sum(tmp[c(idcountyNOR,idcountySWE),"mean"])
 tmp["Total","mean"]
 
 
-
 ## WRITE LATEX TABLE 
 # ADJUST NAMES OF THE TABLE 
 idcounty1 <- idcountyTable
-
 idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
 idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
 idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
 
-## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
+##-- NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
 # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
 # idcounty1 <- str_remove(idcounty1, "s ")
 # idcounty1 <- str_remove(idcounty1, " ")
 idcountySWE1 <- idcountySWE
-
- idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "Norrbotten*"
- idcountySWE1 <- sort(idcountySWE1)
-# 
+idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "Norrbotten*"
+idcountySWE1 <- sort(idcountySWE1)
 # row.names(NCarRegionEstimates) <- idcounty1
 # NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"),yearsNotSampled] <- paste(NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"), yearsNotSampled], "*", sep="")
 
-#print csv
-write.csv(NCarRegionEstimates,
-          file = file.path(myVars$WDTables,paste("NAllYears.csv",sep="")),fileEncoding="latin1")
-
-
-
+##-- Export .csv
+write.csv( NCarRegionEstimates,
+           file = file.path(WDTables,"NAllYears.csv"),
+           fileEncoding = "latin1")
 
 
 idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten}"
 row.names(NCarRegionEstimates) <- idcounty1
 NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"),yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"), yearsNotSampled], "*","}", sep="")
-
 NCarRegionEstimates["SWEDEN",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates["SWEDEN",yearsNotSampled], "**","}", sep="")
 NCarRegionEstimates["TOTAL",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates["TOTAL",yearsNotSampled], "**","}", sep="")
 NCarRegionEstimates["Nordre",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates["Nordre",yearsNotSampled], "**","}", sep="")
-
 
 row.names(NCarRegionEstimates) <- c("TOTAL",
                                     paste("\\hspace{0.25cm}","NORWAY",sep=""),
@@ -1604,23 +1622,25 @@ row.names(NCarRegionEstimates) <- c("TOTAL",
 
 row.names(NCarRegionEstimates)[grep("VÃ¤straGÃ¶taland", row.names(NCarRegionEstimates))] <- paste("\\hspace{0.75cm}",
                                                                                                   "VÃ¤stra GÃ¶taland", sep="")
-
 # row.names(NCarRegionEstimates) <- c("TOTAL",
 #                                             paste("\\hspace{0.25cm}","NORWAY",sep=""),
 #                                             paste("\\hspace{0.5cm} ",
 #                                                   idcountyNOR,sep=""),
 #                                             paste("\\hspace{0.25cm}","SWEDEN",sep=""),
-#                                             paste("\\hspace{0.5cm}", idcountySWE1,sep="")
-# )
+#                                             paste("\\hspace{0.5cm}", idcountySWE1,sep=""))
 
-
-print(xtable(NCarRegionEstimates, type = "latex",align=paste(c("l",rep("c",ncol(NCarRegionEstimates))),collapse = "")),
+print( xtable( NCarRegionEstimates,
+              type = "latex",
+              align = paste(c("l",rep("c",ncol(NCarRegionEstimates))), collapse = "")),
       # scalebox=.8,
       floating = FALSE, sanitize.text.function=function(x){x},
-      add.to.row=list(list(seq(1,nrow(NCarRegionEstimates),by=2)),"\\rowcolor[gray]{.96} "),
-      file = file.path(myVars$WDTables, paste("NCountiesCarnivoreRegions.tex",sep="")))
+      add.to.row = list(list(seq(1,nrow(NCarRegionEstimates),by=2)),"\\rowcolor[gray]{.96} "),
+      file = file.path(WDTables, "NCountiesCarnivoreRegions.tex"))
 
-### ====    2.4.2 LAST YEAR N PER SEX PER COUNTY  ====
+
+
+## ------       2.6.2. LAST YEAR N PER SEX PER COUNTY ------
+
 NCountyEstimatesLastRegions <- matrix("", ncol=3, nrow=length(idcountyTable))
 row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
 colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total")
@@ -1628,88 +1648,82 @@ colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total")
 ## FILL IN TABLE 
 ## FEMALES
 for( i in 1:length(idcountyTable)){
-  NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <- paste(round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                                   " (",round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                   round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+  NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <- paste0(
+    round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
+    " (",round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+    round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
 }
 
 ## MALES 
 for( i in 1:length(idcountyTable)){
-  NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <- paste(round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                                 " (",round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                 round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+  NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <- paste0(
+    round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
+    " (",round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+    round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
 }
 
-## MALES 
+## TOTAL 
 for( i in 1:length(idcountyTable)){
-  NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <- paste(round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                                 " (",round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                 round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+  NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <- paste0(
+    round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
+    " (",round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+    round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
 }
 
+##-- Export .csv
+write.csv( NCountyEstimatesLastRegions,
+          file = file.path(WDTables, "NLastYearPerSex.csv"),
+          fileEncoding = "latin1")
 
-
-#print csv
-write.csv(NCountyEstimatesLastRegions,
-          file = file.path(myVars$WDTables,paste("NLastYearPerSex.csv",sep="")),fileEncoding="latin1")
-
-
-
-# ADJUST NAMES OF THE TABLE 
+##-- ADJUST NAMES OF THE TABLE 
 idcounty1 <- idcountyTable
-
 idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
 idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
 idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
 
 idcountySWE1 <- idcountySWE
 idcountySWE1 <- sort(idcountySWE1)
-
 idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten*}"
 
-
 row.names(NCountyEstimatesLastRegions) <- idcounty1
-NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),], "*}", sep="")
-
+NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"), ] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),], "*}", sep="")
 NCountyEstimatesLastRegions["SWEDEN",] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["SWEDEN",], "**}", sep="")
 NCountyEstimatesLastRegions["TOTAL",] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["TOTAL",], "**}", sep="")
 NCountyEstimatesLastRegions["Nordre",] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["Nordre",], "**}", sep="")
 
+row.names(NCountyEstimatesLastRegions) <- c(
+  "TOTAL",
+  paste0("\\hspace{0.25cm}", "NORWAY"),
+  paste0("\\hspace{0.50cm}", idcountyNOR),
+  paste0("\\hspace{0.25cm}", "SWEDEN"),
+  paste0("\\hspace{0.50cm}", "Norra"),
+  paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth]),
+  paste0("\\hspace{0.50cm}", "Mellersta"),
+  paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle]),
+  paste0("\\hspace{0.50cm}", "Södra"),
+  paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth]))
 
-row.names(NCountyEstimatesLastRegions) <- c("TOTAL",
-                                            paste("\\hspace{0.25cm}","NORWAY",sep=""),
-                                            paste("\\hspace{0.5cm} ",
-                                                  idcountyNOR,sep=""),
-                                            paste("\\hspace{0.25cm}","SWEDEN",sep=""),
-                                            paste("\\hspace{0.5cm}","Norra",sep=""),
-                                            paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth], sep=""),
-                                            paste("\\hspace{0.5cm}","Mellersta",sep=""),
-                                            paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle], sep=""),
-                                            paste("\\hspace{0.5cm}","Södra",sep=""),
-                                            paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth], sep="")
-)
-
-row.names(NCountyEstimatesLastRegions)[grep("VÃ¤straGÃ¶taland", row.names(NCountyEstimatesLastRegions))] <- paste("\\hspace{0.75cm}",
-                                                                                                                  "VÃ¤stra GÃ¶taland", sep="")
-
+row.names(NCountyEstimatesLastRegions)[grep("VÃ¤straGÃ¶taland", row.names(NCountyEstimatesLastRegions))] <- "\\hspace{0.75cm}VÃ¤stra GÃ¶taland"
 ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
 # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
 # idcounty1 <- str_remove(idcounty1, "s ")
 # idcounty1 <- str_remove(idcounty1, " ")
 
-
-# WRITE LATEX 
-print(xtable(NCountyEstimatesLastRegions, type = "latex",
-             align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions))),collapse = "")),
-      sanitize.text.function=function(x){x},
+##-- Export .tex 
+print(xtable( NCountyEstimatesLastRegions,
+              type = "latex",
+              align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions))), collapse = "")),
+      sanitize.text.function = function(x){x},
       # scalebox=.8,
       floating = FALSE,
-      add.to.row=list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-      file = file.path(myVars$WDTables,paste("NCountiesSexLastYearRegions.tex",sep="")))
+      add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions), by = 2)),
+                        "\\rowcolor[gray]{.95} "),
+      file = file.path(WDTables,"NCountiesSexLastYearRegions.tex"))
 
 
 
-### ====    2.4.2 LAST YEAR N PER SEX PER COUNTY WITH PROPORTION OF AREA COVERED  ====
+## ------       2.6.2. LAST YEAR N PER SEX PER COUNTY WITH PROPORTION OF AREA COVERED ------
+
 NCountyEstimatesLastRegions <- matrix("", ncol=4, nrow=length(idcountyTable))
 row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
 colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total","\\% Area")
@@ -1717,69 +1731,65 @@ colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total","\\% Area")
 ## FILL IN TABLE 
 ## FEMALES
 for( i in 1:length(idcountyTable)){
-  NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <- paste(round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                                   " (",round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                   round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+  NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <- paste0(
+    round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
+    " (",round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+    round(DensityCountriesRegionsF[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
 }
 
 ## MALES 
 for( i in 1:length(idcountyTable)){
-  NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <- paste(round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                                 " (",round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                 round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+  NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <- paste0(
+    round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
+    " (",round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+    round(DensityCountriesRegionsM[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
 }
 
-## MALES 
+## TOTAL
 for( i in 1:length(idcountyTable)){
-  NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <- paste(round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                                 " (",round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                 round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+  NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <- paste0(
+    round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"mean"],digits = 1),
+    " (",round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+    round(DensityCountriesRegions[[nYears]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
 }
-
-
 
 NCountyEstimatesLastRegions[names(areaAllRegions),"\\% Area"] <- round(areaAllRegions*100,digits = 0)
 NCountyEstimatesLastRegions[NCountyEstimatesLastRegions[,4] %in% c("98","99"),4] <- 100
 #NCountyEstimatesLastRegions[names(AreaStudied/TotalArea[names(AreaStudied)]),"Area"] <- round(AreaStudied/TotalArea[names(AreaStudied)]*100,digits = 0)
 
-#print csv
-write.csv(NCountyEstimatesLastRegions,
-          file = file.path(myVars$WDTables,paste("NLastYearPerSexArea.csv",sep="")),fileEncoding="latin1")
-
-
+##--  Export .tex
+write.csv( NCountyEstimatesLastRegions,
+          file = file.path(WDTables, "NLastYearPerSexArea.csv"),
+          fileEncoding = "latin1")
 
 # ADJUST NAMES OF THE TABLE 
 idcounty1 <- idcountyTable
-
 idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
 idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
 idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
-
 idcountySWE1 <- idcountySWE
 idcountySWE1 <- sort(idcountySWE1)
-
 # idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten*}"
-
 
 row.names(NCountyEstimatesLastRegions) <- idcounty1
 # NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),1:3], "*}", sep="")
-# 
 # NCountyEstimatesLastRegions["SWEDEN",1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["SWEDEN",1:3], "**}", sep="")
 # NCountyEstimatesLastRegions["TOTAL",1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["TOTAL",1:3], "**}", sep="")
 # NCountyEstimatesLastRegions["Nordre",1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["Nordre",1:3], "**}", sep="")
 
 
-row.names(NCountyEstimatesLastRegions) <- c("TOTAL",
-                                            paste("\\hspace{0.25cm}","NORWAY",sep=""),
-                                            paste("\\hspace{0.5cm} ",
+row.names(NCountyEstimatesLastRegions) <- c(
+  "TOTAL",
+                                            paste0("\\hspace{0.25cm}","NORWAY"),
+                                            paste0("\\hspace{0.5cm} ",
                                                   idcountyNOR,sep=""),
-                                            paste("\\hspace{0.25cm}","SWEDEN",sep=""),
-                                            paste("\\hspace{0.5cm}","Norra",sep=""),
-                                            paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth], sep=""),
-                                            paste("\\hspace{0.5cm}","Mellersta",sep=""),
-                                            paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle], sep=""),
-                                            paste("\\hspace{0.5cm}","Södra",sep=""),
-                                            paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth], sep="")
+                                            paste0("\\hspace{0.25cm}","SWEDEN"),
+                                            paste0("\\hspace{0.5cm}","Norra"),
+                                            paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth], sep=""),
+                                            paste0("\\hspace{0.5cm}","Mellersta"),
+                                            paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle], sep=""),
+                                            paste0("\\hspace{0.5cm}","Södra"),
+                                            paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth], sep="")
 )
 
 row.names(NCountyEstimatesLastRegions)[grep("VÃ¤straGÃ¶taland", row.names(NCountyEstimatesLastRegions))] <- paste("\\hspace{0.75cm}",
@@ -1798,12 +1808,12 @@ print(xtable(NCountyEstimatesLastRegions, type = "latex",
       # scalebox=.8,
       floating = FALSE,
       add.to.row=list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-      file = file.path(myVars$WDTables,paste("NCountiesSexLastYearRegionsArea.tex",sep="")))
+      file = file.path(WDTables,paste("NCountiesSexLastYearRegionsArea.tex")))
 
 
 
 
-### ====    2.4.3 MAKE A TABLE 2 last years  ====
+## ------       2.6.3. MAKE A TABLE 2 last years  ------
 NCountyEstimatesLast2Regions <- matrix("", ncol=6, nrow=length(idcountyTable))
 row.names(NCountyEstimatesLast2Regions) <- c(idcountyTable)
 colnames(NCountyEstimatesLast2Regions) <- c(paste("Females", years[nYears-1]),
@@ -1822,23 +1832,26 @@ colnames(NCountyEstimatesLast2Regions) <- c(paste("Females", years[nYears-1]),
 for(t in (nYears-1):nYears){
   ## FEMALES
   for( i in 1:length(idcountyTable)){
-    NCountyEstimatesLast2Regions[idcountyTable[i],paste("Females",years[t])] <- paste(round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+    NCountyEstimatesLast2Regions[idcountyTable[i],paste("Females",years[t])] <- paste0(
+      round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
                                                                                       " (",round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                                      round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+                                                                                      round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
   
   ## MALES 
   for( i in 1:length(idcountyTable)){
-    NCountyEstimatesLast2Regions[idcountyTable[i],paste("Males",years[t])] <- paste(round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+    NCountyEstimatesLast2Regions[idcountyTable[i],paste("Males",years[t])] <- paste0(
+      round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
                                                                                     " (",round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                                    round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+                                                                                    round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
   
   ## MALES 
   for( i in 1:length(idcountyTable)){
-    NCountyEstimatesLast2Regions[idcountyTable[i],paste("Total",years[t])] <- paste(round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+    NCountyEstimatesLast2Regions[idcountyTable[i],paste("Total",years[t])] <- paste0(
+      round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
                                                                                     " (",round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                                    round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+                                                                                    round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
 }
 
@@ -1858,7 +1871,7 @@ idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
 
 #print csv
 write.csv(NCountyEstimatesLast2Regions,
-          file = file.path(myVars$WDTables,paste("NLast2YearsPerSex.csv",sep="")),fileEncoding="latin1")
+          file = file.path(WDTables,paste("NLast2YearsPerSex.csv")),fileEncoding="latin1")
 
 
 
@@ -1868,38 +1881,32 @@ idcountySWE1 <- idcountySWE
 idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "Norrbotten*"
 idcountySWE1 <- sort(idcountySWE1)
 row.names(NCountyEstimatesLast2Regions) <- idcounty1
-NCountyEstimatesLast2Regions[which(idcounty1 %in% "Norrbotten"),] <- paste(NCountyEstimatesLast2Regions[which(idcounty1 %in% "Norrbotten"),], "*", sep="")
+NCountyEstimatesLast2Regions[which(idcounty1 %in% "Norrbotten"),] <- paste0(
+  NCountyEstimatesLast2Regions[which(idcounty1 %in% "Norrbotten"),], "*")
 
-
-
-
-
-row.names(NCountyEstimatesLast2Regions) <- c("TOTAL",
-                                             paste("\\hspace{0.25cm}","NORWAY",sep=""),
-                                             paste("\\hspace{0.5cm} ",
-                                                   idcountyNOR,sep=""),
-                                             paste("\\hspace{0.25cm}","SWEDEN",sep=""),
-                                             paste("\\hspace{0.5cm}","Norra**",sep=""),
-                                             paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth], sep=""),
-                                             paste("\\hspace{0.5cm}","Mellersta",sep=""),
-                                             paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle], sep=""),
-                                             paste("\\hspace{0.5cm}","Södra",sep=""),
-                                             paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth], sep="")
+row.names(NCountyEstimatesLast2Regions) <- c(
+  "TOTAL",
+  paste0("\\hspace{0.25cm}","NORWAY"),
+  paste0("\\hspace{0.5cm} ",idcountyNOR),
+  paste0("\\hspace{0.25cm}","SWEDEN"),
+  paste0("\\hspace{0.5cm}","Norra**"),
+  paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth]),
+  paste0("\\hspace{0.5cm}","Mellersta"),
+  paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle]),
+  paste0("\\hspace{0.5cm}","Södra"),
+  paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth])
 )
 row.names(NCountyEstimatesLast2Regions)[grep("VÃ¤straGÃ¶taland", row.names(NCountyEstimatesLast2Regions))] <- paste("\\hspace{0.75cm}",
-                                                                                                                    "VÃ¤stra GÃ¶taland", sep="")
-
-
+                                                                                                                  "VÃ¤stra GÃ¶taland", sep="")
 NCountyEstimatesLast2Regions <- rbind(c("F","M","Total","F","M","Total"), NCountyEstimatesLast2Regions)
 
-# WRITE LATEX 
+##-- Export .tex 
 addtorow <- list()
-
 addtorow$pos <- list(c(0),0)
 uniqueYEAR <- c(paste(unlist(YEARS[nYears-1]),collapse = "/"),paste(unlist(YEARS[nYears]),collapse = "/"))
 addtorow$command <- c(paste0(paste0('& \\multicolumn{3}{c}{', uniqueYEAR,
-                                    '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
-
+                                    '}', collapse=''), '\\\\'),
+                      rep("\\rowcolor[gray]{.95}",1))
 print(xtable(NCountyEstimatesLast2Regions, type = "latex",
              align = paste(c("l",rep("c",3),"|",rep("c",3)),collapse = "")),
       sanitize.text.function=function(x){x},
@@ -1907,52 +1914,55 @@ print(xtable(NCountyEstimatesLast2Regions, type = "latex",
       floating = FALSE,
       add.to.row = addtorow,
       include.colnames = F,
-      file = file.path(myVars$WDTables,paste("NCountiesSexLast2YearsRegions.tex",sep="")))
+      file = file.path(WDTables,"NCountiesSexLast2YearsRegions.tex"))
 
-### ====    2.4.4 ALL YEARS N PER SEX PER COUNTY  ====
-NCountyEstimatesAllSexRegions <- matrix("", ncol=nYears*3, nrow=length(idcountyTable)+1)
+
+
+## ------       2.6.4. ALL YEARS N PER SEX PER COUNTY  ------
+
+NCountyEstimatesAllSexRegions <- matrix("", ncol = nYears*3, nrow = length(idcountyTable)+1)
 row.names(NCountyEstimatesAllSexRegions) <- c("",idcountyTable)
 colnames(NCountyEstimatesAllSexRegions) <- rep(unlist(lapply(YEARS ,function(x) x[2])),each=3)
 NCountyEstimatesAllSexRegions[1,] <- rep(c("Females","Males","Total"),nYears)
 
 ## FILL IN TABLE 
 for(t in 1:nYears){
-  
   ## FEMALES
   cols <- which(colnames(NCountyEstimatesAllSexRegions) %in% unlist(lapply(YEARS ,function(x) x[2]))[t])
   colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Females")
   for( i in 1:length(idcountyTable)){
-    NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste(round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                                         " (",round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                         round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+    NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
+      round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(DensityCountriesRegionsF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
   
   ## MALES 
   colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Males")
   for( i in 1:length(idcountyTable)){
-    NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste(round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                                         " (",round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                         round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+    NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
+      round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(DensityCountriesRegionsM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
   
   ## TOTAL 
   colss <-  which(NCountyEstimatesAllSexRegions[1,cols] %in% "Total")
   for( i in 1:length(idcountyTable)){
-    NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste(round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                                         " (",round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                                         round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+    NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
+      round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(DensityCountriesRegions[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
 }
 
-#print csv
-write.csv(NCountyEstimatesAllSexRegions,
-          file = file.path(myVars$WDTables,paste("NAllYearsPerSex.csv",sep="")),fileEncoding="latin1")
-
-
+##--  Export .csv
+write.csv( NCountyEstimatesAllSexRegions,
+          file = file.path(WDTables, "NAllYearsPerSex.csv"),
+          fileEncoding="latin1")
 
 # # ADJUST NAMES OF THE TABLE 
 # idcounty1 <- idcountyTable
-# 
 # idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
 # idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
 # idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
@@ -1978,7 +1988,6 @@ write.csv(NCountyEstimatesAllSexRegions,
 # # idcounty1 <- str_remove(idcounty1, "s ")
 # # idcounty1 <- str_remove(idcounty1, " ")
 # 
-# 
 # # WRITE LATEX 
 # print(xtable(NCountyEstimatesLastRegions, type = "latex",
 #              align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions))),collapse = "")),
@@ -1986,21 +1995,18 @@ write.csv(NCountyEstimatesAllSexRegions,
 #       # scalebox=.8,
 #       floating = FALSE,
 #       add.to.row=list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-#       file = file.path(myVars$WDTables,paste("NCountiesSexLastYearRegions.tex",sep="")))
-### ====    2.4.5 ALL YEARS, BOTH SEX COUNTIES NORWAY ====
+#       file = file.path(WDTables,paste("NCountiesSexLastYearRegions.tex",sep="")))
+
+
+
+## ------       2.6.5. ALL YEARS, BOTH SEX COUNTIES NORWAY ------
+
 idcounty <- row.names(DensityCountriesRegionsNOR[[t]]$summary)
 #REMOVE Finland, Norway, Russia, Sweden 
 idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
 #GET NORWEGIAN VERSUS SWEDISH COUNTIES 
 idcountyNOR <- idcounty[grep("Region",idcounty)]
-#idcountySWE <- sort(idcounty[-grep("Region",idcounty)])
-idcountyTable <- c("Total","Norway", idcountyNOR, "Sweden" ,idcountySWE)
-
-
-idcountyTable <- c("Total",
-                   idcountyNOR
-)
-
+idcountyTable <- c("Total", idcountyNOR)
 
 #CREATE TABLE TO STORE ABUNDANCE AND CI
 NCarRegionEstimatesNOR <- matrix("", ncol=nYears, nrow=length(idcountyTable))
@@ -2010,9 +2016,10 @@ colnames(NCarRegionEstimatesNOR) <- unlist(lapply(YEARS ,function(x) x[2]))#
 #FILL IN THE TABLE 
 for(t in 1:nYears){
   for( i in 1:length(idcountyTable)){
-    NCarRegionEstimatesNOR[idcountyTable[i],t] <- paste(round(DensityCountriesRegionsNOR[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                     " (",round(DensityCountriesRegionsNOR[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                     round(DensityCountriesRegionsNOR[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+    NCarRegionEstimatesNOR[idcountyTable[i],t] <- paste0(
+      round(DensityCountriesRegionsNOR[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(DensityCountriesRegionsNOR[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(DensityCountriesRegionsNOR[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
 }
 
@@ -2057,16 +2064,16 @@ row.names(NCarRegionEstimatesNOR) <- idcounty1
 # NCarRegionEstimatesNOR <- data.frame(NCarRegionEstimatesNOR)
 # NCarRegionEstimatesNOR$name <- row.names(NCarRegionEstimatesNOR)
 # Encoding(NCarRegionEstimatesNOR[1,"name"]) <- "UTF-16"#"UTF-16"
-#save(NCarRegionEstimatesNOR,file=file.path(myVars$WDTables,paste("NAllYearsNorwegianCounties.RData",sep="")))
+#save(NCarRegionEstimatesNOR,file=file.path(WDTables,paste("NAllYearsNorwegianCounties.RData",sep="")))
 write.csv(NCarRegionEstimatesNOR,
-          file = file.path(myVars$WDTables,paste("NAllYearsNorwegianCounties.csv",sep="")),fileEncoding= "latin1")
+          file = file.path(WDTables,paste("NAllYearsNorwegianCounties.csv",sep="")),fileEncoding= "latin1")
 
 # Encoding(NCarRegionEstimatesNOR[,"name"])[9] <- "ISO-8859-1"
 # mb_convert_encoding($file, 'UTF-8', 'ISO-8859-1')
 # write.csv2(NCarRegionEstimatesNOR,
-#            file = file.path(myVars$WDTables,paste("NAllYearsNorwegianCounties.csv",sep="")),fileEncoding= "UTF-16LE")
+#            file = file.path(WDTables,paste("NAllYearsNorwegianCounties.csv",sep="")),fileEncoding= "UTF-16LE")
 # readr::write_excel_csv(NCarRegionEstimatesNOR,
-#                         file = file.path(myVars$WDTables,paste("NAllYearsNorwegianCounties.csv",sep="")))
+#                         file = file.path(WDTables,paste("NAllYearsNorwegianCounties.csv",sep="")))
 ## try to join to the Norwegian layer for Richard
 # tmp <- data.frame(NCarRegionEstimatesNOR)
 # tmp$NAME_1 <- row.names(tmp) 
@@ -2105,13 +2112,13 @@ print(xtable(NCarRegionEstimatesNOR, type = "latex",align=paste(c("l",rep("c",nc
       # scalebox=.8,
       floating = FALSE, sanitize.text.function=function(x){x},
       add.to.row=list(list(seq(1,nrow(NCarRegionEstimatesNOR),by=2)),"\\rowcolor[gray]{.96} "),
-      file = file.path(myVars$WDTables, paste("NCountiesCarnivoreRegionsNorway.tex",sep="")))
+      file = file.path(WDTables, paste("NCountiesCarnivoreRegionsNorway.tex",sep="")))
 
 
 
-### ====   2.5 PLOT ABUNDANCE TIME SERIES ====
-### ====    2.5.1 VIOLINS ====
-### ====      2.5.1.1 ALL YEARS ====
+## ------     2.7. PLOT ABUNDANCE TIME SERIES ------
+## ------       2.7.1. VIOLINS ------
+## ------         2.7.1.1. ALL YEARS ------
 SeasonText <- lapply(YEARS,FUN = function(x) paste(x,collapse = "/"))
 
 #define colors
@@ -2126,7 +2133,7 @@ country.colors <- c("firebrick2","deepskyblue2")#c("turquoise","darkmagenta")# c
 names(country.colors) <- c("Norway","Sweden")
 violin.alpha <- 1
 
-pdf(file= file.path(myVars$WDFigures, paste("NCountriesViolins.pdf", sep="")), width = 12, height = 8)
+pdf(file= file.path(WDFigures , paste("NCountriesViolins.pdf", sep="")), width = 12, height = 8)
 par(mar = c(5,8,3,1),las=1, cex.lab=2, cex.axis=1.8, mgp=c(6, 2, 0), xaxs="i", yaxs="i")
 plot(-1000, xlim=c(0.5, nYears+0.5), ylim=c(0,1300),
      xlab="", ylab = paste("Estimated number of wolves"), xaxt="n")
@@ -2217,8 +2224,8 @@ legend(x = 1, y = 200,
 
 dev.off()
 
-### ====      2.5.1.2 LAST YEAR ====
-pdf(file= file.path(myVars$WDFigures, paste("NCountriesViolinsLastYear.pdf", sep="")), width = 12, height = 8)
+## ------         2.7.1.2. LAST YEAR ------
+pdf(file= file.path(WDFigures , paste("NCountriesViolinsLastYear.pdf", sep="")), width = 12, height = 8)
 
 par(mar = c(5,8,3,1),las=1, cex.lab=2, cex.axis=1.8, mgp=c(6, 2, 0), xaxs="i", yaxs="i")
 plot(-1000, xlim=c(nYears-0.1, nYears+0.1), ylim=c(0,1300),
@@ -2310,8 +2317,8 @@ legend(x = nYears+0.01, y = 200,
 dev.off()
 
 
-### ====    2.5.2 BARS ====
-### ====      2.5.2.1 ALL YEARS ====
+## ------       2.7.2. BARS ------
+## ------         2.7.2.1. ALL YEARS ------
 SeasonText <- lapply(YEARS, FUN = function(x) paste(x, collapse ="/")) #paste(x[[2]]))
 
 SeasonText <- lapply(YEARS, FUN = function(x) x[2]) #paste(x[[2]]))
@@ -2330,7 +2337,7 @@ names(country.colors) <- c("Norway","Sweden")
 violin.alpha95 <- 0.3
 violin.alpha50 <- 0.7
 
-pdf(file= file.path(myVars$WDFigures, paste("NCountriesBars.pdf", sep="")), width = 12, height = 8)
+pdf(file= file.path(WDFigures , paste("NCountriesBars.pdf", sep="")), width = 12, height = 8)
 par(mar = c(5,8,3,1),las=1, cex.lab=2, cex.axis=1.3, mgp=c(6, 2, 0), xaxs="i", yaxs="i")
 plot(-1000, xlim=c(0.5, nYears+.5), ylim=c(0,1300),
      xlab="", ylab = paste("Estimated number of wolverines"), xaxt="n")
@@ -2339,7 +2346,7 @@ at = c(1:nYears)
 abline(h=seq(100,1200,by=100), lty=2, col=grey(0.90))
 
 ## GET THE DETECTED INDIVIDUALS 
-# n.detected <- read.csv(file.path(myVars$WDTables, paste("TotalIdDetected.csv",sep="")))
+# n.detected <- read.csv(file.path(WDTables, paste("TotalIdDetected.csv",sep="")))
 # n.detected <- as.vector(n.detected[1,2:ncol(n.detected)])
 # n.detected[1]
 # 
@@ -2479,7 +2486,7 @@ dev.off()
 
 
 
-### ====      2.5.2.2 ALL YEARS SEX ====
+## ------         2.7.2.2. ALL YEARS SEX ------
 SeasonText <- lapply(YEARS, FUN = function(x) paste(x, collapse ="/")) #paste(x[[2]]))
 
 SeasonText <- lapply(YEARS, FUN = function(x) x[2]) #paste(x[[2]]))
@@ -2498,7 +2505,7 @@ names(country.colors) <- c("Norway","Sweden")
 violin.alpha95 <- 0.3
 violin.alpha50 <- 0.7
 
-pdf(file= file.path(myVars$WDFigures, paste("NCountriesBarsSex.pdf", sep="")), width = 18, height = 8)
+pdf(file= file.path(WDFigures , paste("NCountriesBarsSex.pdf", sep="")), width = 18, height = 8)
 par(mfrow=c(1,2), mar = c(5,8,3,1),las=1, cex.lab=2, cex.axis=1.3, mgp=c(6, 2, 0), xaxs="i", yaxs="i")
 plot(-1000, xlim=c(0.5, nYears+.5), ylim=c(0,800),
      xlab="", ylab = paste("Estimated number of Females"), xaxt="n")
@@ -2770,8 +2777,8 @@ dev.off()
 
 
 
-### ====      2.5.1.3 LAST YEAR ====
-pdf(file= file.path(myVars$WDFigures, paste("NCountriesBarsLastYear.pdf", sep="")), width = 12, height = 8)
+## ------         2.7.1.3. LAST YEAR ------
+pdf(file= file.path(WDFigures , paste("NCountriesBarsLastYear.pdf", sep="")), width = 12, height = 8)
 plot(-1000, xlim=c(nYears-0.1, nYears+0.1), ylim=c(0,1300),
      xlab="", ylab = paste("Estimated number of wolves"), xaxt="n")
 axis(1, at=c(nYears), labels = SeasonText[nYears], cex.axis=1.2)
@@ -2876,7 +2883,7 @@ legend(x = 1, y = 200,
 
 dev.off()
 
-### ====      2.5.1.4 COMPARE WITH OTHER REPORTS ====
+## ------         2.7.1.4. COMPARE WITH OTHER REPORTS ------
 # #INITIALIZE THE OBJECTS
 # TOTSWE <- TOTNOR <- TOT <- list()
 # TOTNORCIL <- TOTNORCIH <- list()
@@ -2986,14 +2993,14 @@ dev.off()
 #   TOTNORCIH[[xx]] <- unlist(lapply(strsplit(CI ,split = "-"), function(x) as.numeric(x[2])))
 #   # xx <- count +1
 # }
-### ====    2.5.3 MAPS ====
+## ------       2.7.3. MAPS ------
 habbdensCropped <- list()
 max <- max(unlist(lapply(DensityCountriesRegions, function(x) max(x$MeanCell))))
 cuts <- seq(0,max,length.out = 100)   #set breaks
 col <- rev(terrain.colors(100))
 
 #PLOT
-pdf(file=file.path(myVars$WDFigures, paste("DensityMapsAC5kms.pdf",sep="")))
+pdf(file=file.path(WDFigures , paste("DensityMapsAC5kms.pdf",sep="")))
 for(t in 1: nYears){
   habbdens <- densityInputRegions$regions.r
   habbdens[] <- NA
@@ -3014,7 +3021,7 @@ for(t in 1: nYears){
 }
 dev.off()
 
-### ====  3. UD BASED DENSITY  (5km) ====
+## ------   3. UD BASED DENSITY  (5km) ------
 ### IDENTIFY PROXIMITY HABITAT CELLS 
 habitatMask <- densityInputCountries$habitat.id
 habitatMask[!is.na(habitatMask)] <- 1 
@@ -3081,10 +3088,10 @@ iter <- sample(1:dim(densityInputCountries$sy)[1], size = 1000)#dim(densityInput
 #   spaceUSED[[t]] <- list()
 #   spaceUSED[[t]][["MeanCell"]] <- spaceUSED1[[t]]$MeanCell
 # }
-# save(spaceUSED, file = file.path(myVars$WDFigures, "spaceUsed5km.RData" ))
-load(file = file.path(myVars$WDFigures, "spaceUsed5km.RData" ))
+# save(spaceUSED, file = file.path(WDFigures , "spaceUsed5km.RData" ))
+load(file = file.path(WDFigures , "spaceUsed5km.RData" ))
 
-### ====          2.1.2.1 PLOT TIME SERIES ====
+## ------     3.1. PLOT TIME SERIES ------
 #### PLOT TIME SERIES 
 ## PREPARE THE FILES 
 #SeasonText <- lapply(YEARS,FUN = function(x) paste(x,collapse = "/"))
@@ -3131,7 +3138,7 @@ COUNTIESNorrbotten <- st_simplify(COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten",], 
 
 
 ##PLOT
-pdf(file=file.path(myVars$WDFigures, paste("DensityMapsUD.pdf",sep="")), width = 12, height = 8)
+pdf(file=file.path(WDFigures , paste("DensityMapsUD.pdf",sep="")), width = 12, height = 8)
 #layout
 mx <- rbind(c(1,rep(1:5, each=2)),
             c(rep(1:5, each=2),5))
@@ -3209,9 +3216,9 @@ for(t in 1:length(years)){
 }
 dev.off()
 
-### ====          2.1.2.2 PLOT LAST 2 YEARS ====
+## ------     3.2. PLOT LAST 2 YEARS ------
 ## PLOT LAST 2 YEARS  
-pdf(file=file.path(myVars$WDFigures, paste("DensityMapsUDLast2Years.pdf",sep="")), 
+pdf(file=file.path(WDFigures , paste("DensityMapsUDLast2Years.pdf",sep="")), 
     width = 8, height = 8)
 
 #layout
@@ -3266,9 +3273,9 @@ for(t in (length(years)-1):length(years)){
 dev.off()
 
 
-### ====          2.1.2.3 PLOT LAST YEAR ====
+## ------     3.3. PLOT LAST YEAR ------
 ## PLOT LAST  YEAR  
-pdf(file=file.path(myVars$WDFigures, paste("DensityMapsUDLastYear.pdf",sep="")), 
+pdf(file=file.path(WDFigures , paste("DensityMapsUDLastYear.pdf",sep="")), 
     width = 8, height = 8)
 
 #layout
@@ -3329,9 +3336,9 @@ for(t in length(years)){
 dev.off()
 
 
-### ====          2.1.2.4 PLOT LAST YEAR SUMMARY ====
+## ------     3.4. PLOT LAST YEAR SUMMARY ------
 ## PLOT LAST  YEAR  
-pdf(file=file.path(myVars$WDFigures, paste("DensityMapsUDLastYearSummary.pdf",sep="")), 
+pdf(file=file.path(WDFigures , paste("DensityMapsUDLastYearSummary.pdf",sep="")), 
     width = 8, height = 8)
 
 #layout
@@ -3395,9 +3402,9 @@ dev.off()
 
 
 
-### ====          2.1.2.5 PLOT LAST YEAR SUMMARY NO ====
+## ------     3.5. PLOT LAST YEAR SUMMARY NO ------
 ## PLOT LAST  YEAR  
-pdf(file=file.path(myVars$WDFigures, paste("DensityMapsUDLastYearSummaryNO.pdf",sep="")), 
+pdf(file=file.path(WDFigures , paste("DensityMapsUDLastYearSummaryNO.pdf",sep="")), 
     width = 8, height = 8)
 
 #layout
@@ -3462,20 +3469,20 @@ dev.off()
 
 
 
-### ====          2.1.2.6 WRITE UD 5km RASTER FOR ROVBASE ====
-if(!dir.exists(file.path(myVars$WDFigures, "RasterForRovbase"))){dir.create(file.path(myVars$WDFigures, "RasterForRovbase"))}
+## ------     3.6. WRITE UD 5km RASTER FOR ROVBASE ------
+if(!dir.exists(file.path(WDFigures , "RasterForRovbase"))){dir.create(file.path(WDFigures , "RasterForRovbase"))}
 
 for(t in 1:length(years)){
  raster::crs(habbdensUDCropped[[t]]) <- "EPSG:32633"#st_crs(myHabitat.list$habitat.poly))
 
   
-  path <- file.path(myVars$WDFigures, "RasterForRovbase",paste("wolverine_5km",paste(YEARS[[t]][1],collapse = "_"),".tif",sep=""))
+  path <- file.path(WDFigures , "RasterForRovbase",paste("wolverine_5km",paste(YEARS[[t]][1],collapse = "_"),".tif",sep=""))
   writeRaster(habbdensUDCropped[[t]], path, overwrite=TRUE)
 }
 
 
-### ====  4. DERIVED PARAMETERS FROM ABUNDANCE ==== 
-### ====    4.1 MAKE A GROWTH RATE TABLE PER COUNTRY  ====
+## ------   4. DERIVED PARAMETERS FROM ABUNDANCE ------ 
+## ------     4.1. MAKE A GROWTH RATE TABLE PER COUNTRY  ------
 growthRate <- matrix(0, ncol=nYears-1,nrow=3)
 row.names(growthRate) <- c("Norway","Sweden","Total")
 colnames(growthRate) <- unlist(lapply(YEARS[2:(length(YEARS))],function(x) paste(x,collapse =  "-")))
@@ -3526,11 +3533,11 @@ print(xtable(growthRate, type = "latex", align=paste(c("l", rep("c",ncol(growthR
       # scalebox=.8,
       floating = FALSE, sanitize.text.function=function(x){x},
       add.to.row=list(list(seq(1,nrow(growthRate),by=2)),"\\rowcolor[gray]{.96} "),
-      file = file.path(myVars$WDTables, paste("growthRate.tex", sep="")))
+      file = file.path(WDTables, paste("growthRate.tex", sep="")))
 
 
 colSums(DensityCountriesRegions[[t+1]]$PosteriorRegions[c("Sweden","Norway"),])
-### ====    4.2 DERIVE SEX RATIO  ====
+## ------     4.2. DERIVE SEX RATIO  ------
 PropFemale <- PropFemaleSWE <- PropFemaleNOR <- list()
 
 for(t in 1:nYears){
@@ -3584,10 +3591,10 @@ print(xtable(propFemale_tab, type = "latex", align=paste(c("l", rep("c",ncol(pro
       # scalebox=.8,
       floating = FALSE, sanitize.text.function=function(x){x},
       add.to.row=list(list(seq(1,nrow(propFemale_tab),by=2)),"\\rowcolor[gray]{.96} "),
-      file = file.path(myVars$WDTables, paste("propFemale.tex", sep="")))
+      file = file.path(WDTables, paste("propFemale.tex", sep="")))
 
 
-### ====    4.3 DERIVE DENSITY  ====
+## ------     4.3. DERIVE DENSITY  ------
 habbRCarRegionsTRY <- rrCountries
 habbRCarRegionsTRY[!is.na(habbRCarRegionsTRY[])] <-1 
 habbRCarRegionsTRY[] <- as.numeric(habbRCarRegionsTRY[])
@@ -3607,11 +3614,11 @@ DensityCountriesRegions[[t]]$summary["Total","95%CILow"]/areaSqKm*100
 DensityCountriesRegions[[t]]$summary["Total","95%CIHigh"]/areaSqKm*100
 
 ###COULD REMAKE ALL THE TABLES WITH DENSITY INSTEAD OF ABUNDANCE....
-### ====    4.4  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED ====
-n.detectedTotal <- read.csv(file.path(myVars$WDTables, paste("TotalIdDetected.csv", sep="")))
+## ------     4.4.  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED ------
+n.detectedTotal <- read.csv(file.path(WDTables, paste("TotalIdDetected.csv", sep="")))
 n.detectedTotal <- as.vector(n.detectedTotal[1, 2:ncol(n.detectedTotal)])
 
-n.detectedSex <- read.csv(file.path(myVars$WDTables, paste("NGSidCountrySEX.csv", sep="")))
+n.detectedSex <- read.csv(file.path(WDTables, paste("NGSidCountrySEX.csv", sep="")))
 tF <- seq(2, length.out = nYears, by=2)
 tM <- seq(3, length.out = nYears, by=2)
 
@@ -3644,13 +3651,13 @@ print(xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDe
       # scalebox=.8,
       floating = FALSE, sanitize.text.function=function(x){x},
       add.to.row=list(list(seq(1,nrow(propDetected), by=2)),"\\rowcolor[gray]{.96} "),
-      file = file.path(myVars$WDTables, paste("PropDetectedIds.tex",sep="")))
+      file = file.path(WDTables, paste("PropDetectedIds.tex",sep="")))
 
 
 
 
-### ====    4.5  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED PER COUNTRIES  ====
-n.detectedCountry <- read.csv(file.path(myVars$WDTables, paste("NGSidCountrySEX.csv", sep="")))
+## ------     4.5.  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED PER COUNTRIES  ------
+n.detectedCountry <- read.csv(file.path(WDTables, paste("NGSidCountrySEX.csv", sep="")))
 colnames(n.detectedCountry) <- c("",unlist(lapply(YEARS,function(x) c(x[2],x[2])))) 
 #propDetected <- matrix("", ncol=nYears,nrow=3)
 #row.names(propDetected) <- c("M","F","Total")
@@ -3658,7 +3665,7 @@ colnames(n.detectedCountry) <- c("",unlist(lapply(YEARS,function(x) c(x[2],x[2])
 propDetectedCountry <- n.detectedCountry 
 propDetectedCountry[2:4, 2:ncol(propDetectedCountry)] <- NA
 
-NCountrySex <- read.csv(file.path(myVars$WDTables, paste("NAllYearsPerSex.csv", sep="")))
+NCountrySex <- read.csv(file.path(WDTables, paste("NAllYearsPerSex.csv", sep="")))
 colnames(NCountrySex) <- c("",unlist(lapply(YEARS,function(x) c(x[2],x[2],x[2]))))
 
 yrs <- unlist(lapply(YEARS, function(x) c(x[2]))) 
@@ -3738,7 +3745,7 @@ print(xtable(propDetectedCountry, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("propDetectedCountry.tex", sep="")))
+      file = file.path(WDTables,paste("propDetectedCountry.tex", sep="")))
 
 
 
@@ -3765,7 +3772,7 @@ print(xtable(propDetectedCountry1, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("propDetectedCountry1.tex", sep="")))
+      file = file.path(WDTables,paste("propDetectedCountry1.tex", sep="")))
 
 #SAVE TABLE 2
 addtorow1$command <- command2
@@ -3777,17 +3784,17 @@ print(xtable(propDetectedCountry2, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("propDetectedCountry2.tex", sep="")))
+      file = file.path(WDTables,paste("propDetectedCountry2.tex", sep="")))
 
 
 
-### ====  5. VITAL RATES  ====
+## ------   5. VITAL RATES  ------
 widthPolygon <- 0.15
 widthPolygon1 <- 0.15
 widthPolygon2 <- 0.15
 
-### ====    5.1 SURVIVAL BARS  ====
-pdf(file=file.path(myVars$WDFigures, paste("SurvivalBars.pdf",sep="")),width=8,height=4)
+## ------     5.1. SURVIVAL BARS  ------
+pdf(file=file.path(WDFigures , paste("SurvivalBars.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -3854,8 +3861,8 @@ for(i in 1:2){
 
 dev.off()
 
-### ====    5.2 MORTALITY BARS  ====
-# pdf(file=file.path(myVars$WDFigures, paste("Mortality.pdf",sep="")),width=10,height=8)
+## ------     5.2. MORTALITY BARS  ------
+# pdf(file=file.path(WDFigures , paste("Mortality.pdf",sep="")),width=10,height=8)
 # 
 # nf <- layout(cbind(c(3,4,5),c(7,1,2),c(9,8,6)),widths=c(0.15,1,0.35),heights=c(0.15,1,1))
 # # layout.show(nf)
@@ -4003,7 +4010,7 @@ Results.list[["F"]]$sims.list$w <- MortalityOther[,,2]
 Results.list[["F"]]$sims.list$h <- MortalityCulled[,,2]
 
 
-pdf(file=file.path(myVars$WDFigures, paste("MortalityBars.pdf",sep="")),width=10,height=8)
+pdf(file=file.path(WDFigures , paste("MortalityBars.pdf",sep="")),width=10,height=8)
 
 nf <- layout(cbind(c(3,4,5),c(7,1,2),c(9,8,6)),widths=c(0.15,1,0.35),heights=c(0.15,1,1))
 # layout.show(nf)
@@ -4085,9 +4092,9 @@ for(i in 1:2){
 }
 dev.off()
 
-### ====    5.2 PER CAPITA RECRUITMENT  ====
-### ====       5.2.1 PLOT NUMBER OF RECRUITS + PER CAPITA RECRUITMENT ====
-pdf(file=file.path(myVars$WDFigures, paste("NbRecruitsPerCapita.pdf",sep="")),width=10,height=8)
+## ------     5.3. PER CAPITA RECRUITMENT  ------
+## ------       5.3.1. PLOT NUMBER OF RECRUITS + PER CAPITA RECRUITMENT ------
+pdf(file=file.path(WDFigures , paste("NbRecruitsPerCapita.pdf",sep="")),width=10,height=8)
 
 nf <- layout(rbind(c(3,5,6,7),
                    c(3,1,2,4),
@@ -4152,8 +4159,8 @@ plot(1,axes=FALSE,ylim=c(-1,1),xlim=c(-1,1),type="n")
 
 dev.off()
 
-### ====       5.2.1 PLOT NUMBER OF RECRUITS  ====
-pdf(file=file.path(myVars$WDFigures, paste("Recruitment.pdf",sep="")),width=8,height=4)
+## ------       5.3.2. PLOT NUMBER OF RECRUITS  ------
+pdf(file=file.path(WDFigures , paste("Recruitment.pdf",sep="")),width=8,height=4)
 widthPolygon <- 0.15
 
 # nf <- layout(rbind(c(3,5,6,7),
@@ -4251,7 +4258,7 @@ for(i in 1:2){
 dev.off()
 
 
-### ====    5.3 SUMMARY DEMOGRAPHIC RATES ====
+## ------     5.4. SUMMARY DEMOGRAPHIC RATES ------
 parameters <- c("gamma","phi","h","w")
 sex <- c("M", "F")
 TableState <- matrix(NA, nrow=length(parameters)+1, ncol=(nYears)*2-2)
@@ -4317,7 +4324,7 @@ for(s in 1:2){
 
 
 ##
-write.csv(TableState, file=file.path(myVars$WDFigures, paste("TableParametersState.csv",sep="")))
+write.csv(TableState, file=file.path(WDFigures , paste("TableParametersState.csv",sep="")))
 #write latex
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
@@ -4337,7 +4344,7 @@ print(xtable(TableState, type = "latex",align = paste(rep("c",ncol(TableState)+1
       # scalebox=.7,
       floating = FALSE,
       add.to.row=addtorow,include.colnames=F,sanitize.text.function=function(x){x},
-      file = file.path(myVars$WDTables,paste("TableParametersState.tex",sep="")))
+      file = file.path(WDTables,paste("TableParametersState.tex",sep="")))
 
 
 ##SPLIT THE TABLE IN TWO 
@@ -4362,7 +4369,7 @@ print(xtable(TableState1, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("TableParametersState1.tex", sep="")))
+      file = file.path(WDTables,paste("TableParametersState1.tex", sep="")))
 
 #SAVE TABLE 2
 addtorow1$command <- command2
@@ -4373,15 +4380,15 @@ print(xtable(TableState2, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("TableParametersState2.tex", sep="")))
+      file = file.path(WDTables,paste("TableParametersState2.tex", sep="")))
 
 
 
 
-### ====  5. P0  ====
+## ------   6. P0.  ------
 widthPolygon <- 0.15
-### ====    5.1 BARS  ====
-pdf(file=file.path(myVars$WDFigures, paste("DetectionProbBars.pdf",sep="")),width=8,height=10)
+## ------     6.1. BARS ------
+pdf(file=file.path(WDFigures , paste("DetectionProbBars.pdf",sep="")),width=8,height=10)
 # mx <- matrix(1:24,12,2,byrow = TRUE)
 mx <- matrix(c(1,2,5,6,9,10,13,14),4,2,byrow = T)
 mx1 <- matrix(c(3,4,7,8,11,12,15,16),4,2,byrow = T)
@@ -4506,8 +4513,8 @@ dev.off()
 
 
 
-### ====    5.1 BARS Other ====
-pdf(file=file.path(myVars$WDFigures, paste("DetectionProbBarsOther.pdf",sep="")),width=8,height=8)
+## ------     6.1. BARS Other ------
+pdf(file=file.path(WDFigures , paste("DetectionProbBarsOther.pdf",sep="")),width=8,height=8)
 # mx <- matrix(1:24,12,2,byrow = TRUE)
 mx <- matrix(1:4,2,2,byrow = TRUE)
 
@@ -4611,13 +4618,13 @@ dev.off()
 
 
 
-### ====    5.2 MAPS  ====
+## ------     6.2. MAPS ------
 # t=7
 # #plot(myHabitat.listM$habitat.r)
 # # pairs<- 2
 # # alreadydetected <- 1
 # 
-# pdf(file=file.path(myVars$WDFigures, paste("MapDetectionProb.pdf",sep="")),width=6,height=6)
+# pdf(file=file.path(WDFigures , paste("MapDetectionProb.pdf",sep="")),width=6,height=6)
 # for(t in 1:nYears){
 #   
 #   p0.r <- myHabitat.list$habitat.r
@@ -4645,7 +4652,7 @@ dev.off()
 # dev.off()
 # # nimDataF$detTracks
 # 
-### ====    5.3 TABLE  ====
+## ------     6.3. TABLE ------
 CountiesID <- 1:dim(myResults_F$sims.list$p0)[2]
 state <- c( "Others","Scent-marking adult")
 sex <- c("M", "F")
@@ -4681,14 +4688,14 @@ Tablep0 <- Tablep0[order(row.names(Tablep0)),]
 # rownames(Tablep0) <- c("",unlist(lapply(as.list(c("NO1","SE1","SE2","NO2","SE3","SE4")),function(x) rep(x,2))))
 # WRITE THE FILE
 
-write.csv(Tablep0, file=file.path(myVars$WDFigures, paste("Tablep0.csv",sep="")))
+write.csv(Tablep0, file=file.path(WDFigures , paste("Tablep0.csv",sep="")))
 
 
 
-### ====  6. BETA P0S  ====
-### ====    6.1 P0STRUCTURED  ====
-### ====      6.1.1 BETATRACKS  ====
-pdf(file=file.path(myVars$WDFigures, paste("Betap0StructuredTracks.pdf",sep="")),width=8,height=4)
+## ------   7. BETA P0S ------
+## ------     7.1. P0STRUCTURED ------
+## ------       7.1.1. BETATRACKS ------
+pdf(file=file.path(WDFigures , paste("Betap0StructuredTracks.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4751,8 +4758,8 @@ for(i in 1:2){
 dev.off()
 
 
-### ====      6.1.2 BETA SNOW  ====
-pdf(file=file.path(myVars$WDFigures, paste("Betap0StructuredSnow.pdf",sep="")),width=8,height=4)
+## ------       7.1.2. BETA SNOW ------
+pdf(file=file.path(WDFigures , paste("Betap0StructuredSnow.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4816,8 +4823,8 @@ dev.off()
 
 
 
-### ====      6.1.2 BETA RESPONSE  ====
-pdf(file=file.path(myVars$WDFigures, paste("Betap0StructuredResponse.pdf",sep="")),width=8,height=4)
+## ------       7.1.3. BETA RESPONSE ------
+pdf(file=file.path(WDFigures , paste("Betap0StructuredResponse.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4882,9 +4889,9 @@ dev.off()
 
 
 
-### ====    6.2 P0OTHER  ====
-### ====      6.2.1 BETASNOW ====
-pdf(file=file.path(myVars$WDFigures, paste("Betap0OtherSnow.pdf",sep="")),width=8,height=4)
+## ------     7.2. P0OTHER ------
+## ------       7.2.1. BETASNOW ------
+pdf(file=file.path(WDFigures , paste("Betap0OtherSnow.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4947,8 +4954,8 @@ for(i in 1:2){
 dev.off()
 
 
-### ====      6.2.2 BETA ROADS  ====
-pdf(file=file.path(myVars$WDFigures, paste("Betap0OtherRoads.pdf",sep="")),width=8,height=4)
+## ------       7.2.2. BETA ROADS ------
+pdf(file=file.path(WDFigures , paste("Betap0OtherRoads.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -5012,8 +5019,8 @@ dev.off()
 
 
 
-### ====      6.2.3 BETA SKANDOBS  ====
-pdf(file=file.path(myVars$WDFigures, paste("Betap0OtherSkandobs.pdf",sep="")),width=8,height=4)
+## ------       7.2.3. BETA SKANDOBS ------
+pdf(file=file.path(WDFigures , paste("Betap0OtherSkandobs.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -5078,8 +5085,8 @@ dev.off()
 
 
 
-### ====      6.2.3 BETA RESPONSE  ====
-pdf(file=file.path(myVars$WDFigures, paste("Betap0OtherResponse.pdf",sep="")),width=8,height=4)
+## ------       7.2.4. BETA RESPONSE ------
+pdf(file=file.path(WDFigures , paste("Betap0OtherResponse.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -5144,8 +5151,8 @@ dev.off()
 
 
 
-### ====  6. TABLE OTHERS  ====
-### ====    6.1. TABLE DENSITY AND MOVEMENT  OPSCR  ====
+## ------   8. TABLE OTHERS  ------
+## ------     8.1. TABLE DENSITY & MOVEMENT OPSCR ------
 parameters <- c("betaDens","sigma","dmean")#,"betaResponse", "betaTracks","betaRoads", "betaSnow")
 parameters1 <- c("$\\beta_{dens}^*$","$\\sigma$","$\\lambda^*$")#,"$\\beta_1$", "$\\beta_2$", "$\\beta_3$","$\\beta_4$")
 
@@ -5204,7 +5211,7 @@ for(s in 1:2){
 
 
 ##WRITE TABLES 
-write.csv(TableDensityMovementSCR, file=file.path(myVars$WDFigures, paste("TableDensityMovement.csv",sep="")))
+write.csv(TableDensityMovementSCR, file=file.path(WDFigures , paste("TableDensityMovement.csv",sep="")))
 #write latex
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
@@ -5226,7 +5233,7 @@ print(xtable(TableDensityMovementSCR, type = "latex",align = paste(rep("c",ncol(
       # scalebox=.7,
       floating = FALSE,
       add.to.row=addtorow,include.colnames=F,sanitize.text.function=function(x){x},
-      file = file.path(myVars$WDTables,paste("TableDensityMovement.tex", sep="")))
+      file = file.path(WDTables,paste("TableDensityMovement.tex", sep="")))
 
 
 ##SPLIT THE TABLE IN TWO 
@@ -5246,7 +5253,7 @@ print(xtable(TableDensityMovementSCR1, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("TableDensityMovement1.tex", sep="")))
+      file = file.path(WDTables,paste("TableDensityMovement1.tex", sep="")))
 
 #SAVE TABLE 2
 addtorow1$command <- command2
@@ -5257,11 +5264,11 @@ print(xtable(TableDensityMovementSCR2, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("TableDensityMovement2.tex", sep="")))
+      file = file.path(WDTables,paste("TableDensityMovement2.tex", sep="")))
 
 
 
-### ====    6.2. TABLE  PARAMETERS  STRUCTURED ====
+## ------     8.2. TABLE PARAMETERS STRUCTURED ------
 parameters <- c("betaResponse","betaCovs","betaCovs")#,"betaResponse", "betaTracks","betaRoads", "betaSnow")
 parameters1 <- c("$\\beta_{1_Structured}$","$\\beta_{2_Structured}$","$\\beta_{3_Structured}$")#,"$\\beta_1$", "$\\beta_2$", "$\\beta_3$","$\\beta_4$")
 
@@ -5309,7 +5316,7 @@ for(s in 1:2){
 }
 
 ##WRITE TABLES 
-write.csv(TableStructured, file=file.path(myVars$WDFigures, paste("TableStructured.csv",sep="")))
+write.csv(TableStructured, file=file.path(WDFigures , paste("TableStructured.csv",sep="")))
 #write latex
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
@@ -5331,7 +5338,7 @@ print(xtable(TableStructured, type = "latex",align = paste(rep("c",ncol(TableStr
       # scalebox=.7,
       floating = FALSE,
       add.to.row=addtorow,include.colnames=F,sanitize.text.function=function(x){x},
-      file = file.path(myVars$WDTables,paste("TableStructured.tex", sep="")))
+      file = file.path(WDTables,paste("TableStructured.tex", sep="")))
 
 
 ##SPLIT THE TABLE IN TWO 
@@ -5351,7 +5358,7 @@ print(xtable(TableStructured1, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("TableStructured1.tex", sep="")))
+      file = file.path(WDTables,paste("TableStructured1.tex", sep="")))
 
 #SAVE TABLE 2
 addtorow1$command <- command2
@@ -5362,11 +5369,11 @@ print(xtable(TableStructured2, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("TableStructured2.tex", sep="")))
+      file = file.path(WDTables,paste("TableStructured2.tex", sep="")))
 
 
 
-### ====    6.3. TABLE  PARAMETERS  OTHERS ====
+## ------     8.3. TABLE PARAMETERS OTHERS ------
 parameters <- c("betaResponseOth","betaCovsOth","betaCovsOth","betaCovsOth")#,"betaResponse", "betaTracks","betaRoads", "betaSnow")
 parameters1 <- c("$\\beta_{1_Unstructured}$","$\\beta_{2_Unstructured}$","$\\beta_{3_Unstructured}$","$\\beta_{4_Unstructured}$")#,"$\\beta_1$", "$\\beta_2$", "$\\beta_3$","$\\beta_4$")
 
@@ -5414,7 +5421,7 @@ for(s in 1:2){
 }
 
 ##WRITE TABLES 
-write.csv(TableOther, file=file.path(myVars$WDFigures, paste("TableOther.csv",sep="")))
+write.csv(TableOther, file=file.path(WDFigures , paste("TableOther.csv",sep="")))
 #write latex
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
@@ -5436,7 +5443,7 @@ print(xtable(TableOther, type = "latex",align = paste(rep("c",ncol(TableOther)+1
       # scalebox=.7,
       floating = FALSE,
       add.to.row=addtorow,include.colnames=F,sanitize.text.function=function(x){x},
-      file = file.path(myVars$WDTables,paste("TableOther.tex", sep="")))
+      file = file.path(WDTables,paste("TableOther.tex", sep="")))
 
 
 ##SPLIT THE TABLE IN TWO 
@@ -5456,7 +5463,7 @@ print(xtable(TableOther1, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("TableOther1.tex", sep="")))
+      file = file.path(WDTables,paste("TableOther1.tex", sep="")))
 
 #SAVE TABLE 2
 addtorow1$command <- command2
@@ -5467,10 +5474,10 @@ print(xtable(TableOther2, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("TableOther2.tex", sep="")))
+      file = file.path(WDTables,paste("TableOther2.tex", sep="")))
 
-### ====  7. TRANSITION SURFACES  ====
-### ====    7.1 SET UP HABITAT  ====
+## ------   9. TRANSITION SURFACES  ------
+## ------     9.1. SET UP HABITAT ------
 habbR <- raster::disaggregate(myHabitat.list$habitat.r, fact=4)
 
 ##
@@ -5545,7 +5552,7 @@ colnames(habbRxy) <- c("x","y")
 myResultsSXYZ_MF$sims.list$scaledsxy <- scaleCoordsToHabitatGrid(coordsData = myResultsSXYZ_MF$sims.list$sxy,
                                                                    coordsHabitatGridCenter = habbRxy)$coordsDataScaled
 
-### ====    7.2 TRANSITION PROBABILITY OTHER CAUSES  ====
+## ------     9.2. TRANSITION PROBABILITY OTHER CAUSES ------
 TransitionSurfaceOther <- list()
 iter <- sample(1:dim(myResultsSXYZ_MF$sims.list$scaledsxy)[1], size = 100)#dim(densityInputCountries$sx)[1])
 
@@ -5580,7 +5587,7 @@ plot(myHabitat.list$habitat.poly,add=T)
 
 
 
-### ====    7.2 TRANSITION PROBABILITY CULLING  ====
+## ------     9.3. TRANSITION PROBABILITY CULLING  ------
 TransitionSurfaceCulling <- list()
 for(t in 1:(nYears-1)){
    TransitionSurfaceCulling[[t]] <- GetTransitionSurface( myResultsSXYZ_MF$sims.list$scaledsxy[,,1,t],
@@ -5608,8 +5615,8 @@ plot(SpatialRaster)
 plot(myHabitat.list$habitat.poly,add=T)
 
 
-### ====    7.3 PLOT  ====
-pdf(file=file.path(myVars$WDFigures, paste("CountryMortalityRates.pdf",sep="")), width = 9, height = 7)
+## ------     9.4. PLOT  ------
+pdf(file=file.path(WDFigures , paste("CountryMortalityRates.pdf",sep="")), width = 9, height = 7)
 par(mfrow=c(1,2))
 offset <- c(-0.2,0.2)
 plot(-10, xlim=c(0,nYears),ylim=c(0,1), ylab="Mortality rate" ,xaxt="n")
@@ -5643,30 +5650,35 @@ dev.off()
 # 
 
 
-### ====  8. OTHER PLOTS  ====
-### ====    8.1 SKANDOBS ====
+## ------   10. OTHER PLOTS  ------
+
+## ------     10.1. SKANDOBS ------
+
 habitat.detectors <- aggregate(rasterToPolygons(disaggregate(myHabitat.list$habitat.rWthBuffer, 
                                                              fact=2),fun=function(x)x==1))
-skandobs.r1 <-skandobs.r <- disaggregate(myHabitat.list$habitat.rWthBuffer, 
+skandobs.r1 <- skandobs.r <- disaggregate(myHabitat.list$habitat.rWthBuffer, 
                                          fact=2)
 
-pdf(file= file.path(myVars$WDFigures, paste("SkandobsRovbaseCovariates.pdf", sep="")), width = 12, height = 8)
-par(mfrow=c(2,5),mar=c(1,1,3,1))
+pdf( file= file.path(WDFigures, "SkandobsRovbaseCovariates.pdf"),
+     width = 12, height = 8)
+par(mfrow = c(2,5), mar = c(1,1,3,1))
 rrr <- list()
 for(t in 1:nYears){
-  plot(habitat.detectors,border=grey(0.8),col=grey(0.8))
-  skandobs.r1[skandobs.r[]%in%1]<- nimData$detCovsOth[,t,3]
+  plot(habitat.detectors, border = grey(0.8), col = grey(0.8))
+  skandobs.r1[skandobs.r[] %in% 1]<- nimData$detCovsOth[ ,t,3]
   rrr[[t]] <- skandobs.r1
   pol <- rasterToPolygons(skandobs.r1,fun = function(x) x==1)
-  plot(pol,col="darkgreen",border=NA,add=T)
+  plot(pol, col = "darkgreen", border = NA, add = T)
   mtext(paste(YEARS[[t]][2]))
 }
 dev.off()
 
-save( rrr,file=file.path(myVars$WDFigures, paste("Skandobs.RData", sep="")))
+save( rrr, file = file.path(WDFigures, "Skandobs.RData"))
 
 
-# ### ====    7.4 SAVE  ====
+
+## ------   11. SAVE ------
+
 # TransitionPosteriorCulling <- 
 #    TransitionPosteriorOther <- list()
 # for(t in 1:(nYears-1)){
@@ -5674,25 +5686,16 @@ save( rrr,file=file.path(myVars$WDFigures, paste("Skandobs.RData", sep="")))
 #    TransitionPosteriorOther[[t]]<- TransitionSurfaceOther[[t]]$PosteriorTransitionRegion
 # }
 # 
-# save(TransitionPosteriorCulling,TransitionPosteriorOther,
-#      file = file.path(paste(dir.dropbox,"/wolverine/CM/2021/plot24/Figure/",sep=""), "CountryTransitionAliveCulledOther.RData" ))
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
-# 
+# save( TransitionPosteriorCulling,
+#       TransitionPosteriorOther,
+#       file = file.path(dir.dropbox, "wolverine/CM/2021/plot24/Figure/CountryTransitionAliveCulledOther.RData"))
 # 
 # ###c++
 # t=2
-# habbRtransWolverine <-habbRid<-  disaggregate(myHabitat.listM$habitat.r,fact=4)
+# habbRtransWolverine <- habbRid <- disaggregate(myHabitat.listM$habitat.r,fact=4)
 # habbRid[] <-1:ncell(habbRtransWolverine) 
 # myResultsSXYZ_MF$sims.list$sxy <- UTMToGrid(data.sxy = myResultsSXYZ_MF$sims.list$sxy,
-#                                             grid.sp = SpatialPoints(coordinates(habbRtransWolverine)) )$data.scaled.xy
+#                                             grid.sp = SpatialPoints(coordinates(habbRtransWolverine)))$data.scaled.xy
 # 
 # 
 # rr <- habbRtransWolverine
@@ -5705,19 +5708,20 @@ save( rrr,file=file.path(myVars$WDFigures, paste("Skandobs.RData", sep="")))
 # ##COMPUTE TRANSITION SURFACES
 # TransitionSurfaceWolverine <- list()
 # for(t in 1:(nYears-1)){
-#    TransitionSurfaceWolverine[[t]] <- GetTransitionSurface( myResultsSXYZ_MF$sims.list$sxy[,,1,t],
-#                                                        myResultsSXYZ_MF$sims.list$sxy[,,2,t],
-#                                                        myResultsSXYZ_MF$sims.list$z[,,t],
-#                                                        myResultsSXYZ_MF$sims.list$z[,,t+1],
-#                                                        as.matrix(rr),
-#                                                        stateFrom = 2,
-#                                                        stateTo = c(3),
-#                                                        ncell = max(rr[]),
-#                                                        probs=c(0.025,0.975))
+# TransitionSurfaceWolverine[[t]] <- GetTransitionSurface( 
+#   myResultsSXYZ_MF$sims.list$sxy[,,1,t],
+#   myResultsSXYZ_MF$sims.list$sxy[,,2,t],
+#   myResultsSXYZ_MF$sims.list$z[,,t],
+#   myResultsSXYZ_MF$sims.list$z[,,t+1],
+#   as.matrix(rr),
+#   stateFrom = 2,
+#   stateTo = c(3),
+#   ncell = max(rr[]),
+#   probs=c(0.025,0.975))
 #    
 #    TransitionSurfaceWolverine[[t]]$PosteriorTransition <- NULL
 #    gc()
-#    rrr <-   habbRtransWolverine
+#    rrr <- habbRtransWolverine
 #    rrr[habbRtransWolverine==1] <- TransitionSurfaceWolverine[[t]]$MeanCell
 #    plot(rrr)
 #    # if(t <nYears){
@@ -5726,9 +5730,10 @@ save( rrr,file=file.path(myVars$WDFigures, paste("Skandobs.RData", sep="")))
 #    sum(rrr[])
 # }
 # 
-# ##SAVE OBJECTS
-# save(TransitionSurfaceWolverine,habbRtransWolverine,
-#      file = file.path(paste(dir.dropbox,"/wolverine/CM/2021/plot24/Figure/",sep=""), "TransitionAliveCulled.RData" ))
+# ##-- SAVE OBJECTS
+# save( TransitionSurfaceWolverine,
+#       habbRtransWolverine,
+#       file = file.path(dir.dropbox,"wolverine/CM/2021/plot24/Figure/TransitionAliveCulled.RData"))
 # 
 # ###LARGE RASTER 
 # ###c++
@@ -5749,16 +5754,17 @@ save( rrr,file=file.path(myVars$WDFigures, paste("Skandobs.RData", sep="")))
 # ##COMPUTE TRANSITION SURFACES
 # TransitionSurfaceWolverine <- list()
 # for(t in 1:(nYears-1)){
-#   TransitionSurfaceWolverine[[t]] <- GetTransitionSurface( myResultsSXYZ_MF$sims.list$sxy[,,1,t],
-#                                                            myResultsSXYZ_MF$sims.list$sxy[,,2,t],
-#                                                            myResultsSXYZ_MF$sims.list$z[,,t],
-#                                                            myResultsSXYZ_MF$sims.list$z[,,t+1],
-#                                                            as.matrix(rr),
-#                                                            stateFrom = 2,
-#                                                            stateTo = c(3),
-#                                                            ncell = max(rr[]),
-#                                                            probs=c(0.025,0.975))
-#   
+#   TransitionSurfaceWolverine[[t]] <- GetTransitionSurface( 
+#     myResultsSXYZ_MF$sims.list$sxy[,,1,t],
+#     myResultsSXYZ_MF$sims.list$sxy[,,2,t],
+#     myResultsSXYZ_MF$sims.list$z[,,t],
+#     myResultsSXYZ_MF$sims.list$z[,,t+1],
+#     as.matrix(rr),
+#     stateFrom = 2,
+#     stateTo = c(3),
+#     ncell = max(rr[]),
+#     probs=c(0.025,0.975))
+#  
 #   TransitionSurfaceWolverine[[t]]$PosteriorTransition <- NULL
 #   gc()
 #   rrr <-   habbRtransWolverine
@@ -5771,258 +5777,16 @@ save( rrr,file=file.path(myVars$WDFigures, paste("Skandobs.RData", sep="")))
 # }
 # 
 # ##SAVE OBJECTS
-# save(TransitionSurfaceWolverine,habbRtransWolverine,
-#      file = file.path(paste(dir.dropbox,"/wolverine/CM/2021/plot24/Figure/",sep=""), "TransitionAliveCulled30KM.RData" ))
+# save( TransitionSurfaceWolverine,
+#       habbRtransWolverine,
+#      file = file.path(dir.dropbox,"wolverine/CM/2021/plot24/Figure/TransitionAliveCulled30KM.RData"))
+#
 # 
 # 
-# 
-# 
-# 
-### ====  8. TABLES OF #NGS SAMPLES, #DEAD RECOVERIES & #IDs DETECTED ====
-### ====    8.1 OVERALL NUMBERS ====
-load(file.path(myVars$WD, myVars$modelNameM,paste(myVars$modelNameM,"_NGSData.RData",sep="")))
-load(file.path(myVars$WD, myVars$modelNameF,paste(myVars$modelNameF,"_NGSData.RData",sep="")))
+## ------   12. plot regions ------
 
-## --- SOME TALLIES TO CHECK THINGS
-# --- NGS
-NGS <- rbind(myFilteredData.spF$alive, myFilteredData.spM$alive)
-table(NGS$Year)
-length(NGS)
-
-# NGS.all <- rbind(myFullData.spF$alive,myFullData.spM$alive)
-# NGS.all <- NGS.all[NGS.all$Year%in%years, ]
-# table(NGS.all$Year)
-# length(NGS.all)
-
-#### FOR REPORT SUMMARY
-length(NGS$Id)
-length(NGS$Id[NGS$Sex=="Hunn"])
-length(NGS$Id[NGS$Sex=="Hann"])
-
-length(NGS$Id[NGS$Country=="S"])/nrow(NGS)
-
-
-length(unique(NGS$Id))
-length(unique(NGS$Id[NGS$Sex=="Hunn"]))
-length(unique(NGS$Id[NGS$Sex=="Hann"]))
-
-
-# --- DEAD RECOVERY
-dead <- rbind(myFullData.spF$dead.recovery,myFullData.spM$dead.recovery)
-table(dead$Year)
-length(dead)
-
-
-
-### ====    8.2. TABLE 1 NGS SAMPLES YEAR/COUNTRIES/SEX====
-NGSCountrySEX <- matrix("", ncol = nYears*2, nrow = 4)
-row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")
-colnames(NGSCountrySEX) <- unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) ))
-NGSCountrySEX[1,] <- rep(c("F","M"),nYears)
-sex <- c("Hunn","Hann")
-sex1 <- c(0,1)
-ye <- seq(1,nYears*2,by=2)
-for(s in 1:2){
-  for(t in 1:nYears){
-    temp <- NGS[NGS$Year == years[t] & NGS$Sex==sex[s], ]
-    
-    NGSCountrySEX["Norway",ye[t] + sex1[s] ] <- length(temp[temp$Country %in% "N", ])
-    NGSCountrySEX["Sweden",ye[t] + sex1[s]] <- length(temp[temp$Country %in% "S", ])
-    NGSCountrySEX["Total",ye[t] + sex1[s]] <- length(temp[temp$Country %in% "S" | temp$Country %in% "N" , ])
-  }#t
-}
-
-
-addtorow <- list()
-addtorow$pos <- list(c(0),0)
-addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGSCountrySEX))),
-                                    '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
-colnames(NGSCountrySEX) <- rep("", ncol(NGSCountrySEX))
-
-
-
-print(xtable(NGSCountrySEX, type = "latex",
-             align = paste(c("l",rep("c",ncol(NGSCountrySEX))),collapse = "")),
-      #scalebox = .8,
-      floating = FALSE,include.colnames=F,
-      add.to.row = addtorow,
-      file = file.path(myVars$WDTables,paste("NGSCountrySEX.tex",sep="")))
-
-### ====    8.2. TABLE 2 NGS ID YEAR/COUNTRIES/SEX ====
-
-NGSidCountrySEX <- matrix("", ncol = nYears*2, nrow = 4)
-row.names(NGSidCountrySEX) <- c("","Norway","Sweden","Total")
-colnames(NGSidCountrySEX) <- unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) ))
-NGSidCountrySEX[1,] <- rep(c("F","M"),nYears)
-sex <- c("Hunn","Hann")
-sex1 <- c(0,1)
-ye <- seq(1,nYears*2,by=2)
-for(s in 1:2){
-  for(t in 1:nYears){
-    temp <- NGS[NGS$Year == years[t] & NGS$Sex==sex[s], ]
-    
-    NGSidCountrySEX["Norway",ye[t] + sex1[s] ] <- length(unique(temp$Id[temp$Country %in% "N" ]))
-    NGSidCountrySEX["Sweden",ye[t] + sex1[s]] <- length(unique(temp$Id[temp$Country %in% "S"]))
-    NGSidCountrySEX["Total",ye[t] + sex1[s]] <- length(unique(temp$Id))
-    
-  }#t
-  
-}
-
-
-addtorow <- list()
-addtorow$pos <- list(c(0),0)
-addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGSidCountrySEX))),
-                                    '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
-colnames(NGSidCountrySEX) <- rep("", ncol(NGSidCountrySEX))
-
-
-write.csv(NGSidCountrySEX ,file = file.path(myVars$WDTables,paste("NGSidCountrySEX.csv",sep="")))
-
-print(xtable(NGSidCountrySEX, type = "latex",
-             align = paste(c("l",rep("c",ncol(NGSidCountrySEX))),collapse = "")),
-      #scalebox = .8, 
-      floating = FALSE,include.colnames=F,
-      add.to.row = addtorow,
-      file = file.path(myVars$WDTables,paste("NGSidCountrySEX.tex",sep="")))
-
-
-### PRINT A CSV TABLE WITH THE NUMBER OF TOTAL IDS PER YEAR
-NGSidCountryTotal <- matrix(0, ncol = nYears, nrow = 1)
-row.names(NGSidCountryTotal) <- c("Total")
-colnames(NGSidCountryTotal) <- unlist(lapply(YEARS,function(x) paste(x,collapse = "/") ))
-for(t in 1:nYears){
-  temp <- NGS[NGS$Year == years[t] , ]
-  NGSidCountryTotal["Total", t] <- length(unique(temp$Id))
-}#t
-
-write.csv(NGSidCountryTotal,file = file.path(myVars$WDTables,paste("TotalIdDetected.csv",sep="")))
-
-### PRINT A CSV TABLE WITH THE NUMBER OF TOTAL IDS PER YEAR PER SEX
-
-
-
-### ====    8.3. TABLE 3 DEAD CAUSE ID YEAR/COUNTRIES/SEX ====
-
-DeadidCountrySEX <- matrix(0, ncol = nYears*2+1, nrow = 6)
-row.names(DeadidCountrySEX) <- c("","other","other","legal culling","legal culling","")
-colnames(DeadidCountrySEX) <- c("",unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")))))
-DeadidCountrySEX[1,] <- c("",rep(c("F","M"),nYears))
-DeadidCountrySEX[,1] <- c("","Norway","Sweden","Norway","Sweden","Total")
-sex <- c("Hunn","Hann")
-sex1 <- c(0,1)
-ye <- seq(1,nYears*2,by=2)
-###
-MortalityNames <- unique(as.character(dead$DeathCause))
-table(as.character(dead$DeathCause))
-legalCauses <- MortalityNames[grep("JF", MortalityNames)]
-legalCauses <- c(legalCauses, MortalityNames[grep("9", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("23", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("28", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("Rifle", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("18", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("17", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Uspesifisert", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Fellefangst", MortalityNames)])
-legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Hagle", MortalityNames)])
-
-## SEPARATE MORTALITIES
-cause <- c("other","legal culling")
-
-for(t in 1:nYears){
-  for(s in 1:2){
-    for(d in 1:2){
-      if(d==1){temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & !(dead$DeathCause %in% legalCauses), ]
-      }else{
-        temp <- dead[dead$Year == years[t] & dead$Sex==sex[s] & dead$DeathCause %in% legalCauses, ]
-      }
-      row <- which(rownames(DeadidCountrySEX)==cause[d] & DeadidCountrySEX[,1]=="Norway" )
-      DeadidCountrySEX[row,ye[t] + sex1[s]+1 ] <- length(unique(temp$Id[temp$Country %in% "N" ]))
-      
-      row <- which(rownames(DeadidCountrySEX)==cause[d] & DeadidCountrySEX[,1]=="Sweden" )
-      DeadidCountrySEX[row,ye[t] + sex1[s]+1] <- length(unique(temp$Id[temp$Country %in% "S"]))
-    }#t
-    DeadidCountrySEX[6, ye[t] + sex1[s]+1] <-  sum(as.numeric(DeadidCountrySEX[2:6,ye[t] + sex1[s]+1]))
-  }
-}
-
-
-##summary
-#Other causes
-sum(as.numeric(DeadidCountrySEX[2:3,2:ncol(DeadidCountrySEX)]))
-sum(as.numeric(DeadidCountrySEX[2:3,which(DeadidCountrySEX[1,]=="F")]))
-sum(as.numeric(DeadidCountrySEX[2:3,which(DeadidCountrySEX[1,]=="M")]))
-#legal
-sum(as.numeric(DeadidCountrySEX[4:5,2:ncol(DeadidCountrySEX)]))
-sum(as.numeric(DeadidCountrySEX[4:5,which(DeadidCountrySEX[1,]=="F")]))
-sum(as.numeric(DeadidCountrySEX[4:5,which(DeadidCountrySEX[1,]=="M")]))
-
-sum(as.numeric(DeadidCountrySEX[c(3,5),2:ncol(DeadidCountrySEX)]))/sum(as.numeric(DeadidCountrySEX[c(2:5),2:ncol(DeadidCountrySEX)]))
-
-
-#write latex
-addtorow <- list()
-
-addtorow$pos <- list(c(0),0)
-uniqueYEAR <- sort(unique(colnames(DeadidCountrySEX)))
-uniqueYEAR <- uniqueYEAR[2:length(uniqueYEAR)]
-addtorow$command <- c(paste0("& \\multicolumn{1}{c}{Country}",paste0('& \\multicolumn{2}{c}{', uniqueYEAR,
-                                                                     '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
-# colnames(TableState) <- rep("", ncol(TableState))
-# REMOVE ROWS WHERE PARAMETERS ARE NOT STATE SPECIFIC
-
-
-multirow <- paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Other","Legal culling"), "}}")
-multirowadd <- matrix(c("",multirow[1],"",multirow[2],"","{\\textbf{Total}}"),ncol=1)
-DeadidCountrySEX <- data.frame(cbind(multirowadd,DeadidCountrySEX))
-# addtorow$pos <- list(c(0),0)
-# addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(TableState))),
-#                                     '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
-# colnames(TableState) <- rep("", ncol(TableState))
-
-# xTableState <- xtable(TableState)
-
-# rownames(TableState)[2:5] <- c("$\\rho$","$\\phi$","h","w")
-
-# rownames(TableState)[2:8] <- c("$\\gamma$","$\\phi$","   ","h","  ","w","  ")
-
-
-print(xtable(DeadidCountrySEX, type = "latex",
-             align = paste(rep("c", ncol(DeadidCountrySEX)+1), collapse = "")),
-      #scalebox = .7, 
-      floating = FALSE,
-      add.to.row = addtorow,
-      include.colnames = F,
-      include.rownames = FALSE,
-      sanitize.text.function = function(x){x},
-      file = file.path(myVars$WDTables,paste("DeadidCountrySEX.tex", sep="")))
-
-
-
-
-
-
-
-### ==== 9. plot regions ====
-library(colorspace)
-library(rgdal)
-library(raster)
-
-#dir.dropbox <- "C:/Users/cymi/Dropbox (Old)/Dropbox (AQEG)/AQEG Team Folder/RovQuant"
-###
-NewCountySwe <- readOGR(file.path(dir.dropbox,"/DATA/GISData/scandinavian_border/rk_lan_07_WGS84.shp"))
-#plot(myHabitat.list$habitat.r, legend=F)
-plot(NewCountySwe, border="red")
-
-COMMUNES_NOR <- readOGR(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp", sep = ""))   ## Communal map of Norway
-COMMUNES_SWE <- readOGR(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp", sep = ""))    ## Communal map of Sweden
-COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
-## POLYGONS OF COUNTIES IN SWEDEN & NORWAY
-COUNTIES <- aggregate(x = COMMUNES, by = "NAME_1")
-
-## only select the norwegian counties
-COMMUNESNOR <- COMMUNES[COMMUNES$NAME_0=="Norway",]
+##-- only select Norwegian counties
+COMMUNESNOR <- COMMUNES[COMMUNES$NAME_0 == "Norway", ]
 NORWAY <- aggregate(x = COMMUNESNOR, by = "NAME_1")
 plot(NORWAY)
 NAME_1 <- as.character(NORWAY$NAME_1)
@@ -6031,8 +5795,8 @@ df.CountiesRegions <- matrix(c(
   "Troms",            8,
   "Nordland",         7,
   NAME_1[15],         6,
-  NAME_1[9],         6,
-  NAME_1[8],         6,
+  NAME_1[9],          6,
+  NAME_1[8],          6,
   "Hedmark",          5,
   "Oppland",          3,
   NAME_1[2],          4,
@@ -6040,13 +5804,13 @@ df.CountiesRegions <- matrix(c(
   "Akershus",         4,
   "Sogn og Fjordane", 1,
   "Hordaland",        1,
-  "Rogaland" ,        1,
+  "Rogaland",         1,
   "Vest-Agder",       1,
   "Aust-Agder",       2,
-  "Telemark" ,        2,
-  "Buskerud" ,        2,
-  "Vestfold",         2), byrow=T,ncol=2)
-
+  "Telemark",         2,
+  "Buskerud",         2,
+  "Vestfold",         2),
+  byrow = T, ncol = 2)
 
 NORWAY$NAME_1 <- as.character(NORWAY$NAME_1) 
 for(i in 1:nrow(df.CountiesRegions)){
@@ -6055,9 +5819,7 @@ for(i in 1:nrow(df.CountiesRegions)){
 NORWAY1 <- aggregate(NORWAY,by="NAME_1")
 plot(NORWAY1)
 
-
-
-#RENAME THE FIELDS SO THEY MATCH BETWEEN NORWEGIAN AND SWEDISH LAYERS
+##-- RENAME THE FIELDS SO THEY MATCH BETWEEN NORWEGIAN AND SWEDISH LAYERS
 NewCountySwe <- NewCountySwe[,"LANSNAMN"]
 colnames(NewCountySwe@data) <- "NAME_1"
 NewCountySwe$Country <- "SWE"
@@ -6068,28 +5830,24 @@ NORWAY1$Country <- "NOR"
 # IF A CELL IS NOT ASSIGNED TO ANY COUNTY THEN WE ASSIGN IT THE CLOSEST COUNTY BELOW. 
 COUNTIESsimp <- rbind(NORWAY1,NewCountySwe)#, NewCountySwe, makeUniqueIDs = TRUE) 
 
-
-
 country.colors <- c("firebrick2","deepskyblue2")#c("turquoise","darkmagenta")# c("goldenrod1","goldenrod3")
 col <- c("firebrick2", "deepskyblue2")#c("turquoise","darkmagenta")# c("goldenrod1","goldenrod3")
 names(country.colors) <- c("Norway", "Sweden")
 border.col <- NA
 
-pdf(file = file.path(myVars$WDTables, "RegionMaps.pdf"),
+pdf(file = file.path(WDTables, "RegionMaps.pdf"),
     width = 9, height = 13, pointsize = 12)
 par(mar=c(0,0,0,0))
 plot(gSimplify(COUNTIESsimp, tol=5000), col=NA, border=NA)
 
-#NORWAY
- CARNIVORE.REGIONS <- COUNTIESsimp[COUNTIESsimp$Country%in% "NOR",]
- CARNIVORE.REGIONS1 <- gSimplify(CARNIVORE.REGIONS, tol=200, topologyPreserve = T)
- CARNIVORE.REGIONS1$Region <- CARNIVORE.REGIONS$NAME_1
+##-- NORWAY
+CARNIVORE.REGIONS <- COUNTIESsimp[COUNTIESsimp$Country%in% "NOR",]
+CARNIVORE.REGIONS1 <- gSimplify(CARNIVORE.REGIONS, tol=200, topologyPreserve = T)
+CARNIVORE.REGIONS1$Region <- CARNIVORE.REGIONS$NAME_1
 # region <- gUnaryUnion(CARNIVORE.REGIONS1, id = CARNIVORE.REGIONS1$Region)
 region <- gSimplify(NORWAY1, tol=500)
 
-
 #---SPECIFY COLOR PALETTE
-
 this.col <- sequential_hcl(1+length(unique(NORWAY1$NAME_1)), "Reds 3")
 this.col <- this.col[-length(this.col)]
 set.seed(100)
@@ -6097,31 +5855,32 @@ this.col <- sample(this.col)
 plot(region,add=T, col=this.col, border=border.col, lwd=1)
 
 
-# SWEDEN
-#swedenCounties1 <- COUNTIESsimpCarnivoreRegions[COUNTIESsimpCarnivoreRegions$Country%in% "SWE",]
+##-- SWEDEN
 NewCountySwe$NAME_1 <- as.character(NewCountySwe$NAME_1)
-#swedenCounties1 <- swedenCounties1[-which(swedenCounties1$NAME_1%in%"Gotlands län"),]
-
-NewCountySwe1 <- gSimplify(NewCountySwe,tol=200,topologyPreserve = T)
+NewCountySwe1 <- gSimplify(NewCountySwe, tol = 200, topologyPreserve = T)
 swedenCounties2 <- NewCountySwe1
 swedenCounties2$NAME_1 <- as.character(NewCountySwe$NAME_1)
-
+##-- Remove Gotland
 swedenCounties2 <- swedenCounties2[!(swedenCounties2$NAME_1%in% "Gotlands lÃ¤n"), ]
 
-#---SPECIFY COLOR PALETTE
+##-- SPECIFY COLOR PALETTE
 this.col <- sequential_hcl(25+length(unique(swedenCounties2$NAME_1)), "Blues 3")
 this.col <- this.col[1:length(unique(swedenCounties2$NAME_1))]
 set.seed(100)
 this.col <- sample(this.col)
 
-plot(RemoveHolesSp(swedenCounties2),add=T, col=this.col, border=border.col, lwd=1)
+##-- Plot
+plot( RemoveHolesSp(swedenCounties2),
+      add = T, col = this.col, border = border.col, lwd = 1)
 
-#---LABELS
-CARNIVORE.REGIONS2 <- aggregate(CARNIVORE.REGIONS1, by="Region")
-#raster::text(CARNIVORE.REGIONS2,labels = paste("Region ",CARNIVORE.REGIONS2$Region,sep=""),col=grey(0.05),cex=1.3)
-raster::text(NORWAY1,labels = NORWAY1$NAME_1, cex=1.3,
-             col=ifelse(NORWAY1$NAME_1 %in% c(5), grey(0.7), grey(0)))
+##-- Add Norwegian county names labels
+CARNIVORE.REGIONS2 <- aggregate(CARNIVORE.REGIONS1, by = "Region")
+raster::text( NORWAY1,
+              labels = NORWAY1$NAME_1,
+              cex = 1.3,
+              col = ifelse(NORWAY1$NAME_1 %in% c(5), grey(0.7), grey(0)))
 
+##-- Fix county names in Sweden
 swedenCounties2$NAME_1 <- as.character(unlist(lapply( strsplit(swedenCounties2$NAME_1, " "),
                                                       function(x) x[1])))
 swedenCounties2$NAME_1[swedenCounties2$NAME_1=="GÃ¤vleborgs"] <- "Gävleborg"
@@ -6136,7 +5895,6 @@ swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤sternorrlands"] <- "Väster
 swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤sterbottens"] <- "Västerbotten" 
 swedenCounties2$NAME_1[swedenCounties2$NAME_1=="SÃ¶dermanlands"] <- "Södermanland" 
 swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Ã–rebro"] <- "Örebro" 
-
 swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Norrbottens"] <- "Norrbotten" 
 swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Hallands"] <- "Halland" 
 swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Kronobergs"] <- "Kronoberg" 
@@ -6144,7 +5902,7 @@ swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Stockholms"] <- "Stockholm"
 swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Dalarnas"] <- "Dalarna" 
 swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Dalarnas"] <- "Dalarna" 
 
-####
+##-- Fix management region names in Sweden
 swedenCounties2$Region <- c("Mellersta",
                             "Södra",
                             "Södra",
@@ -6164,17 +5922,22 @@ swedenCounties2$Region <- c("Mellersta",
                             "Norra",
                             "Norra",
                             "Norra",
-                            "Norra","Mellersta")
-swedenCounties2Regions <- aggregate(swedenCounties2,by="Region")
+                            "Norra",
+                            "Mellersta")
+swedenCounties2Regions <- aggregate(swedenCounties2, by = "Region")
+##-- Plot Swedish management region borders
+plot( RemoveHolesSp(swedenCounties2Regions),
+     add = T, border = grey(0.0), lwd = 3)
 
-plot(RemoveHolesSp(swedenCounties2Regions),add=T, border=grey(0.0), lwd=3)
-
-polygonsLabel(swedenCounties2, swedenCounties2$NAME_1,
-              method = "buffer", cex=1.1,#gridpoints = 50000,
-              col=ifelse(swedenCounties2$NAME_1%in%c("Jämtland"),grey(0.7),grey(0.7)))
-
+##-- Add Swedish county names labels
+polygonsLabel( swedenCounties2,
+               swedenCounties2$NAME_1,
+               method = "buffer",
+               cex = 1.1,
+              col = ifelse( swedenCounties2$NAME_1%in%c("Jämtland"),
+                            grey(0.7), grey(0.7)))
 dev.off()
 
 
 
-
+##------------------------------------------------------------------------------
