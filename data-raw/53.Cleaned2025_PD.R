@@ -730,6 +730,7 @@ data <- list( aug.factor = aug.factor,
 
 
 ##----- I. LOAD & SELECT DATA ------
+
 ##-----   1. HABITAT DATA ------
 
 ##-- Load pre-defined habitat rasters and shapefiles
@@ -739,12 +740,10 @@ data(REGIONS, envir = environment())
 data(COUNTIES, envir = environment()) 
 data(habitatRasters, envir = environment()) 
 
-
 ##-- Disaggregate habitat raster to the desired resolution
 habRaster <- raster::disaggregate(
   x = habitatRasters[["Habitat"]],
   fact = raster::res(habitatRasters[["Habitat"]])/habitat.res)
-
 
 ##-- Merge counties for practical reasons
 COUNTIES_AGGREGATED <- REGIONS %>%
@@ -782,14 +781,13 @@ myStudyArea <- COUNTRIES %>%
 # myBufferedArea <- myStudyArea %>%
 #   st_buffer(dist = HABITAT$habBuffer) %>%
 #   st_intersection(., GLOBALMAP)
-
-##-- PLOT CHECK
-if(plot.check){
-  par(mfrow = c(1,1))
-  plot(st_geometry(COUNTRIES))
-  #plot(st_geometry(myBufferedArea), add = TRUE, col = rgb(0.72,0.14,0.14,0.3))
-  plot(st_geometry(myStudyArea), add = TRUE, col = "red")
-}
+# 
+# ##-- PLOT CHECK
+# if(plot.check){
+#   par(mfrow = c(1,1))
+#   plot(st_geometry(COUNTRIES))
+#   plot(st_geometry(myStudyArea), add = TRUE, col = "red")
+# }
 
 
 
@@ -819,19 +817,23 @@ n.years <- length(years)
 ##-----     3.1. FILTER NGS & DEAD RECOVERY DATA FOR DATES ------
 
 myFilteredData.sp <- myFullData.sp
-dim(myFilteredData.sp$alive)
 
-##-- Subset to years of interest
+##-- Filter for dates
 myFilteredData.sp$alive <- myFilteredData.sp$alive %>%
-  dplyr::filter(alive$Year %in% years)
-myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year %in% years, ]
+  dplyr::filter(
+    ##-- Subset to years of interest
+    Year %in% years,
+    ##-- Subset to monitoring period 
+    Month %in% unlist(sampling.months))
 
-##-- Subset to months of interest
-myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in% unlist(sampling.months), ]
+##-- Filter for dates
+myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery %>%
+  ##-- Subset to years of interest
+  dplyr::filter(Year %in% years)
 
 ##-- Checks
 dim(myFilteredData.sp$alive)
-table(myFilteredData.sp$alive$Season)
+table(myFilteredData.sp$alive$Year)
 dim(myFilteredData.sp$dead.recovery)
 table(myFilteredData.sp$dead.recovery$Year)
 table(myFilteredData.sp$dead.recovery$Death_cause)
@@ -839,31 +841,27 @@ table(myFilteredData.sp$dead.recovery$Death_method)
 
 
 
-##-----     3.2. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016-17, 2017-18, 2018-19 and 2023-24 ------ 
+##-----     3.2. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016:18 and 2023 ------ 
 
 ##-- list years with or without sampling in Norrbotten
 yearsSampledNorrb <- c(2016:2018,2023)
 yearsNotSampled <- which(!years %in% yearsSampledNorrb)
 
-
 ##-- Get Norrbotten borders
-COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) ## Communal map of Norway
-COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp")) ## Communal map of Sweden
-COUNTIESNorrbotten <- rbind(COMMUNES_NOR, COMMUNES_SWE) %>%
-  filter(NAME_1 %in% "Norrbotten") %>%
-  group_by(NAME_1) %>%
-  summarize()
+# COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) ## Communal map of Norway
+# COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp")) ## Communal map of Sweden
+# COUNTIESNorrbotten <- rbind(COMMUNES_NOR, COMMUNES_SWE) %>%
+#   filter(NAME_1 %in% "Norrbotten") %>%
+#   group_by(NAME_1) %>%
+#   summarize()
 
 ## [PD] : USING REGIONS INSTEAD OF COMMUNES WILL LEAD TO DIFFERENT NUMBERS OF 
 ## SAMPLES REMOVED ON DIFFERENT YEARS BECAUSE OF SLIGHT DIFFERENCES IN SHAPEFILES
 ## (APPROX. 10 samples OVERALL)
-# COUNTIESNorrbotten2 <- REGIONS %>%
-#   filter(county %in% "Norrbotten") %>%
-#   group_by(county) %>%
-#   summarize()
-# plot(st_geometry(COUNTIESNorrbotten))
-# plot(st_geometry(COUNTIESNorrbotten2),border="red",add=T)
-
+COUNTIESNorrbotten <- REGIONS %>%
+  filter(county %in% "Norrbotten") %>%
+  group_by(county) %>%
+  summarize()
 
 ##-- Check how many detections have been collected in Norrbotten overall
 is.Norr <- as.numeric(st_intersects(myFilteredData.sp$alive, COUNTIESNorrbotten))
@@ -874,8 +872,9 @@ table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSamp
                                       !is.na(is.Norr)), ]$Year) %>% sum()
 
 ##-- Subset NGS dataset
-myFilteredData.sp$alive <- myFilteredData.sp$alive[-which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
-                                                            !is.na(is.Norr)), ]
+myFilteredData.sp$alive <- myFilteredData.sp$alive %>%
+  filter(!(Year %in% yearsSampledNorrb & !is.na(is.Norr)))
+
 dim(myFilteredData.sp$alive)
 table(myFilteredData.sp$alive$Year)
 
@@ -1009,24 +1008,22 @@ HairTrapSamples <- readMostRecent(
   extension = ".xlsx",
   pattern = "hairtrap")
 
-##-- Collector column was replaced by two columns, merging them now...
-myFilteredData.sp$alive$Collector <- ifelse(
-  is.na(myFilteredData.sp$alive$Collector_other_role), 
-  myFilteredData.sp$alive$Collector_role, 
-  myFilteredData.sp$alive$Collector_other_role)
-table(myFilteredData.sp$alive$Collector, useNA = "always")
-
 ##-- Identify samples from structured and opportunistic sampling
 myFilteredData.sp$alive <- myFilteredData.sp$alive %>%
-  mutate( hairTrap = DNAID %in% HairTrapSamples$DNAID,
-          structured = Collector %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") & 
-            !is.na(trackID) &  
-            trackDist <= distanceThreshold )
+  mutate( 
+    ##-- Collector column was replaced by two columns, merging them now...
+    Collector_role <- ifelse(is.na(Collector_other_role), Collector_role, Collector_other_role),
+    ##-- Identify samples collected by hair traps
+    hairTrap = DNAID %in% HairTrapSamples$DNAID,
+    structured = Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") & 
+      !is.na(trackID) &  
+      trackDist <= distanceThreshold )
+table(myFilteredData.sp$alive$Collector, useNA = "always")
 table(myFilteredData.sp$alive$structured, useNA = "always")
 
 ##-- PLOT CHECK
 if(plot.check){
-  plot(REGIONS[REGIONS$county %in% "Norrbotten",]$geometry)
+  plot(REGIONS[REGIONS$county %in% "Norrbotten", ]$geometry)
   tmp <- myFilteredData.sp$alive %>%  filter(hairTrap)
   plot(tmp$geometry, add = T, col = "red", pch = 16)
   if(length(which(myFilteredData.sp$alive$DNAID[myFilteredData.sp$alive$structured] %in% HairTrapSamples$DNAID))>0){
@@ -1149,6 +1146,7 @@ myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery %>%
 # legal.death <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$DeathCause %in% legalCauses, ]
 # Other.death <- myFilteredData.sp$dead.recovery[!myFilteredData.sp$dead.recovery$DeathCause %in% legalCauses, ]
 
+
 ##-- PLOT CHECK
 if(plot.check){
   par(mfrow = c(1,3))
@@ -1223,8 +1221,6 @@ if(plot.check){
   legend("topright",c("N","S"), fill=country.colors)
   dev.off()
 }
-
-
 
 
 
@@ -1373,6 +1369,7 @@ if(plot.check){
           legend = c("detected","notDetected"))
   dev.off()
 }
+
 
 
 ##-----     1.3. GENERATE HABITAT-LEVEL COVARIATES ------
