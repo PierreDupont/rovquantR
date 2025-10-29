@@ -2,6 +2,9 @@
 ##
 ## Script name: RovQuant WOLVERINE OPSCR analysis 2025 
 ##
+## This R script reproduces the OPSCR analysis of the wolverine data as performed
+## by RovQuant in 2024 but with the 'rovquantR' package.
+##
 ## This R script performs:
 ##  1. Initial cleaning of the wolverine NGS data downloaded from RovBase.3.0
 ##  2. Data preparation for the OPSCR analysis with the 'nimbleSCR' package
@@ -357,8 +360,8 @@ DNA <- suppressWarnings(readMostRecent( path = data.dir,
     ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
     ##-- Set all months in given sampling period to the same year)
     Year = ifelse( Month < unlist(sampling.months)[1],
-                     Year-1,
-                     Year),
+                   Year-1,
+                   Year),
     ##-- Fix unknown "Id"
     Id = ifelse(Id %in% "", NA, Id),
     ##-- Fix unknown "Sex"
@@ -411,8 +414,8 @@ DR <- suppressWarnings(readMostRecent( path = data.dir,
     ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
     ##-- Set all months in given sampling period to the same year)
     Year = ifelse( Month < unlist(sampling.months)[1],
-                     Year-1,
-                     Year), 
+                   Year-1,
+                   Year), 
     ##-- Fix unknown "Id"
     Id = ifelse(Id %in% "", NA, Id),
     ##-- Fix unknown "Sex"
@@ -512,7 +515,7 @@ table(DATA$Sex)
 
 ##-- Turn into sf points dataframe
 DATA <- sf::st_as_sf( x = DATA,
-                       coords = c("East_UTM33","North_UTM33")) %>%
+                      coords = c("East_UTM33","North_UTM33")) %>%
   sf::st_set_crs(., sf::st_crs(32633)) 
 
 ##-- Remove all samples outside the polygon of interest (study area)
@@ -791,7 +794,7 @@ myStudyArea <- COUNTRIES %>%
 
 
 
-## ------  3. NGS DATA -----
+## ------   3. NGS DATA -----
 
 ##-- Extract date from the last cleaned data file
 DATE <- getMostRecent( 
@@ -1178,45 +1181,7 @@ if(plot.check){
 
 message("Preparing habitat characteristics... ")
 
-## ------     5.1. REDUCE THE AREA OF THE STATE-SPACE BASED ON DETECTIONS ------
-# 
-# # ##-- DELINEATE A BUFFER AROUND ALL DEADRECO
-# # ##-- [PD]: USELESS!
-# # BuffDead <- myFilteredData.sp$dead.recovery %>%
-# #   st_buffer(., dist = HABITAT$habBuffer) %>%
-# #   mutate(idd = 1) %>%
-# #   group_by(idd) %>%
-# #   summarize()
-# 
-# ##-- DELINEATE A BUFFER AROUND ALL NGS DETECTIONS 
-# myBufferedArea <- myFilteredData.sp$alive %>%
-#   st_buffer(., dist = buffer.size*1.4) %>%
-#   mutate(idd = 1) %>%
-#   group_by(idd) %>%
-#   summarize()
-# 
-# ##-- CUT TO SWEDISH AND NORWEGIAN BORDERS
-# myStudyArea <- st_intersection(myBufferedArea, myStudyArea) %>% 
-#   mutate(idd = 1) %>%
-#   group_by(idd) %>%
-#   summarize()
-# 
-# ##-- PLOT CHECK
-# if(plot.check){
-#   par(mar = c(0,0,0,0))
-#   plot( st_geometry(myStudyArea))
-#   plot( st_geometry(myFilteredData.sp$alive), 
-#         pch = 21, bg = "red", cex = 0.5, add = T)
-#   plot( st_geometry(myFilteredData.sp$dead.recovery),
-#         pch = 21, bg = "blue", cex = 0.5, add = T)
-#   #plot( st_geometry(BuffDead), add = T, border = "blue")
-#   plot( st_geometry(myBufferedArea), border = "red", add = T)
-#   plot( st_geometry(myStudyArea), border = "grey", add = T)
-# }
-
-
-
-## ------     1.2. GENERATE HABITAT CHARACTERISTICS ------
+## ------     1.1. GENERATE HABITAT CHARACTERISTICS ------
 
 ##-- Determine study area based on NGS detections
 ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
@@ -3244,25 +3209,26 @@ for(c in 1:4){
 ## ------   9. SAVE NECESSARY OBJECTS ------
 for(c in 1:4){
   
+  ## List NIMBLE inits
+  nimInits <- list(
+    "sxy" = sxy.init,
+    "dmean" = runif(1,0,10),
+    "z" = z.init,
+    "omeg1" = c(0.5,0.5),
+    "gamma" = runif(dim(y.alive)[3]-1,0,1),
+    "p01" = array(runif(18,0,0.2), c(nimConstants$n.counties,dim(y.alive)[3])),
+    "p01Oth" = array(runif(18,0,0.2), c(nimConstants$n.countries+1,dim(y.alive)[3])),
+    "sigma" = runif(n.years,1,4),
+    "betaDens" = runif(1,-0.1,0.1),
+    "betaCovs" = array( runif(dim(detCovs)[3],-0.1,0.1),c(dim(detCovsOth)[3],n.years)),
+    "betaCovsOth" = array( runif(dim(detCovsOth)[3],-0.1,0.1),c(dim(detCovsOth)[3],n.years)),
+    "betaResponseOth" = runif(dim(y.alive)[3], -0.1, 0.1),
+    "betaResponse" = runif(dim(y.alive)[3], -0.1, 0.1),
+    "detResponse" = InitsDetResponse,
+    "pResponse" = runif(1,0.4,0.5),
+    "phi" = runif(dim(y.alive)[3]-1,0.1,0.3)) 
   
-  nimInits <- list( "sxy" = sxy.init,
-                    "dmean" = runif(1,0,10),
-                    "z" = z.init,
-                    "omeg1" = c(0.5,0.5),
-                    "gamma" = runif(dim(y.alive)[3]-1,0,1),
-                    "p01" = array(runif(18,0,0.2), c(nimConstants$n.counties,dim(y.alive)[3])),
-                    "p01Oth" = array(runif(18,0,0.2), c(nimConstants$n.countries+1,dim(y.alive)[3])),
-                    "sigma" = runif(n.years,1,4),
-                    "betaDens" = runif(1,-0.1,0.1),
-                    "betaCovs" = array( runif(dim(detCovs)[3],-0.1,0.1),c(dim(detCovsOth)[3],n.years)),
-                    "betaCovsOth" = array( runif(dim(detCovsOth)[3],-0.1,0.1),c(dim(detCovsOth)[3],n.years)),
-                    "betaResponseOth" = runif(dim(y.alive)[3], -0.1, 0.1),
-                    "betaResponse" = runif(dim(y.alive)[3], -0.1, 0.1),
-                    "detResponse" = InitsDetResponse,
-                    "pResponse" = runif(1,0.4,0.5),
-                    "phi" = runif(dim(y.alive)[3]-1,0.1,0.3)) 
-  
-  ### TEST IF THE LESS RESTRICTION ON DETECTORS WILL WORK 
+  ## TEST IF THE LESS RESTRICTION ON DETECTORS WILL WORK 
   ## GET DETECTOR INDEX FROM THE HABITAT ID MATRIX
   idDEtected <- which(!rownames(z) %in%"Augmented")
   for(i in 1:length(idDEtected)){
@@ -3348,14 +3314,8 @@ for(c in 1:4){
 }#c
 myHabitat.list <- habitat
 myDetectors <- myDetectors
-COUNTRIES <- COUNTRIES
-COUNTIES <- COUNTIES
 myStudyArea.poly <- myStudyArea
-COMMUNES <- COMMUNES
-myFilteredData.sp <- myFilteredData.sp
-myFullData.sp <- myFullData.sp
-COUNTIES_AGGREGATED <- COUNTIES_AGGREGATED
-COUNTIES_AGGREGATEDSubset <- COUNTIES_AGGREGATEDSubset
+
 
 save( myHabitat.list,
       myDetectors,
