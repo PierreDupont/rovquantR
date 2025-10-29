@@ -456,15 +456,15 @@ DATA <- DATA %>%
 # [PD] This is useless
 # ##-- Reconstruct minimal & maximal ages
 # DATA$Age.orig <- DATA$Age
-# temp <- as.character(base::levels(DATA$Age.orig))    ## list age levels
-# temp <- toupper(temp)                          ## Upper case all
-# temp <- gsub("\\s", "", temp)                  ## Remove blank spaces
+# temp <- as.character(base::levels(DATA$Age.orig)) ## list age levels
+# temp <- toupper(temp)                         ## Upper case all
+# temp <- gsub("\\s", "", temp)                 ## Remove blank spaces
 # DATA$Age.orig2 <- DATA$Age.orig
 # levels(DATA$Age.orig2) <- temp
 # DATA <- merge( DATA, age.lookup.table[ ,-1],
 #                  by.x = "Age.orig2",
 #                  by.y = "age.label",
-#                  all.x = TRUE)                          ## Merge with info from lookup table
+#                  all.x = TRUE)                ## Merge with info from lookup table
 # 
 # ##-- Fill in the rest of the ages from numeric records
 # numeric.age.records <- which(!is.na(as.numeric(as.character(DATA$Age.orig2))) & !is.na(DATA$Age.orig2))
@@ -607,12 +607,12 @@ dead.recovery <- dead.recovery %>%
     weight = ifelse(is.na(weight), -999, weight))
 
 ## Check with Henrik
-## This step does not remove dead recoveries on id with weight==0 should it?
+## This step does not remove dead recoveries on id with weight == 0, should it?
 ##-- WEIGTH DISTRIBUTION
 par(mfrow = c(4,3))
 for(t in 1:12){
-  hist(dead.recovery$weight[(dead.recovery$weight >-1) &
-                              dead.recovery$Month%in% t],
+  hist(dead.recovery$weight[(dead.recovery$weight > -1) &
+                              dead.recovery$Month %in% t],
        breaks = 0:20,
        main = months[t],
        xlab = "Dead recovery Weight (kg)")
@@ -621,8 +621,8 @@ for(t in 1:12){
 ##-- AGE DISTRIBUTION
 par(mfrow = c(4,3))
 for(t in 1:12){
-  hist(dead.recovery$Age[(dead.recovery$Age >-1) &
-                           dead.recovery$Month%in% t],
+  hist(dead.recovery$Age[(dead.recovery$Age > -1) &
+                           dead.recovery$Month %in% t],
        breaks = 0:20,
        main = months[t],
        xlab = "Age at recovery")
@@ -684,9 +684,6 @@ dead.recovery$Country_sf[!is.na(as.numeric(sf::st_intersects(dead.recovery, COUN
 save( alive, 
       dead.recovery,
       file = file.path( working.dir, "data", fileName))
-
-rm(list = c("myFullData.sp"))
-
 
 
 ## END OF cleanRovBaseData() ------ 
@@ -892,6 +889,117 @@ table(myFilteredData.sp$alive$Year)
 
 
 ## ------     3.3. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
+### ====    3.1. GPS SEARCH TRACKS ====
+
+## LOAD GPS SEARCH TRACKS
+# TRACKS_SINGLE <- read_sf(file.path(data.dir,
+#                                    "GPS/eksport_rovquant_aktivitetslogg_20250908/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250908.shp"))
+# TRACKS_MULTI <- read_sf(file.path(data.dir,
+#                                   "GPS/eksport_rovquant_aktivitetslogg_20250908/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250908.shp"))
+TRACKS_SINGLE <- read_sf(file.path(data.dir,
+                                   "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp"))
+TRACKS_MULTI <- read_sf(file.path(data.dir,
+                                  "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))
+
+## COMBINE ALL TRACKS AND FIX DATES
+TRACKS <- rbind(TRACKS_SINGLE, TRACKS_MULTI) %>%
+  mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
+          Yr = as.numeric(format(Dato,"%Y")),
+          Mth = as.numeric(format(Dato,"%m")),
+          Dato = as.character(Dato),
+          Length = st_length(., byid = T),
+          Centroidx = st_coordinates(st_centroid(.))[ ,1]) %>%
+  dplyr::filter(
+    ## REMOVE HELICOPTER TRACKS
+    Helikopter == "0",
+    ## KEEP ONLY WOLVERINE TRACKS
+    Jerv == "1")
+
+
+## FIND DUPLICATES BASED ON PERSON, DISTANCE and DATE
+df <- data.frame( Dato = TRACKS$Dato,
+                  Person = TRACKS$Person,
+                  dist = TRACKS$Length,
+                  centroidx = TRACKS$Centroidx)
+dupIDs <- TRACKS$ID[duplicated(df)]
+dupLength <- TRACKS$Length[duplicated(df)]
+
+## STORE CLEAN TRACKS IN A LIST
+TRACKS <- TRACKS[-duplicated(df), ]
+
+
+# ## Check that we only have wolverine tracks
+# table(ALL_TRACKS$Jerv) == nrow(ALL_TRACKS)
+# ## Check
+# hist(ALL_TRACKS$Yr)
+# 
+# ## GET EXTENT
+# myStudyArea.extent <- st_bbox(extent(myStudyArea))
+# st_crs(myStudyArea.extent) <- st_crs(COUNTRIES)
+# 
+# ## [PD] ASP ADDED REMOVAL OF DUPLICATED TRACKS
+# dupIDs <- dupDist <- TRACKS_YEAR <- list()
+# for(t in 1:nYears){
+#   
+#   TRACKS <- ALL_TRACKS %>% 
+#     ## SUBSET GPS TRACKS TO THE SAMPLING PERIOD
+#     filter( Yr%in%YEARS[[t]][1] & Mth %in% myVars$DATA$samplingMonths[[1]] |
+#               Yr%in%YEARS[[t]][2] & Mth%in%myVars$DATA$samplingMonths[[2]]) %>%
+#     ## SUBSET TRACKS TO THE STUDY AREA
+#     st_intersection(., st_as_sfc(myStudyArea.extent)) 
+#   
+#   ## NAME TRACKS
+#   TRACKS$ID <- 1:nrow(TRACKS)
+#   ## CALCULATE LENGTH OF EACH TRACK TO IDENTIFY DUPLICATES
+#   TRACKS$dist <- st_length(TRACKS, byid = T)
+#   ## CALCULATE CENTROIDS TO AVOID KEEPING TRACKS WITH THE SAME LENGTHS BUT IN DIFFERENT LOCATIONS
+#   TRACKS$centroidx <- st_coordinates(st_centroid(TRACKS))[ ,1]
+#   
+#   ## FIND DUPLICATES BASED ON PERSON, DISTANCE and DATE
+#   df <- data.frame( Dato = TRACKS$Dato,
+#                     Person = TRACKS$Person,
+#                     dist = TRACKS$dist,
+#                     centroidx = TRACKS$centroidx)
+#   dupIDs[[t]] <- TRACKS$ID[duplicated(df)]
+#   dupDist[[t]] <- TRACKS$dist[duplicated(df)]
+#   
+#   ## STORE CLEAN TRACKS IN A LIST
+#   TRACKS_YEAR[[t]] <- TRACKS[-dupIDs[[t]], ]
+#   
+#   # try a fast way to identify duplicated tracks
+#   # turn to dataframe and identify them
+#   # sub_tracks_filter <- TRACKS_YEAR[[t]] %>%
+#   #   distinct(Dato, dist, .keep_all = T)
+#   # distinct(Person, Dato, dist, .keep_all = T)
+# }#t
+# 
+# ## PLOT CHECK
+# if(myVars$plot.check){
+#   
+#   par(mfrow = c(2,2))
+#   
+#   ## Length of tracks searched per year
+#   lengthPerYear <- unlist(lapply(TRACKS_YEAR,function(x) sum(x$dist)/1000))
+#   names(lengthPerYear) <- years
+#   barplot(lengthPerYear, ylab = "Track length (km)", main = "Length of tracks searched per year")
+#   
+#   ## Number of tracks searched per year
+#   numPerYear <- unlist(lapply(TRACKS_YEAR,function(x) length(unique(x$ID))))
+#   names(numPerYear) <- years
+#   barplot(numPerYear, ylab = "Number of tracks", main = "Number of tracks searched per year")
+#   
+#   ## Length of tracks duplicated per year
+#   dupdist <- unlist(lapply(dupDist,function(x) sum(x)/1000))
+#   names(dupdist) <- years
+#   barplot(dupdist,ylab = "Track length (km)", main = "Length of tracks duplicated per year")
+#   
+#   ## Number of tracks duplicated per year
+#   dup <- unlist(lapply(dupIDs,length))
+#   names(dup) <- years
+#   barplot(dup, ylab = "Number of tracks", main = "Number of tracks duplicated per year")
+# }
+
+
 
 ## ------       3.3.1. ASSIGN SAMPLES TO TRACKS ------
 
