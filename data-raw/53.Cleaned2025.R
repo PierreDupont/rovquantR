@@ -591,7 +591,7 @@ sum(is.Norr, na.rm = T)
 table(myFilteredData.sp$alive[which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
                                       !is.na(is.Norr)), ]$Year) %>% sum()
 
-## Remove samples in Norrbotten nin years not sampled
+## Remove samples in Norrbotten in years not sampled
 myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb &
                                                              !is.na(is.Norr)), ]
 dim(myFilteredData.sp$alive)

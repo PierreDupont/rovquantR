@@ -115,30 +115,21 @@ makeRovquantData_bear <- function(
   data(habitatRasters, envir = environment()) 
   data(GLOBALMAP, envir = environment()) 
   
-  
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
     x = habitatRasters[["Habitat"]],
     fact = raster::res(habitatRasters[["Habitat"]])/habitat.res)
   
   ##-- Merge Norwegian counties for practical reasons
-  COUNTIES$county[COUNTIES$county %in% c("Trøndelag",
-                                         "Nordland")] <- "Trøndelag"
-  
-  COUNTIES$county[COUNTIES$county %in% c("Troms",
-                                         "Finnmark")] <- "Finnmark"
-  
-  COUNTIES$county[COUNTIES$county %in% c( "Akershus","Agder",
-                                          "Buskerud",
-                                          "Innlandet", "Hordaland",
-                                          "Møre og Romsdal",
-                                          "Oslo", "Oppland",
-                                          "Rogaland",
-                                          "Vestland",
-                                          "Telemark",
-                                          "Vestfold",
-                                          "Østfold" )] <- "Innlandet"
   COUNTIES <- COUNTIES %>%
+    mutate(id = case_when(
+      county %in% c("Trøndelag", "Nordland") ~ "Trøndelag",
+      county %in% c("Troms", "Finnmark") ~ "Finnmark",
+      county %in% c("Akershus","Agder", "Buskerud",
+                    "Innlandet", "Hordaland",
+                    "Møre og Romsdal","Oslo", "Oppland",
+                    "Rogaland", "Vestland","Telemark",
+                    "Vestfold","Østfold") ~ "Innlandet")) %>%
     dplyr::filter( , county %in% c("Trøndelag","Innlandet","Finnmark")) %>%
     dplyr::group_by(county) %>%
     dplyr::summarise() 
