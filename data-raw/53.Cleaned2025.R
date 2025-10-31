@@ -318,6 +318,11 @@ for(t in 1:nYears){
   # distinct(Person, Dato, dist, .keep_all = T)
 }#t
 
+
+TRACK2 <- do.call(rbind,TRACKS_YEAR)
+dim(TRACKS2)
+
+
 ## PLOT CHECK
 if(myVars$plot.check){
   
@@ -604,8 +609,6 @@ for(t in 1:nYears){
   plot( st_geometry(myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t], ]),
         col = "red", add = T, pch = 16)
 }#t
-
-# myFilteredData.spAllSex <- myFilteredData.sp
 
 
 
@@ -894,7 +897,7 @@ dev.off()
 ## DELINEATE A BUFFER AROUND ALL DETECTIONS 
 myBufferedArea <- st_buffer( myFilteredData.sp$alive,
                              dist = myVars$HABITAT$habBuffer * 1.4) %>%
-  mutate(id = 1) %>%
+  mutate(idd = 1) %>%
   group_by(idd) %>% 
   summarize()
 
@@ -1251,10 +1254,13 @@ detRoads[isna] <- tmp
 
 if(myVars$plot.check){
   par(mfrow = c(1,1))
-  plot(st_geometry(GLOBALMAP), col = "gray80", main = "Distance to roads")
-  plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-  plot(DistAllRoads,add=T)
+  plot(st_geometry(GLOBALMAP),
+       col = "gray80", main = "Distance to roads")
+  plot(st_geometry(myStudyArea),
+       col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
+  plot(st_geometry(myBufferedArea),
+       col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
+  plot(DistAllRoads, add = T)
   plot(st_geometry(myDetectors$main.detector.sp), cex=DoScale(detRoads), pch = 16, add = T)
 }
 
@@ -1280,7 +1286,6 @@ if(myVars$plot.check){
 
 
 ### ====      3.2.6. EXTRACT PRESENCE OF OTHER SAMPLES ====
-
 ### ====        3.2.6.1. SKANDOBS ====
 
 ## GET TIME 
@@ -1303,9 +1308,9 @@ skandObs <- skandObs[subset,]
 habitat.rWthBufferPol <- sf::st_as_sf(stars::st_as_stars(myHabitat$habitat.rWthBuffer), 
                                       as_points = FALSE, merge = TRUE)
 habitat.rWthBufferPol <- habitat.rWthBufferPol[habitat.rWthBufferPol$Habitat %in%1,]
-
 subsetSpace <- !is.na(as.numeric(st_intersects(skandObs, habitat.rWthBufferPol)))
-skandObs <- skandObs[subsetSpace,] 
+skandObs <- skandObs[subsetSpace, ] 
+
 plot(st_geometry(habitat.rWthBufferPol))
 plot(st_geometry(skandObs), col = "red", add = T)
 
