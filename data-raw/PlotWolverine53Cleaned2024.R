@@ -123,21 +123,37 @@ COUNTIES <- COMMUNES %>%
   summarize()
 
 ##-- AGGREGATE COUNTIES (OPTIONAL)
-COUNTIES_AGGREGATE <- COUNTIES
-COUNTIES_AGGREGATE$id <- 1:nrow(COUNTIES_AGGREGATE)
-COUNTIES_AGGREGATE$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
-COUNTIES_AGGREGATE$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
-COUNTIES_AGGREGATE$id[c(19)] <- 1
-COUNTIES_AGGREGATE$id[c(35)] <- 2
-COUNTIES_AGGREGATE$id[c(17,28)] <- 5
-COUNTIES_AGGREGATE$id[c(18)] <- 7
-COUNTIES_AGGREGATE$id[c(30)] <- 6
-COUNTIES_AGGREGATE <- COUNTIES_AGGREGATE %>% 
-  group_by(id) %>%
-  summarize()
+# COUNTIES_AGGREGATED <- COUNTIES
+# COUNTIES_AGGREGATED$id <- 1:nrow(COUNTIES_AGGREGATED)
+# COUNTIES_AGGREGATED$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
+# COUNTIES_AGGREGATED$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
+# COUNTIES_AGGREGATED$id[c(19)] <- 1
+# COUNTIES_AGGREGATED$id[c(35)] <- 2
+# COUNTIES_AGGREGATED$id[c(17,28)] <- 5
+# COUNTIES_AGGREGATED$id[c(18)] <- 7
+# COUNTIES_AGGREGATED$id[c(30)] <- 6
+# COUNTIES_AGGREGATED <- COUNTIES_AGGREGATED %>% 
+#   group_by(id) %>%
+#   summarize()
+COUNTIES_AGGREGATED <- REGIONS %>%
+  mutate(id = case_when(
+    county %in% c("Norrbotten") ~ 1,
+    county %in% c("Västerbotten") ~ 2,
+    county %in% c("Blekinge","Dalarna","Gävleborg","Gotland","Halland","Jämtland",
+                  "Jönköping","Kalmar","Kronoberg","Örebro","Östergötland","Skåne",
+                  "Södermanland","Stockholm","Uppsala","Värmland","Västernorrland",
+                  "Västmanland","Västra Götaland") ~ 3,
+    county %in% c("Agder","Akershus","Buskerud","Innlandet","Møre og Romsdal",
+                  "Oppland","Oslo","Østfold","Rogaland","Vestland","Telemark",
+                  "Vestfold") ~ 4,
+    county %in% c("Trøndelag") ~ 5,
+    county %in% c("Finnmark") ~ 6,
+    county %in% c("Nordland") ~ 7,
+    county %in% c("Troms") ~ 8)) %>%
+  st_simplify( COUNTIES_AGGREGATED,
+               preserveTopology = T,
+               dTolerance = 500)
 
-COUNTIES_AGGREGATED <- st_simplify(COUNTIES_AGGREGATE,preserveTopology = T,dTolerance = 500)
-COUNTIES_AGGREGATED$id <- COUNTIES_AGGREGATE$id
 ggplot(COUNTIES_AGGREGATED) +
   geom_sf(aes(fill = id)) +
   geom_sf_label(aes(label = id))
@@ -172,8 +188,7 @@ rm(list = c("nimData"))
    
 
 ##------------------------------------------------------------------------------
-
-## ------ II. SUMMARY TABLES OF NGS SAMPLES, DEAD RECOVERIES & IDs DETECTED ------
+## ------ II. INPUT SUMMARY ------
 
 ## ------   1. OVERALL NUMBERS ------
 
@@ -737,6 +752,165 @@ n.detected <- n.detected[1,2:ncol(n.detected)]
 
 
 
+## ------   7. EXTRACTION REGIONS MAP ------
+
+##-- only select Norwegian counties
+COMMUNESNOR <- COMMUNES[COMMUNES$NAME_0 == "Norway", ]
+NORWAY <- aggregate(x = COMMUNESNOR, by = "NAME_1")
+plot(NORWAY)
+NAME_1 <- as.character(NORWAY$NAME_1)
+df.CountiesRegions <- matrix(c(
+  "Finnmark",         8,
+  "Troms",            8,
+  "Nordland",         7,
+  NAME_1[15],         6,
+  NAME_1[9],          6,
+  NAME_1[8],          6,
+  "Hedmark",          5,
+  "Oppland",          3,
+  NAME_1[2],          4,
+  "Oslo",             4,
+  "Akershus",         4,
+  "Sogn og Fjordane", 1,
+  "Hordaland",        1,
+  "Rogaland",         1,
+  "Vest-Agder",       1,
+  "Aust-Agder",       2,
+  "Telemark",         2,
+  "Buskerud",         2,
+  "Vestfold",         2),
+  byrow = T, ncol = 2)
+
+NORWAY$NAME_1 <- as.character(NORWAY$NAME_1) 
+for(i in 1:nrow(df.CountiesRegions)){
+  NORWAY$NAME_1[NORWAY$NAME_1 %in% df.CountiesRegions[i,1]] <- df.CountiesRegions[i,2]
+}
+NORWAY1 <- aggregate(NORWAY,by="NAME_1")
+plot(NORWAY1)
+
+##-- RENAME THE FIELDS SO THEY MATCH BETWEEN NORWEGIAN AND SWEDISH LAYERS
+NewCountySwe <- NewCountySwe[,"LANSNAMN"]
+colnames(NewCountySwe@data) <- "NAME_1"
+NewCountySwe$Country <- "SWE"
+NORWAY1$Country <- "NOR"
+
+# MERGE THE 2 LAYERS.
+# THERE IS SOME SPACE BETWEEN THE TWO LAYERS, BUT IT DOESNT MATTER. 
+# IF A CELL IS NOT ASSIGNED TO ANY COUNTY THEN WE ASSIGN IT THE CLOSEST COUNTY BELOW. 
+COUNTIESsimp <- rbind(NORWAY1,NewCountySwe)#, NewCountySwe, makeUniqueIDs = TRUE) 
+
+country.colors <- c("firebrick2","deepskyblue2")#c("turquoise","darkmagenta")# c("goldenrod1","goldenrod3")
+col <- c("firebrick2", "deepskyblue2")#c("turquoise","darkmagenta")# c("goldenrod1","goldenrod3")
+names(country.colors) <- c("Norway", "Sweden")
+border.col <- NA
+
+pdf(file = file.path(WDTables, "RegionMaps.pdf"),
+    width = 9, height = 13, pointsize = 12)
+par(mar=c(0,0,0,0))
+plot(gSimplify(COUNTIESsimp, tol=5000), col=NA, border=NA)
+
+##-- NORWAY
+CARNIVORE.REGIONS <- COUNTIESsimp[COUNTIESsimp$Country%in% "NOR",]
+CARNIVORE.REGIONS1 <- gSimplify(CARNIVORE.REGIONS, tol=200, topologyPreserve = T)
+CARNIVORE.REGIONS1$Region <- CARNIVORE.REGIONS$NAME_1
+# region <- gUnaryUnion(CARNIVORE.REGIONS1, id = CARNIVORE.REGIONS1$Region)
+region <- gSimplify(NORWAY1, tol=500)
+
+#---SPECIFY COLOR PALETTE
+this.col <- sequential_hcl(1+length(unique(NORWAY1$NAME_1)), "Reds 3")
+this.col <- this.col[-length(this.col)]
+set.seed(100)
+this.col <- sample(this.col)
+plot(region,add=T, col=this.col, border=border.col, lwd=1)
+
+
+##-- SWEDEN
+NewCountySwe$NAME_1 <- as.character(NewCountySwe$NAME_1)
+NewCountySwe1 <- gSimplify(NewCountySwe, tol = 200, topologyPreserve = T)
+swedenCounties2 <- NewCountySwe1
+swedenCounties2$NAME_1 <- as.character(NewCountySwe$NAME_1)
+##-- Remove Gotland
+swedenCounties2 <- swedenCounties2[!(swedenCounties2$NAME_1%in% "Gotlands lÃ¤n"), ]
+
+##-- SPECIFY COLOR PALETTE
+this.col <- sequential_hcl(25+length(unique(swedenCounties2$NAME_1)), "Blues 3")
+this.col <- this.col[1:length(unique(swedenCounties2$NAME_1))]
+set.seed(100)
+this.col <- sample(this.col)
+
+##-- Plot
+plot( RemoveHolesSp(swedenCounties2),
+      add = T, col = this.col, border = border.col, lwd = 1)
+
+##-- Add Norwegian county names labels
+CARNIVORE.REGIONS2 <- aggregate(CARNIVORE.REGIONS1, by = "Region")
+raster::text( NORWAY1,
+              labels = NORWAY1$NAME_1,
+              cex = 1.3,
+              col = ifelse(NORWAY1$NAME_1 %in% c(5), grey(0.7), grey(0)))
+
+##-- Fix county names in Sweden
+swedenCounties2$NAME_1 <- as.character(unlist(lapply( strsplit(swedenCounties2$NAME_1, " "),
+                                                      function(x) x[1])))
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="GÃ¤vleborgs"] <- "Gävleborg"
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤rmlands"] <- "Värmland"
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Ã–stergÃ¶tlands"] <- "Östergötland"
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="JÃ¤mtlands"] <- "Jämtland"
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="JÃ¶nkÃ¶pings"] <- "Jönköping" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="SkÃ¥ne"] <- "Skåne" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤stmanlands"] <- "Västmanland" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤stra"] <- "Västra Götaland" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤sternorrlands"] <- "Västernorrland" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤sterbottens"] <- "Västerbotten" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="SÃ¶dermanlands"] <- "Södermanland" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Ã–rebro"] <- "Örebro" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Norrbottens"] <- "Norrbotten" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Hallands"] <- "Halland" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Kronobergs"] <- "Kronoberg" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Stockholms"] <- "Stockholm" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Dalarnas"] <- "Dalarna" 
+swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Dalarnas"] <- "Dalarna" 
+
+##-- Fix management region names in Sweden
+swedenCounties2$Region <- c("Mellersta",
+                            "Södra",
+                            "Södra",
+                            "Södra",
+                            "Södra",
+                            "Södra",
+                            "Södra",
+                            "Södra",
+                            "Södra",
+                            "Mellersta",
+                            "Mellersta",
+                            "Mellersta",
+                            "Mellersta",
+                            "Mellersta",
+                            "Mellersta",
+                            "Norra",
+                            "Norra",
+                            "Norra",
+                            "Norra",
+                            "Norra",
+                            "Mellersta")
+swedenCounties2Regions <- aggregate(swedenCounties2, by = "Region")
+##-- Plot Swedish management region borders
+plot( RemoveHolesSp(swedenCounties2Regions),
+      add = T, border = grey(0.0), lwd = 3)
+
+##-- Add Swedish county names labels
+polygonsLabel( swedenCounties2,
+               swedenCounties2$NAME_1,
+               method = "buffer",
+               cex = 1.1,
+               col = ifelse( swedenCounties2$NAME_1%in%c("Jämtland"),
+                             grey(0.7), grey(0.7)))
+dev.off()
+
+
+
+
+
 ##------------------------------------------------------------------------------
 
 ## ------ III. PROCESS MODEL OUTPUTS -----
@@ -1245,6 +1419,7 @@ if(mcmcTest){
   save( results_F, results_M, resultsSXYZ_MF,
         file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
 }
+##------------------------------------------------------------------------------
 ## ------   2. EXTRACT DENSITY (5km) ------
 
 ##-- WHAT STATES ARE CONSIDERED AS ALIVE IN THE MODEL
@@ -1256,7 +1431,7 @@ yearsNotSampled <- which(!years %in% yearsSampledNorrb)
 
 
 
-## ------   2. AC BASED DENSITY (5km) ------
+## ------     2.1. AC BASED DENSITY (5km) ------
 
 ##-- REMOVE THE BUFFER FROM THE HABITAT 
 ##-- COUNTRIES 
@@ -1376,7 +1551,7 @@ densityInputRegionsNor <- getDensityInput(
 
 
 
-## ------     2.1. GET THE % OF REGIONS COVERED BY THE ANALYSIS ------
+## ------       2.1.1. GET THE % OF REGIONS COVERED BY THE ANALYSIS ------
 
 ## Percentage of each county included in the analysis
 ## GET THE PERCENTAGE FOR ALL REGIONS 
@@ -1429,7 +1604,7 @@ areaAllRegions <- c(areaCountry, areaRegionsSwe, areaRegions)
 
 
 
-## ------     2.2 MALE & FEMALES (5km) ------
+## ------       2.1.2 MALE & FEMALES (5km) ------
 
 ite <- seq(1,dim(densityInputCountries$sx[ , ,t])[1], by = 1)
  
@@ -1454,7 +1629,7 @@ save( DensityCountriesRegions,
 
 
 
-## ------     2.3. MALE (5km) ------
+## ------       2.1.3. MALE (5km) ------
 
 ##-- Identify Males
 IDMales <- which(myResultsSXYZ_MF$sims.list$sex == "M")
@@ -1480,7 +1655,7 @@ save( DensityCountriesRegionsM,
 
 
 
-## ------     2.4. FEMALE (5km) ------
+## ------       2.1.4. FEMALE (5km) ------
 
 ##-- Identify Females
 IDFemales <- which(myResultsSXYZ_MF$sims.list$sex == "F")
@@ -1506,7 +1681,7 @@ save( DensityCountriesRegionsF,
 
 
 
-## ------     2.5. COUNTIES NORWAY M & F (5km) ------
+## ------       2.1.5. COUNTIES NORWAY M & F (5km) ------
 
 DensityCountriesRegionsNOR <- list()
 for(t in 1:nYears){
@@ -1522,9 +1697,9 @@ for(t in 1:nYears){
 
 
 
-## ------     2.6. SUMMARY TABLES ------
+## ------       2.1.6. SUMMARY TABLES ------
 
-## ------       2.6.1. ALL YEARS, BOTH SEX ------
+## ------         2.1.6.1. ALL YEARS, BOTH SEX ------
 
 idcounty <- row.names(DensityCountriesRegions[[t]]$summary)
 
@@ -1639,7 +1814,7 @@ print( xtable( NCarRegionEstimates,
 
 
 
-## ------       2.6.2. LAST YEAR N PER SEX PER COUNTY ------
+## ------         2.1.6.2. LAST YEAR N PER SEX PER COUNTY ------
 
 NCountyEstimatesLastRegions <- matrix("", ncol=3, nrow=length(idcountyTable))
 row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
@@ -1722,7 +1897,7 @@ print(xtable( NCountyEstimatesLastRegions,
 
 
 
-## ------       2.6.2. LAST YEAR N PER SEX PER COUNTY WITH PROPORTION OF AREA COVERED ------
+## ------         2.1.6.2. LAST YEAR N PER SEX PER COUNTY WITH PROPORTION OF AREA COVERED ------
 
 NCountyEstimatesLastRegions <- matrix("", ncol=4, nrow=length(idcountyTable))
 row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
@@ -1813,7 +1988,7 @@ print(xtable(NCountyEstimatesLastRegions, type = "latex",
 
 
 
-## ------       2.6.3. MAKE A TABLE 2 last years  ------
+## ------         2.1.6.3. MAKE A TABLE 2 last years  ------
 NCountyEstimatesLast2Regions <- matrix("", ncol=6, nrow=length(idcountyTable))
 row.names(NCountyEstimatesLast2Regions) <- c(idcountyTable)
 colnames(NCountyEstimatesLast2Regions) <- c(paste("Females", years[nYears-1]),
@@ -1918,7 +2093,7 @@ print(xtable(NCountyEstimatesLast2Regions, type = "latex",
 
 
 
-## ------       2.6.4. ALL YEARS N PER SEX PER COUNTY  ------
+## ------         2.1.6.4. ALL YEARS N PER SEX PER COUNTY  ------
 
 NCountyEstimatesAllSexRegions <- matrix("", ncol = nYears*3, nrow = length(idcountyTable)+1)
 row.names(NCountyEstimatesAllSexRegions) <- c("",idcountyTable)
@@ -1999,7 +2174,7 @@ write.csv( NCountyEstimatesAllSexRegions,
 
 
 
-## ------       2.6.5. ALL YEARS, BOTH SEX COUNTIES NORWAY ------
+## ------         2.1.6.5. ALL YEARS, BOTH SEX COUNTIES NORWAY ------
 
 idcounty <- row.names(DensityCountriesRegionsNOR[[t]]$summary)
 #REMOVE Finland, Norway, Russia, Sweden 
@@ -2116,9 +2291,9 @@ print(xtable(NCarRegionEstimatesNOR, type = "latex",align=paste(c("l",rep("c",nc
 
 
 
-## ------     2.7. PLOT ABUNDANCE TIME SERIES ------
-## ------       2.7.1. VIOLINS ------
-## ------         2.7.1.1. ALL YEARS ------
+## ------     2.2. PLOT ABUNDANCE TIME SERIES ------
+## ------       2.2.1. VIOLINS ------
+## ------         2.2.1.1. ALL YEARS ------
 SeasonText <- lapply(YEARS,FUN = function(x) paste(x,collapse = "/"))
 
 #define colors
@@ -2224,7 +2399,7 @@ legend(x = 1, y = 200,
 
 dev.off()
 
-## ------         2.7.1.2. LAST YEAR ------
+## ------         2.2.1.2. LAST YEAR ------
 pdf(file= file.path(WDFigures , paste("NCountriesViolinsLastYear.pdf", sep="")), width = 12, height = 8)
 
 par(mar = c(5,8,3,1),las=1, cex.lab=2, cex.axis=1.8, mgp=c(6, 2, 0), xaxs="i", yaxs="i")
@@ -2317,8 +2492,8 @@ legend(x = nYears+0.01, y = 200,
 dev.off()
 
 
-## ------       2.7.2. BARS ------
-## ------         2.7.2.1. ALL YEARS ------
+## ------       2.2.2. BARS ------
+## ------         2.2.2.1. ALL YEARS ------
 SeasonText <- lapply(YEARS, FUN = function(x) paste(x, collapse ="/")) #paste(x[[2]]))
 
 SeasonText <- lapply(YEARS, FUN = function(x) x[2]) #paste(x[[2]]))
@@ -2486,7 +2661,7 @@ dev.off()
 
 
 
-## ------         2.7.2.2. ALL YEARS SEX ------
+## ------         2.2.2.2. ALL YEARS SEX ------
 SeasonText <- lapply(YEARS, FUN = function(x) paste(x, collapse ="/")) #paste(x[[2]]))
 
 SeasonText <- lapply(YEARS, FUN = function(x) x[2]) #paste(x[[2]]))
@@ -2777,7 +2952,7 @@ dev.off()
 
 
 
-## ------         2.7.1.3. LAST YEAR ------
+## ------         2.2.1.3. LAST YEAR ------
 pdf(file= file.path(WDFigures , paste("NCountriesBarsLastYear.pdf", sep="")), width = 12, height = 8)
 plot(-1000, xlim=c(nYears-0.1, nYears+0.1), ylim=c(0,1300),
      xlab="", ylab = paste("Estimated number of wolves"), xaxt="n")
@@ -2883,7 +3058,8 @@ legend(x = 1, y = 200,
 
 dev.off()
 
-## ------         2.7.1.4. COMPARE WITH OTHER REPORTS ------
+## ------         2.2.1.4. COMPARE WITH OTHER REPORTS ------
+
 # #INITIALIZE THE OBJECTS
 # TOTSWE <- TOTNOR <- TOT <- list()
 # TOTNORCIL <- TOTNORCIH <- list()
@@ -2897,17 +3073,8 @@ dev.off()
 #   #1,10,"34.F_2022","Snap","WolfRuns20142023","2022",
 #   # 1,10,"35.F_2022","","WolfRuns20122022","2022",
 #   1,10,"Plot53Cleaned","","2023","2023",
-#   2,11,"Plot53Cleaned","","2024","2024"
-#   
-#   
-# ),nrow=2,byrow =T
+#   2,11,"Plot53Cleaned","","2024","2024"),nrow=2,byrow =T)
 # 
-# )
-# 
-# 
-# 
-# xx=1
-# # 
 # #loop through the model results
 # for(xx in 1:nrow(yearsEnd)){
 #   modelName <- paste(yearsEnd[xx,3],yearsEnd[xx,4],sep="")
@@ -2939,14 +3106,11 @@ dev.off()
 #   TOTCIL[[xx]] <- unlist(lapply(strsplit(CI ,split = "-"), function(x) as.numeric(x[1])))
 #   TOTCIH[[xx]] <- unlist(lapply(strsplit(CI ,split = "-"), function(x) as.numeric(x[2])))
 #   
-#   
-#   ##SWEDEN
+#   ## SWEDEN
 #   LSWE <- grep("SWEDEN", L, value = TRUE)
 #   LSWE <- gsub("  \\\\hspace", "", LSWE)
 #   LSWE <- gsub("  \\\\rowcolor", "", LSWE)
 #   LSWE <- gsub("\\\\hspace", "", LSWE)
-#   
-#   
 #   
 #   DFSWE <- read.table(text = LSWE, sep = "&", header = F,
 #                       strip.white = TRUE, check.names = FALSE, comment.char = "\\")
@@ -2966,9 +3130,8 @@ dev.off()
 #   TOTSWECIH[[xx]] <- unlist(lapply(strsplit(CI ,split = "-"), function(x) as.numeric(x[2])))
 #   
 #   
-#   ##NORWAY
+#   ## NORWAY
 #   LNOR <- grep("NORWAY", L, value = TRUE)
-#   
 #   LNOR <- gsub("  \\\\rowcolor", "", LNOR)
 #   LNOR <- gsub("\\\\hspace", "", LNOR)
 #   LSWE <- gsub("\\\\hspace", "", LSWE)
@@ -2976,7 +3139,6 @@ dev.off()
 #   DFNOR <- read.table(text = LNOR, sep = "&", header = F,
 #                       strip.white = TRUE, check.names = FALSE, comment.char = "\\")
 #   DFNOR[,1]
-#   
 #   
 #   TOTNOR[[xx]] <- as.numeric(unlist(lapply(2:ncol(DFNOR), function(x){
 #     strsplit(DFNOR[,x],split = " ")[[1]][1]
@@ -2993,14 +3155,18 @@ dev.off()
 #   TOTNORCIH[[xx]] <- unlist(lapply(strsplit(CI ,split = "-"), function(x) as.numeric(x[2])))
 #   # xx <- count +1
 # }
-## ------       2.7.3. MAPS ------
+
+
+
+## ------       2.2.3. MAPS ------
+
 habbdensCropped <- list()
 max <- max(unlist(lapply(DensityCountriesRegions, function(x) max(x$MeanCell))))
 cuts <- seq(0,max,length.out = 100)   #set breaks
 col <- rev(terrain.colors(100))
 
 #PLOT
-pdf(file=file.path(WDFigures , paste("DensityMapsAC5kms.pdf",sep="")))
+pdf(file=file.path(WDFigures, "DensityMapsAC5kms.pdf"))
 for(t in 1: nYears){
   habbdens <- densityInputRegions$regions.r
   habbdens[] <- NA
@@ -3021,7 +3187,7 @@ for(t in 1: nYears){
 }
 dev.off()
 
-## ------   3. UD BASED DENSITY  (5km) ------
+## ------     2.3. UD BASED DENSITY (5km) ------
 ### IDENTIFY PROXIMITY HABITAT CELLS 
 habitatMask <- densityInputCountries$habitat.id
 habitatMask[!is.na(habitatMask)] <- 1 
@@ -3091,7 +3257,7 @@ iter <- sample(1:dim(densityInputCountries$sy)[1], size = 1000)#dim(densityInput
 # save(spaceUSED, file = file.path(WDFigures , "spaceUsed5km.RData" ))
 load(file = file.path(WDFigures , "spaceUsed5km.RData" ))
 
-## ------     3.1. PLOT TIME SERIES ------
+## ------       2.3.1. PLOT TIME SERIES ------
 #### PLOT TIME SERIES 
 ## PREPARE THE FILES 
 #SeasonText <- lapply(YEARS,FUN = function(x) paste(x,collapse = "/"))
@@ -3216,7 +3382,7 @@ for(t in 1:length(years)){
 }
 dev.off()
 
-## ------     3.2. PLOT LAST 2 YEARS ------
+## ------       2.3.2. PLOT LAST 2 YEARS ------
 ## PLOT LAST 2 YEARS  
 pdf(file=file.path(WDFigures , paste("DensityMapsUDLast2Years.pdf",sep="")), 
     width = 8, height = 8)
@@ -3273,7 +3439,7 @@ for(t in (length(years)-1):length(years)){
 dev.off()
 
 
-## ------     3.3. PLOT LAST YEAR ------
+## ------       2.3.3. PLOT LAST YEAR ------
 ## PLOT LAST  YEAR  
 pdf(file=file.path(WDFigures , paste("DensityMapsUDLastYear.pdf",sep="")), 
     width = 8, height = 8)
@@ -3336,7 +3502,7 @@ for(t in length(years)){
 dev.off()
 
 
-## ------     3.4. PLOT LAST YEAR SUMMARY ------
+## ------       2.3.4. PLOT LAST YEAR SUMMARY ------
 ## PLOT LAST  YEAR  
 pdf(file=file.path(WDFigures , paste("DensityMapsUDLastYearSummary.pdf",sep="")), 
     width = 8, height = 8)
@@ -3402,7 +3568,7 @@ dev.off()
 
 
 
-## ------     3.5. PLOT LAST YEAR SUMMARY NO ------
+## ------       2.3.5. PLOT LAST YEAR SUMMARY NO ------
 ## PLOT LAST  YEAR  
 pdf(file=file.path(WDFigures , paste("DensityMapsUDLastYearSummaryNO.pdf",sep="")), 
     width = 8, height = 8)
@@ -3469,7 +3635,7 @@ dev.off()
 
 
 
-## ------     3.6. WRITE UD 5km RASTER FOR ROVBASE ------
+## ------       2.3.6. WRITE UD 5km RASTER FOR ROVBASE ------
 if(!dir.exists(file.path(WDFigures , "RasterForRovbase"))){dir.create(file.path(WDFigures , "RasterForRovbase"))}
 
 for(t in 1:length(years)){
@@ -3481,8 +3647,8 @@ for(t in 1:length(years)){
 }
 
 
-## ------   4. DERIVED PARAMETERS FROM ABUNDANCE ------ 
-## ------     4.1. MAKE A GROWTH RATE TABLE PER COUNTRY  ------
+## ------   3. DERIVED PARAMETERS FROM ABUNDANCE ------ 
+## ------     3.1. MAKE A GROWTH RATE TABLE PER COUNTRY  ------
 growthRate <- matrix(0, ncol=nYears-1,nrow=3)
 row.names(growthRate) <- c("Norway","Sweden","Total")
 colnames(growthRate) <- unlist(lapply(YEARS[2:(length(YEARS))],function(x) paste(x,collapse =  "-")))
@@ -3537,7 +3703,7 @@ print(xtable(growthRate, type = "latex", align=paste(c("l", rep("c",ncol(growthR
 
 
 colSums(DensityCountriesRegions[[t+1]]$PosteriorRegions[c("Sweden","Norway"),])
-## ------     4.2. DERIVE SEX RATIO  ------
+## ------     3.2. DERIVE SEX RATIO  ------
 PropFemale <- PropFemaleSWE <- PropFemaleNOR <- list()
 
 for(t in 1:nYears){
@@ -3594,7 +3760,7 @@ print(xtable(propFemale_tab, type = "latex", align=paste(c("l", rep("c",ncol(pro
       file = file.path(WDTables, paste("propFemale.tex", sep="")))
 
 
-## ------     4.3. DERIVE DENSITY  ------
+## ------     3.3. DERIVE DENSITY  ------
 habbRCarRegionsTRY <- rrCountries
 habbRCarRegionsTRY[!is.na(habbRCarRegionsTRY[])] <-1 
 habbRCarRegionsTRY[] <- as.numeric(habbRCarRegionsTRY[])
@@ -3614,7 +3780,7 @@ DensityCountriesRegions[[t]]$summary["Total","95%CILow"]/areaSqKm*100
 DensityCountriesRegions[[t]]$summary["Total","95%CIHigh"]/areaSqKm*100
 
 ###COULD REMAKE ALL THE TABLES WITH DENSITY INSTEAD OF ABUNDANCE....
-## ------     4.4.  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED ------
+## ------     3.4.  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED ------
 n.detectedTotal <- read.csv(file.path(WDTables, paste("TotalIdDetected.csv", sep="")))
 n.detectedTotal <- as.vector(n.detectedTotal[1, 2:ncol(n.detectedTotal)])
 
@@ -3656,7 +3822,7 @@ print(xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDe
 
 
 
-## ------     4.5.  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED PER COUNTRIES  ------
+## ------     3.5.  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED PER COUNTRIES  ------
 n.detectedCountry <- read.csv(file.path(WDTables, paste("NGSidCountrySEX.csv", sep="")))
 colnames(n.detectedCountry) <- c("",unlist(lapply(YEARS,function(x) c(x[2],x[2])))) 
 #propDetected <- matrix("", ncol=nYears,nrow=3)
@@ -3788,12 +3954,12 @@ print(xtable(propDetectedCountry2, type = "latex",
 
 
 
-## ------   5. VITAL RATES  ------
+## ------   4. VITAL RATES  ------
 widthPolygon <- 0.15
 widthPolygon1 <- 0.15
 widthPolygon2 <- 0.15
 
-## ------     5.1. SURVIVAL BARS  ------
+## ------     4.1. SURVIVAL BARS  ------
 pdf(file=file.path(WDFigures , paste("SurvivalBars.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
@@ -3861,7 +4027,7 @@ for(i in 1:2){
 
 dev.off()
 
-## ------     5.2. MORTALITY BARS  ------
+## ------     4.2. MORTALITY BARS  ------
 # pdf(file=file.path(WDFigures , paste("Mortality.pdf",sep="")),width=10,height=8)
 # 
 # nf <- layout(cbind(c(3,4,5),c(7,1,2),c(9,8,6)),widths=c(0.15,1,0.35),heights=c(0.15,1,1))
@@ -4092,8 +4258,8 @@ for(i in 1:2){
 }
 dev.off()
 
-## ------     5.3. PER CAPITA RECRUITMENT  ------
-## ------       5.3.1. PLOT NUMBER OF RECRUITS + PER CAPITA RECRUITMENT ------
+## ------     4.3. PER CAPITA RECRUITMENT  ------
+## ------       4.3.1. PLOT NUMBER OF RECRUITS + PER CAPITA RECRUITMENT ------
 pdf(file=file.path(WDFigures , paste("NbRecruitsPerCapita.pdf",sep="")),width=10,height=8)
 
 nf <- layout(rbind(c(3,5,6,7),
@@ -4159,7 +4325,7 @@ plot(1,axes=FALSE,ylim=c(-1,1),xlim=c(-1,1),type="n")
 
 dev.off()
 
-## ------       5.3.2. PLOT NUMBER OF RECRUITS  ------
+## ------       4.3.2. PLOT NUMBER OF RECRUITS  ------
 pdf(file=file.path(WDFigures , paste("Recruitment.pdf",sep="")),width=8,height=4)
 widthPolygon <- 0.15
 
@@ -4258,7 +4424,7 @@ for(i in 1:2){
 dev.off()
 
 
-## ------     5.4. SUMMARY DEMOGRAPHIC RATES ------
+## ------     4.4. SUMMARY DEMOGRAPHIC RATES ------
 parameters <- c("gamma","phi","h","w")
 sex <- c("M", "F")
 TableState <- matrix(NA, nrow=length(parameters)+1, ncol=(nYears)*2-2)
@@ -4385,9 +4551,9 @@ print(xtable(TableState2, type = "latex",
 
 
 
-## ------   6. P0.  ------
+## ------   5. P0.  ------
 widthPolygon <- 0.15
-## ------     6.1. BARS ------
+## ------     5.1. BARS ------
 pdf(file=file.path(WDFigures , paste("DetectionProbBars.pdf",sep="")),width=8,height=10)
 # mx <- matrix(1:24,12,2,byrow = TRUE)
 mx <- matrix(c(1,2,5,6,9,10,13,14),4,2,byrow = T)
@@ -4513,7 +4679,7 @@ dev.off()
 
 
 
-## ------     6.1. BARS Other ------
+## ------     5.1. BARS Other ------
 pdf(file=file.path(WDFigures , paste("DetectionProbBarsOther.pdf",sep="")),width=8,height=8)
 # mx <- matrix(1:24,12,2,byrow = TRUE)
 mx <- matrix(1:4,2,2,byrow = TRUE)
@@ -4618,7 +4784,7 @@ dev.off()
 
 
 
-## ------     6.2. MAPS ------
+## ------     5.2. MAPS ------
 # t=7
 # #plot(myHabitat.listM$habitat.r)
 # # pairs<- 2
@@ -4652,7 +4818,7 @@ dev.off()
 # dev.off()
 # # nimDataF$detTracks
 # 
-## ------     6.3. TABLE ------
+## ------     5.3. TABLE ------
 CountiesID <- 1:dim(myResults_F$sims.list$p0)[2]
 state <- c( "Others","Scent-marking adult")
 sex <- c("M", "F")
@@ -4692,9 +4858,9 @@ write.csv(Tablep0, file=file.path(WDFigures , paste("Tablep0.csv",sep="")))
 
 
 
-## ------   7. BETA P0S ------
-## ------     7.1. P0STRUCTURED ------
-## ------       7.1.1. BETATRACKS ------
+## ------   6. BETA P0S ------
+## ------     6.1. P0STRUCTURED ------
+## ------       6.1.1. BETA TRACKS ------
 pdf(file=file.path(WDFigures , paste("Betap0StructuredTracks.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
@@ -4758,7 +4924,7 @@ for(i in 1:2){
 dev.off()
 
 
-## ------       7.1.2. BETA SNOW ------
+## ------       6.1.2. BETA SNOW ------
 pdf(file=file.path(WDFigures , paste("Betap0StructuredSnow.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
@@ -4823,7 +4989,7 @@ dev.off()
 
 
 
-## ------       7.1.3. BETA RESPONSE ------
+## ------       6.1.3. BETA RESPONSE ------
 pdf(file=file.path(WDFigures , paste("Betap0StructuredResponse.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
@@ -4889,8 +5055,8 @@ dev.off()
 
 
 
-## ------     7.2. P0OTHER ------
-## ------       7.2.1. BETASNOW ------
+## ------     6.2. P0OTHER ------
+## ------       6.2.1. BETA SNOW ------
 pdf(file=file.path(WDFigures , paste("Betap0OtherSnow.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
@@ -4954,7 +5120,7 @@ for(i in 1:2){
 dev.off()
 
 
-## ------       7.2.2. BETA ROADS ------
+## ------       6.2.2. BETA ROADS ------
 pdf(file=file.path(WDFigures , paste("Betap0OtherRoads.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
@@ -5019,7 +5185,7 @@ dev.off()
 
 
 
-## ------       7.2.3. BETA SKANDOBS ------
+## ------       6.2.3. BETA SKANDOBS ------
 pdf(file=file.path(WDFigures , paste("Betap0OtherSkandobs.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
@@ -5085,7 +5251,7 @@ dev.off()
 
 
 
-## ------       7.2.4. BETA RESPONSE ------
+## ------       6.2.4. BETA RESPONSE ------
 pdf(file=file.path(WDFigures , paste("Betap0OtherResponse.pdf",sep="")),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
@@ -5151,8 +5317,8 @@ dev.off()
 
 
 
-## ------   8. TABLE OTHERS  ------
-## ------     8.1. TABLE DENSITY & MOVEMENT OPSCR ------
+## ------   7. TABLE OTHERS  ------
+## ------     7.1. TABLE DENSITY & MOVEMENT OPSCR ------
 parameters <- c("betaDens","sigma","dmean")#,"betaResponse", "betaTracks","betaRoads", "betaSnow")
 parameters1 <- c("$\\beta_{dens}^*$","$\\sigma$","$\\lambda^*$")#,"$\\beta_1$", "$\\beta_2$", "$\\beta_3$","$\\beta_4$")
 
@@ -5268,7 +5434,7 @@ print(xtable(TableDensityMovementSCR2, type = "latex",
 
 
 
-## ------     8.2. TABLE PARAMETERS STRUCTURED ------
+## ------     7.2. TABLE PARAMETERS STRUCTURED ------
 parameters <- c("betaResponse","betaCovs","betaCovs")#,"betaResponse", "betaTracks","betaRoads", "betaSnow")
 parameters1 <- c("$\\beta_{1_Structured}$","$\\beta_{2_Structured}$","$\\beta_{3_Structured}$")#,"$\\beta_1$", "$\\beta_2$", "$\\beta_3$","$\\beta_4$")
 
@@ -5373,7 +5539,7 @@ print(xtable(TableStructured2, type = "latex",
 
 
 
-## ------     8.3. TABLE PARAMETERS OTHERS ------
+## ------     7.3. TABLE PARAMETERS OTHERS ------
 parameters <- c("betaResponseOth","betaCovsOth","betaCovsOth","betaCovsOth")#,"betaResponse", "betaTracks","betaRoads", "betaSnow")
 parameters1 <- c("$\\beta_{1_Unstructured}$","$\\beta_{2_Unstructured}$","$\\beta_{3_Unstructured}$","$\\beta_{4_Unstructured}$")#,"$\\beta_1$", "$\\beta_2$", "$\\beta_3$","$\\beta_4$")
 
@@ -5476,8 +5642,8 @@ print(xtable(TableOther2, type = "latex",
       sanitize.text.function = function(x){x},
       file = file.path(WDTables,paste("TableOther2.tex", sep="")))
 
-## ------   9. TRANSITION SURFACES  ------
-## ------     9.1. SET UP HABITAT ------
+## ------   8. TRANSITION SURFACES  ------
+## ------     8.1. SET UP HABITAT ------
 habbR <- raster::disaggregate(myHabitat.list$habitat.r, fact=4)
 
 ##
@@ -5552,7 +5718,7 @@ colnames(habbRxy) <- c("x","y")
 myResultsSXYZ_MF$sims.list$scaledsxy <- scaleCoordsToHabitatGrid(coordsData = myResultsSXYZ_MF$sims.list$sxy,
                                                                    coordsHabitatGridCenter = habbRxy)$coordsDataScaled
 
-## ------     9.2. TRANSITION PROBABILITY OTHER CAUSES ------
+## ------     8.2. TRANSITION PROBABILITY OTHER CAUSES ------
 TransitionSurfaceOther <- list()
 iter <- sample(1:dim(myResultsSXYZ_MF$sims.list$scaledsxy)[1], size = 100)#dim(densityInputCountries$sx)[1])
 
@@ -5587,7 +5753,7 @@ plot(myHabitat.list$habitat.poly,add=T)
 
 
 
-## ------     9.3. TRANSITION PROBABILITY CULLING  ------
+## ------     8.3. TRANSITION PROBABILITY CULLING  ------
 TransitionSurfaceCulling <- list()
 for(t in 1:(nYears-1)){
    TransitionSurfaceCulling[[t]] <- GetTransitionSurface( myResultsSXYZ_MF$sims.list$scaledsxy[,,1,t],
@@ -5615,7 +5781,7 @@ plot(SpatialRaster)
 plot(myHabitat.list$habitat.poly,add=T)
 
 
-## ------     9.4. PLOT  ------
+## ------     8.4. PLOT  ------
 pdf(file=file.path(WDFigures , paste("CountryMortalityRates.pdf",sep="")), width = 9, height = 7)
 par(mfrow=c(1,2))
 offset <- c(-0.2,0.2)
@@ -5650,9 +5816,9 @@ dev.off()
 # 
 
 
-## ------   10. OTHER PLOTS  ------
+## ------   9. OTHER PLOTS  ------
 
-## ------     10.1. SKANDOBS ------
+## ------     9.1. SKANDOBS ------
 
 habitat.detectors <- aggregate(rasterToPolygons(disaggregate(myHabitat.list$habitat.rWthBuffer, 
                                                              fact=2),fun=function(x)x==1))
@@ -5677,7 +5843,7 @@ save( rrr, file = file.path(WDFigures, "Skandobs.RData"))
 
 
 
-## ------   11. SAVE ------
+## ------   10. SAVE ------
 
 # TransitionPosteriorCulling <- 
 #    TransitionPosteriorOther <- list()
@@ -5783,161 +5949,4 @@ save( rrr, file = file.path(WDFigures, "Skandobs.RData"))
 #
 # 
 # 
-## ------   12. plot regions ------
-
-##-- only select Norwegian counties
-COMMUNESNOR <- COMMUNES[COMMUNES$NAME_0 == "Norway", ]
-NORWAY <- aggregate(x = COMMUNESNOR, by = "NAME_1")
-plot(NORWAY)
-NAME_1 <- as.character(NORWAY$NAME_1)
-df.CountiesRegions <- matrix(c(
-  "Finnmark",         8,
-  "Troms",            8,
-  "Nordland",         7,
-  NAME_1[15],         6,
-  NAME_1[9],          6,
-  NAME_1[8],          6,
-  "Hedmark",          5,
-  "Oppland",          3,
-  NAME_1[2],          4,
-  "Oslo",             4,
-  "Akershus",         4,
-  "Sogn og Fjordane", 1,
-  "Hordaland",        1,
-  "Rogaland",         1,
-  "Vest-Agder",       1,
-  "Aust-Agder",       2,
-  "Telemark",         2,
-  "Buskerud",         2,
-  "Vestfold",         2),
-  byrow = T, ncol = 2)
-
-NORWAY$NAME_1 <- as.character(NORWAY$NAME_1) 
-for(i in 1:nrow(df.CountiesRegions)){
-  NORWAY$NAME_1[NORWAY$NAME_1 %in% df.CountiesRegions[i,1]] <- df.CountiesRegions[i,2]
-}
-NORWAY1 <- aggregate(NORWAY,by="NAME_1")
-plot(NORWAY1)
-
-##-- RENAME THE FIELDS SO THEY MATCH BETWEEN NORWEGIAN AND SWEDISH LAYERS
-NewCountySwe <- NewCountySwe[,"LANSNAMN"]
-colnames(NewCountySwe@data) <- "NAME_1"
-NewCountySwe$Country <- "SWE"
-NORWAY1$Country <- "NOR"
-
-# MERGE THE 2 LAYERS.
-# THERE IS SOME SPACE BETWEEN THE TWO LAYERS, BUT IT DOESNT MATTER. 
-# IF A CELL IS NOT ASSIGNED TO ANY COUNTY THEN WE ASSIGN IT THE CLOSEST COUNTY BELOW. 
-COUNTIESsimp <- rbind(NORWAY1,NewCountySwe)#, NewCountySwe, makeUniqueIDs = TRUE) 
-
-country.colors <- c("firebrick2","deepskyblue2")#c("turquoise","darkmagenta")# c("goldenrod1","goldenrod3")
-col <- c("firebrick2", "deepskyblue2")#c("turquoise","darkmagenta")# c("goldenrod1","goldenrod3")
-names(country.colors) <- c("Norway", "Sweden")
-border.col <- NA
-
-pdf(file = file.path(WDTables, "RegionMaps.pdf"),
-    width = 9, height = 13, pointsize = 12)
-par(mar=c(0,0,0,0))
-plot(gSimplify(COUNTIESsimp, tol=5000), col=NA, border=NA)
-
-##-- NORWAY
-CARNIVORE.REGIONS <- COUNTIESsimp[COUNTIESsimp$Country%in% "NOR",]
-CARNIVORE.REGIONS1 <- gSimplify(CARNIVORE.REGIONS, tol=200, topologyPreserve = T)
-CARNIVORE.REGIONS1$Region <- CARNIVORE.REGIONS$NAME_1
-# region <- gUnaryUnion(CARNIVORE.REGIONS1, id = CARNIVORE.REGIONS1$Region)
-region <- gSimplify(NORWAY1, tol=500)
-
-#---SPECIFY COLOR PALETTE
-this.col <- sequential_hcl(1+length(unique(NORWAY1$NAME_1)), "Reds 3")
-this.col <- this.col[-length(this.col)]
-set.seed(100)
-this.col <- sample(this.col)
-plot(region,add=T, col=this.col, border=border.col, lwd=1)
-
-
-##-- SWEDEN
-NewCountySwe$NAME_1 <- as.character(NewCountySwe$NAME_1)
-NewCountySwe1 <- gSimplify(NewCountySwe, tol = 200, topologyPreserve = T)
-swedenCounties2 <- NewCountySwe1
-swedenCounties2$NAME_1 <- as.character(NewCountySwe$NAME_1)
-##-- Remove Gotland
-swedenCounties2 <- swedenCounties2[!(swedenCounties2$NAME_1%in% "Gotlands lÃ¤n"), ]
-
-##-- SPECIFY COLOR PALETTE
-this.col <- sequential_hcl(25+length(unique(swedenCounties2$NAME_1)), "Blues 3")
-this.col <- this.col[1:length(unique(swedenCounties2$NAME_1))]
-set.seed(100)
-this.col <- sample(this.col)
-
-##-- Plot
-plot( RemoveHolesSp(swedenCounties2),
-      add = T, col = this.col, border = border.col, lwd = 1)
-
-##-- Add Norwegian county names labels
-CARNIVORE.REGIONS2 <- aggregate(CARNIVORE.REGIONS1, by = "Region")
-raster::text( NORWAY1,
-              labels = NORWAY1$NAME_1,
-              cex = 1.3,
-              col = ifelse(NORWAY1$NAME_1 %in% c(5), grey(0.7), grey(0)))
-
-##-- Fix county names in Sweden
-swedenCounties2$NAME_1 <- as.character(unlist(lapply( strsplit(swedenCounties2$NAME_1, " "),
-                                                      function(x) x[1])))
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="GÃ¤vleborgs"] <- "Gävleborg"
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤rmlands"] <- "Värmland"
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Ã–stergÃ¶tlands"] <- "Östergötland"
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="JÃ¤mtlands"] <- "Jämtland"
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="JÃ¶nkÃ¶pings"] <- "Jönköping" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="SkÃ¥ne"] <- "Skåne" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤stmanlands"] <- "Västmanland" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤stra"] <- "Västra Götaland" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤sternorrlands"] <- "Västernorrland" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="VÃ¤sterbottens"] <- "Västerbotten" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="SÃ¶dermanlands"] <- "Södermanland" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Ã–rebro"] <- "Örebro" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Norrbottens"] <- "Norrbotten" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Hallands"] <- "Halland" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Kronobergs"] <- "Kronoberg" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Stockholms"] <- "Stockholm" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Dalarnas"] <- "Dalarna" 
-swedenCounties2$NAME_1[swedenCounties2$NAME_1=="Dalarnas"] <- "Dalarna" 
-
-##-- Fix management region names in Sweden
-swedenCounties2$Region <- c("Mellersta",
-                            "Södra",
-                            "Södra",
-                            "Södra",
-                            "Södra",
-                            "Södra",
-                            "Södra",
-                            "Södra",
-                            "Södra",
-                            "Mellersta",
-                            "Mellersta",
-                            "Mellersta",
-                            "Mellersta",
-                            "Mellersta",
-                            "Mellersta",
-                            "Norra",
-                            "Norra",
-                            "Norra",
-                            "Norra",
-                            "Norra",
-                            "Mellersta")
-swedenCounties2Regions <- aggregate(swedenCounties2, by = "Region")
-##-- Plot Swedish management region borders
-plot( RemoveHolesSp(swedenCounties2Regions),
-     add = T, border = grey(0.0), lwd = 3)
-
-##-- Add Swedish county names labels
-polygonsLabel( swedenCounties2,
-               swedenCounties2$NAME_1,
-               method = "buffer",
-               cex = 1.1,
-              col = ifelse( swedenCounties2$NAME_1%in%c("Jämtland"),
-                            grey(0.7), grey(0.7)))
-dev.off()
-
-
-
 ##------------------------------------------------------------------------------
