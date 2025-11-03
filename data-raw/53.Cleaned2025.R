@@ -318,11 +318,6 @@ for(t in 1:nYears){
   # distinct(Person, Dato, dist, .keep_all = T)
 }#t
 
-
-TRACK2 <- do.call(rbind,TRACKS_YEAR)
-dim(TRACKS2)
-
-
 ## PLOT CHECK
 if(myVars$plot.check){
   
@@ -1316,9 +1311,12 @@ plot(st_geometry(skandObs), col = "red", add = T)
 
 
 ## RASTERIZE AT THE DETECTOR LEVEL
-r.detector <- aggregate(habitat.subdetectors, fact=(myVars$DETECTORS$detResolution/myVars$DETECTORS$detSubResolution))
+r.detector <- aggregate( habitat.subdetectors,
+                        fact = (myVars$DETECTORS$detResolution/myVars$DETECTORS$detSubResolution))
 r.list <- lapply(years, function(y){
-  rl <- raster::rasterize(skandObs[skandObs$monitoring.season %in% y, 1], r.detector , fun="count")[[1]]
+  rl <- raster::rasterize(skandObs[skandObs$monitoring.season %in% y, 1],
+                          r.detector,
+                          fun = "count")[[1]]
   rl[is.na(rl[])] <- 0
   rl[!r.detector[]%in% 1] <- NA
   rl1 <- rl
@@ -1390,7 +1388,9 @@ table(tmp$`Art (Analyse)`) # Correct, all wolverine samples have NAs (not IDs)
 ## RASTERIZE 
 r.detector <- aggregate(habitat.subdetectors, fact=(myVars$DETECTORS$detResolution/myVars$DETECTORS$detSubResolution))
 r.list <- lapply(years, function(y){
-  rl <- raster::rasterize(rovbaseObs.sp[rovbaseObs.sp$monitoring.season %in% y, 1], r.detector , fun="count")[[1]]
+  rl <- raster::rasterize(rovbaseObs.sp[rovbaseObs.sp$monitoring.season %in% y, 1],
+                          r.detector,
+                          fun = "count")[[1]]
   rl[is.na(rl[])] <- 0
   rl[!r.detector[]%in% 1] <- NA
   rl1 <- rl
