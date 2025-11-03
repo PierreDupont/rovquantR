@@ -321,10 +321,9 @@ cleanRovbaseData <- function(
       Sex = ifelse(Sex %in% "Ukjent", "unknown", Sex),
       Sex = ifelse(is.na(Sex), "unknown", Sex),
       Sex = ifelse(Sex %in% "Hunn", "female", Sex),
-      Sex = ifelse(Sex %in% "Hann", "male", Sex)) 
-  # %>%
-  #   ##-- Filter to the focal years
-  #   dplyr::filter(., Year %in% years) 
+      Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
+    ##-- Filter to the focal years
+    dplyr::filter(., Year %in% years)
   
   ##-- Number of NGS samples
   NGS_samples <- table(DNA$Sex, DNA$Year, useNA = "ifany")
@@ -389,10 +388,9 @@ cleanRovbaseData <- function(
       Sex = ifelse(Sex %in% "Hunn", "female", Sex),
       Sex = ifelse(Sex %in% "Hann", "male", Sex),
       ##-- Identify legal deaths
-      Legal = grepl(paste(legal.dead, collapse="|"),Death_cause)) 
-  # %>%
-  #   ##-- Filter to the focal years
-  #   dplyr::filter(., Year %in% years) 
+      Legal = grepl(paste(legal.dead, collapse="|"),Death_cause)) %>%
+    ##-- Filter to the focal years
+    dplyr::filter(., Year %in% years)
  
   ##-- Number of DR samples
   DR_samples <- table(DR$Sex, DR$Year, useNA = "ifany")
