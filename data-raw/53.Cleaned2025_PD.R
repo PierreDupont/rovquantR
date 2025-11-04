@@ -870,6 +870,12 @@ habitat <- makeHabitatFromRaster(
 habitat.xy <- coordinates(habitat$habitat.r)[habitat$habitat.r[ ]==1, ] 
 n.habCells <- nrow(habitat.xy)[1]
 
+##-- Habitat grid from habitat raster
+habitat.rWthBufferPol <- sf::st_as_sf( stars::st_as_stars(habitat$habitat.rWthBuffer), 
+                                       as_points = FALSE,
+                                       merge = TRUE)
+habitat.rWthBufferPol <- habitat.rWthBufferPol[habitat.rWthBufferPol$Habitat %in% 1, ]
+
 ##-- PLOT CHECK 
 par(mfrow = c(1,2))
 plot(habitat$habitat.r,legend = F)
@@ -1312,61 +1318,16 @@ skandObs <- skandObs %>%
   dplyr::mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
                  year = as.numeric(format(date,"%Y")),
                  month = as.numeric(format(date,"%m")),
-                 species = stringi::stri_trans_general(species, "Latin-ASCII")) %>%
+                 species = stringi::stri_trans_general(species, "Latin-ASCII"),
+                 monitoring.season = ifelse( month < unlist(sampling.months)[1],
+                                             year, year + 1)) %>%
+  ##-- Filter based on monitoring season
+  dplyr::filter( month %in% unlist(sampling.months)) %>%
   ##-- Turn into spatial points object
   sf::st_as_sf(., coords = c("longitude","latitude")) %>%
-  sf::st_set_crs(. , value = "EPSG:4326") %>%
-  sf::st_transform(. ,sf::st_crs(COUNTIES))
-
-##-- SUBSET BASED ON MONITORING SEASON 
-subset <- skandObs$month %in% c(unlist(sampling.months))
-skandObs$monitoring.season <- ifelse(skandObs$month < unlist(sampling.months)[1],
-                                     skandObs$year, skandObs$year+1) #--- need to change for other species
-skandObs <- skandObs[subset, ] 
-
-##-- SUBSET BASED ON SPACE 
-habitat.rWthBufferPol <- sf::st_as_sf(stars::st_as_stars(habitat$habitat.rWthBuffer), 
-                                      as_points = FALSE, merge = TRUE)
-habitat.rWthBufferPol <- habitat.rWthBufferPol[habitat.rWthBufferPol$Habitat %in% 1, ]
-subsetSpace <- !is.na(as.numeric(st_intersects(skandObs, habitat.rWthBufferPol)))
-skandObs <- skandObs[subsetSpace, ]
-
-# ##-- RASTERIZE AT THE DETECTOR LEVEL
-# r.detector <- aggregate( subdetectors.r,
-#                          fact = (detectors$resolution/detectors$resolution.sub))
-# r.list <- lapply(years, function(y){
-#   rl <- raster::rasterize(skandObs[skandObs$monitoring.season %in% y, 1], r.detector , fun="count")[[1]]
-#   rl[is.na(rl[])] <- 0
-#   rl[!r.detector[]%in% 1] <- NA
-#   rl1 <- rl
-#   rl1[rl[]>0] <- 1
-#   list(rl1, rl)
-# })
-# r.skandObsSamplesBinary <- brick(lapply(r.list,function(x) x[[1]]))
-# r.skandObsSamplesContinuous <- brick(lapply(r.list,function(x) x[[2]]))
-# 
-# 
-# ##-- PLOT CHECK
-# if(plot.check){
-#   
-#   plot(st_geometry(habitat.rWthBufferPol))
-#   plot(st_geometry(skandObs), col = "red", add = T)
-#   
-#   ## SUMMARY SKANDOBS
-#   pdf(file = file.path(working.dir, "figures/skandObs.pdf"), width = 10)
-#   barplot(table(skandObs$monitoring.season ))
-#   barplot(table(skandObs$month ), xlab = "Months")
-#   barplot(table(skandObs$species))
-#   
-#   ## MAPS 
-#   par(mar = c(0,0,2,0))
-#   for(t in 1:n.years){
-#     plot( st_geometry(myStudyArea), main = years[t])
-#     plot( st_geometry(skandObs[skandObs$monitoring.season %in% years[t], ]),
-#           pch = 16, col = "red", cex = 0.1, add = T)
-#   }
-#   dev.off()
-# }
+  sf::st_set_crs(., value = "EPSG:4326") %>%
+  sf::st_transform(., sf::st_crs(COUNTIES)) %>%
+  dplyr::filter(!is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
 
 
 
@@ -1435,25 +1396,68 @@ rovbaseObs <- rbind(rovbaseObs1, rovbaseObs2, rovbaseObs3, rovbaseObs4) %>%
 rm(list = c("rovbaseObs1","rovbaseObs2","rovbaseObs3","rovbaseObs4"))
 
 
-# ##-- Rasterize
-# r.detector <- aggregate( subdetectors.r,
-#                          fact = (detectors$resolution/detectors$resolution.sub))
-# r.list <- lapply(years, function(y){
-#   rl <- raster::rasterize(rovbaseObs.sp[rovbaseObs.sp$monitoring.season %in% y, 1],
-#                           r.detector ,
-#                           fun="count")[[1]]
-#   rl[is.na(rl[])] <- 0
-#   rl[!r.detector[]%in% 1] <- NA
-#   rl1 <- rl
-#   rl1[rl[]>0] <- 1
-#   list(rl1, rl)
-# })
-# r.OtherSamplesBinary <- brick(lapply(r.list,function(x) x[[1]]))
-# r.OtherSamplesContinuous <- brick(lapply(r.list,function(x) x[[2]]))
-# 
-# 
+
+## ------         2.2.6.3. COMBINE ROVBASE & SKANDOBS ------
+
+##-- RASTERIZE SkandObs AT THE DETECTOR LEVEL
+r.detector <- aggregate( subdetectors.r,
+                         fact = (detectors$resolution/detectors$resolution.sub))
+r.list <- lapply(years, function(y){
+  ##-- Rasterize Skandobs observartions 
+  sk.r <- raster::rasterize( skandObs[skandObs$monitoring.season %in% y, 1],
+                           r.detector ,
+                           fun = "count")[[1]]
+  sk.r[is.na(sk.r[])] <- 0
+  ##-- Set cells outside detector area to NA
+  sk.r[!r.detector[]%in% 1] <- NA
+  ##-- Turn into binary raster
+  sk.r1 <- sk.r
+  sk.r[sk.r[]>0] <- 1
+  
+  ##-- Rasterize Rovbase observartions 
+  rb.r <- raster::rasterize(rovbaseObs.sp[rovbaseObs.sp$monitoring.season %in% y, 1],
+                            r.detector ,
+                            fun="count")[[1]]
+  rb.r[is.na(rb.r[])] <- 0
+  ##-- Set cells outside detector area to NA
+  rb.r[!r.detector[]%in% 1] <- NA
+  ##-- Turn into binary raster
+  rb.r1 <- rb.r
+  rb.r[rb.r[]>0] <- 1
+  
+  list(sk.r, sk.r1, rb.r, rb.r1)
+})
+r.skandObsBinary <- brick(lapply(r.list,function(x) x[[2]]))
+r.skandObsContinuous <- brick(lapply(r.list,function(x) x[[1]]))
+r.rovbaseBinary <- brick(lapply(r.list,function(x) x[[4]]))
+r.rovbaseContinuous <- brick(lapply(r.list,function(x) x[[3]]))
+
+r.SkandObsRovbaseBinary <- r.rovbaseBinary + r.skandObsBinary
+for(t in 1:n.years){
+  r.SkandObsRovbaseBinary[[t]][r.SkandObsRovbaseBinary[[t]][]>1 ] <- 1
+}
+
+
 # ##-- PLOT CHECK
 # if(plot.check){
+#   plot(st_geometry(habitat.rWthBufferPol))
+#   plot(st_geometry(skandObs), col = "red", add = T)
+#   
+#   ## SUMMARY SKANDOBS
+#   pdf(file = file.path(working.dir, "figures/skandObs.pdf"), width = 10)
+#   barplot(table(skandObs$monitoring.season ))
+#   barplot(table(skandObs$month ), xlab = "Months")
+#   barplot(table(skandObs$species))
+#   
+#   ## MAPS 
+#   par(mar = c(0,0,2,0))
+#   for(t in 1:n.years){
+#     plot( st_geometry(myStudyArea), main = years[t])
+#     plot( st_geometry(skandObs[skandObs$monitoring.season %in% years[t], ]),
+#           pch = 16, col = "red", cex = 0.1, add = T)
+#   }
+#   dev.off()
+#
 #   pdf(file = file.path(working.dir, "figures/mapStructuredOthers.pdf"))
 #   for(t in 1:n.years){
 #     tmpOthers <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t] &
@@ -1473,93 +1477,84 @@ rm(list = c("rovbaseObs1","rovbaseObs2","rovbaseObs3","rovbaseObs4"))
 #     plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.5,add=T)
 #   }
 #   dev.off()
+#
+# for(t in 1:n.years){
+#   par(mfrow=c(1,3),mar=c(0,0,5,0))
+#   plot(r.OtherSamplesBinary[[t]],main=years[t])
+#   plot(r.skandObsSamplesBinary[[t]])
+#   plot(r.SkandObsOtherSamplesBinary[[t]])
+# }#t  
+#}
+
+
+
+# ## ------         2.2.6.4. SMOOTH THE BINARY MAP ------
+# 
+# ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.037 
+# habOwin <- spatstat.geom::as.owin(as.vector(extent(r.detector)))
+# cutoff <- 1
+# ds.list <- lapply(years,function(y){
+#   ## ROVBASE DATA 
+#   pts <- st_coordinates(rovbaseObs.sp)[rovbaseObs.sp$monitoring.season %in% y,]
+#   ## SKANDOBS
+#   pts <- rbind(pts, st_coordinates(skandObs)[skandObs$monitoring.season %in% y,] )
+#   ## SMOOTH AND RASTERIZE
+#   p <-  spatstat.geom::ppp(pts[,1], pts[,2], window = habOwin)
+#   ds <- density(p, adjust=0.02) #---change bandwith (smoothing) with "adjust
+#   ds <- raster(ds)
+#   
+#   ds <- ds1 <- raster::resample(ds, r.detector) #mask(ds,rasterToPolygons(myHabitat.list$habitat.rWthBuffer,function(x) x==1))
+#   threshold <- 0.1 / prod(res(ds)) #--number per 1 unit of the projected raster (meters)
+#   ds1[] <- ifelse(ds[]<threshold,0,1)
+#   ds1 <- mask(ds1, habitat.rWthBufferPol)
+#   ds <- mask(ds, habitat.rWthBufferPol)
+#   
+#   return(list(ds,ds1))
+# })
+# 
+# ds.brick <- brick(lapply(ds.list, function(x) x[[1]]))
+# ds.brickCont <- brick(lapply(ds.list, function(x) x[[2]]))
+# names(ds.brick) <- names(ds.brickCont) <-years
+# 
+# ##-- PLOT CHECK
+# if(plot.check){
+#   par(mfrow = c(1,3))
+#   plot(r.SkandObsRovbaseBinary[[t]], main = "Raw Binary", axes = F, box = F)
+#   plot(ds.brick[[t]], main = "Smoothed", axes = F, box = F)
+#   plot(ds.brickCont[[t]], main = "Binary after smoothing", axes = F, box = F)
 # }
-
-
-
-## ------         2.2.6.3. COMBINE ROVBASE & SKANDOBS ------
-
-
-
-
-r.SkandObsOtherSamplesBinary <- r.OtherSamplesBinary + r.skandObsSamplesBinary
-for(t in 1:n.years){
-  r.SkandObsOtherSamplesBinary[[t]][r.SkandObsOtherSamplesBinary[[t]][]>1 ] <- 1
-}
-
-##-- PLOT CHECK
-if(plot.check){
-  for(t in 1:n.years){
-    par(mfrow=c(1,3),mar=c(0,0,5,0))
-    plot(r.OtherSamplesBinary[[t]],main=years[t])
-    plot(r.skandObsSamplesBinary[[t]])
-    plot(r.SkandObsOtherSamplesBinary[[t]])
-  }#t  
-}
-
-
-
-## ------         2.2.6.4. SMOOTH THE BINARY MAP ------
-
-## we tried adjust = 0.05, 0.037,0.02 and decided to go for 0.037 
-habOwin <- spatstat.geom::as.owin(as.vector(extent(r.detector)))
-cutoff <- 1
-ds.list <- lapply(years,function(y){
-  ## ROVBASE DATA 
-  pts <- st_coordinates(rovbaseObs.sp)[rovbaseObs.sp$monitoring.season %in% y,]
-  ## SKANDOBS
-  pts <- rbind(pts, st_coordinates(skandObs)[skandObs$monitoring.season %in% y,] )
-  ## SMOOTH AND RASTERIZE
-  p <-  spatstat.geom::ppp(pts[,1], pts[,2], window = habOwin)
-  ds <- density(p, adjust=0.02) #---change bandwith (smoothing) with "adjust
-  ds <- raster(ds)
-  
-  ds <- ds1 <- raster::resample(ds, r.detector) #mask(ds,rasterToPolygons(myHabitat.list$habitat.rWthBuffer,function(x) x==1))
-  threshold <- 0.1 / prod(res(ds)) #--number per 1 unit of the projected raster (meters)
-  ds1[] <- ifelse(ds[]<threshold,0,1)
-  ds1 <- mask(ds1, habitat.rWthBufferPol)
-  ds <- mask(ds, habitat.rWthBufferPol)
-  
-  return(list(ds,ds1))
-})
-
-ds.brick <- brick(lapply(ds.list, function(x) x[[1]]))
-ds.brickCont <- brick(lapply(ds.list, function(x) x[[2]]))
-names(ds.brick) <- names(ds.brickCont) <-years
-
-##-- PLOT CHECK
-if(plot.check){
-  par(mfrow = c(1,3))
-  plot(r.SkandObsOtherSamplesBinary[[t]], main = "Raw Binary", axes = F, box = F)
-  plot(ds.brick[[t]], main = "Smoothed", axes = F, box = F)
-  plot(ds.brickCont[[t]], main = "Binary after smoothing", axes = F, box = F)
-}
 
 
 
 ## ------         2.2.6.5. COLOR CELLS WHERE HAIR TRAP COLLECTED ------
-# 
-# ## [PD] : USELESS !!!
-# 
-# ## IDENTIFY HAIR SAMPLES
-# tmpHair <- myFilteredData.sp$alive %>% filter(hairTrap)
-#   
-# ## MANUALLY FIND THE HAIR SMAPLES AND COLOR THE CELL. 
-# tmpyr <- unique(tmpHair$Year)
-# for( i in 1:length(tmpyr)){
-#   t <- which(years %in% tmpyr)
-#   whereHair <- raster::extract(r.SkandObsOtherSamplesBinary[[t]],tmpHair,cellnumbers=T)
-#   r.SkandObsOtherSamplesBinary[[t]][whereHair[,1]] <- 1
-#   plot(r.SkandObsOtherSamplesBinary[[t]])
-#   plot(tmpHair$geometry,add=T,col="red")
-# }
+
+HairTrapSamples <- readMostRecent(
+  path = data.dir,
+  extension = ".xlsx",
+  pattern = "hairtrap")
+
+##-- IDENTIFY HAIR SAMPLES
+tmpHair <- myFilteredData.sp$alive %>% filter(hairTrap)
+
+##-- MANUALLY FIND THE HAIR SMAPLES AND COLOR THE CELL.
+tmpyr <- unique(tmpHair$Year)
+for( i in 1:length(tmpyr)){
+  t <- which(years %in% tmpyr)
+  whereHair <- raster::extract( r.SkandObsOtherSamplesBinary[[t]],
+                                tmpHair,
+                                cellnumbers = T)
+  r.SkandObsOtherSamplesBinary[[t]][whereHair[ ,1]] <- 1
+ # plot(r.SkandObsOtherSamplesBinary[[t]])
+ # plot(tmpHair$geometry, add = T, col = "red")
+}
 
 
 
 ## ------         2.2.6.6. ASSIGN THE COVARIATE ------
 
 detOtherSamples <- matrix(0, nrow = n.detectors, ncol = n.years)
-detOtherSamples[ ,1:n.years] <- raster::extract(r.SkandObsOtherSamplesBinary, detectors$main.detector.sp)
+detOtherSamples[ ,1:n.years] <- raster::extract( r.SkandObsOtherSamplesBinary,
+                                                 detectors$main.detector.sp)
 colSums(detOtherSamples)
 
 
@@ -1570,17 +1565,17 @@ detSnow <- round(scale(detSnow), digits = 2)
 detRoads <- round(scale(detRoads), digits = 2)
 detTracks <- round(scale(detTracks), digits = 2)
 
-detCovs <- array(NA, c(dim(detTracks)[1],dim(detTracks)[2],2))
+detCovs <- array(NA, c(dim(detTracks)[1], dim(detTracks)[2], 2))
 detCovs[,,1] <- detTracks
 detCovs[,,2] <- detSnow
 
-detCovsOth <- array(NA, c(dim(detTracks)[1],dim(detTracks)[2],3))
+detCovsOth <- array(NA, c(dim(detTracks)[1],dim(detTracks)[2], 3))
 detCovsOth[,,1] <- detSnow
 detCovsOth[,,2] <- matrix(detRoads,length(detRoads),n.years)
 detCovsOth[,,3] <- detOtherSamples
 
 
-## CHECK IF CONTAINS NAs
+##-- CHECK IF CONTAINS NAs
 if(any(is.na(detCovs))){print("WARNINGS!!!!!!! ONE OF THE DETECTOR MATRIX CONTAINS NA")}
 
 
@@ -1596,8 +1591,8 @@ if(plot.check){
     tmp[!is.na( detectorGrid.r)] <- detCovsOth[,t,2]
     plot(tmp,axes=F,legend=F,box=F,breaks = cuts, col=col,add=T)
   }
-  
   dev.off()
+  
   pdf(file = file.path(working.dir, "figures/detections over space and time.pdf"))
   for(t in 1:n.years){
     ## NGS DETECTIONS TOTAL
@@ -1628,42 +1623,38 @@ if(plot.check){
 }
 
 
-
-
-
-
-
-##-- Smooth binary map
-##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.02 
-habOwin <- spatstat.geom::as.owin(as.vector(raster::extent(r.detector)))
-ds.list <- lapply( data$years, function(y){
-  ##-- Rovbase data 
-  pts <- sf::st_coordinates(rovbaseObs)[rovbaseObs$year %in% y, ]
-  ##-- Skandobs data
-  pts <- rbind(pts, sf::st_coordinates(skandObs)[skandObs$year %in% y, ])
-  ##-- Smooth & rasterize observations
-  ds <- spatstat.geom::ppp(pts[ ,1], pts[ ,2], window = habOwin) %>%
-    spatstat.explore::density.ppp(., adjust = 0.02) %>%    
-    raster::raster(.)
-  
-  ds <- ds1 <- raster::resample(ds, r.detector) #-- mask(ds,rasterToPolygons(habitat$habitat.rWthBuffer,function(x) x==1))
-  threshold <- 0.1 / prod(raster::res(ds))      #-- number per 1 unit of the projected raster (meters)
-  ds1[] <- ifelse(ds[] < threshold,0,1)
-  ds1 <- raster::mask(ds1, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
-  ds <- raster::mask(ds, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
-  
-  return(list(ds,ds1))
-})
-ds.brick <- raster::brick(lapply(ds.list, function(x) x[[1]]))
-ds.brickCont <- raster::brick(lapply(ds.list, function(x) x[[2]]))
-names(ds.brick) <- years
-
-##-- Assign covariates to detectors     
-detOtherSamples <- matrix(0, nrow = detectors$n.detectors, ncol = n.years)
-detOtherSamples[ ,1:n.years] <- raster::extract(ds.brickCont,
-                                                detectors$main.detector.sp)
-colnames(detOtherSamples) <- paste0("detOtherSamples.", years)
-detectors$detectors.df <- cbind.data.frame(detectors$detectors.df, detOtherSamples)
+# ##-- Smooth binary map
+# ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.02 
+# habOwin <- spatstat.geom::as.owin(as.vector(raster::extent(r.detector)))
+# ds.list <- lapply( data$years, function(y){
+#   ##-- Rovbase data 
+#   pts <- sf::st_coordinates(rovbaseObs)[rovbaseObs$year %in% y, ]
+#   ##-- Skandobs data
+#   pts <- rbind(pts, sf::st_coordinates(skandObs)[skandObs$year %in% y, ])
+#   ##-- Smooth & rasterize observations
+#   ds <- spatstat.geom::ppp(pts[ ,1], pts[ ,2], window = habOwin) %>%
+#     spatstat.explore::density.ppp(., adjust = 0.02) %>%    
+#     raster::raster(.)
+#   
+#   ds <- ds1 <- raster::resample(ds, r.detector) #-- mask(ds,rasterToPolygons(habitat$habitat.rWthBuffer,function(x) x==1))
+#   threshold <- 0.1 / prod(raster::res(ds))      #-- number per 1 unit of the projected raster (meters)
+#   ds1[] <- ifelse(ds[] < threshold,0,1)
+#   ds1 <- raster::mask(ds1, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
+#   ds <- raster::mask(ds, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
+#   
+#   return(list(ds,ds1))
+# })
+# ds.brick <- raster::brick(lapply(ds.list, function(x) x[[1]]))
+# ds.brickCont <- raster::brick(lapply(ds.list, function(x) x[[2]]))
+# names(ds.brick) <- years
+# 
+# ##-- Assign covariates to detectors     
+# detOtherSamples <- matrix(0, nrow = detectors$n.detectors, ncol = n.years)
+# detOtherSamples[ ,1:n.years] <- raster::extract( ds.brickCont,
+#                                                  detectors$main.detector.sp)
+# colnames(detOtherSamples) <- paste0("detOtherSamples.", years)
+# detectors$detectors.df <- cbind.data.frame( detectors$detectors.df,
+#                                             detOtherSamples)
 
 
 
