@@ -1,4 +1,4 @@
-##------------------------------------------------------------------------------
+##--------------------------------------------------------------------------- --
 ##
 ## Script name: RovQuant WOLVERINE OPSCR analysis 2025 
 ##
@@ -25,12 +25,12 @@
 ## Faculty of Environmental Sciences and Natural Resource Management (MINA)
 ## Norwegian University of Life Sciences (NMBU), Ås, Norway  
 ##
-##------------------------------------------------------------------------------
+##--------------------------------------------------------------------------- --
 ##
 ## Notes: 
 ## This is based on 'rovquantR' beta version 0.1
 ##   
-##------------------------------------------------------------------------------
+##--------------------------------------------------------------------------- --
 
 ## CLEAR-UP ENVIRONMENT ------
 
@@ -319,7 +319,7 @@ if(!overwrite) {
 
 
 
-## ------    2. CLEAN THE DATA -----
+## ------   2. CLEAN THE DATA -----
 
 ## ------     2.1. RAW NGS DATA -----
 
@@ -641,6 +641,19 @@ dim(dead.recovery)
 
 ##-- check how many dead reco with a weight of 0 kg and recovered between March and November
 sum(dead.recovery$Age %in% 0 & dead.recovery$Month < 12 & dead.recovery$Month > 2)
+
+
+
+## ------       3.1.3. HAIR TRAPS -----
+
+HairTrapSamples <- readMostRecent(
+  path = data.dir,
+  extension = ".xlsx",
+  pattern = "hairtrap")
+
+##-- Identify samples collected by hair traps
+alive <- alive %>%
+  mutate(hairTrap = DNAID %in% HairTrapSamples$DNAID)
 
 
 
@@ -1399,11 +1412,11 @@ rm(list = c("rovbaseObs1","rovbaseObs2","rovbaseObs3","rovbaseObs4"))
 
 ## ------         2.2.6.3. COMBINE ROVBASE & SKANDOBS ------
 
-##-- RASTERIZE SkandObs AT THE DETECTOR LEVEL
+##-- RASTERIZE AT THE DETECTOR LEVEL
 r.detector <- aggregate( subdetectors.r,
                          fact = (detectors$resolution/detectors$resolution.sub))
 r.list <- lapply(years, function(y){
-  ##-- Rasterize Skandobs observartions 
+  ##-- Rasterize Skandobs observations 
   sk.r <- raster::rasterize( skandObs[skandObs$monitoring.season %in% y, 1],
                            r.detector ,
                            fun = "count")[[1]]
@@ -1412,10 +1425,10 @@ r.list <- lapply(years, function(y){
   sk.r[!r.detector[]%in% 1] <- NA
   ##-- Turn into binary raster
   sk.r1 <- sk.r
-  sk.r[sk.r[]>0] <- 1
+  sk.r1[sk.r1[]>0] <- 1
   
-  ##-- Rasterize Rovbase observartions 
-  rb.r <- raster::rasterize(rovbaseObs.sp[rovbaseObs.sp$monitoring.season %in% y, 1],
+  ##-- Rasterize Rovbase observations 
+  rb.r <- raster::rasterize(rovbaseObs[rovbaseObs$monitoring.season %in% y, 1],
                             r.detector ,
                             fun="count")[[1]]
   rb.r[is.na(rb.r[])] <- 0
@@ -1423,68 +1436,72 @@ r.list <- lapply(years, function(y){
   rb.r[!r.detector[]%in% 1] <- NA
   ##-- Turn into binary raster
   rb.r1 <- rb.r
-  rb.r[rb.r[]>0] <- 1
+  rb.r1[rb.r1[]>0] <- 1
   
   list(sk.r, sk.r1, rb.r, rb.r1)
 })
+
+##-- Store in raster bricks
 r.skandObsBinary <- brick(lapply(r.list,function(x) x[[2]]))
 r.skandObsContinuous <- brick(lapply(r.list,function(x) x[[1]]))
 r.rovbaseBinary <- brick(lapply(r.list,function(x) x[[4]]))
 r.rovbaseContinuous <- brick(lapply(r.list,function(x) x[[3]]))
 
+
+##-- Combine both rasters
 r.SkandObsRovbaseBinary <- r.rovbaseBinary + r.skandObsBinary
 for(t in 1:n.years){
   r.SkandObsRovbaseBinary[[t]][r.SkandObsRovbaseBinary[[t]][]>1 ] <- 1
 }
 
 
-# ##-- PLOT CHECK
-# if(plot.check){
-#   plot(st_geometry(habitat.rWthBufferPol))
-#   plot(st_geometry(skandObs), col = "red", add = T)
-#   
-#   ## SUMMARY SKANDOBS
-#   pdf(file = file.path(working.dir, "figures/skandObs.pdf"), width = 10)
-#   barplot(table(skandObs$monitoring.season ))
-#   barplot(table(skandObs$month ), xlab = "Months")
-#   barplot(table(skandObs$species))
-#   
-#   ## MAPS 
-#   par(mar = c(0,0,2,0))
-#   for(t in 1:n.years){
-#     plot( st_geometry(myStudyArea), main = years[t])
-#     plot( st_geometry(skandObs[skandObs$monitoring.season %in% years[t], ]),
-#           pch = 16, col = "red", cex = 0.1, add = T)
-#   }
-#   dev.off()
-#
-#   pdf(file = file.path(working.dir, "figures/mapStructuredOthers.pdf"))
-#   for(t in 1:n.years){
-#     tmpOthers <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t] &
-#                                            !myFilteredData.sp$alive$structured, ]
-#     tmpStruct <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t] &
-#                                            myFilteredData.sp$alive$structured, ]
-#     
-#     par(mfrow=c(2,2),mar=c(0,0,5,0))
-#     plot(r.OtherSamplesBinary[[t]], main=paste(years[t],"\n Rovbase Samples Structured"), box=F, axes=F)
-#     plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
-#     plot(r.OtherSamplesBinary[[t]],main=paste(years[t],"\n Rovbase Samples Opportunistic"), box=F, axes=F)
-#     plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.6,add=T)
-#     
-#     plot(r.skandObsSamplesBinary[[t]], main=paste(years[t]), box=F, axes=F)
-#     plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
-#     plot(r.skandObsSamplesBinary[[t]],main=paste(years[t],"\n SkandObs Opportunistic"), box=F, axes=F)
-#     plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.5,add=T)
-#   }
-#   dev.off()
-#
-# for(t in 1:n.years){
-#   par(mfrow=c(1,3),mar=c(0,0,5,0))
-#   plot(r.OtherSamplesBinary[[t]],main=years[t])
-#   plot(r.skandObsSamplesBinary[[t]])
-#   plot(r.SkandObsOtherSamplesBinary[[t]])
-# }#t  
-#}
+##-- PLOT CHECK
+if(plot.check){
+  plot(st_geometry(habitat.rWthBufferPol))
+  plot(st_geometry(skandObs), col = "red", add = T)
+  
+  ## SUMMARY SKANDOBS
+  pdf(file = file.path(working.dir, "figures/skandObs.pdf"), width = 10)
+  barplot(table(skandObs$monitoring.season ))
+  barplot(table(skandObs$month ), xlab = "Months")
+  barplot(table(skandObs$species))
+  
+  ## MAPS
+  par(mar = c(0,0,2,0))
+  for(t in 1:n.years){
+    plot( st_geometry(myStudyArea), main = years[t])
+    plot( st_geometry(skandObs[skandObs$monitoring.season %in% years[t], ]),
+          pch = 16, col = "red", cex = 0.1, add = T)
+  }
+  dev.off()
+  
+  # pdf(file = file.path(working.dir, "figures/mapStructuredOthers.pdf"))
+  # for(t in 1:n.years){
+  #   tmpOthers <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t] &
+  #                                          !myFilteredData.sp$alive$structured, ]
+  #   tmpStruct <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t] &
+  #                                          myFilteredData.sp$alive$structured, ]
+  # 
+  #   par(mfrow=c(2,2),mar=c(0,0,5,0))
+  #   plot(r.OtherSamplesBinary[[t]], main=paste(years[t],"\n Rovbase Samples Structured"), box=F, axes=F)
+  #   plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
+  #   plot(r.OtherSamplesBinary[[t]],main=paste(years[t],"\n Rovbase Samples Opportunistic"), box=F, axes=F)
+  #   plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.6,add=T)
+  # 
+  #   plot(r.skandObsSamplesBinary[[t]], main=paste(years[t]), box=F, axes=F)
+  #   plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
+  #   plot(r.skandObsSamplesBinary[[t]],main=paste(years[t],"\n SkandObs Opportunistic"), box=F, axes=F)
+  #   plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.5,add=T)
+  # }
+  # dev.off()
+  
+  for(t in 1:n.years){
+    par(mfrow=c(1,3),mar=c(0,0,5,0))
+    plot(r.rovbaseBinary[[t]],main=years[t])
+    plot(r.skandObsBinary[[t]])
+    plot(r.SkandObsRovbaseBinary[[t]])
+  }#t
+}
 
 
 
@@ -1528,32 +1545,25 @@ for(t in 1:n.years){
 
 ## ------         2.2.6.5. COLOR CELLS WHERE HAIR TRAP COLLECTED ------
 
-HairTrapSamples <- readMostRecent(
-  path = data.dir,
-  extension = ".xlsx",
-  pattern = "hairtrap")
-
 ##-- IDENTIFY HAIR SAMPLES
-tmpHair <- myFilteredData.sp$alive %>% filter(hairTrap)
+tmpHair <- myFullData.sp$alive %>% filter(hairTrap)
 
 ##-- MANUALLY FIND THE HAIR SMAPLES AND COLOR THE CELL.
 tmpyr <- unique(tmpHair$Year)
 for( i in 1:length(tmpyr)){
   t <- which(years %in% tmpyr)
-  whereHair <- raster::extract( r.SkandObsOtherSamplesBinary[[t]],
+  whereHair <- raster::extract( r.SkandObsRovbaseBinary[[t]],
                                 tmpHair,
                                 cellnumbers = T)
-  r.SkandObsOtherSamplesBinary[[t]][whereHair[ ,1]] <- 1
- # plot(r.SkandObsOtherSamplesBinary[[t]])
- # plot(tmpHair$geometry, add = T, col = "red")
-}
+  r.SkandObsRovbaseBinary[[t]][whereHair[ ,1]] <- 1
+}#t
 
 
 
 ## ------         2.2.6.6. ASSIGN THE COVARIATE ------
 
 detOtherSamples <- matrix(0, nrow = n.detectors, ncol = n.years)
-detOtherSamples[ ,1:n.years] <- raster::extract( r.SkandObsOtherSamplesBinary,
+detOtherSamples[ ,1:n.years] <- raster::extract( r.SkandObsRovbaseBinary,
                                                  detectors$main.detector.sp)
 colSums(detOtherSamples)
 
@@ -1596,18 +1606,18 @@ if(plot.check){
   pdf(file = file.path(working.dir, "figures/detections over space and time.pdf"))
   for(t in 1:n.years){
     ## NGS DETECTIONS TOTAL
-    tempTotal <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]
-    NGS_TabTotal <- table(tempTotal$Country)
-    ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country), 2, function(x) sum(x>0))
+    tempTotal <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
+    NGS_TabTotal <- table(tempTotal$Country_sample)
+    ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sample), 2, function(x) sum(x>0))
     ## ALIVE DETECTIONS INSIDE STUDY AREA/SAMPLING PERIOD
-    tempIn <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]
-    NGS_TabIn <- table(tempIn$Country)
-    ID_TabIn <- apply(table(tempIn$Id, tempIn$Country), 2, function(x) sum(x>0))
+    tempIn <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
+    NGS_TabIn <- table(tempIn$Country_sample)
+    ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sample), 2, function(x) sum(x>0))
     ## PLOT NGS SAMPLES
     plot(st_geometry(GLOBALMAP), col="gray80")
     plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-    plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
-    # points(tempTotal, pch = 21, bg = "darkred")
+    plot(st_geometry(habitat$buffered.habitat.poly), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
+    points(tempTotal, pch = 21, bg = "darkred")
     plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
     ## ADD NUMBER OF NGS samples and IDs per COUNTRY
     graphics::text(x = 100000, y = 7200000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="N"],"NGS"), cex = 1.1, col = "firebrick3", font = 2)
@@ -1621,40 +1631,6 @@ if(plot.check){
   }#t
   dev.off()
 }
-
-
-# ##-- Smooth binary map
-# ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.02 
-# habOwin <- spatstat.geom::as.owin(as.vector(raster::extent(r.detector)))
-# ds.list <- lapply( data$years, function(y){
-#   ##-- Rovbase data 
-#   pts <- sf::st_coordinates(rovbaseObs)[rovbaseObs$year %in% y, ]
-#   ##-- Skandobs data
-#   pts <- rbind(pts, sf::st_coordinates(skandObs)[skandObs$year %in% y, ])
-#   ##-- Smooth & rasterize observations
-#   ds <- spatstat.geom::ppp(pts[ ,1], pts[ ,2], window = habOwin) %>%
-#     spatstat.explore::density.ppp(., adjust = 0.02) %>%    
-#     raster::raster(.)
-#   
-#   ds <- ds1 <- raster::resample(ds, r.detector) #-- mask(ds,rasterToPolygons(habitat$habitat.rWthBuffer,function(x) x==1))
-#   threshold <- 0.1 / prod(raster::res(ds))      #-- number per 1 unit of the projected raster (meters)
-#   ds1[] <- ifelse(ds[] < threshold,0,1)
-#   ds1 <- raster::mask(ds1, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
-#   ds <- raster::mask(ds, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
-#   
-#   return(list(ds,ds1))
-# })
-# ds.brick <- raster::brick(lapply(ds.list, function(x) x[[1]]))
-# ds.brickCont <- raster::brick(lapply(ds.list, function(x) x[[2]]))
-# names(ds.brick) <- years
-# 
-# ##-- Assign covariates to detectors     
-# detOtherSamples <- matrix(0, nrow = detectors$n.detectors, ncol = n.years)
-# detOtherSamples[ ,1:n.years] <- raster::extract( ds.brickCont,
-#                                                  detectors$main.detector.sp)
-# colnames(detOtherSamples) <- paste0("detOtherSamples.", years)
-# detectors$detectors.df <- cbind.data.frame( detectors$detectors.df,
-#                                             detOtherSamples)
 
 
 

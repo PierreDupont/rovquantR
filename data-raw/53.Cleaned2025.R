@@ -106,7 +106,7 @@ if(!dir.exists(file.path(myVars$WD, myVars$modelName))){
   dir.create(file.path(myVars$WD, myVars$modelName))
   dir.create(file.path(myVars$WD, myVars$modelName, "Hunn"))
   dir.create(file.path(myVars$WD, myVars$modelName, "Hann"))
-  }
+}
 
 ##-- List months
 months = c("January","February","March","April","May","June",
@@ -627,36 +627,36 @@ dnatemp <- st_as_sf(myFilteredData.sp$alive)
 ## CREATE A BUFFER AROUND EACH DETECTION
 tmp <-  st_buffer(dnatemp, dist = 750)
 for(i in 1:nrow(myFilteredData.sp$alive)){
-   ## MAKE SURE THE SAMPLE WAS COLLECTED AT THE SAME TIME THAN THE TRACK
-   t <- which(years %in% tmp[i,]$Year)
-   whichSameDate <- which(as.character(TRACKSSimple_sf[[t]]$Dato)==as.character(myFilteredData.sp$alive$Date[i]))
-   
-   ## INTERSECT POINT WITH TRACKS
-   tmpTRACKS <- st_intersection(TRACKSSimple_sf[[t]][whichSameDate,], tmp[i, ])
-
-   ## If not TRACKS that date, move on
-   if(nrow(tmpTRACKS)==0){next}
-
-   ## Else, find the closest TRACK
-   dist <- st_distance(dnatemp[i,], tmpTRACKS, by_element = F)
-
-   ## IF NO MATCHING DATE TRACK ASSIGN NA
-   if(length(dist)==0){
-     myFilteredData.sp$alive$TrackRovbsID[i] <- NA
-     myFilteredData.sp$alive$TrackDist[i] <- NA
-   }
-   ## IF 1 MATCHING TRACK ASSIGN TO THAT TRACK
-   if(length(dist)==1){
-     myFilteredData.sp$alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID
-     myFilteredData.sp$alive$TrackDist[i] <- dist
-   }
-   ## IF SEVERAL MATCHING DATES ASSIGN TO THE CLOSEST OF THE MATCHING TRACKS
-   if(length(dist)>1){
-     myFilteredData.sp$alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID[which.min(dist)]
-     myFilteredData.sp$alive$TrackDist[i] <- min(dist)
-   }
-   print(i)
-   #if(is.na(myFilteredData.sp$alive$TrackRovbsID[i])){print(i)}
+  ## MAKE SURE THE SAMPLE WAS COLLECTED AT THE SAME TIME THAN THE TRACK
+  t <- which(years %in% tmp[i,]$Year)
+  whichSameDate <- which(as.character(TRACKSSimple_sf[[t]]$Dato)==as.character(myFilteredData.sp$alive$Date[i]))
+  
+  ## INTERSECT POINT WITH TRACKS
+  tmpTRACKS <- st_intersection(TRACKSSimple_sf[[t]][whichSameDate,], tmp[i, ])
+  
+  ## If not TRACKS that date, move on
+  if(nrow(tmpTRACKS)==0){next}
+  
+  ## Else, find the closest TRACK
+  dist <- st_distance(dnatemp[i,], tmpTRACKS, by_element = F)
+  
+  ## IF NO MATCHING DATE TRACK ASSIGN NA
+  if(length(dist)==0){
+    myFilteredData.sp$alive$TrackRovbsID[i] <- NA
+    myFilteredData.sp$alive$TrackDist[i] <- NA
+  }
+  ## IF 1 MATCHING TRACK ASSIGN TO THAT TRACK
+  if(length(dist)==1){
+    myFilteredData.sp$alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID
+    myFilteredData.sp$alive$TrackDist[i] <- dist
+  }
+  ## IF SEVERAL MATCHING DATES ASSIGN TO THE CLOSEST OF THE MATCHING TRACKS
+  if(length(dist)>1){
+    myFilteredData.sp$alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID[which.min(dist)]
+    myFilteredData.sp$alive$TrackDist[i] <- min(dist)
+  }
+  print(i)
+  #if(is.na(myFilteredData.sp$alive$TrackRovbsID[i])){print(i)}
 }#i
 
 ## SAVE FOR FASTER LOADING
@@ -1180,7 +1180,7 @@ for(t in 1:nYears){
     st_drop_geometry() %>%
     group_by(id) %>%
     summarise(transect_L = sum(LEN))   ## Get total length searched in each detector grid cell
-    # transect_N = length(unique(ID))) ## Get total number of visits in each detector grid cell
+  # transect_N = length(unique(ID))) ## Get total number of visits in each detector grid cell
   detTracks[intersection$id,t] <- as.numeric(intersection$transect_L)
   TRACKS.r[[t]] <- detectorGrid.r
   TRACKS.r[[t]][detectorGrid.r[] %in% 1] <- detTracks[ ,t]
@@ -1312,7 +1312,7 @@ plot(st_geometry(skandObs), col = "red", add = T)
 
 ## RASTERIZE AT THE DETECTOR LEVEL
 r.detector <- aggregate( habitat.subdetectors,
-                        fact = (myVars$DETECTORS$detResolution/myVars$DETECTORS$detSubResolution))
+                         fact = (myVars$DETECTORS$detResolution/myVars$DETECTORS$detSubResolution))
 r.list <- lapply(years, function(y){
   rl <- raster::rasterize(skandObs[skandObs$monitoring.season %in% y, 1],
                           r.detector,
@@ -1367,25 +1367,25 @@ filter <- list(
             "Saliv/Spytt", "Loepeblod", "Vev"),
   month = unlist(myVars$DATA$samplingMonths))
 
-## SUBSET MONTH AND TYPE OF SAMPLE
+##-- Subset month & type of sample
 subset <- rovbaseObs.sp$month %in% filter$month & rovbaseObs.sp$Proevetype %in% filter$type
 rovbaseObs.sp$monitoring.season <- ifelse(rovbaseObs.sp$month < 12, rovbaseObs.sp$year, rovbaseObs.sp$year+1) #--- need to change for other species
 rovbaseObs.sp <- rovbaseObs.sp[subset, ] 
 
 ## [PD] ASP FIXED FILTERING
-## REMOVE SAMPLES THAT WERE SUCCESSFULLY GENOTYPED & FROM THE FOCAL SPECIES 
+##-- Remove samples that were successfully genotyped 6 from the focal species
 subset <- (rovbaseObs.sp$`Art (Analyse)` %in% filter$species) & !is.na(rovbaseObs.sp$Individ) 
 rovbaseObs.sp <- rovbaseObs.sp[!subset, ] 
 
-## SUBSET BASED ON SPACE 
+##-- Subset based on space 
 subsetSpace <- !is.na(as.numeric(st_intersects(rovbaseObs.sp, habitat.rWthBufferPol)))
 rovbaseObs.sp <- rovbaseObs.sp[subsetSpace, ] 
 
-## Check if the filter is correct  
+##-- Check if the filter is correct  
 tmp <- rovbaseObs.sp[!is.na(rovbaseObs.sp$Individ), ]
 table(tmp$`Art (Analyse)`) # Correct, all wolverine samples have NAs (not IDs)
 
-## RASTERIZE 
+##-- Rasterize rovbase observations
 r.detector <- aggregate(habitat.subdetectors, fact=(myVars$DETECTORS$detResolution/myVars$DETECTORS$detSubResolution))
 r.list <- lapply(years, function(y){
   rl <- raster::rasterize(rovbaseObs.sp[rovbaseObs.sp$monitoring.season %in% y, 1],
@@ -1401,26 +1401,26 @@ r.list <- lapply(years, function(y){
 r.OtherSamplesBinary <- brick(lapply(r.list,function(x) x[[1]]))
 r.OtherSamplesContinuous <- brick(lapply(r.list,function(x) x[[2]]))
 
-## PLOT CHECK
+##-- PLOT CHECK
 if(myVars$plot.check){
   pdf(file = file.path(myVars$WD, myVars$modelName, "mapStructuredOthers.pdf"))
-      for(t in 1:nYears){ 
-        year = years[t]
-        tmpOthers <- myFilteredData.spOthers[myFilteredData.spOthers$Year%in%year, ]
-        tmpStruct <- myFilteredData.spStructured[myFilteredData.spStructured$Year%in%year, ]
-        
-        par(mfrow=c(2,2),mar=c(0,0,5,0))
-        plot(r.OtherSamplesBinary[[t]], main=paste(year,"\n Rovbase Samples Structured"), box=F, axes=F)
-        plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
-        plot(r.OtherSamplesBinary[[t]],main=paste(year,"\n Rovbase Samples Opportunistic"), box=F, axes=F)
-        plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.6,add=T)
-        
-        plot(r.skandObsSamplesBinary[[t]], main=paste(year,"\n SkandObs Structured"), box=F, axes=F)
-        plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
-        plot(r.skandObsSamplesBinary[[t]],main=paste(year,"\n SkandObs Opportunistic"), box=F, axes=F)
-        plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.5,add=T)
-      }
-      dev.off()
+  for(t in 1:nYears){ 
+    year = years[t]
+    tmpOthers <- myFilteredData.spOthers[myFilteredData.spOthers$Year%in%year, ]
+    tmpStruct <- myFilteredData.spStructured[myFilteredData.spStructured$Year%in%year, ]
+    
+    par(mfrow=c(2,2),mar=c(0,0,5,0))
+    plot(r.OtherSamplesBinary[[t]], main=paste(year,"\n Rovbase Samples Structured"), box=F, axes=F)
+    plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
+    plot(r.OtherSamplesBinary[[t]],main=paste(year,"\n Rovbase Samples Opportunistic"), box=F, axes=F)
+    plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.6,add=T)
+    
+    plot(r.skandObsSamplesBinary[[t]], main=paste(year,"\n SkandObs Structured"), box=F, axes=F)
+    plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
+    plot(r.skandObsSamplesBinary[[t]],main=paste(year,"\n SkandObs Opportunistic"), box=F, axes=F)
+    plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.5,add=T)
+  }
+  dev.off()
 }
 
 
@@ -1432,7 +1432,7 @@ for(t in 1:nYears){
   r.SkandObsOtherSamplesBinary[[t]][r.SkandObsOtherSamplesBinary[[t]][] > 1] <- 1
 }
 
-## PLOT CHECK
+##-- PLOT CHECK
 if(myVars$plot.check){
   for(t in 1:nYears){
     par(mfrow=c(1,3),mar=c(0,0,5,0))
@@ -1441,6 +1441,7 @@ if(myVars$plot.check){
     plot(r.SkandObsOtherSamplesBinary[[t]])
   }  
 }
+
 
 
 ### ====        3.2.6.4. SMOOTH THE BINARY MAP ====
@@ -1912,7 +1913,7 @@ for(thisSex in c("Hann","Hunn")){
   # }
   # image(t(min.age))
   # image(t(age))
-
+  
   
   
   ### ====    4.8. MAKE AUGMENTATION ====
@@ -2322,7 +2323,7 @@ for(thisSex in c("Hann","Hunn")){
     coordsHabitatGridCenter = myHabitat$habitat.xy,
     scaleToGrid =T )$coordsDataScaled
   AllDetections <- cbind(AllDetections, AllDetsxyscaled)
-
+  
   idAugmented <- which(rownames(z) %in%"Augmented")
   Id.vector <- y.ar$Id.vector
   lowerCoords = nimData$lowerHabCoords
@@ -2412,7 +2413,7 @@ for(thisSex in c("Hann","Hunn")){
     dev.off()
   }
   
-
+  
   lev <- levels(habitatRasterResolution$'10km'$Counties)
   countryId <- list()
   for(t in 1:dim(z)[2]){
@@ -2538,7 +2539,7 @@ for(thisSex in c("Hann","Hunn")){
     
     ##TEST IF THE LESS RESTRICTION ON DETECTORS WILL WORK 
     ## GET DETECTOR INDEX FROM THE HABITAT ID MATRIX
-
+    
     idDEtected <- which(!rownames(z) %in%"Augmented")
     for(i in 1:length(idDEtected)){
       for(t in 1:nimConstants$n.years){
@@ -3190,7 +3191,7 @@ for(thisSex in c("Hann","Hunn")){
       nimConstants$countyToggleOth <- nimConstants$countyToggleOth[,t]
       
       
-
+      
       ### ====    2.4. SUBSET NIMINITS ====
       
       ## z
@@ -3229,7 +3230,7 @@ for(thisSex in c("Hann","Hunn")){
       
       ## Get the new number of individuals 
       nimConstants$n.individuals <- nrow(nimInits$sxy)
-    
+      
       
       
       ### ====    2.5. SUBSET NIMPARAMS ====
