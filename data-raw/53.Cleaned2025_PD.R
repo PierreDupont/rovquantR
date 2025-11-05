@@ -880,20 +880,38 @@ habitat <- makeHabitatFromRaster(
   plot.check = FALSE) %>%
   append(habitat,.)
 
-habitat.xy <- coordinates(habitat$habitat.r)[habitat$habitat.r[ ]==1, ] 
-n.habCells <- nrow(habitat.xy)[1]
+##-- Retrieve number of habitat windows 
+isHab <- habitat$habitat.r[] == 1
+n.habwindows <- habitat$n.habwindows <- sum(isHab)
+habitat$habitat.df <- cbind.data.frame(
+  "id" = 1:habitat$n.habwindows,
+  "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
+  "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
 
-##-- Habitat grid from habitat raster
-habitat.rWthBufferPol <- sf::st_as_sf( stars::st_as_stars(habitat$habitat.rWthBuffer), 
-                                       as_points = FALSE,
-                                       merge = TRUE)
-habitat.rWthBufferPol <- habitat.rWthBufferPol[habitat.rWthBufferPol$Habitat %in% 1, ]
+##-- Make a spatial grid from polygon
+habitat$grid <- sf::st_as_sf( stars::st_as_stars(habitat$habitat.r), 
+                              as_points = FALSE,
+                              merge = FALSE) %>%
+  filter( Habitat %in% 1) %>%
+  st_set_crs( .,value = sf::st_crs(habitat$buffered.habitat.poly)) %>%
+  mutate( id = 1:nrow(.),
+          x = st_coordinates(st_centroid(.))[ ,1],
+          y = st_coordinates(st_centroid(.))[ ,2]) 
+
+##-- Study area grid from habitat raster
+habitat.rWthBufferPol <- sf::st_as_sf( 
+  stars::st_as_stars(habitat$habitat.rWthBuffer), 
+  as_points = FALSE,
+  merge = TRUE) %>%
+  filter(Habitat %in% 1)
 
 ##-- PLOT CHECK 
 par(mfrow = c(1,2))
 plot(habitat$habitat.r,legend = F)
 plot(st_geometry(studyArea), add = T)
-lapply(habitat, dim)
+plot(st_geometry(habitat$grid), add = T)
+
+
 # ## [PD] USELESS!
 # ##-- Retrieve habitat windows boundaries
 # lowerHabCoords <- coordinates(habitat$habitat.r)[habitat$habitat.r[]==1, ] - 0.5*habitat$resolution
@@ -980,35 +998,52 @@ message("Preparing detectors characteristics... ")
 
 ## ------     2.1. GENERATE DETECTORS CHARACTERISTICS -----
 
-##-- GENERATE NGS DETECTORS BASED ON THE STUDY AREA
-subdetectors.r <- disaggregate(
+##-- Generate NGS detectors based on the study area 
+detectors$subdetectors.r <- disaggregate(
   habitat$habitat.rWthBuffer,
   fact = res(habitat$habitat.r)[1]/detectors$resolution.sub)
 
 ##-- Generate NGS detectors based on the raster of sub-detectors
 detectors <- makeSearchGrid( 
-  data = subdetectors.r,
+  data = detectors$subdetectors.r,
   resolution = detectors$detResolution,
   div = (detectors$resolution/detectors$resolution.sub)^2,
   plot = FALSE) %>%
-  append(detectors,.)
+  append(detectors, .)
 
-##-- EXTRACT NUMBERS OF DETECTORS
-n.detectors <- dim(detectors$main.detector.sp)[1]
+##-- Format detector locations & number of trials per detector
+detectors$detectors.df <- cbind.data.frame(
+  "id" = 1:nrow(detectors$main.detector.sp),
+  "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
+  "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
+  "size" = detectors$main.detector.sp$count)
 
-##-- FORMAT DETECTOR LOCATIONS & NUMBER OF TRIALS PER DETECTOR IN ARRAYS/MATRICES
-detector.xy <- st_coordinates(detectors$main.detector.sp)
-colnames(detector.xy) <- c("x","y")
-n.trials <- as.vector(table(detectors$detector.sp$main.cell.id))
+##-- Generate detector raster 
+detectors$raster <- raster::rasterFromXYZ(
+  cbind( detectors$detectors.df[ ,c("x","y")],
+         rep(1,nrow(detectors$main.detector.sp))))
 
-##-- IDENTIFY DETECTORS IN NORBOTTEN 
+##-- Make a spatial grid from detector raster
+detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
+  x = detectors$raster,
+  fun = function(x){x>0})) %>%
+  st_set_crs(.,value = st_crs(studyArea)) %>%
+  mutate( id = 1:nrow(.),
+          x = st_coordinates(st_centroid(.))[ ,1],
+          y = st_coordinates(st_centroid(.))[ ,2]) 
+  
+##-- Extract numbers of detectors
+detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
+
+
+##-- Identify detectors in Norrbotten 
 COUNTIESAroundNorrbotten <- REGIONS %>%
   group_by(county) %>%
   summarize() %>%
   filter(county %in% c("Norrbotten","Troms","Västerbotten","Nordland","Finnmark")) %>% 
   st_simplify( dTolerance = 500)
 
-##-- CREATE A NORROBOTTEN DETECTOR GRID
+##-- Create an index of detectors in Norrbotten
 distDetsCounties <- st_distance( detectors$main.detector.sp,
                                  COUNTIESAroundNorrbotten,
                                  byid = T)
@@ -1017,16 +1052,16 @@ detsNorrbotten <- which(apply(distDetsCounties, 1, which.min) == 3)
 
 ##-- PLOT CHECK
 if(plot.check){
-  ##-- Plot DETECTORS IN NORRBOTTEN
+  ##-- Plot detectors in Norrbotten
   plot( st_geometry(COUNTIESAroundNorrbotten))
   plot( st_geometry(detectors$main.detector.sp),
         col = "black", pch = 16, cex = 0.3, add = T)
   plot( st_geometry(detectors$main.detector.sp[detsNorrbotten, ]),
         col = "red", pch = 16, cex = 0.5, add = T)
   
-  ##-- PLOT NGS DETECTORS
+  ##-- Plot NGS detectors
   plot( st_geometry(habitat$buffered.habitat.poly),
-        main = paste(n.detectors, "Detectors"),
+        main = paste(detectors$n.detectors, "Detectors"),
         col = rgb(0.16,0.67,0.16, alpha = 0.3))  
   plot( st_geometry(studyArea), add = TRUE,
         col = rgb(0.16,0.67,0.16, alpha = 0.5))
@@ -1123,13 +1158,16 @@ message("Cleaning GPS tracks... ")
 TRACKS <- rbind(
   read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
   read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>%
+  ##-- Process dates
   mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
           Mth = as.numeric(format(Dato,"%m")),
           Yr = as.numeric(format(Dato,"%Y")),
           Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
+  ##-- Filter out irrelevant tracks
   filter( Helikopter == "0",      ## Remove helicopter tracks
           Jerv == "1",            ## Keep Wolverine tracks only
           Year %in% years & Mth %in% unlist(sampling.months)) %>% ## Keep tracks during sampling season only
+  ##-- Extract track lengths & centroids
   mutate( Length = st_length(., byid = T),
           Centroidx = st_coordinates(st_centroid(.))[ ,1]) 
 
@@ -1171,14 +1209,6 @@ TRACKS <- TRACKS[-dupIDs, ]
 # save( TRACKS, file = file.path(working.dir, "data/searchTracks.RData"))
 # load(file = file.path(working.dir, "data/searchTracks.RData"))
 
-##-- Create detector grid
-detectorGrid.r <- rasterFromXYZ(cbind(st_coordinates(detectors$main.detector.sp),
-                                      rep(1,nrow(detectors$main.detector.sp))))
-detectorGrid <- sf::st_as_sf(stars::st_as_stars(detectorGrid.r), 
-                             as_points = FALSE,
-                             merge = F)
-st_crs(detectorGrid) <- st_crs(myStudyArea)
-detectorGrid$id <- 1:nrow(detectorGrid)
 
 ##-- Extract length of GPS search track per detector grid cell
 detTracks <- matrix(0, nrow = n.detectors, ncol = n.years)
@@ -1186,14 +1216,14 @@ TRACKS.r <- list()
 for(t in 1:n.years){
   intersection <- TRACKS %>%
     dplyr::filter(Year == years[t]) %>%
-    sf::st_intersection(detectorGrid, .) %>%
+    sf::st_intersection(detectors$grid, .) %>%
     dplyr::mutate(LEN = st_length(.)) %>%
     sf::st_drop_geometry() %>%
     group_by(id) %>%
-    summarise(transect_L = sum(LEN)) ## Get total length searched in each detector grid cell
+    summarise(transect_L = sum(LEN)) ##-- Get total length searched in each detector grid cell
   detTracks[intersection$id,t] <- as.numeric(intersection$transect_L)
-  TRACKS.r[[t]] <- detectorGrid.r
-  TRACKS.r[[t]][detectorGrid.r[] %in% 1] <- detTracks[ ,t]
+  TRACKS.r[[t]] <- detectors$raster
+  TRACKS.r[[t]][detectors$raster[] %in% 1] <- detTracks[ ,t]
   print(t)
 }#t
 
@@ -1201,7 +1231,7 @@ for(t in 1:n.years){
 ##-- PLOT CHECK 
 if(plot.check){
   max <- max(unlist(lapply(TRACKS.r, function(x) max(x[], na.rm = T))))
-  cuts <- seq(0,max,length.out = 100)   #set breaks
+  cuts <- seq(0, max,length.out = 100)   ## Set breaks
   col <- rev(terrain.colors(100))
   CountriesDetRes <- disaggregate(habitatRasters$Countries, fact = 2)
   CountriesDetRes <- crop(CountriesDetRes, TRACKS.r[[1]])
@@ -1211,7 +1241,7 @@ if(plot.check){
   NORTRACKS <- SWETRACKS <- 0
   for(t in 1:n.years){
     plot( TRACKS.r[[t]], main = years[t], breaks = cuts, col = col, legend = FALSE)
-    plot(st_geometry(habitat$habitat.poly), main = years[t], add = T)
+    plot( st_geometry(habitat$habitat.poly), main = years[t], add = T)
     plot( TRACKS.r[[t]],
           legend.only = TRUE, breaks = cuts, col = col, legend.width = 2,
           axis.args = list(at = round(seq(0, max, length.out = 5), digits = 1),
@@ -1636,9 +1666,6 @@ if(plot.check){
 
 ## ------   3. RESCALE COORDINATES ------
 
-# ##-- Rescale detector coordinates to the habitat 
-# scaledCoords <-  scaleCoordsToHabitatGrid(coordsData = detector.xy,
-#                                           coordsHabitatGridCenter = habitat.xy)
 # ##-- Scaled habitat windows boundaries
 # lowerHabCoords <- scaledCoords$coordsHabitatGridCenterScaled - 0.5
 # upperHabCoords <- scaledCoords$coordsHabitatGridCenterScaled + 0.5
@@ -1663,7 +1690,7 @@ detectors$scaledCoords <- scaledCoords$coordsDataScaled
 ## ------   4. CREATE LOCAL OBJECTS -----
 
 ## [CM] reduce multiplicator to 3 
-maxDistReCalc <- 2.1*detectors$maxDist #+ sqrt(2*(DETECTIONS$resizeFactor*HABITAT$habResolution)^2)
+maxDistReCalc <- 2.1* detectors$maxDist 
 
 # DetectorIndexLESS <- GetDetectorIndexLESS(
 #   habitat.mx = habitat$habitat.mx,
@@ -2286,7 +2313,7 @@ for(t in 1:n.years){
   ##-- CALCULATE DISTANCES BETWEEN PAIRS OF DETECTIONS
   distances[[t]] <- CheckDistanceDetections( 
     y = y.ar$y.ar[,,t], 
-    detector.xy = detector.xy, 
+    detector.xy = detectors$detectors.df[ ,c("x","y")], 
     max.distance = detectors$maxDist,
     method = "pairwise",
     plot.check = F)

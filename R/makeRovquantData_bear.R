@@ -49,7 +49,7 @@ NULL
 #' @rdname makeRovquantData_bear
 #' @export
 makeRovquantData_bear <- function(
-  ##-- paths
+    ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
   
@@ -69,7 +69,7 @@ makeRovquantData_bear <- function(
   subdetector.res = 1000,
   max.det.dist = 60000,
   resize.factor = 1 
-  ){
+){
   ## ---------------------------------------------------------------------------
   
   ## ------ 0. BASIC SET-UP ------
@@ -242,7 +242,7 @@ makeRovquantData_bear <- function(
     sf::st_intersection(., COUNTIES) %>%
     sf::st_as_sf()
   
-  ##-- make habitat from predefined Scandinavian raster of suitable habitat
+  ##-- Make habitat from predefined Scandinavian raster of suitable habitat
   habitat <- makeHabitatFromRaster(
     poly = studyArea,
     habitat.r = habRaster,
@@ -263,25 +263,28 @@ makeRovquantData_bear <- function(
     "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
     "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
   
-  ##-- make a spatial grid from polygon
-  habitat$grid <- sf::st_as_sf(raster::rasterToPolygons(habitat$habitat.r,
-                                                        fun = function(x){x>0}))
-  habitat$grid$id <- 1:nrow(habitat$grid)
-  sf::st_crs(habitat$grid) <- sf::st_crs(habitat$buffered.habitat.poly)
+  ##-- Make a spatial grid from polygon
+  habitat$grid <- sf::st_as_sf( stars::st_as_stars(habitat$habitat.r), 
+                                as_points = FALSE,
+                                merge = FALSE) %>%
+    filter( Habitat %in% 1) %>%
+    mutate( id = 1:nrow(.)) %>%
+    st_set_crs( ., value = sf::st_crs(habitat$buffered.habitat.poly))
   
   
   
-  ## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES -----
+  ## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES ------
   
-  ## ------       1.2.1. DEAD RECOVERIES (ALL YEARS) -----
+  ## ------       1.2.1. DEAD RECOVERIES (ALL YEARS) ------
   
   kern <- sf::st_coordinates(myFullData.sp$dead.recovery) %>%
-    sp::SpatialPoints(.,  
-                      proj4string = sp::CRS(raster::proj4string(habitat$habitat.r)),
-                      bbox = NULL) %>%
+    sp::SpatialPoints( .,  
+                       proj4string = sp::CRS(raster::proj4string(habitat$habitat.r)),
+                       bbox = NULL) %>%
     adehabitatHR::kernelUD( .,
                             h = 60000,
-                            grid = as(habitat$habitat.r, 'SpatialPixels')) %>%
+                            grid = as( habitat$habitat.r,
+                                       'SpatialPixels')) %>%
     raster::raster(.)
   
   ##-- Truncate to max value observed in Norway
@@ -350,7 +353,7 @@ makeRovquantData_bear <- function(
   ## ------       1.2.3. PLOTS -----
   
   ##-- [PD]: NEED TO ADD PLOTS OF HABITAT COVARIATES
- 
+  
   
   
   ## ------   2. GENERATE DETECTORS -----
@@ -387,8 +390,8 @@ makeRovquantData_bear <- function(
   detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
     x = raster::aggregate( x = subdetectors.r,
                            fact = detectors$resolution/detectors$resolution.sub),
-    fun = function(x){x>0}))
-  detectors$grid$id <- 1:nrow(detectors$grid)
+    fun = function(x){x>0})) %>%
+    mutate(id = 1:nrow(.))
   
   
   
@@ -564,10 +567,10 @@ makeRovquantData_bear <- function(
     y = detectors$detectors.df,
     by = "id")
   
-
-    
+  
+  
   ## ------       2.2.5. PLOTS -----
-
+  
   ##-- Plot Carnivore observations maps
   pdf(file = file.path(working.dir, "figures", "CarnivoreObs.pdf"),
       width = 18, height = 12)
@@ -649,7 +652,7 @@ makeRovquantData_bear <- function(
   
   
   ## ------   5. SAVE STATE-SPACE CHARACTERISTICS -----
-
+  
   save( habitat,
         file = file.path( working.dir, "data",
                           paste0("Habitat_bear_", DATE, ".RData")))
@@ -701,7 +704,7 @@ makeRovquantData_bear <- function(
       data = .,
       detectors = detectors$main.detector.sp,
       radius = detectors$resolution)
-
+  
   
   ## ------     6.3. PLOT NGS and DEAD RECOVERY MAPS ----- 
   
@@ -742,12 +745,12 @@ makeRovquantData_bear <- function(
     
     ##-- Add year
     graphics::mtext(text = years[t],
-          side = 1, line = -18,
-          adj = 0.18, cex = 1.2)
+                    side = 1, line = -18,
+                    adj = 0.18, cex = 1.2)
   }#t
   dev.off()
   
-
+  
   ##-- Dead recoveries maps
   grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
                  width = ncols*2, height = nrows*4,
@@ -770,7 +773,7 @@ makeRovquantData_bear <- function(
     try(
       plot( sf::st_geometry(data.dead[data.dead$Year == years[t] & 
                                         data.dead$Legal, ]), add = TRUE, col = "slateblue1", pch = 3),
-        silent = TRUE)
+      silent = TRUE)
     try(
       plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]), add = TRUE, col = "slateblue4", pch = 3),
       silent = TRUE)
@@ -778,15 +781,15 @@ makeRovquantData_bear <- function(
     
     ##-- Add year
     graphics::mtext(text = years[t],
-          side = 1, line = -18,
-          adj = 0.18, cex = 1.2)
+                    side = 1, line = -18,
+                    adj = 0.18, cex = 1.2)
   }#t
   dev.off()
   
   
   
   ## ------     6.3. SAVE FILTERED DATA ----- 
-
+  
   save( data.alive, data.dead,
         file = file.path( working.dir, "data",
                           paste0("FilteredData_bear_", DATE, ".RData")))
@@ -1062,7 +1065,7 @@ makeRovquantData_bear <- function(
         if(any(x[1:length(unlist(sampling.months))] >= 2, na.rm = T)){
           5 }
         else {NA}}})
-
+    
     z.data <- zYears
     allDead <- apply(z.data, 1, function(x)all(x==5))
     z.data[allDead, ] <- 1
@@ -1098,7 +1101,7 @@ makeRovquantData_bear <- function(
     
     ##-- Set all known states to NA in the inits
     z.init[!is.na(z.data)] <- NA
-
+    
     
     
     ## ------     3.3. GENERATE y.dead -----
@@ -1138,7 +1141,7 @@ makeRovquantData_bear <- function(
     z.data[] <- ifelse(y.dead.legal == 1, 3, z.data)
     z.data[] <- ifelse(y.dead.other == 1, 4, z.data)
     
-
+    
     
     ## ------     3.4. GENERATE sxy & sxy.init ARRAYS -----
     
@@ -1260,7 +1263,7 @@ makeRovquantData_bear <- function(
     
     ## ------   6. CHECK INPUT VALIDITY ------
     
-
+    
     
     ## ------   7. SAVE INPUTS ----- 
     
@@ -1293,7 +1296,7 @@ makeRovquantData_bear <- function(
   }#thisSex
   
   
-
+  
   ## ------   8. RETURN IMPORTANT INFOS FOR REPORT ------
   return(list( SPECIES = "Brown bear",
                engSpecies = "bear",
