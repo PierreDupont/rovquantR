@@ -47,39 +47,13 @@ for(i in list.files(dir.function.cpp)){sourceCpp(filePath(dir.function.cpp,i))}
 ## ------ 0. SET ANALYSIS CHARACTERISTICS -----
 
 myVars <- list( 
-  ## WORKING DIRECTORY & MODEL NAME
   WD = file.path(dir.dropbox, "RovQuant/wolverine/CM/2024"),
   modelName = "plot53Cleaned2024",
-  
-  ## HABITAT SPECIFICATIONS
-  HABITAT = list( countries = c("SWE","NOR"),
-                  habResolution = 20000, 
-                  habBuffer = 60000),
-  
-  ## NGS DATA SPECIFICATIONS
-  DATA = list( years = 2014:2023,   
-               species = "Jerv",              
-               sex = c("Hann"),                   
-               samplingMonths = list(12,1:6)), 
-  
-  ## DETECTORS SPECIFICATIONS
-  DETECTORS = list( detSubResolution = 2000,
-                    detResolution = 10000,
-                    detDeadResolution = 15000),
-  
-  ## DATA GENERATION 
-  DETECTIONS = list( maxDetDist = 40000,
-                     resizeFactor = 3,
-                     aug.factor = 0.8),
-  
-  ## OUTPUT PLOTS 
-  OUTPUT = list(mapResolution = 10000),
-  
-  ## MISCELLANEOUS
+  years = 2014:2023,
   plot.check = TRUE)
 
 ##-- Number of years
-years <- myVars$DATA$years
+years <- myVars$years
 nYears <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
 
@@ -170,21 +144,29 @@ load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewS
 
 ## ------   2. LOAD NECESSARY OBJECTS ------
 
-##-- LOAD NECESSARY OBJECTS (INPUT DATA, HABITAT, DETECTORS, etc...)
-load(file.path(myVars$WD, myVars$modelName, "NecessaryObjects.RData"))
-
-##-- INFILES
-##-- FEMALES
+##-- Females
 load(file.path( myVars$WD, modelNameF, paste0(modelNameF,"Chain1.RData")))
 nimDataF <- nimData
+nimInitsF <- nimInits
 
-##-- MALES
+##-- Males
 load(file.path(myVars$WD, modelNameM, paste0(modelNameM,"Chain1.RData")))
 nimDataM <- nimData
+nimInitsM <- nimInits
 
-##-- Remove nimData to avoid confusion
-rm(list = c("nimData"))
-   
+##-- Remove unnecessary objects from memory
+rm(list = c("nimInits", "nimData"))
+gc(verbose = FALSE)
+
+##-- Habitat
+load(file.path( working.dir, "data", paste0("Habitat_wolverine_", DATE, ".RData")))
+
+##-- Detectors
+load(file.path( working.dir, "data", paste0("Detectors_wolverine_", DATE, ".RData")))
+
+##-- Load filtered data
+load(file.path( working.dir, "data", paste0("FilteredData_wolverine_", DATE, ".RData")))
+
    
 
 ##------------------------------------------------------------------------------
@@ -235,17 +217,13 @@ length(dead$Id)                               ## Number of individuals
 length(unique(dead$Id[dead$Sex=="Hunn"]))     ## Number of Female individuals
 length(unique(dead$Id[dead$Sex=="Hann"]))     ## Number of Male individuals
 
-
-##
 # tmpdead <- dead[dead$Year %in% c(2018:2023),]
 # tmpdead <- tmpdead[!duplicated(tmpdead$DNAID), ]
-# 
 # table(tmpdead$Year,tmpdead$Sex)
 # table(tmpdead$Year,tmpdead$Month)
 # table(tmpdead$Year)
 # nrow(table(tmpdead$Year))
 # duplicated(tmpdead$DNAID)
-# 
 # mapview::mapview(tmpdead)
 # 
 # tmpNGS <- NGS[NGS$Year %in% c(2018:2023), ]
@@ -949,7 +927,7 @@ minBites <- floor(min(c(numBitesF,numBitesM)))
 
 ## ------     1.1. FEMALES ------
 
-## GO TROUGH THE BITES AND GET THEM
+##-- GO TROUGH THE BITES AND GET THEM
 nimOutput <- nimOutputSXY <- RUNTIME <- list()
 for(p in 1:length(path.listF)){
   print(path.listF[p])
@@ -959,30 +937,25 @@ for(p in 1:length(path.listF)){
     print(x)
     load(file.path(path.listF[p], paste("bite_", x, ".RData", sep = "")))
     runtime[[x]] <- RunTime[3]
-    #params.simple <- sapply(strsplit(colnames(this.sample), "\\["), "[", 1)
+    # params.simple <- sapply(strsplit(colnames(this.sample), "\\["), "[", 1)
     # REMOVE SXY AND Z, NO THINING
-    #parmIndex <- which(! params.simple %in% c("sxy","z"))
+    # parmIndex <- which(! params.simple %in% c("sxy","z"))
     
-    if(sum(is.na(this.sample))>0){
+    if(sum(is.na(this.sample)) > 0){
       id <- unique(which(is.na(this.sample),arr.ind = T)[,1])
       this.sample <- this.sample[-id,]
       print(x)
       print("here")
     }
-    
-    out[[x]] <- this.sample#[,parmIndex]#[ ,parmIndex]
+    out[[x]] <- this.sample
     
     ##-- KEEP SXY AND Z, THINING
-    #nthins <- seq(1,dim(this.sample)[1], by=nthinsxy)
     load(file.path(path.listF[p], paste("biteSxyZ_", x, ".RData", sep = "")))
-    
-    #parmIndex <- which(params.simple %in% c("sxy","z","N","sigma"))
-    outSXYZ[[x]] <- this.sampleSxyZ#[nthins,parmIndex]#[ ,parmIndex]
+    outSXYZ[[x]] <- this.sampleSxyZ
   }#x
   RUNTIME[[p]] <- unlist(runtime)
   out.mx <- do.call(rbind, out)
   out.mxSXY <- do.call(rbind, outSXYZ)
-  
   nimOutput[[p]] <- as.mcmc(out.mx)
   nimOutputSXY[[p]] <- as.mcmc(out.mxSXY)
 }#p
@@ -991,6 +964,7 @@ for(p in 1:length(path.listF)){
 nimOutput <- as.mcmc.list(nimOutput)
 nimOutputSXY <- as.mcmc.list(nimOutputSXY)
 
+##-- Process the results
 myResults_F <- ProcessCodaOutput(nimOutput, params.omit = c("sxy","z"))
 myResultsSXYZ_F <- ProcessCodaOutput(nimOutputSXY, params.omit = c("sxy","z"))
 
@@ -1008,9 +982,7 @@ for(p in 1:length(path.listM)){
     print(x)
     load(file.path(path.listM[p], paste("bite_", x, ".RData", sep = "")))
     runtime[[x]] <- RunTime[3]
-    # params.simple <- sapply(strsplit(colnames(this.sample), "\\["), "[", 1)
-    # REMOVE SXY AND Z, NO THINING
-    # parmIndex <- which(! params.simple %in% c("sxy","z"))
+    
     if(sum(is.na(this.sample))>0){
       id <- unique(which(is.na(this.sample),arr.ind = T)[,1])
       this.sample <- this.sample[-id,]
@@ -2292,214 +2264,16 @@ print(xtable(NCarRegionEstimatesNOR, type = "latex",align=paste(c("l",rep("c",nc
 
 
 ## ------     2.2. PLOT ABUNDANCE TIME SERIES ------
-## ------       2.2.1. VIOLINS ------
-## ------         2.2.1.1. ALL YEARS ------
-SeasonText <- lapply(YEARS,FUN = function(x) paste(x,collapse = "/"))
-
-#define colors
-text.cex <- 1.5
-total.offset <- 37
-NO.offset <- -37
-SE.offset <- +37
-xlim <- c(0.5, nYears + 0.5)
-
-TotalColors <- "black"
-country.colors <- c("firebrick2","deepskyblue2")#c("turquoise","darkmagenta")# c("goldenrod1","goldenrod3")
-names(country.colors) <- c("Norway","Sweden")
-violin.alpha <- 1
-
-pdf(file= file.path(WDFigures , paste("NCountriesViolins.pdf", sep="")), width = 12, height = 8)
-par(mar = c(5,8,3,1),las=1, cex.lab=2, cex.axis=1.8, mgp=c(6, 2, 0), xaxs="i", yaxs="i")
-plot(-1000, xlim=c(0.5, nYears+0.5), ylim=c(0,1300),
-     xlab="", ylab = paste("Estimated number of wolves"), xaxt="n")
-axis(1, at=c(1:nYears), labels = SeasonText, cex.axis=1.2)
-at = c(1:nYears)
-
-
-
-
-for(t in 1:nYears){
-  xx <- t
-  yy <- n.detected[[t]]
-  xx <- c(xx-0.5,xx+0.5,xx+0.5,xx-0.5)
-  yy<-c(0,0,yy,yy)
-  polygon(xx, yy ,border=NA,col=grey(0.9))
-  
-}
-
-
-for(t in 1:nYears){
-  #TOTAL
-  plot.violins2(list(colSums(DensityCountriesRegions[[t]]$PosteriorAllRegions)),
-                x = at[t]+0.05,
-                at= at[t]+0.05,
-                violin.width = 0.3,
-                col = TotalColors,
-                alpha = violin.alpha,
-                border.col = TotalColors,
-                add = T
-                ,cex=2,median = FALSE)
-  
-  
-  text(round(round(DensityCountriesRegions[[t]]$summary["Total","mean"],digits = 1)),x=t+0.1,
-       y=DensityCountriesRegions[[t]]$summary["Total","95%CIHigh"]+total.offset, cex=text.cex)
-  
-  #SWEDEN
-  plot.violins2(list(DensityCountriesRegions[[t]]$PosteriorRegions["Sweden",]),
-                x = at[t],
-                at=at[t]-0.05,
-                violin.width = 0.3,
-                col = country.colors[2],
-                alpha = violin.alpha,
-                border.col = country.colors[2],
-                add = T
-                ,cex=2,median = FALSE)
-  text(round(round(DensityCountriesRegions[[t]]$summary["Sweden","mean"],digits = 1)),x=t-0.1,
-       y=DensityCountriesRegions[[t]]$summary["Sweden","95%CILow"] + SE.offset, cex=text.cex)
-  #NORWAY
-  #print(t)
-  plot.violins2(list(DensityCountriesRegions[[t]]$PosteriorRegions["Norway",]),
-                x = at[t],
-                at=at[t],
-                violin.width = 0.3,
-                col = country.colors[1],
-                alpha = violin.alpha,
-                border.col = country.colors[1],
-                add = T,scale.width = FALSE
-                ,cex=2,median = FALSE
-                
-  )
-  text(round(round(DensityCountriesRegions[[t]]$summary["Norway","mean"],digits = 1)),x=t+0.1,
-       y=DensityCountriesRegions[[t]]$summary["Norway","95%CIHigh"]+NO.offset,cex=text.cex)
-  
-  
-  
-}
-box()
-abline(v=at[1:(nYears-1)]+0.5,lty=2)
-
-#legend
-par(xpd=TRUE)
-legend(x = 1, y = 200,
-       legend= c(" Norway  ", " Sweden  ", " Total"),
-       pt.cex = c(4, 4, 4),
-       horiz = T,
-       pch=c(16, 16, 16),
-       col=c(country.colors, "black"),
-       bty = 'n',
-       cex = 1.5)
-legend(x = 1, y = 200,
-       legend= c(" Norway  ", " Sweden  ", " Total"),
-       pt.cex = c(1.3,1.3 , 1.3),
-       horiz = T,
-       pch=c(16,16,16),
-       col=c("white", "white", "white"),
-       bty = 'n',
-       cex = 1.5)
-
-dev.off()
-
-## ------         2.2.1.2. LAST YEAR ------
-pdf(file= file.path(WDFigures , paste("NCountriesViolinsLastYear.pdf", sep="")), width = 12, height = 8)
-
-par(mar = c(5,8,3,1),las=1, cex.lab=2, cex.axis=1.8, mgp=c(6, 2, 0), xaxs="i", yaxs="i")
-plot(-1000, xlim=c(nYears-0.1, nYears+0.1), ylim=c(0,1300),
-     xlab="", ylab = paste("Estimated number of wolves"), xaxt="n")
-axis(1, at=c(nYears), labels = SeasonText[nYears], cex.axis=1.2)
-at = c(1:nYears)
-
-
-
-
-#for(t in nYears){
-xx <- t
-yy <- n.detected[[nYears]]
-xx <- c(xx-0.5,xx+0.5,xx+0.5,xx-0.5)
-yy<-c(0,0,yy,yy)
-polygon(xx, yy ,border=NA,col=grey(0.9))
-
-#}
-
-t <- nYears
-#TOTAL
-plot.violins2(list(colSums(DensityCountriesRegions[[t]]$PosteriorAllRegions)),
-              x = at[t],
-              at= at[t],
-              violin.width = 0.02,
-              col = TotalColors,
-              alpha = violin.alpha,
-              border.col = TotalColors,
-              add = T
-              ,cex=2,median = FALSE)
-
-
-# text(round(round(DensityCountriesRegions[[t]]$summary["Total","mean"],digits = 1)),x=t+0.1,
-#      y=DensityCountriesRegions[[t]]$summary["Total","95%CIHigh"]+total.offset, cex=text.cex)
-# 
-#SWEDEN
-plot.violins2(list(DensityCountriesRegions[[t]]$PosteriorRegions["Sweden",]),
-              x = at[t],
-              at=at[t],
-              violin.width = 0.02,
-              col = country.colors[2],
-              alpha = violin.alpha,
-              border.col = country.colors[2],
-              add = T
-              ,cex=2,median = FALSE)
-# text(round(round(DensityCountriesRegions[[t]]$summary["Sweden","mean"],digits = 1)),x=t-0.1,
-#      y=DensityCountriesRegions[[t]]$summary["Sweden","95%CILow"] + SE.offset, cex=text.cex)
-#NORWAY
-#print(t)
-plot.violins2(list(DensityCountriesRegions[[t]]$PosteriorRegions["Norway",]),
-              x = at[t],
-              at=at[t],
-              violin.width = 0.02,
-              col = country.colors[1],
-              alpha = violin.alpha,
-              border.col = country.colors[1],
-              add = T,scale.width = FALSE
-              ,cex=2,median = FALSE
-              
-)
-# text(round(round(DensityCountriesRegions[[t]]$summary["Norway","mean"],digits = 1)),x=t+0.1,
-#      y=DensityCountriesRegions[[t]]$summary["Norway","95%CIHigh"]+NO.offset,cex=text.cex)
-# 
-
-
-# }
-box()
-# abline(v=at[1:(nYears-1)]+0.5,lty=2)
-
-#legend
-par(xpd=TRUE)
-legend(x = nYears+0.01, y = 200,
-       legend= c(" Norway  ", " Sweden  ", " Total"),
-       pt.cex = c(2, 2, 2),
-       horiz = T,
-       pch=c(16, 16, 16),
-       col=c(country.colors, "black"),
-       bty = 'n',
-       cex = 1.2)
-legend(x = nYears+0.01, y = 200,
-       legend= c(" Norway  ", " Sweden  ", " Total"),
-       pt.cex = c(0.5,0.5 , 0.5),
-       horiz = T,
-       pch=c(16,16,16),
-       col=c("white", "white", "white"),
-       bty = 'n',
-       cex = 1.2)
-
-dev.off()
-
 
 ## ------       2.2.2. BARS ------
+
 ## ------         2.2.2.1. ALL YEARS ------
+
 SeasonText <- lapply(YEARS, FUN = function(x) paste(x, collapse ="/")) #paste(x[[2]]))
 
-SeasonText <- lapply(YEARS, FUN = function(x) x[2]) #paste(x[[2]]))
+SeasonText <- lapply(YEARS, FUN = function(x) x[2]) 
 
-
-#define colors
+##-- Define colors
 text.cex <- 1.5
 total.offset <- 37
 NO.offset <- -37
@@ -2662,12 +2436,11 @@ dev.off()
 
 
 ## ------         2.2.2.2. ALL YEARS SEX ------
-SeasonText <- lapply(YEARS, FUN = function(x) paste(x, collapse ="/")) #paste(x[[2]]))
 
-SeasonText <- lapply(YEARS, FUN = function(x) x[2]) #paste(x[[2]]))
+SeasonText <- lapply(YEARS, FUN = function(x) paste(x, collapse ="/")) 
+SeasonText <- lapply(YEARS, FUN = function(x) x[2]) 
 
-
-#define colors
+## Define colors
 text.cex <- 1.5
 total.offset <- 37
 NO.offset <- -37
@@ -2675,56 +2448,59 @@ SE.offset <- +37
 xlim <- c(0.5, nYears + 0.5)
 
 TotalColors <- "black"
-country.colors <- c("firebrick2","deepskyblue2")#c("turquoise","darkmagenta")# c("goldenrod1","goldenrod3")
+country.colors <- c("firebrick2","deepskyblue2")
 names(country.colors) <- c("Norway","Sweden")
 violin.alpha95 <- 0.3
 violin.alpha50 <- 0.7
 
-pdf(file= file.path(WDFigures , paste("NCountriesBarsSex.pdf", sep="")), width = 18, height = 8)
-par(mfrow=c(1,2), mar = c(5,8,3,1),las=1, cex.lab=2, cex.axis=1.3, mgp=c(6, 2, 0), xaxs="i", yaxs="i")
-plot(-1000, xlim=c(0.5, nYears+.5), ylim=c(0,800),
-     xlab="", ylab = paste("Estimated number of Females"), xaxt="n")
-axis(1, at=c(1:(nYears)), labels = SeasonText, cex.axis=1.1,padj = -1)
+pdf( file = file.path(WDFigures, "NCountriesBarsSex.pdf"), width = 18, height = 8)
+par( mfrow = c(1,2), mar = c(5,8,3,1),
+     las = 1, cex.lab = 2, cex.axis = 1.3, mgp = c(6,2,0),
+     xaxs = "i", yaxs = "i")
+plot(-1000, xlim = c(0.5, nYears+.5), ylim = c(0,800),
+     xlab = "", ylab = "Estimated number of Females", xaxt = "n")
+axis(1, at = c(1:(nYears)), labels = SeasonText, cex.axis = 1.1, padj = -1)
 at = c(1:nYears)
-abline(h=seq(100,1200,by=100), lty=2, col=grey(0.90))
+abline(h = seq(100,1200,by = 100), lty = 2, col = grey(0.90))
 
-## GET THE DETECTED INDIVIDUALS 
-
+##-- GET THE DETECTED INDIVIDUALS 
 widthPolygon <- 0.15
 widthPolygon1 <- 0.15
 widthPolygon2 <- 0.15
 offsetstar <- 0.05
 cexStar <- 1.5
 displayQuantiles50 <- TRUE
-#yearsNotSampled <- NA
+
 for(t in 1:nYears){
-  #TOTAL
+  ##-- TOTAL
   tmp <- colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[c("Sweden","Norway"),])
   quantile95 <- quantile(tmp, prob=c(0.0275, 0.975))
   quantile50 <- quantile(tmp, prob=c(0.25, 0.75))
-  
   polygon(x = c(t - widthPolygon, t + widthPolygon,
                 t + widthPolygon, t - widthPolygon ),
           y = c(quantile95[1], quantile95[1],
                 quantile95[2], quantile95[2]), 
-          col=adjustcolor(TotalColors, violin.alpha95),
-          border= NA)
-  
-  # add a star
+          col = adjustcolor(TotalColors, violin.alpha95),
+          border = NA)
+
+  ##-- add a star
   if(sum(t %in% yearsNotSampled)){
-    text(x=t+widthPolygon+offsetstar ,y= quantile95[2], "*",cex=cexStar)
-    
+    text(x = t + widthPolygon + offsetstar,
+         y = quantile95[2],
+         "*",
+         cex = cexStar)
   }
-  
+  ##-- add 50% quantil
   if(displayQuantiles50){
     polygon(x = c(t-widthPolygon, t+widthPolygon,
                   t+widthPolygon, t-widthPolygon ),
             y = c(quantile50[1], quantile50[1],
                   quantile50[2], quantile50[2]), 
-            col=adjustcolor(TotalColors, violin.alpha50),
-            border= NA)
+            col = adjustcolor(TotalColors, violin.alpha50),
+            border = NA)
   }
-  #SWEDEN
+  
+  ##-- SWEDEN
   tmp <- DensityCountriesRegionsF[[t]]$PosteriorRegions["Sweden",]
   quantile95 <- quantile(tmp, prob=c(0.0275, 0.975))
   quantile50 <- quantile(tmp, prob=c(0.25, 0.75))
@@ -2733,8 +2509,8 @@ for(t in 1:nYears){
                 t - widthPolygon1*2, t),
           y = c(quantile95[1], quantile95[1],
                 quantile95[2], quantile95[2]), 
-          col=adjustcolor(country.colors[2], violin.alpha95),
-          border= NA)
+          col = adjustcolor(country.colors[2], violin.alpha95),
+          border = NA)
   
   if(sum(t %in% yearsNotSampled)){
     text(x= t+offsetstar ,y= quantile95[2], "*",cex=cexStar)
@@ -2782,20 +2558,10 @@ abline(v=at[1:(nYears)]+0.5,lty=2)
 
 #legend
 par(xpd=TRUE)
-polygon(x=c(0.8,7.2,7.2,0.8),y=c(170,170,230,230),col=adjustcolor("white",alpha.f = 0.9),border="white")
-
-# legend(x = 1, y = 600,
-#        legend= c(" Norway  ", " Sweden  ", " Total"),
-#        #pt.cex = c(4, 4, 4),
-#        horiz = T,
-#        #pch=c(16, 16, 16),
-#        fill=c(country.colors, "black"),
-#        border=NA,
-#        bty = 'n',
-#        cex = 1.5)
-
-
-
+polygon( x = c(0.8,7.2,7.2,0.8),
+         y = c(170,170,230,230),
+        col = adjustcolor("white", alpha.f = 0.9),
+        border = "white")
 labels <- c(" Norway  ", " Sweden  ", " Total")
 pch <- rep(19,4)
 cex <- rep(4,4)
@@ -2914,21 +2680,10 @@ abline(v=at[1:(nYears)]+0.5,lty=2)
 
 #legend
 par(xpd=TRUE)
-polygon(x=c(0.8,7.2,7.2,0.8),y=c(600,600,650,650),
-        col=adjustcolor("white",alpha.f = 0.9),border="white")
-
-# legend(x = 1, y = 600,
-#        legend= c(" Norway  ", " Sweden  ", " Total"),
-#        #pt.cex = c(4, 4, 4),
-#        horiz = T,
-#        #pch=c(16, 16, 16),
-#        fill=c(country.colors, "black"),
-#        border=NA,
-#        bty = 'n',
-#        cex = 1.5)
-
-
-
+polygon( x = c(0.8,7.2,7.2,0.8),
+         y = c(600,600,650,650),
+        col = adjustcolor("white",alpha.f = 0.9),
+        border="white")
 labels <- c(" Norway  ", " Sweden  ", " Total")
 pch <- rep(19,4)
 cex <- rep(4,4)
@@ -3165,7 +2920,7 @@ max <- max(unlist(lapply(DensityCountriesRegions, function(x) max(x$MeanCell))))
 cuts <- seq(0,max,length.out = 100)   #set breaks
 col <- rev(terrain.colors(100))
 
-#PLOT
+##-- PLOT
 pdf(file=file.path(WDFigures, "DensityMapsAC5kms.pdf"))
 for(t in 1: nYears){
   habbdens <- densityInputRegions$regions.r
@@ -3187,39 +2942,24 @@ for(t in 1: nYears){
 }
 dev.off()
 
+
+
 ## ------     2.3. UD BASED DENSITY (5km) ------
+
 ### IDENTIFY PROXIMITY HABITAT CELLS 
 habitatMask <- densityInputCountries$habitat.id
 habitatMask[!is.na(habitatMask)] <- 1 
-# DetIndex <- getLocalObjects(habitatMask =  habitatMask,
-#                             coords = densityInputCountries$habitat.xy,
-#                             dmax = 15,
-#                             resizeFactor = 1)
 
-### COMPUTE THE UD BASED FOR A FEW ITERATIONS
-#RESCALE SIGMA TO METERS 
+## COMPUTE THE UD BASED FOR A FEW ITERATIONS
+## RESCALE SIGMA TO METERS 
 sigma <- myResultsSXYZ_MF$sims.list$sigma#*res(myHabitat.list$habitat.r)[1]
-#RESCALE SIGMA TO THE HABITAT SCALE
+##-- RESCALE SIGMA TO THE HABITAT SCALE
 sigmaRescaled <- sigma/res(rrCountries)[1]
 
-#SELECT xxx ITERATIONS RANDOMLY 
+##-- SELECT xxx ITERATIONS RANDOMLY 
 spaceUSED <- list()
-iter <- sample(1:dim(densityInputCountries$sy)[1], size = 1000)#dim(densityInputCountries$sx)[1])
+iter <- sample(1:dim(densityInputCountries$sy)[1], size = 1000)
 # for(t in 1:nYears){
-#   # spaceUSED[[t]] <- GetSpaceUseLESS( densityInputCountries$sx[iter,,t],
-#   #                               densityInputCountries$sy[iter,,t],
-#   #                               myResultsSXYZ_MF$sims.list$z[iter,,t],
-#   #                               sigmaRescaled[iter],
-#   #                               densityInputCountries$habitat.xy,
-#   #                               aliveStates = alive.states,
-#   #                               regionID = regionID,
-#   #                               habitatID = DetIndex$habitatGrid-1,
-#   #                               habitatIndex = DetIndex$localIndices-1,
-#   #                               nHabitatLESS = DetIndex$numLocalIndices,
-#   #                               display_progress = T,
-#   #                               returnPosteriorCells = F
-#   # )
-# 
 #   spaceUSED[[t]] <- GetSpaceUse(densityInputCountries$sx[iter,,t],
 #                                 densityInputCountries$sy[iter,,t],
 #                                 myResultsSXYZ_MF$sims.list$z[iter,,t],
@@ -3228,25 +2968,8 @@ iter <- sample(1:dim(densityInputCountries$sy)[1], size = 1000)#dim(densityInput
 #                                 aliveStates = alive.states,
 #                                 regionID = densityInputCountries$regions.rgmx,
 #                                 display_progress = T,
-#                                 returnPosteriorCells = T
-#   )
+#                                 returnPosteriorCells = T)
 # }
-# 
-# t=9
-# plot(densityInputCountries$habitat.xy[,2]~
-#        densityInputCountries$habitat.xy[,1],pch=16,cex=0.1)
-# 
-# for(iter in 1:100){
-#   points(densityInputCountries$sy[iter,myResultsSXYZ_MF$sims.list$z[iter,,t] %in%2,t]~
-#            densityInputCountries$sx[iter,myResultsSXYZ_MF$sims.list$z[iter,,t] %in%2,t],col="red",pch=16,cex=0.1)
-# }
-# 
-# 
-# 
-# 
-# 
-# plot(densityInputCountries$sy[1,myResultsSXYZ_MF$sims.list$z[1,,t] %in%2,t]~
-#        densityInputCountries$sx[1,myResultsSXYZ_MF$sims.list$z[1,,t] %in%2,t])
 # 
 # spaceUSED1 <- spaceUSED
 # spaceUSED <- list()
@@ -3256,6 +2979,8 @@ iter <- sample(1:dim(densityInputCountries$sy)[1], size = 1000)#dim(densityInput
 # }
 # save(spaceUSED, file = file.path(WDFigures , "spaceUsed5km.RData" ))
 load(file = file.path(WDFigures , "spaceUsed5km.RData" ))
+
+
 
 ## ------       2.3.1. PLOT TIME SERIES ------
 #### PLOT TIME SERIES 
@@ -3648,38 +3373,25 @@ for(t in 1:length(years)){
 
 
 ## ------   3. DERIVED PARAMETERS FROM ABUNDANCE ------ 
-## ------     3.1. MAKE A GROWTH RATE TABLE PER COUNTRY  ------
-growthRate <- matrix(0, ncol=nYears-1,nrow=3)
-row.names(growthRate) <- c("Norway","Sweden","Total")
-colnames(growthRate) <- unlist(lapply(YEARS[2:(length(YEARS))],function(x) paste(x,collapse =  "-")))
 
+## ------     3.1. MAKE A GROWTH RATE TABLE PER COUNTRY  ------
+
+growthRate <- matrix(0, ncol = nYears-1, nrow = 3)
+row.names(growthRate) <- c("Norway","Sweden","Total")
+colnames(growthRate) <- unlist(lapply( YEARS[2:(length(YEARS))],
+                                       function(x) paste(x, collapse =  "-")))
 for(t in 1:(nYears-1)){
-  growth <- DensityCountriesRegions[[t+1]]$PosteriorRegions["Norway",] /
-    DensityCountriesRegions[[t]]$PosteriorRegions["Norway",]
-  growthRate["Norway",t] <- paste(format(round(mean(growth),digits = 2),nsmall = 2),
-                                  " (",
-                                  format(round(quantile(growth, probs=c(0.025)), digits = 2),nsmall = 2),"-",
-                                  format(round(quantile(growth, probs=c(0.975)), digits = 2),nsmall = 2),
-                                  ")",sep="")
+  growth <- DensityCountriesRegions[[t+1]]$PosteriorRegions["Norway", ] /
+    DensityCountriesRegions[[t]]$PosteriorRegions["Norway", ]
+  growthRate["Norway",t] <- getCleanEstimates(growth)
+
+  growth <- DensityCountriesRegions[[t+1]]$PosteriorRegions["Sweden",] / 
+    (DensityCountriesRegions[[t]]$PosteriorRegions["Sweden", ])
+  growthRate["Sweden",t] <- getCleanEstimates(growth)
   
-  
-  
-  growth <- DensityCountriesRegions[[t+1]]$PosteriorRegions["Sweden",]/ 
-    (DensityCountriesRegions[[t]]$PosteriorRegions["Sweden",])
-  growthRate["Sweden",t] <- paste(format(round(mean(growth),digits = 2),nsmall = 2),
-                                  " (",
-                                  format(round(quantile(growth, probs=c(0.025)), digits = 2),nsmall = 2),"-",
-                                  format(round(quantile(growth, probs=c(0.975)), digits = 2),nsmall = 2),
-                                  ")",sep="")
-  
-  
-  growth <- colSums(DensityCountriesRegions[[t+1]]$PosteriorRegions[c("Sweden","Norway"),])/
-    colSums(DensityCountriesRegions[[t]]$PosteriorRegions[c("Sweden","Norway"),])#colSums(DensityCountriesRegions[[t+1]]$PosteriorAllRegions) / 
-  #colSums(DensityCountriesRegions[[t]]$PosteriorAllRegions)
-  growthRate["Total",t] <- paste(format(round(mean(growth),digits = 2),nsmall = 2),
-                                 " (",format(round(quantile(growth, probs=c(0.025)), digits = 2),nsmall = 2),"-",
-                                 format(round(quantile(growth, probs=c(0.975)), digits = 2),nsmall = 2),
-                                 ")",sep="")
+  growth <- colSums(DensityCountriesRegions[[t+1]]$PosteriorRegions[c("Sweden","Norway"), ])/
+    colSums(DensityCountriesRegions[[t]]$PosteriorRegions[c("Sweden","Norway"), ])
+  growthRate["Total",t] <- getCleanEstimates(growth)
   
 }
 
@@ -3694,18 +3406,19 @@ for(t in 1:(nYears-1)){
 # growthRate[3,transitionNotSampled] <- paste(growthRate[3,transitionNotSampled],"*",sep="")
 
 
-#print table 
-print(xtable(growthRate, type = "latex", align=paste(c("l", rep("c",ncol(growthRate))), collapse = "")),
-      # scalebox=.8,
+##-- Print table 
+print(xtable( growthRate, type = "latex",
+             align = paste(c("l", rep("c",ncol(growthRate))), collapse = "")),
       floating = FALSE, sanitize.text.function=function(x){x},
-      add.to.row=list(list(seq(1,nrow(growthRate),by=2)),"\\rowcolor[gray]{.96} "),
-      file = file.path(WDTables, paste("growthRate.tex", sep="")))
+      add.to.row = list(list(seq(1,nrow(growthRate), by = 2)), "\\rowcolor[gray]{.96} "),
+      file = file.path(WDTables, "growthRate.tex"))
+
+#colSums(DensityCountriesRegions[[t+1]]$PosteriorRegions[c("Sweden","Norway"), ]) 
 
 
-colSums(DensityCountriesRegions[[t+1]]$PosteriorRegions[c("Sweden","Norway"),])
 ## ------     3.2. DERIVE SEX RATIO  ------
-PropFemale <- PropFemaleSWE <- PropFemaleNOR <- list()
 
+PropFemale <- PropFemaleSWE <- PropFemaleNOR <- list()
 for(t in 1:nYears){
   PropFemale[[t]] <- colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[c("Sweden","Norway"),])/
     (colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[c("Sweden","Norway"),]) + colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[c("Sweden","Norway"),]))
@@ -3717,50 +3430,37 @@ for(t in 1:nYears){
     (DensityCountriesRegionsM[[t]]$PosteriorRegions["Norway",] + DensityCountriesRegionsF[[t]]$PosteriorRegions["Norway",])
 }
 
-#OVERALL PROPORTION OF FEMALES
+## OVERALL PROPORTION OF FEMALES
 mean(unlist(PropFemale))
 round(quantile(unlist(PropFemale), probs=c(0.025,0.975)),digits = 2)
 
-#median(PropFemale[[nYears]])
+## median(PropFemale[[nYears]])
 quantile(PropFemale[[nYears]], probs=c(0.025,0.975))
 mean(PropFemale[[nYears]])
 
-
-# mean(do.call(c,PropFemale))
-# quantile(do.call(c,PropFemale), probs=c(0.025,0.975))
-
-propFemale_tab <- matrix(0, ncol=nYears,nrow=3)
+propFemale_tab <- matrix(0, ncol = nYears, nrow = 3)
 row.names(propFemale_tab) <- c("Norway","Sweden","Total")
-colnames(propFemale_tab) <- unlist(lapply(YEARS,function(x) c(x[2])))#c(unlist(lapply(YEARS[1:(length(YEARS))],function(x) paste(x,collapse =  "-"))))
+colnames(propFemale_tab) <- unlist(lapply(YEARS,function(x) c(x[2])))
 for(t in 1:nYears){
-  #Sweden
-  propFemale_tab["Sweden",t] <- paste(format(round(mean(PropFemaleSWE[[t]]),digits = 2),nsmall = 2),
-                                      " (",
-                                      format(round(quantile(PropFemaleSWE[[t]], probs=c(0.025)), digits = 2),nsmall = 2),"-",
-                                      format(round(quantile(PropFemaleSWE[[t]], probs=c(0.975)), digits = 2),nsmall = 2),
-                                      ")",sep="")
-  #NORWAY
-  propFemale_tab["Norway",t] <- paste(format(round(mean(PropFemaleNOR[[t]]),digits = 2),nsmall = 2),
-                                      " (",
-                                      format(round(quantile(PropFemaleNOR[[t]], probs=c(0.025)), digits = 2),nsmall = 2),"-",
-                                      format(round(quantile(PropFemaleNOR[[t]], probs=c(0.975)), digits = 2),nsmall = 2),
-                                      ")",sep="")
-  propFemale_tab["Total",t] <- paste(format(round(mean(PropFemale[[t]]),digits = 2),nsmall = 2),
-                                     " (",
-                                     format(round(quantile(PropFemale[[t]], probs=c(0.025)), digits = 2),nsmall = 2),"-",
-                                     format(round(quantile(PropFemale[[t]], probs=c(0.975)), digits = 2),nsmall = 2),
-                                     ")",sep="")
-}
+  ##-- Sweden
+  propFemale_tab["Sweden",t] <- getCleanEstimates(PropFemaleSWE[[t]])
+  ##-- NORWAY
+  propFemale_tab["Norway",t] <- getCleanEstimates(PropFemaleNOR[[t]])
+  ##-- Total
+  propFemale_tab["Total",t] <- getCleanEstimates(PropFemale[[t]])
+}#t
 
-#print table 
-print(xtable(propFemale_tab, type = "latex", align=paste(c("l", rep("c",ncol(propFemale_tab))), collapse = "")),
-      # scalebox=.8,
-      floating = FALSE, sanitize.text.function=function(x){x},
-      add.to.row=list(list(seq(1,nrow(propFemale_tab),by=2)),"\\rowcolor[gray]{.96} "),
-      file = file.path(WDTables, paste("propFemale.tex", sep="")))
+##-- Print table 
+print(xtable( propFemale_tab, type = "latex",
+              align = paste(c("l", rep("c",ncol(propFemale_tab))), collapse = "")),
+      floating = FALSE, sanitize.text.function = function(x){x},
+      add.to.row=list(list(seq(1,nrow(propFemale_tab), by = 2)), "\\rowcolor[gray]{.96} "),
+      file = file.path(WDTables, "propFemale.tex"))
+
 
 
 ## ------     3.3. DERIVE DENSITY  ------
+
 habbRCarRegionsTRY <- rrCountries
 habbRCarRegionsTRY[!is.na(habbRCarRegionsTRY[])] <-1 
 habbRCarRegionsTRY[] <- as.numeric(habbRCarRegionsTRY[])
@@ -3779,101 +3479,80 @@ DensityCountriesRegions[[t]]$summary["Total","mean"]/areaSqKm*100
 DensityCountriesRegions[[t]]$summary["Total","95%CILow"]/areaSqKm*100
 DensityCountriesRegions[[t]]$summary["Total","95%CIHigh"]/areaSqKm*100
 
-###COULD REMAKE ALL THE TABLES WITH DENSITY INSTEAD OF ABUNDANCE....
+##-- COULD REMAKE ALL THE TABLES WITH DENSITY INSTEAD OF ABUNDANCE....
+
+
+
 ## ------     3.4.  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED ------
-n.detectedTotal <- read.csv(file.path(WDTables, paste("TotalIdDetected.csv", sep="")))
+
+n.detectedTotal <- read.csv(file.path(WDTables, "TotalIdDetected.csv"))
 n.detectedTotal <- as.vector(n.detectedTotal[1, 2:ncol(n.detectedTotal)])
 
-n.detectedSex <- read.csv(file.path(WDTables, paste("NGSidCountrySEX.csv", sep="")))
+n.detectedSex <- read.csv(file.path(WDTables, "NGSidCountrySEX.csv"))
 tF <- seq(2, length.out = nYears, by=2)
 tM <- seq(3, length.out = nYears, by=2)
 
 propDetected <- matrix("", ncol=nYears,nrow=3)
 row.names(propDetected) <- c("M","F","Total")
-colnames(propDetected) <- unlist(lapply(YEARS,function(x) c(x[2])))#unlist(lapply(YEARS,function(x) paste(x,collapse = "/")))#
+colnames(propDetected) <- unlist(lapply(YEARS,function(x) c(x[2])))
 
 for(t in 1:nYears){
-  propDetected["Total",t] <-  paste(format(round(mean(n.detected[1,t]/colSums(DensityCountriesRegions[[t]]$PosteriorRegions[c("Sweden","Norway"),])), digits = 2),nsmall = 2),
-                                    " (",format(round(quantile(n.detected[1,t]/colSums(DensityCountriesRegions[[t]]$PosteriorRegions[c("Sweden","Norway"),]),probs=c(0.025)),digits = 2),nsmall = 2),"-",
-                                    format(round(quantile(n.detected[1,t]/colSums(DensityCountriesRegions[[t]]$PosteriorRegions[c("Sweden","Norway"),]),probs=c(0.975)) ,digits = 2),nsmall = 2),")",sep="")
-  
+  propDetected["Total",t] <- getCleanEstimates(n.detected[1,t]/colSums(DensityCountriesRegions[[t]]$PosteriorRegions[c("Sweden","Norway"), ]))
+
   n.detectedSexM <- as.numeric(as.character(n.detectedSex[4,tM[t]]))
-  propDetected["M",t] <-  paste(format(round(mean(n.detectedSexM/colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[c("Sweden","Norway"),])), digits = 2),nsmall = 2),
-                                " (",format(round(quantile(n.detectedSexM/colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[c("Sweden","Norway"),]), probs=c(0.025)), digits = 2),nsmall = 2), "-",
-                                format(round(quantile(n.detectedSexM/colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[c("Sweden","Norway"),]), probs=c(0.975)), digits = 2),nsmall = 2),")", sep="")
+  propDetected["M",t] <- getCleanEstimates(n.detectedSexM/colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[c("Sweden","Norway"), ]))
   
   n.detectedSexF <- as.numeric(as.character(n.detectedSex[4,tF[t]]))
-  propDetected["F",t] <-  paste(format(round(mean(n.detectedSexF/colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[c("Sweden","Norway"),])), digits = 2),nsmall = 2),
-                                " (",format(round(quantile(n.detectedSexF/colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[c("Sweden","Norway"),]), probs=c(0.025)), digits = 2),nsmall = 2), "-",
-                                format(round(quantile(n.detectedSexF/colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[c("Sweden","Norway"),]), probs=c(0.975)), digits = 2),nsmall = 2),")", sep="")
-  
-  
-  
-}
+  propDetected["F",t] <- getCleanEstimates(n.detectedSexF/colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[c("Sweden","Norway"), ]))
+}#t
 
-
-##PRINT
-print(xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDetected))),collapse = "")),
-      # scalebox=.8,
-      floating = FALSE, sanitize.text.function=function(x){x},
-      add.to.row=list(list(seq(1,nrow(propDetected), by=2)),"\\rowcolor[gray]{.96} "),
-      file = file.path(WDTables, paste("PropDetectedIds.tex",sep="")))
-
+##-- PRINT .tex table
+print( xtable( propDetected, type = "latex",
+               align = paste(c("l",rep("c",ncol(propDetected))), collapse = "")),
+       floating = FALSE, sanitize.text.function=function(x){x},
+       add.to.row = list(list(seq(1,nrow(propDetected), by = 2)), "\\rowcolor[gray]{.96} "),
+       file = file.path(WDTables, "PropDetectedIds.tex"))
 
 
 
 ## ------     3.5.  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED PER COUNTRIES  ------
-n.detectedCountry <- read.csv(file.path(WDTables, paste("NGSidCountrySEX.csv", sep="")))
-colnames(n.detectedCountry) <- c("",unlist(lapply(YEARS,function(x) c(x[2],x[2])))) 
-#propDetected <- matrix("", ncol=nYears,nrow=3)
-#row.names(propDetected) <- c("M","F","Total")
-#colnames(propDetected) <- unlist(lapply(YEARS,function(x) c(x[2])))#unlist(lapply(YEARS,function(x) paste(x,collapse = "/")))#
+
+n.detectedCountry <- read.csv(file.path(WDTables, "NGSidCountrySEX.csv"))
+colnames(n.detectedCountry) <- c("", unlist(lapply(YEARS,function(x) c(x[2],x[2])))) 
 propDetectedCountry <- n.detectedCountry 
 propDetectedCountry[2:4, 2:ncol(propDetectedCountry)] <- NA
 
-NCountrySex <- read.csv(file.path(WDTables, paste("NAllYearsPerSex.csv", sep="")))
-colnames(NCountrySex) <- c("",unlist(lapply(YEARS,function(x) c(x[2],x[2],x[2]))))
+NCountrySex <- read.csv(file.path(WDTables, "NAllYearsPerSex.csv"))
+colnames(NCountrySex) <- c("", unlist(lapply(YEARS,function(x) c(x[2],x[2],x[2]))))
 
 yrs <- unlist(lapply(YEARS, function(x) c(x[2]))) 
 
-
 lisCountries <- list()
-
 lisCountries[[1]] <- c("Norway")
 lisCountries[[2]] <- c("Sweden")
 lisCountries[[3]] <- c("Sweden","Norway")
 
 for(t in 1:nYears){
-  col <- which(colnames(NCountrySex)  %in% yrs[t])
-  NCountrySex[,col]
-  
-  cols <- which(colnames(propDetectedCountry)  %in% as.character(yrs[t]))
+  cols <- which(colnames(propDetectedCountry) %in% as.character(yrs[t]))
   for(p in 1:2){
-  propDetectedCountry[p+1,cols[1]] <-  paste(format(round(mean(as.numeric(n.detectedCountry[p+1,cols[1]]) /DensityCountriesRegionsF[[t]]$PosteriorRegions[lisCountries[[p]],]), digits = 2),nsmall = 2),
-                                    " (",format(round(quantile(as.numeric(n.detectedCountry[p+1,cols[1]])/DensityCountriesRegionsF[[t]]$PosteriorRegions[c(lisCountries[[p]]),],probs=c(0.025)),digits = 2),nsmall = 2),"-",
-                                    format(round(quantile(as.numeric(n.detectedCountry[p+1,cols[1]])/DensityCountriesRegionsF[[t]]$PosteriorRegions[c(lisCountries[[p]]),],probs=c(0.975)) ,digits = 2),nsmall = 2),")",sep="")
-  
-  propDetectedCountry[p+1,cols[2]] <-  paste(format(round(mean(as.numeric(n.detectedCountry[p+1,cols[2]]) /DensityCountriesRegionsM[[t]]$PosteriorRegions[lisCountries[[p]],]), digits = 2),nsmall = 2),
-                                             " (",format(round(quantile(as.numeric(n.detectedCountry[p+1,cols[2]])/DensityCountriesRegionsM[[t]]$PosteriorRegions[c(lisCountries[[p]]),],probs=c(0.025)),digits = 2),nsmall = 2),"-",
-                                             format(round(quantile(as.numeric(n.detectedCountry[p+1,cols[2]])/DensityCountriesRegionsM[[t]]$PosteriorRegions[c(lisCountries[[p]]),],probs=c(0.975)) ,digits = 2),nsmall = 2),")",sep="")
-  
-  }
-  for(p in 3:3){
-    propDetectedCountry[p+1,cols[1]] <-  paste(format(round(mean(as.numeric(n.detectedCountry[p+1,cols[1]]) /colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[lisCountries[[p]],])), digits = 2),nsmall = 2),
-                                               " (",format(round(quantile(as.numeric(n.detectedCountry[p+1,cols[1]])/colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[c(lisCountries[[p]]),]),probs=c(0.025)),digits = 2),nsmall = 2),"-",
-                                               format(round(quantile(as.numeric(n.detectedCountry[p+1,cols[1]])/colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[c(lisCountries[[p]]),]),probs=c(0.975)) ,digits = 2),nsmall = 2),")",sep="")
-    
-    propDetectedCountry[p+1,cols[2]] <-  paste(format(round(mean(as.numeric(n.detectedCountry[p+1,cols[2]]) /colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[c(lisCountries[[p]]),])), digits = 2),nsmall = 2),
-                                               " (",format(round(quantile(as.numeric(n.detectedCountry[p+1,cols[2]])/colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[c(lisCountries[[p]]),]),probs=c(0.025)),digits = 2),nsmall = 2),"-",
-                                               format(round(quantile(as.numeric(n.detectedCountry[p+1,cols[2]])/colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[c(lisCountries[[p]]),]),probs=c(0.975)) ,digits = 2),nsmall = 2),")",sep="")
-    
-  }
-  
-  
-
- }
-
-
+    ##-- Female
+    propDetectedCountry[p+1,cols[1]] <- getCleanEstimates(
+      as.numeric(n.detectedCountry[p+1,cols[1]])/
+        DensityCountriesRegionsF[[t]]$PosteriorRegions[lisCountries[[p]], ])
+    ##-- Male
+    propDetectedCountry[p+1,cols[2]] <- getCleanEstimates(
+      as.numeric(n.detectedCountry[p+1,cols[2]])/
+        DensityCountriesRegionsM[[t]]$PosteriorRegions[lisCountries[[p]], ])
+  }#p
+  ##-- Female
+  propDetectedCountry[4,cols[1]] <- getCleanEstimates(
+    as.numeric(n.detectedCountry[4,cols[1]])/
+      colSums(DensityCountriesRegionsF[[t]]$PosteriorRegions[lisCountries[[3]], ]))
+  ##-- Male
+  propDetectedCountry[4,cols[2]] <- getCleanEstimates(
+    as.numeric(n.detectedCountry[4,cols[1]])/
+      colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[lisCountries[[3]], ]))
+}#t
 
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
@@ -3883,11 +3562,8 @@ addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', uniqueYEAR,
                       '}', collapse=''), '\\\\'),
                       rep("\\rowcolor[gray]{.95}",1))
 
-
 # colnames(TableState) <- rep("", ncol(TableState))
 # REMOVE ROWS WHERE PARAMETERS ARE NOT STATE SPECIFIC
-
-
 # multirow <- paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Other","Legal culling"), "}}")
 # multirowadd <- matrix(c("",multirow[1],"",multirow[2],"","{\\textbf{Total}}"),ncol=1)
 # DeadidCountrySEX <- data.frame(cbind(multirowadd,DeadidCountrySEX))
@@ -3895,13 +3571,9 @@ addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', uniqueYEAR,
 # addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(TableState))),
 #                                     '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
 # colnames(TableState) <- rep("", ncol(TableState))
-
 # xTableState <- xtable(TableState)
-
 # rownames(TableState)[2:5] <- c("$\\rho$","$\\phi$","h","w")
-
 # rownames(TableState)[2:8] <- c("$\\gamma$","$\\phi$","   ","h","  ","w","  ")
-
 
 print(xtable(propDetectedCountry, type = "latex",
              align = paste(rep("c", ncol(propDetectedCountry)+1), collapse = "")),
@@ -3911,23 +3583,18 @@ print(xtable(propDetectedCountry, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("propDetectedCountry.tex", sep="")))
+      file = file.path(WDTables, "propDetectedCountry.tex"))
 
 
-
-
-
-##SPLIT THE TABLE IN TWO 
+##-- SPLIT THE TABLE IN TWO 
 propDetectedCountry1 <- propDetectedCountry[,c(1:11)]
 propDetectedCountry2 <- propDetectedCountry[,c(1,12:21)]
-
 command1 <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(propDetectedCountry)[2:11])),
                             '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
 command2 <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(propDetectedCountry)[12:21])),
                             '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
 
-
-#SAVE TABLE 1
+##-- SAVE TABLE 1
 addtorow1 <- addtorow
 addtorow1$command <- command1
 print(xtable(propDetectedCountry1, type = "latex",
@@ -3940,7 +3607,7 @@ print(xtable(propDetectedCountry1, type = "latex",
       sanitize.text.function = function(x){x},
       file = file.path(WDTables,paste("propDetectedCountry1.tex", sep="")))
 
-#SAVE TABLE 2
+##-- SAVE TABLE 2
 addtorow1$command <- command2
 print(xtable(propDetectedCountry2, type = "latex",
              align = paste(rep("c", ncol(propDetectedCountry2)+1), collapse = "")),
@@ -3955,27 +3622,32 @@ print(xtable(propDetectedCountry2, type = "latex",
 
 
 ## ------   4. VITAL RATES  ------
+
 widthPolygon <- 0.15
 widthPolygon1 <- 0.15
 widthPolygon2 <- 0.15
 
 ## ------     4.1. SURVIVAL BARS  ------
-pdf(file=file.path(WDFigures , paste("SurvivalBars.pdf",sep="")),width=8,height=4)
 
-nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
+pdf( file = file.path(WDFigures, "SurvivalBars.pdf"),
+     width = 8, height = 4)
 
-par(mar=c(5,4.5,0.5,0.5),tck=0,xaxs="i",cex.axis=1.3,cex.lab=1.6)
-plot(10, xlim = c(0.5, nYears-1+0.5), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Survival")
-axis(2,tck=-0.02)
-abline(v=1:(nYears-1)+0.5,lty=2)
+nf <- layout( cbind(c(6,3), c(4,1), c(5,2)),
+              widths = c(0.05,1,0.30), heights = c(0.15,1))
+
+par(mar = c(5,4.5,0.5,0.5), tck = 0, xaxs = "i", cex.axis = 1.3, cex.lab = 1.6)
+plot( 10, xlim = c(0.5, nYears-1+0.5),
+      ylim = c(0,1), type ="n", xaxt = "n", xlab = "Years", ylab = "Survival")
+axis(2, tck = -0.02)
+abline(v = 1:(nYears-1)+0.5, lty = 2)
 #axis(1, c(1:nYears), labels = paste(years,years+1,sep=" to\n "),  cex.axis=1.1,padj  = 0.5)
 #axis(1, c(1:nYears), labels = paste(years+1,years+2,sep=" to\n "),cex.axis=0.5,padj = -2)
-axis(1, c(1:(nYears)),labels = paste(years+1, years+2,sep=" to\n"),
-     cex.axis=1.2,padj = 0.2,tick = F)
+axis( 1, c(1:(nYears)),
+      labels = paste(years+1, years+2, sep = " to\n"),
+     cex.axis = 1.2, padj = 0.2,tick = F)
 
 myCol <- c("#E69F00","#009E73")
 
-#myCol <- c("green","darkgreen")#c("orange","darkorange2")#c("bisque3","burlywood4")#c("lightgreen","darkgreen")
 myDev <- c(-0.15,+0.15)
 ss <- c("F","M")
 widthPolygon <- 0.15
@@ -3990,20 +3662,15 @@ for(s in 1:2){
                   t+myDev[s] + widthPolygon, t+myDev[s] - widthPolygon ),
             y = c(quantile95[1], quantile95[1],
                   quantile95[2], quantile95[2]), 
-            col=adjustcolor(myCol[s], violin.alpha95),
-            border= NA)
+            col = adjustcolor(myCol[s], violin.alpha95),
+            border = NA)
     polygon(x = c(t+myDev[s]-widthPolygon, t+myDev[s]+widthPolygon,
                   t+myDev[s]+widthPolygon, t+myDev[s]-widthPolygon ),
             y = c(quantile50[1], quantile50[1],
                   quantile50[2], quantile50[2]), 
-            col=adjustcolor(myCol[s], violin.alpha50),
-            border= NA)
-    
-    
-    
-    
-  }
-  t
+            col = adjustcolor(myCol[s], violin.alpha50),
+            border = NA)
+  }#t
 }#i
 
 
