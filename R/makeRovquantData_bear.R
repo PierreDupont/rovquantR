@@ -850,7 +850,7 @@ makeRovquantData_bear <- function(
     for(t in 1:n.years){
       
       ##-- Identify detections further then maxDist
-      distances[[t]] <- CheckDistanceDetections(
+      distances[[t]] <- checkDistanceDetections(
         y = y.ar.ALIVE[,,t], 
         detector.xy = detectors$detectors.df[ ,c("x","y")], 
         max.distance = detectors$maxDist,
