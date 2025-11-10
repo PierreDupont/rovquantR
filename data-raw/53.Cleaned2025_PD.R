@@ -1688,15 +1688,12 @@ detectors$scaledCoords <- scaledCoords$coordsDataScaled
 
 ## ------   4. CREATE LOCAL OBJECTS -----
 
-# ## [CM] reduce multiplicator to 3 
-# maxDistReCalc <- 2.1* detectors$maxDist 
-
-DetectorIndexLESS <- GetDetectorIndexLESS(
-  habitat.mx = habitat$habitat.mx,
-  detectors.xy = detectors$scaledCoords,
-  maxDist = detectors$maxDist/habitat$resolution,
-  ResizeFactor = 1,
-  plot.check = TRUE)
+# DetectorIndexLESS <- GetDetectorIndexLESS(
+#   habitat.mx = habitat$habitat.mx,
+#   detectors.xy = detectors$scaledCoords,
+#   maxDist = detectors$maxDist/habitat$resolution,
+#   ResizeFactor = 1,
+#   plot.check = TRUE)
 
 ##-- Get local detectors
 detectors$localObjects <- getLocalObjects(
@@ -1706,7 +1703,9 @@ detectors$localObjects <- getLocalObjects(
   resizeFactor = detectors$resize.factor,
   plot.check = F)
 
-DetectorIndexLESS == detectors$localObjects 
+# DetectorIndexLESS == detectors$localObjects 
+
+
 
 ## ------   5. SAVE STATE-SPACE CHARACTERISTICS -----
 
@@ -1721,7 +1720,6 @@ save( detectors,
 
 
 ## ------   6. GENERATE y DETECTION ARRAYS ------
-
 ## ------     6.1. FILTER NGS & DEAD RECOVERY DATA FOR DATES ------
 
 # ##-- Check correlation number of detections ~ between monitoring season
@@ -2176,15 +2174,9 @@ y.arOth <- makeY( data = myData.alive$data.sp[!myData.alive$data.sp$structured, 
 y.ar.ALIVEOthers <- y.ar.ALIVEStructured <- array( 0, 
                                                    dim = dim(y.ar$y.ar),
                                                    dimnames = dimnames(y.ar$y.ar))
-
 ##-- FILL IN THE Y ARRAYS 
 y.ar.ALIVEOthers[dimnames(y.arOth$y.ar)[[1]], , ] <- y.arOth$y.ar
 y.ar.ALIVEStructured[dimnames(y.arStruc$y.ar)[[1]], , ] <- y.arStruc$y.ar
-
-# all(dimnames(y.arOth$y.ar)[[1]] %in% dimnames(y.ar$y.ar)[[1]])
-# sum(y.ar.ALIVEOthers[1307,,8])
-# sum(y.ar.ALIVEStructured[1307,,8])
-
 
 ##-- PROJECT THE DEATH TO THE NEXT OCCASION.
 y.ar.DEADProjected <- y.ar$y.ar2 
@@ -2194,72 +2186,94 @@ for(t in 2:n.years){y.ar.DEADProjected[,,t] <- y.ar$y.ar2[,,t-1]}
 ##-- CREATE BINARY DEAD RECOVERY HISTORIES (0: not recovered ; 1: recovered dead)
 y.ar.DEAD <- apply(y.ar.DEADProjected, c(1,3), function(x){as.numeric(sum(x)>0)})
 dimnames(y.ar.DEAD) <- list(dimnames(y.ar$y.ar2)[[1]], dimnames(y.ar$y.ar2)[[3]])
+y.ar.DEAD[y.ar.DEAD > 0] <- 1
 
-# dim(y.ar.DEAD)
-# y.ar.DEAD[y.ar.DEAD>0] <- 1
-# dim(y.ar$y.ar2)
+
+
+
+### ====    4.6. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ====
+
+distances <- list()
+for(t in 1:n.years){
+  ##-- Identify detections further than maxDist
+  print(paste("------ ", t ," -------", sep = "" ))
+  distances[[t]] <- checkDistanceDetections( 
+    y = y.ar$y.ar[,,t], 
+    detector.xy = detectors$detectors.df[, c("x","y")], 
+    max.distance = 40000,
+    method = "pairwise",
+    plot.check = F)
+  
+  ## PLOT INDIVIDUALS THAT DO HAVE DETECTIONS FURTHER AWAY THAN THRESHOLD DISTANCE
+  if(plot.check){
+    par(mfrow = c(1,1))
+    if(sum(distances[[t]]$y.flagged) > 0){
+      affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
+      count <- 0
+      for(i in affected.ids){
+        count <- count+1
+        plot(st_geometry(myStudyArea), main = paste0("t: ",t,"     i: ", names(affected.ids)[count]))
+        scalebar( 2 * detectors$maxDist,
+                  xy = c(800000,6700000),
+                  type = "bar", divs = 2, below = "km",
+                  label = c(0, detectors$maxDist/1000, detectors$maxDist/500),
+                  cex = 0.8, adj = c(0.5,-0.9))
+         plot(st_geometry(COUNTRIES), add = T)
+        plot(st_geometry(detectors$main.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
+        
+        tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Id == dimnames(y.ar$y.ar)[[1]][i] &
+                                         myFilteredData.sp$alive$Year == years[t], ]
+        tmp <- tmp[order(tmp$Date), ]
+        tmp.xy <- st_coordinates(tmp)
+        n.det <- nrow(tmp.xy)
+        
+        plot(st_geometry(tmp), col = "pink", pch = 16, cex = 1,add=T)
+        arrows( x0 = tmp.xy[1:(n.det-1),1], y0 = tmp.xy[1:(n.det-1),2],
+                x1 = tmp.xy[2:n.det,1], y1 = tmp.xy[2:n.det,2],
+                length = 0.1, lwd = 1)
+        plot(st_geometry(detectors$main.detector.sp[which(y.ar$y.ar[i, ,t] > 0), ]),
+             pch = 16, col = "red", add = T)
+        
+
+        tmp2 <- detectors$main.detector.sp[which(y.ar$y.ar[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
+        plot(st_geometry(tmp2), add = T, col = "blue", pch = 13, cex = 1.5, lwd = 1)
+      }#i
+    }#if
+  }#if
+
+  
+  ## REMOVE DETECTIONS THAT ARE FURTHER THAN THE THRESHOLD
+  y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
+  y.ar.ALIVEOthers[,,t] <- y.ar.ALIVEOthers[,,t] * (1-distances[[t]]$y.flagged)
+  y.ar.ALIVEStructured[,,t] <- y.ar.ALIVEStructured[,,t] * (1-distances[[t]]$y.flagged)
+  
+  ## REMOVE DETECTIONS ALSO IN MYDATA TO RUN GETSINITS
+  # tmpmyData.sp <- myData.alive$myData.sp
+  
+  # for(t in 1:nYears){
+  #   affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
+  idd <- names(affected.ids)
+  for(i in 1:length(idd)){
+    detIds <- which(distances[[t]]$y.flagged[idd[i],]>0)
+    myData.alive$myData.sp <- myData.alive$myData.sp[!(myData.alive$myData.sp$Id %in% idd[i] &
+                                                         myData.alive$myData.sp$Detector %in% detIds &
+                                                         myData.alive$myData.sp$Year %in% years[t]), ]
+  }#i
+}#t
+
 
 
 
 ## ------     6.8. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------
 
-distances <- list()
-for(t in 1:n.years){
-  
-  print(paste("------ ", t ," -------", sep = "" ))
-  
-  ##-- CALCULATE DISTANCES BETWEEN PAIRS OF DETECTIONS
-  distances[[t]] <- checkDistanceDetections( 
-    y = y.ar$y.ar[,,t], 
-    detector.xy = detectors$detectors.df[ ,c("x","y")], 
-    max.distance = detectors$maxDist,
-    method = "pairwise",
-    plot.check = F)
+
   
   ##-- PLOT INDIVIDUALS THAT DO HAVE DETECTIONS FURTHER AWAY THAN THRESHOLD DISTANCE
   if(plot.check){
     
     par(mfrow = c(1,1))
     
-    if(sum(distances[[t]]$y.flagged) > 0){
-      affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
-      count <- 1
-      for(i in affected.ids){
-        ##-- PLOT STUDY AREA & DETECTORS
-        plot( st_geometry(myStudyArea),
-              main = paste0("t: ",t,"     i: ", names(affected.ids)[count]))
-        scalebar( 2 * detectors$maxDist,
-                  xy = c(800000,6700000),
-                  type = "bar", divs = 2, below = "km",
-                  label = c(0, detectors$maxDist/1000, detectors$maxDist/500),
-                  cex = 0.8, adj = c(0.5,-0.9))
-        plot(st_geometry(COUNTRIES), add = T)
-        plot( st_geometry(detectors$main.detector.sp),
-              add = T, col = grey(0.8), cex = 0.3, pch = 19)
-        
-        ##-- PLOT LOCATIONS OF DNA SAMPLES
-        tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Id == dimnames(y.ar$y.ar)[[1]][i] &
-                                         myFilteredData.sp$alive$Year == years[t], ]
-        tmp <- tmp[order(tmp$Date), ]
-        tmp.xy <- st_coordinates(tmp)
-        n.det <- nrow(tmp.xy)
-        plot(st_geometry(tmp), col = "pink", pch = 16, cex = 1,add=T)
-        arrows(x0 = tmp.xy[1:(n.det-1),1], y0 = tmp.xy[1:(n.det-1),2],
-               x1 = tmp.xy[2:n.det,1], y1 = tmp.xy[2:n.det,2],
-               length = 0.1, lwd = 1)
-        
-        ##-- PLOT DETECTORS LOCATIONS
-        plot( st_geometry(detectors$main.detector.sp[which(y.ar$y.ar[i,,t] > 0), ]),
-              pch = 16, col = "red",add=T)
-        
-        tmp2 <- detectors$main.detector.sp[which(y.ar$y.ar[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
-        plot(st_geometry(tmp2), add = T, col = "blue", pch = 13, cex = 1.5, lwd = 1)
-        
-        ##
-        count <- count + 1
-      }#i
-    }#if
-  }#if plot.check
+
   
   ##-- REMOVE DETECTIONS THAT ARE FURTHER THAN  THE THRESHOLD
   y.ar$y.ar[,,t] <- y.ar$y.ar[,,t] * (1-distances[[t]]$y.flagged)
@@ -2267,47 +2281,48 @@ for(t in 1:n.years){
   y.ar.ALIVEStructured[,,t] <- y.ar.ALIVEStructured[,,t] * (1-distances[[t]]$y.flagged)
   
   ##-- REMOVE DETECTIONS ALSO IN MYDATA TO RUN GETSINITS
-  # tmpmyData.sp <- myData.alive$data.sp
-  # 
-  # for(t in 1:n.years){
-  #   affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
-  idd <- names(affected.ids)
-  for(i in 1:length(idd)){
-    detIds <- which(distances[[t]]$y.flagged[idd[i],]>0)
-    #       # tmp$myData.sp <- tmp$myData.sp[(tmp$myData.sp$Id %in% idd[i] & 
-    #       #                           tmp$myData.sp$Detector %in% detIds) &  ,] 
-    #       # tmp$myData.sp[tmp$myData.sp$Id %in% idd[i] ,] 
-    #       tmpmyData.sp[(tmpmyData.sp$Id %in% idd[i] &
-    #                              tmpmyData.sp$Detector %in% detIds &
-    #                              tmpmyData.sp$Year %in% years[t]),]
-    #       tmpmyData.sp[(tmpmyData.sp$Id %in% idd[i] &
-    #                       tmpmyData.sp$Year %in% years[t]),]
-    #       
-    #       
-    #       tmpmyData.sp <- tmpmyData.sp[!(tmpmyData.sp$Id %in% idd[i] &
-    #                                                          tmpmyData.sp$Detector %in% detIds &
-    #                                                          tmpmyData.sp$Year %in% years[t]),]
-    #      
-    #       
-    #       if(sum(which(!unique(myData.alive$data.sp$Id) %in% unique(tmpmyData.sp$Id))>0)){
-    #         print(idd[i])
-    #       }
-    #   }
-    #   }
-    
-    myData.alive$data.sp <- myData.alive$data.sp[!(myData.alive$data.sp$Id %in% idd[i] &
-                                                     myData.alive$data.sp$Detector %in% detIds &
-                                                     myData.alive$data.sp$Year %in% years[t]),]
+  tmpmyData.sp <- myData.alive$data.sp
+  for(t in 1:n.years){
+    affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
+    idd <- names(affected.ids)
+    for(i in 1:length(idd)){
+      detIds <- which(distances[[t]]$y.flagged[idd[i],]>0)
+      # tmp$myData.sp <- tmp$myData.sp[(tmp$myData.sp$Id %in% idd[i] &
+      #                           tmp$myData.sp$Detector %in% detIds) &  ,]
+      # tmp$myData.sp[tmp$myData.sp$Id %in% idd[i] ,]
+      tmpmyData.sp[(tmpmyData.sp$Id %in% idd[i] &
+                      tmpmyData.sp$Detector %in% detIds &
+                      tmpmyData.sp$Year %in% years[t]), ]
+      
+      tmpmyData.sp[(tmpmyData.sp$Id %in% idd[i] &
+                      tmpmyData.sp$Year %in% years[t]), ]
+      
+      tmpmyData.sp <- tmpmyData.sp[!(tmpmyData.sp$Id %in% idd[i] &
+                                       tmpmyData.sp$Detector %in% detIds &
+                                       tmpmyData.sp$Year %in% years[t]), ]
+      
+      if(sum(which(!unique(myData.alive$data.sp$Id) %in% unique(tmpmyData.sp$Id)) > 0)){
+        print(idd[i])
+      }
+    }
   }
-  # tmp <- myData.alive$data.sp[(myData.alive$data.sp$Id %in% idd[i] &
-  #                                  myData.alive$data.sp$Year %in% years[t]),]
-  # tmp[(tmp$Id %in% idd[i]),]
-  # myData.alive$data.sp[(myData.alive$data.sp$Id %in% idd[i]&
-  # #                           myData.alive$data.sp$Detector %in% detIds &  myData.alive$data.sp$Year %in% years[t]),]
-  #     if(length(which(myData.alive$data.sp$Id %in% idd[i]))==0){
-  #       print(paste(idd[i], t, sep="_"))
-  #     }
+  
+  myData.alive$data.sp <- myData.alive$data.sp[!(myData.alive$data.sp$Id %in% idd[i] &
+                                                   myData.alive$data.sp$Detector %in% detIds &
+                                                   myData.alive$data.sp$Year %in% years[t]), ]
 }
+
+tmp <- myData.alive$data.sp[(myData.alive$data.sp$Id %in% idd[i] &
+                               myData.alive$data.sp$Year %in% years[t]), ]
+tmp[(tmp$Id %in% idd[i]),]
+myData.alive$data.sp[(myData.alive$data.sp$Id %in% idd[i] &
+                        myData.alive$data.sp$Detector %in% detIds & 
+                        myData.alive$data.sp$Year %in% years[t]), ]
+
+                        if(length(which(myData.alive$data.sp$Id %in% idd[i]))==0){
+                          print(paste(idd[i], t, sep="_"))
+                        }
+                      }
 
 
 
