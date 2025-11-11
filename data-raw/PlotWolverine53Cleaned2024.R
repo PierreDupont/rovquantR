@@ -1,7 +1,6 @@
 rm(list=ls())
 gc()
 
-
 ## ------ IMPORT REQUIRED LIBRARIES ------
 
 library(raster)
@@ -34,8 +33,9 @@ source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
 ## ------ SOURCE THE REQUIRED FUNCTIONS ------
 
 sourceDirectory(dir.function, modifiedOnly = FALSE)
-load(file.path(dir.dropbox,"DATA/MISC DATA/age.lookup.table.RData"))
-source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/PD/FUNCTIONS/FunctionScripts/dbin_LESS_Cached_MultipleCov.R")
+# load(file.path(dir.dropbox,"DATA/MISC DATA/age.lookup.table.RData"))
+# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/PD/FUNCTIONS/FunctionScripts/dbin_LESS_Cached_MultipleCov.R")
+source("C:/My_documents/RovQuant/Temp/PD/FUNCTIONS/FunctionScripts/dbin_LESS_Cached_MultipleCov.R")
 
 ##-- LOAD CPP FUNCTIONS 
 for(i in list.files(dir.function.cpp)){sourceCpp(filePath(dir.function.cpp,i))}
@@ -43,12 +43,11 @@ for(i in list.files(dir.function.cpp)){sourceCpp(filePath(dir.function.cpp,i))}
 
 
 ##------------------------------------------------------------------------------
-
 ## ------ 0. SET ANALYSIS CHARACTERISTICS -----
 
 myVars <- list( 
-  WD = file.path(dir.dropbox, "RovQuant/wolverine/CM/2024"),
-  modelName = "plot53Cleaned2024",
+  WD = file.path(dir.dropbox, "wolverine/2025"),
+  modelName = "Test2025",
   years = 2014:2023,
   plot.check = TRUE)
 
@@ -58,15 +57,14 @@ nYears <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
 
 ##-- Name of the female and male models
-modelNameF <- "53.aJ_FaCleaned2024"
-modelNameM <- "53.aJ_MaCleaned2024"
+modelNameF <- "Hann"
+modelNameM <- "Hunn"
 
 ##-- SET DIRECTORY WHERE WOLF FIGURES WILL BE STORED
-WDFigures <- file.path(myVars$WD, myVars$modelName, "Figure")
-WDTables <- file.path(myVars$WD, myVars$modelName, "Table")
+WDFigures <- file.path(myVars$WD, myVars$modelName, "figures")
+WDTables <- file.path(myVars$WD, myVars$modelName, "tables")
 if(!dir.exists(file.path(WDFigures))){dir.create(WDFigures)}
 if(!dir.exists(file.path(WDTables))){dir.create(WDTables)}
-
 
 
 ##------------------------------------------------------------------------------
@@ -134,7 +132,7 @@ ggplot(COUNTIES_AGGREGATED) +
 
 ##-- SHAPEFILE OF NEW COUNTIES IN SWEDEN
 NewCountySwe <- readOGR(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/rk_lan_07_WGS84.shp"))
-plot(NewCountySwe, border="red")
+plot(NewCountySwe, border = "red")
 
 ##-- HABITAT RASTERS
 load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20kmNewSweCounties.RData"))
@@ -794,19 +792,19 @@ CARNIVORE.REGIONS1$Region <- CARNIVORE.REGIONS$NAME_1
 # region <- gUnaryUnion(CARNIVORE.REGIONS1, id = CARNIVORE.REGIONS1$Region)
 region <- gSimplify(NORWAY1, tol=500)
 
-#---SPECIFY COLOR PALETTE
+##-- SPECIFY COLOR PALETTE
 this.col <- sequential_hcl(1+length(unique(NORWAY1$NAME_1)), "Reds 3")
 this.col <- this.col[-length(this.col)]
 set.seed(100)
 this.col <- sample(this.col)
-plot(region,add=T, col=this.col, border=border.col, lwd=1)
-
+plot(region, add = T, col=this.col, border=border.col, lwd=1)
 
 ##-- SWEDEN
 NewCountySwe$NAME_1 <- as.character(NewCountySwe$NAME_1)
 NewCountySwe1 <- gSimplify(NewCountySwe, tol = 200, topologyPreserve = T)
 swedenCounties2 <- NewCountySwe1
 swedenCounties2$NAME_1 <- as.character(NewCountySwe$NAME_1)
+
 ##-- Remove Gotland
 swedenCounties2 <- swedenCounties2[!(swedenCounties2$NAME_1%in% "Gotlands lÃ¤n"), ]
 
@@ -872,6 +870,7 @@ swedenCounties2$Region <- c("Mellersta",
                             "Norra",
                             "Mellersta")
 swedenCounties2Regions <- aggregate(swedenCounties2, by = "Region")
+
 ##-- Plot Swedish management region borders
 plot( RemoveHolesSp(swedenCounties2Regions),
       add = T, border = grey(0.0), lwd = 3)
@@ -902,8 +901,7 @@ NSkipBites <- burnin/bitesize
 nthinsxy <- 5 #thinnumber for the sxy AND z values (necessary to save memory) 
 
 ##-- Retrieve the minimum number of bites per chain
-outDirectoriesF <- list.files(file.path(myVars$WD, modelNameF))[grep(paste0("NimbleOutFOR", modelNameF),
-                                                                     list.files(file.path(myVars$WD, modelNameF)))]
+outDirectoriesF <- list.files(file.path(myVars$WD, myVars$modelName, "Hunn"))
 path.listF <- file.path(myVars$WD, modelNameF, outDirectoriesF)
 numBitesF <- unlist(lapply(path.listF, function(x){
   files <- list.files(x)
@@ -960,7 +958,7 @@ for(p in 1:length(path.listF)){
   nimOutputSXY[[p]] <- as.mcmc(out.mxSXY)
 }#p
 
-##-- COMPILE THE RESULTS
+##-- Compile results in mcmc.lists
 nimOutput <- as.mcmc.list(nimOutput)
 nimOutputSXY <- as.mcmc.list(nimOutputSXY)
 
@@ -990,7 +988,7 @@ for(p in 1:length(path.listM)){
       print("here")
     }
     
-    out[[x]] <- this.sample#[,parmIndex]#[ ,parmIndex]
+    out[[x]] <- this.sample
     
     # KEEP SXY AND Z, THINING
     #nthins <- seq(1,dim(this.sample)[1], by=nthinsxy)
@@ -998,7 +996,6 @@ for(p in 1:length(path.listM)){
     
     #parmIndex <- which(params.simple %in% c("sxy","z","N","sigma"))
     outSXYZ[[x]] <- this.sampleSxyZ#[nthins,parmIndex]#[ ,parmIndex]
-    
   }#x
   RUNTIME[[p]] <- unlist(runtime)
   out.mx <- do.call(rbind, out)
@@ -1008,13 +1005,13 @@ for(p in 1:length(path.listM)){
   nimOutputSXY[[p]] <- as.mcmc(out.mxSXY)
 }#p
 
-##-- COMPILE THE RESULTS
+##-- Compile results in mcmc.lists
 nimOutput <- as.mcmc.list(nimOutput)
 nimOutputSXY <- as.mcmc.list(nimOutputSXY)
 
-myResults_M <- ProcessCodaOutput(nimOutput,params.omit = c("sxy","z"))
-myResultsSXYZ_M <- ProcessCodaOutput(nimOutputSXY,params.omit = c("sxy","z"))
-
+##-- Process the results
+myResults_M <- ProcessCodaOutput(nimOutput, params.omit = c("sxy","z"))
+myResultsSXYZ_M <- ProcessCodaOutput(nimOutputSXY, params.omit = c("sxy","z"))
 
 ## check how many ids are left available based on z. 
 # nState <- array(NA, c(dim(myResultsSXYZ_M$sims.list$z)[2], 3, nYears))
@@ -2437,10 +2434,10 @@ dev.off()
 
 ## ------         2.2.2.2. ALL YEARS SEX ------
 
-SeasonText <- lapply(YEARS, FUN = function(x) paste(x, collapse ="/")) 
+#SeasonText <- lapply(YEARS, FUN = function(x) paste(x, collapse ="/")) 
 SeasonText <- lapply(YEARS, FUN = function(x) x[2]) 
 
-## Define colors
+##-- Define colors
 text.cex <- 1.5
 total.offset <- 37
 NO.offset <- -37
@@ -2550,14 +2547,12 @@ for(t in 1:nYears){
             col=adjustcolor(country.colors[1], violin.alpha50),
             border= NA)
   }
-  
-  
-}
+  }
 box()
 abline(v=at[1:(nYears)]+0.5,lty=2)
 
-#legend
-par(xpd=TRUE)
+##-- legend
+par(xpd = TRUE)
 polygon( x = c(0.8,7.2,7.2,0.8),
          y = c(170,170,230,230),
         col = adjustcolor("white", alpha.f = 0.9),
@@ -2568,7 +2563,7 @@ cex <- rep(4,4)
 y <-  c(50, 50, 50)
 x <- c(1,3,5)
 mycol1 <- c(country.colors, "black")
-# add transparent background polygon
+## add transparent background polygon
 #polygon(c(6.7,8,8,6.7),c(10,10,30,30), col=adjustcolor("white",alpha.f = 0.9), border=NA)
 for(i in 1:3){
   #segments(1,i,2,i,col=cols[i],lwd=10)#,lend=4)
@@ -2577,7 +2572,7 @@ for(i in 1:3){
   text(x[i]+0.1,y[i],labels[i],cex=1.6,pos=4)
 }
 
-##MALES 
+##-- MALES 
 #par(mfrow=c(1,2), mar = c(5,8,3,1),las=1, cex.lab=2, cex.axis=1.3, mgp=c(6, 2, 0), xaxs="i", yaxs="i")
 plot(-1000, xlim=c(0.5, nYears+.5), ylim=c(0,800),
      xlab="", ylab = paste("Estimated number of Males"), xaxt="n")
@@ -2585,8 +2580,7 @@ axis(1, at=c(1:(nYears)), labels = SeasonText, cex.axis=1.1,padj = -1)
 at = c(1:nYears)
 abline(h=seq(100,1200,by=100), lty=2, col=grey(0.90))
 
-## GET THE DETECTED INDIVIDUALS 
-
+##-- GET THE DETECTED INDIVIDUALS 
 widthPolygon <- 0.15
 widthPolygon1 <- 0.15
 widthPolygon2 <- 0.15
@@ -2594,24 +2588,25 @@ offsetstar <- 0.05
 cexStar <- 1.5
 displayQuantiles50 <- TRUE
 #yearsNotSampled <- NA
+
 for(t in 1:nYears){
-  #TOTAL
-  tmp <- colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[c("Sweden","Norway"),])
-  quantile95 <- quantile(tmp, prob=c(0.0275, 0.975))
-  quantile50 <- quantile(tmp, prob=c(0.25, 0.75))
+  ## TOTAL
+  tmp <- colSums(DensityCountriesRegionsM[[t]]$PosteriorRegions[c("Sweden","Norway"), ])
+  quantile95 <- quantile(tmp, prob = c(0.0275, 0.975))
+  quantile50 <- quantile(tmp, prob = c(0.25, 0.75))
   
   polygon(x = c(t - widthPolygon, t + widthPolygon,
-                t + widthPolygon, t - widthPolygon ),
+                t + widthPolygon, t - widthPolygon),
           y = c(quantile95[1], quantile95[1],
                 quantile95[2], quantile95[2]), 
-          col=adjustcolor(TotalColors, violin.alpha95),
-          border= NA)
+          col = adjustcolor(TotalColors, violin.alpha95),
+          border = NA)
   
-  # add a starCOUNTRIES <- COUNTRIES %>%    group_by(ISO) %>%summarize()
-
+  ## add a star
   if(sum(t %in% yearsNotSampled)){
-    text(x=t+widthPolygon+offsetstar ,y= quantile95[2], "*",cex=cexStar)
-    
+    text( x = t + widthPolygon + offsetstar,
+          y = quantile95[2],
+          "*", cex = cexStar)
   }
   
   if(displayQuantiles50){
@@ -2619,25 +2614,28 @@ for(t in 1:nYears){
                   t+widthPolygon, t-widthPolygon ),
             y = c(quantile50[1], quantile50[1],
                   quantile50[2], quantile50[2]), 
-            col=adjustcolor(TotalColors, violin.alpha50),
-            border= NA)
+            col = adjustcolor(TotalColors, violin.alpha50),
+            border = NA)
   }
-  #SWEDEN
+  
+  ## SWEDEN
   tmp <- DensityCountriesRegionsM[[t]]$PosteriorRegions["Sweden",]
   quantile95 <- quantile(tmp, prob=c(0.0275, 0.975))
   quantile50 <- quantile(tmp, prob=c(0.25, 0.75))
   
-  polygon(x = c(t, t -widthPolygon1*2,
+  polygon(x = c(t, t - widthPolygon1*2,
                 t - widthPolygon1*2, t),
           y = c(quantile95[1], quantile95[1],
                 quantile95[2], quantile95[2]), 
-          col=adjustcolor(country.colors[2], violin.alpha95),
-          border= NA)
+          col = adjustcolor(country.colors[2], violin.alpha95),
+          border = NA)
   
   if(sum(t %in% yearsNotSampled)){
-    text(x= t+offsetstar ,y= quantile95[2], "*",cex=cexStar)
-    
+    text(x = t + offsetstar,
+         y = quantile95[2],
+         "*", cex = cexStar)
   }
+  
   if(displayQuantiles50){
     polygon(x = c(t, t-widthPolygon1*2,
                   t-widthPolygon1*2, t),
@@ -2678,7 +2676,7 @@ for(t in 1:nYears){
 box()
 abline(v=at[1:(nYears)]+0.5,lty=2)
 
-#legend
+## legend
 par(xpd=TRUE)
 polygon( x = c(0.8,7.2,7.2,0.8),
          y = c(600,600,650,650),
@@ -2691,7 +2689,7 @@ y <-  c(630, 630, 630)
 x <- c(1,3,5)
 mycol1 <- c(country.colors, "black")
 # add transparent background polygon
-#polygon(c(6.7,8,8,6.7),c(10,10,30,30), col=adjustcolor("white",alpha.f = 0.9), border=NA)
+# polygon(c(6.7,8,8,6.7),c(10,10,30,30), col=adjustcolor("white",alpha.f = 0.9), border=NA)
 for(i in 1:3){
   #segments(1,i,2,i,col=cols[i],lwd=10)#,lend=4)
   points(x[i],y[i],pch=15,cex=3.5,col=adjustcolor(mycol1[i],violin.alpha95))
@@ -2699,11 +2697,7 @@ for(i in 1:3){
   text(x[i]+0.1,y[i],labels[i],cex=1.6,pos=4)
 }
 
-
-
 dev.off()
-
-
 
 
 
@@ -4722,7 +4716,7 @@ dev.off()
 
 
 
-## ------     6.2. P0OTHER ------
+## ------     6.2. P0_OTHER ------
 ## ------       6.2.1. BETA SNOW ------
 pdf(file=file.path(WDFigures , paste("Betap0OtherSnow.pdf",sep="")),width=8,height=4)
 

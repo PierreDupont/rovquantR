@@ -1030,7 +1030,7 @@ detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
   mutate( id = 1:nrow(.),
           x = st_coordinates(st_centroid(.))[ ,1],
           y = st_coordinates(st_centroid(.))[ ,2]) 
-  
+
 ##-- Extract numbers of detectors
 n.detectors <- detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
 
@@ -1890,7 +1890,7 @@ if(plot.check){
 ## ------       6.3.3. PLOT CHECKS ------
 
 if(plot.check){
-
+  
   ##-- Barplot of structured vs. opportunistic samples
   pdf(file = file.path(working.dir, "figures/DetectionsStructuredOppBarplot.pdf"))
   par(mfrow = c(2,1), mar = c(4,4,3,2))
@@ -1905,7 +1905,7 @@ if(plot.check){
   title(main = "500m threshold")
   legend("topleft", fill = c(grey(0.2),grey(0.8)),
          legend = c("Structured","Other"))
-
+  
   ##-- Barplot of structured vs. opportunistic samples (threshold = 2000m)
   structured2000 <- myFilteredData.sp$alive$Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
     !is.na(myFilteredData.sp$alive$trackID) &
@@ -1922,17 +1922,17 @@ if(plot.check){
   legend("topleft",fill=c(grey(0.2),grey(0.8)),
          legend = c("Structured","Other"))
   dev.off()
-
-
+  
+  
   ##-- CONSTRAIN TO SAMPLES COLLECTED "Fylkesmannen","SNO"
   tmp <- myFilteredData.sp$alive %>%
     filter(Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"))
-
+  
   ## plot check
   pdf(file = file.path(working.dir, "figures/DetectionsStructuredOpp.pdf"))
   for(t in 1:n.years){
     par(mar = c(0,0,3,0), mfrow = c(1,3))
-
+    
     ##-- samples with tracks
     tmpTracks <- tmp %>%
       filter( Year %in% years[t],
@@ -1942,7 +1942,7 @@ if(plot.check){
     plot( st_geometry(tmpTracks),
           pch = 21, col = "black",
           cex = 1, bg = "red", add = T)
-
+    
     ##-- samples without tracks
     tmpNoTracks <- tmp %>%
       filter( Year %in% years[t],
@@ -1951,7 +1951,7 @@ if(plot.check){
     plot( st_geometry(tmpNoTracks),
           pch = 21, col = "black",
           cex = 1, bg = "blue", add = T)
-
+    
     ##-- Other samples
     tmpOpp <- myFilteredData.sp$alive %>%
       filter(!Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),
@@ -1960,17 +1960,17 @@ if(plot.check){
     plot( st_geometry(tmpOpp),
           pch = 21, col = "black",
           cex = 1, bg = "green", add = T)
-
+    
     mtext(years[t], adj = -0.8, padj = 1)
   }#t
-
+  
   ##-- Number of samples collected per year
   tab <- table(tmp$Year, tmp$trackID, useNA ="always")
   barplot( tab[ ,which(is.na(colnames(tab)))]/rowSums(tab),
            main = "% of samples from Statsforvalteren and \nSNO that cannot be assigned to a track")
   dev.off()
-
-
+  
+  
   ##-- plot check
   pdf( file = file.path(working.dir, "figures/OverallDetectionsDeadRecoveries.pdf"))
   plot( st_geometry(GLOBALMAP))
@@ -2027,23 +2027,23 @@ if(plot.check){
     mtext(text = paste(sum(NGS_TabIn), "Dead Recoveries /", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
     # mtext(text = paste(sum(NGS_TabTotal), "Recoveries /", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
   }#t
-
-
+  
+  
   ## PLOT TREND DETECTIONS & DEAD RECOVERIES OVER TIME AND SPACE
-
+  
   ## DETECTIONS
   pdf(file = file.path(working.dir, "figures/TRENDDetections.pdf"))
-
+  
   temp <- unique(myFilteredData.sp$alive[ ,c("Year","Country_sf","DNAID")])
   tab_Country.Year <- table(temp$Year, temp$Country_sf)
   country.colors <- c("goldenrod1","goldenrod3")
-
+  
   par(mfrow = c(1,1), mar = c(5,5,5,5))
   plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year))), ylim=c(0,max(tab_Country.Year)), ylab="N Detections", xlab="Years")
   lines(tab_Country.Year[,"(N)"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[1], lwd=2, pch=16, type="b")
   lines(tab_Country.Year[,"(S)"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[2], lwd=2, pch=16, type="b")
   legend("bottomright",c("N","S"), fill=country.colors)
-
+  
   ## ID DETECTED
   temp <- table(myFilteredData.sp$alive$Year,myFilteredData.sp$alive$Country_sf,myFilteredData.sp$alive$Id)
   tab_Country.Year1 <- apply(temp,c(1,2),function(x) sum(x>0))
@@ -2053,7 +2053,7 @@ if(plot.check){
   lines(tab_Country.Year1[,"(N)"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[1], lwd=2, pch=16, type="b")
   lines(tab_Country.Year1[,"(S)"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[2], lwd=2, pch=16, type="b")
   legend("bottomright",c("N","S"), fill=country.colors)
-
+  
   ## Average number of detection per detected ID
   tab_Country.Year2 <- tab_Country.Year/tab_Country.Year1
   par(mfrow = c(1,1), mar = c(5,5,5,5))
@@ -2062,12 +2062,12 @@ if(plot.check){
   lines(tab_Country.Year2[,"(N)"]~as.numeric(row.names(tab_Country.Year2)), col=country.colors[1], lwd=2, pch=16, type="b")
   lines(tab_Country.Year2[,"(S)"]~as.numeric(row.names(tab_Country.Year2)), col=country.colors[2], lwd=2, pch=16, type="b")
   legend("bottomright",c("N","S"), fill=country.colors)
-
+  
   ## deadrecovery
   temp <- unique(myFilteredData.sp$dead.recovery[,c("Year","Country_sf","Id")])
   tab_Country.Year <- table(temp$Year, temp$Country_sf)
   country.colors <- c("goldenrod1","goldenrod3")
-
+  
   par(mfrow = c(1,1), mar = c(5,5,5,5))
   plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year))), ylim=c(0,max(tab_Country.Year)),
        ylab="N Id Dead recovered", xlab="Years")
@@ -2087,18 +2087,7 @@ myData.alive <- assignDetectors(
   detectors = detectors$main.detector.sp,
   subDetectors = detectors$detector.sp,
   radius = detectors$resolution)
-# ## STRUCTURED
-# myData.aliveStruc <- AssignDetectors_v3sf( 
-#   myData = myFilteredData.spStructured,                
-#   myDetectors = detectors$main.detector.sp,
-#   mysubDetectors = detectors$detector.sp,
-#   radius = detectors$resolution)
-# ## OTHERS
-# myData.aliveOthers <- AssignDetectors_v3sf( 
-#   myData = myFilteredData.spOthers,                
-#   myDetectors = detectors$main.detector.sp,
-#   mysubDetectors = detectors$detector.sp,
-#   radius = detectors$resolution)
+
 ##-- DEAD RECOVERY
 myData.dead <- assignDetectors( 
   data = myFilteredData.sp$dead.recovery,
@@ -2121,7 +2110,6 @@ subDetsNorrbotten <- which( detectors$detector.sp$main.cell.id %in%
 ##-- Identify which detections are assigned to Norrbotten in years not sampled
 whichDets <- which(!myData.alive$data.sp$Year %in% yearsSampledNorrb &
                      myData.alive$data.sp$Detector %in% detsNorrbotten)
-length(whichDets)
 
 ##-- Loop over flagged detections & assign them to closest detector outside Norrbotten
 for(i in 1:length(whichDets)){
@@ -2136,7 +2124,6 @@ for(i in 1:length(whichDets)){
   thisDet <- detectors$detector.sp$main.cell.id[which.min(dist[1, ])]
   myData.alive$data.sp$Detector[whichDets[i]] <- which(detectors$main.detector.sp$main.cell.id == thisDet)
 }#i
-
 
 ##-- SHOULD NOT BE ANY INDIVIDUAL DETECTED IN NORRBOTTEN NOW 
 sum(myData.alive$data.sp$sub.detector[!myData.alive$data.sp$Year %in% yearsSampledNorrb] %in% subDetsNorrbotten)
@@ -2170,20 +2157,20 @@ y.arOth <- makeY( data = myData.alive$data.sp[!myData.alive$data.sp$structured, 
                   detectors2 = detectors$main.detector.sp,
                   returnIdvector = TRUE)
 
-##-- MAKE SURE THE Y HAVE THE SAME DIMENSIONS
+##-- Make sure all detection arrays have the same dimensions
 y.ar.ALIVEOthers <- y.ar.ALIVEStructured <- array( 0, 
                                                    dim = dim(y.ar$y.ar),
                                                    dimnames = dimnames(y.ar$y.ar))
-##-- FILL IN THE Y ARRAYS 
+##-- Fill in the y arrays
 y.ar.ALIVEOthers[dimnames(y.arOth$y.ar)[[1]], , ] <- y.arOth$y.ar
 y.ar.ALIVEStructured[dimnames(y.arStruc$y.ar)[[1]], , ] <- y.arStruc$y.ar
 
-##-- PROJECT THE DEATH TO THE NEXT OCCASION.
+##-- Project death to the next occasion.
 y.ar.DEADProjected <- y.ar$y.ar2 
 y.ar.DEADProjected[] <- 0
 for(t in 2:n.years){y.ar.DEADProjected[,,t] <- y.ar$y.ar2[,,t-1]}
 
-##-- CREATE BINARY DEAD RECOVERY HISTORIES (0: not recovered ; 1: recovered dead)
+##-- Create binary dead recovery histories (0: not recovered ; 1: recovered dead)
 y.ar.DEAD <- apply(y.ar.DEADProjected, c(1,3), function(x){as.numeric(sum(x)>0)})
 dimnames(y.ar.DEAD) <- list(dimnames(y.ar$y.ar2)[[1]], dimnames(y.ar$y.ar2)[[3]])
 y.ar.DEAD[y.ar.DEAD > 0] <- 1
@@ -2191,7 +2178,7 @@ y.ar.DEAD[y.ar.DEAD > 0] <- 1
 
 
 
-### ====    4.6. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ====
+## ------     6.8. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------
 
 distances <- list()
 for(t in 1:n.years){
@@ -2204,7 +2191,7 @@ for(t in 1:n.years){
     method = "pairwise",
     plot.check = F)
   
-  ## PLOT INDIVIDUALS THAT DO HAVE DETECTIONS FURTHER AWAY THAN THRESHOLD DISTANCE
+  ##-- Plot individuals that have detections further than the threshold
   if(plot.check){
     par(mfrow = c(1,1))
     if(sum(distances[[t]]$y.flagged) > 0){
@@ -2218,11 +2205,12 @@ for(t in 1:n.years){
                   type = "bar", divs = 2, below = "km",
                   label = c(0, detectors$maxDist/1000, detectors$maxDist/500),
                   cex = 0.8, adj = c(0.5,-0.9))
-         plot(st_geometry(COUNTRIES), add = T)
-        plot(st_geometry(detectors$main.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
+        plot( st_geometry(COUNTRIES), add = T)
+        plot( st_geometry(detectors$main.detector.sp),
+              add = T, col = grey(0.8), cex = 0.3, pch = 19)
         
-        tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Id == dimnames(y.ar$y.ar)[[1]][i] &
-                                         myFilteredData.sp$alive$Year == years[t], ]
+        tmp <- myData.sp$alive[myData.sp$alive$Id == dimnames(y.ar$y.ar)[[1]][i] &
+                                 myData.sp$alive$Year == years[t], ]
         tmp <- tmp[order(tmp$Date), ]
         tmp.xy <- st_coordinates(tmp)
         n.det <- nrow(tmp.xy)
@@ -2234,95 +2222,29 @@ for(t in 1:n.years){
         plot(st_geometry(detectors$main.detector.sp[which(y.ar$y.ar[i, ,t] > 0), ]),
              pch = 16, col = "red", add = T)
         
-
+        
         tmp2 <- detectors$main.detector.sp[which(y.ar$y.ar[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
         plot(st_geometry(tmp2), add = T, col = "blue", pch = 13, cex = 1.5, lwd = 1)
       }#i
     }#if
   }#if
-
   
-  ## REMOVE DETECTIONS THAT ARE FURTHER THAN THE THRESHOLD
+  ##-- Remove detections that are further then the threshold
   y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
   y.ar.ALIVEOthers[,,t] <- y.ar.ALIVEOthers[,,t] * (1-distances[[t]]$y.flagged)
   y.ar.ALIVEStructured[,,t] <- y.ar.ALIVEStructured[,,t] * (1-distances[[t]]$y.flagged)
   
-  ## REMOVE DETECTIONS ALSO IN MYDATA TO RUN GETSINITS
-  # tmpmyData.sp <- myData.alive$myData.sp
-  
-  # for(t in 1:nYears){
-  #   affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
+  ##-- Remove detections also in myData.alive to run getSInits later
   idd <- names(affected.ids)
   for(i in 1:length(idd)){
-    detIds <- which(distances[[t]]$y.flagged[idd[i],]>0)
-    myData.alive$myData.sp <- myData.alive$myData.sp[!(myData.alive$myData.sp$Id %in% idd[i] &
-                                                         myData.alive$myData.sp$Detector %in% detIds &
-                                                         myData.alive$myData.sp$Year %in% years[t]), ]
+    detIds <- which(distances[[t]]$y.flagged[idd[i], ]>0)
+    # myData.alive$myData.sp <- myData.alive$myData.sp[!(myData.alive$myData.sp$Id %in% idd[i] &
+    #                                                      myData.alive$myData.sp$Detector %in% detIds &
+    #                                                      myData.alive$myData.sp$Year %in% years[t]), ]
+    myData.alive$myData.sp <- myData.alive$myData.sp %>%
+      dplyr::filter(!(Id %in% idd[i] & Detector %in% detIds & Year %in% years[t]))
   }#i
 }#t
-
-
-
-
-## ------     6.8. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------
-
-
-  
-  ##-- PLOT INDIVIDUALS THAT DO HAVE DETECTIONS FURTHER AWAY THAN THRESHOLD DISTANCE
-  if(plot.check){
-    
-    par(mfrow = c(1,1))
-    
-
-  
-  ##-- REMOVE DETECTIONS THAT ARE FURTHER THAN  THE THRESHOLD
-  y.ar$y.ar[,,t] <- y.ar$y.ar[,,t] * (1-distances[[t]]$y.flagged)
-  y.ar.ALIVEOthers[,,t] <- y.ar.ALIVEOthers[,,t] * (1-distances[[t]]$y.flagged)
-  y.ar.ALIVEStructured[,,t] <- y.ar.ALIVEStructured[,,t] * (1-distances[[t]]$y.flagged)
-  
-  ##-- REMOVE DETECTIONS ALSO IN MYDATA TO RUN GETSINITS
-  tmpmyData.sp <- myData.alive$data.sp
-  for(t in 1:n.years){
-    affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
-    idd <- names(affected.ids)
-    for(i in 1:length(idd)){
-      detIds <- which(distances[[t]]$y.flagged[idd[i],]>0)
-      # tmp$myData.sp <- tmp$myData.sp[(tmp$myData.sp$Id %in% idd[i] &
-      #                           tmp$myData.sp$Detector %in% detIds) &  ,]
-      # tmp$myData.sp[tmp$myData.sp$Id %in% idd[i] ,]
-      tmpmyData.sp[(tmpmyData.sp$Id %in% idd[i] &
-                      tmpmyData.sp$Detector %in% detIds &
-                      tmpmyData.sp$Year %in% years[t]), ]
-      
-      tmpmyData.sp[(tmpmyData.sp$Id %in% idd[i] &
-                      tmpmyData.sp$Year %in% years[t]), ]
-      
-      tmpmyData.sp <- tmpmyData.sp[!(tmpmyData.sp$Id %in% idd[i] &
-                                       tmpmyData.sp$Detector %in% detIds &
-                                       tmpmyData.sp$Year %in% years[t]), ]
-      
-      if(sum(which(!unique(myData.alive$data.sp$Id) %in% unique(tmpmyData.sp$Id)) > 0)){
-        print(idd[i])
-      }
-    }
-  }
-  
-  myData.alive$data.sp <- myData.alive$data.sp[!(myData.alive$data.sp$Id %in% idd[i] &
-                                                   myData.alive$data.sp$Detector %in% detIds &
-                                                   myData.alive$data.sp$Year %in% years[t]), ]
-}
-
-tmp <- myData.alive$data.sp[(myData.alive$data.sp$Id %in% idd[i] &
-                               myData.alive$data.sp$Year %in% years[t]), ]
-tmp[(tmp$Id %in% idd[i]),]
-myData.alive$data.sp[(myData.alive$data.sp$Id %in% idd[i] &
-                        myData.alive$data.sp$Detector %in% detIds & 
-                        myData.alive$data.sp$Year %in% years[t]), ]
-
-                        if(length(which(myData.alive$data.sp$Id %in% idd[i]))==0){
-                          print(paste(idd[i], t, sep="_"))
-                        }
-                      }
 
 
 
@@ -2421,16 +2343,6 @@ y.aliveStructured <- makeAugmentation( y = y.ar.ALIVEStructured,
 already.detected <- makeAugmentation( y = already.detected,
                                       aug.factor = aug.factor,
                                       replace.value = 0)
-
-# age <- makeAugmentation( y = age,
-#                          aug.factor = aug.factor, 
-#                          replace.value = NA)
-# min.age <- makeAugmentation( y = min.age,
-#                              aug.factor = aug.factor,
-#                              replace.value = NA)
-# precapture <- makeAugmentation( y = precapture,
-#                                 aug.factor = aug.factor,
-#                                 replace.value = 0)
 
 
 
@@ -2545,7 +2457,7 @@ modelCode <- nimbleCode({
   for(i in 1:n.individuals){ 
     detResponse[i,1] ~ dbern(pResponse)
   }#i
-
+  
   ## Individual detection histories
   for(t in 1:n.years){
     for(i in 1:n.individuals){
@@ -2589,7 +2501,7 @@ modelCode <- nimbleCode({
         trapBetas = betaCovsOth[1:n.covs,t],
         responseCovs = detResponse[i,t],
         responseBetas = betaResponseOth[t])
-
+      
       # y.dead.legal[i,t] ~ dbern(z[i,t] == 3) 
       # y.dead.other[i,t] ~ dbern(z[i,t] == 4) 
     }#i
@@ -2633,9 +2545,9 @@ nimConstants <- list(
 
 
 
-## ------   3. NIMBLE INITS ------
+## ------   3. NIMBLE DATA ------
 
-## ------     3.1. GENERATE INITIAL z ------
+## ------     3.1. GENERATE KNOWN z ------
 
 ##-- Set all individuals alive to 2 between first and last detection
 z <- apply(y.alive, c(1,3), function(x)ifelse(any(x>0), 2, NA))
@@ -2646,6 +2558,40 @@ z <- t(apply(z, 1, function(zz){
   }
   return(zz)
 }))
+
+
+
+## ------     3.2. LIST DATA ------
+
+nimData <- list( 
+  z = z,   
+  y = y.sparse$y,
+  detIndices = y.sparse$detIndices,
+  detNums = y.sparse$detNums,
+  y.Oth = y.sparseOth$y, 
+  detIndicesOth = y.sparseOth$detIndices,
+  detNumsOth = y.sparseOth$detNums,
+  lowerHabCoords = habitat$scaledLowerCoords, 
+  upperHabCoords = habitat$scaledUpperCoords, 
+  detCounties = detCounties,
+  detCountries = detCountries,
+  detCovs = detCovs,
+  detCovsOth = detCovsOth,
+  detResponse = detResponse,
+  denCounts = denCounts,
+  detectorIndex = detectors$localObjects$localIndices,
+  nDetectorsLESS = detectors$localObjects$numLocalIndices,
+  habitatGrid = detectors$localObjects$habitatGrid,
+  size = detectors$detectors.df$size,
+  alpha = rep(1,2),
+  detector.xy = detectors$scaledCoords,
+  habitatGrid = habIDCells.mx)
+
+
+
+## ------   4. NIMBLE INITS ------
+
+## ------     4.1. GENERATE INITIAL z ------
 
 ##-- Set z to 1 before first detection and 3 after last detection
 z.init <- t(apply(z, 1, function(zz){
@@ -2665,7 +2611,7 @@ z.init <- ifelse(!is.na(z), NA, z.init)
 
 
 
-## ------     3.2. LATENT VARIABLE DET RESPONSE ------
+## ------     4.2. LATENT VARIABLE DET RESPONSE ------
 
 InitsDetResponse <- already.detected
 InitsDetResponse[is.na(InitsDetResponse)] <- rbinom(sum(is.na(InitsDetResponse)),1,0.5)
@@ -2673,31 +2619,67 @@ InitsDetResponse[!is.na(already.detected)] <- NA
 
 
 
-## ------   4. NIMBLE DATA ------
+## ------     4.3. GENERATE INITIAL sxy ------
 
-nimData <- list( 
-  z = z,   
-  y = y.sparse$y,
-  detIndices = y.sparse$detIndices,
-  detNums = y.sparse$detNums,
-  y.Oth = y.sparseOth$y, 
-  detIndicesOth = y.sparseOth$detIndices,
-  detNumsOth = y.sparseOth$detNums,
-  lowerHabCoords = lowerHabCoords, 
-  upperHabCoords = upperHabCoords, 
-  detCounties = detCounties,
-  detCountries = detCountries,
-  detCovs = detCovs,
-  detCovsOth = detCovsOth,
-  detResponse = detResponse,
-  denCounts = denCounts,
-  detectorIndex = detectors$localObjects$localIndices,
-  nDetectorsLESS = detectors$localObjects$numLocalIndices,
-  habitatGrid = detectors$localObjects$habitatGrid,
-  size = detectors$detectors.df$size,
-  alpha = rep(1,2),
-  detector.xy = detectors$scaledCoords,
-  habitatGrid = habIDCells.mx)
+##-- sxy
+AllDets <- myData.dead %>% 
+  select(c("Id","Year")) %>%
+  ##-- Project death to the next year
+  mutate(Year = Year + 1) %>%
+  ##-- Remove dead reco occuring the last year (not used)
+  filter(!Year %in% max(Year)) %>%
+  ##-- Combine with detections alive
+  rbind(.,myData.alive$myData.sp[ ,c("Id","Year")]) %>%
+  ##-- Add coordinates
+  mutate("x" = st_coordinates(.)[ ,1],
+         "y" = st_coordinates(.)[ ,2]) 
+
+##-- Rescale detections
+AllDetsxyscaled <- scaleCoordsToHabitatGrid(
+  coordsData = AllDets,
+  coordsHabitatGridCenter = habitat$habitat.xy,
+  scaleToGrid =T )$coordsDataScaled
+
+
+# ##-- Create a data.frame with all detection of all Individuals detected
+# ##-- Project death to the next year
+# myData.deadProj <- myData.dead[ ,c("Id","Year")]
+# myData.deadProj$Year <- myData.deadProj$Year + 1 
+# 
+# ##-- Remove dead reco occuring the last year (not used)
+# myData.deadProj <- myData.deadProj[!myData.deadProj$Year %in% max(myData.deadProj$Year), ]
+# 
+# AllDets <- rbind( myData.deadProj,
+#                   myData.alive$myData.sp[ ,c("Id","Year")])
+# AllDetections <- as.data.frame(AllDets)
+# AllDetsxy <- st_coordinates(AllDets) 
+# colnames(AllDetsxy) <- c("x","y")
+# AllDetsxyscaled <- scaleCoordsToHabitatGrid(
+#   coordsData = AllDetsxy,
+#   coordsHabitatGridCenter = habitat$habitat.xy,
+#   scaleToGrid = T)$coordsDataScaled
+
+AllDetections <- cbind(AllDetections, AllDetsxyscaled)
+
+sxy.init <- getSInits( AllDetections = AllDetections,
+                       Id.vector = y.ar$Id.vector,
+                       idAugmented = which(rownames(z) %in% "Augmented"),
+                       lowerCoords = nimData$lowerCoords,
+                       upperCoords = nimData$pperCoords,
+                       habitatGrid = nimData$habitatGrid,
+                       intensity = NULL,
+                       sd = 4,
+                       movementMethod = "dbernppACmovement_normal")
+
+##-- An extreme number of decimals may cause a number to appear as an integer
+##-- to Nimble, and then coincide with habitat window boundaries
+sxy.init<- round(sxy.init, 4)
+
+# ##-- Get location of individuals 
+# sxy.initscaled <- scaleCoordsToHabitatGrid(
+#   coordsData = sxy.init,
+#   coordsHabitatGridCenter = habitat$habitat.xy,
+#   scaleToGrid =F )$coordsDataScaled
 
 
 
@@ -2713,286 +2695,103 @@ nimParams2 <- c("z", "sxy")
 
 
 
-## ------   6. CONVERT TO CACHED DETECTORS & SPARSE MATRIX ------
-#
-## ------     6.1. RESCALE COORDINATES ------
-# 
-# scaledCoords <-  scaleCoordsToHabitatGrid(
-#   coordsData = detector.xy,
-#   coordsHabitatGridCenter = habitat$habitat.xy)
-# 
-# lowerHabCoords <- scaledCoords$coordsHabitatGridCenterScaled - 0.5
-# upperHabCoords <- scaledCoords$coordsHabitatGridCenterScaled + 0.5
-# 
-# scaledDetCoords <- scaledCoords$coordsDataScaled
-# 
-# # # HABITAT
-# # ScaledLowerCoords <- scaleCoordsToHabitatGrid(coordsData = lowerHabCoords,
-# #                                               coordsHabitatGridCenter = habitat$habitat.xy,
-# #                                               scaleToGrid =T )$coordsDataScaled
-# # ScaledUpperCoords <- scaleCoordsToHabitatGrid(coordsData = upperHabCoords,
-# #                                               coordsHabitatGridCenter = habitat$habitat.xy,
-# #                                               scaleToGrid =T )$coordsDataScaled
-# # 
-# # ScaledUpperCoords[ ,2] <- ScaledUpperCoords[ ,2]+1
-# # ScaledLowerCoords[ ,2] <- ScaledLowerCoords[ ,2]-1
-# # 
-# # # DETECTORS
-# # ScaledDetectors <- scaleCoordsToHabitatGrid(coordsData = detector.xy,
-# #                                             coordsHabitatGridCenter = habitat$habitat.xy,
-# #                                             scaleToGrid =T )$coordsDataScaled
-# 
-# 
-# 
-#
-## ------     6.2. CREATE CACHED DETECTORS OBJECTS ------
-#
-# ## [CM] reduce multiplicator to 3 
-# maxDistReCalc <- 2.1*detectors$maxDist #+ sqrt(2*(DETECTIONS$resizeFactor*HABITAT$habResolution)^2)
-# 
-# DetectorIndexLESS <- GetDetectorIndexLESS(
-#   habitat.mx = habitat$habitat.mx,
-#   detectors.xy = nimData$detector.xy,
-#   maxDist = maxDistReCalc/res(habitat$habitat.r)[1],
-#   ResizeFactor = 1,
-#   plot.check = TRUE)
-# 
-# # ADD TO NIMDATA
-# nimConstants$y.maxDet <- dim(DetectorIndexLESS$habitatID)[1]
-# nimConstants$x.maxDet <- dim(DetectorIndexLESS$habitatID)[2]
-# nimConstants$ResizeFactor <- DetectorIndexLESS$ResizeFactor
-# nimConstants$n.cellsSparse <- dim(DetectorIndexLESS$detectorIndex)[1]
-# nimConstants$maxNBDets <- DetectorIndexLESS$maxNBDets
-#
-# nimData$detectorIndex <- DetectorIndexLESS$detectorIndex
-# nimData$nDetectorsLESS <- DetectorIndexLESS$nDetectorsLESS
-# nimData$habitatIDDet <- DetectorIndexLESS$habitatID
-#
-#
-#
-## ------     6.3 TRANSFORM Y TO SPARSE MATRICES ------
-#
-# # STRUCTURED
-# SparseY <- GetSparseY(y.aliveStructured)
-# # ADD TO NIMDATA
-# nimData$y.alive <- SparseY$y 
-# nimData$yDets <- SparseY$yDets
-# nimData$nbDetections <- SparseY$nbDetections
-# nimConstants$nMaxDetectors <- SparseY$nMaxDetectors
-# 
-# # OTHER
-# SparseYOth <- GetSparseY(y.aliveOthers)
-# # ADD TO NIMDATA
-# nimData$y.aliveOth <- SparseYOth$y 
-# nimData$yDetsOth <- SparseYOth$yDets
-# nimData$nbDetectionsOth <- SparseYOth$nbDetections
-# nimConstants$nMaxDetectorsOth <- SparseYOth$nMaxDetectors
+## ------   6. LOOP THROUGH INITIAL VALUES & SAVE OBJECT ------
+
+for(c in 1:4){
+  
+  ##-- List NIMBLE inits
+  nimInits <- list(
+    "sxy" = sxy.init,
+    "z" = z.init,
+    "dmean" = runif(1, 0, 10),
+    "betaDens" = runif(1, -0.1, 0.1),
+    "omeg1" = c(0.5, 0.5),
+    "gamma" = runif(dim(y.alive)[3]-1, 0, 1),
+    "phi" = runif(dim(y.alive)[3]-1, 0.1, 0.3),
+    "pResponse" = runif(1, 0.4, 0.5),
+    "detResponse" = detResponse.init,
+    "sigma" = runif(n.years, 1, 4),
+    "p01" = array(runif(18, 0, 0.2),
+                  c(nimConstants$n.counties, dim(y.alive)[3])),
+    "betaResponse" = runif(dim(y.alive)[3], -0.1, 0.1),
+    "betaCovs" = array(runif(dim(detCovs)[3], -0.1, 0.1),
+                       c(dim(detCovsOth)[3], n.years)),
+    "p01Oth" = array(runif(18, 0, 0.2),
+                     c(nimConstants$n.countries+1, dim(y.alive)[3])),
+    "betaResponseOth" = runif(dim(y.alive)[3], -0.1, 0.1),
+    "betaCovsOth" = array(runif(dim(detCovsOth)[3], -0.1, 0.1),
+                          c(dim(detCovsOth)[3], n.years))) 
+  
+  ##-- Test if the local evaluation wil work 
+  ##-- Get detector index from the habitat ID matrix
+  idDEtected <- which(!rownames(z) %in%"Augmented")
+  for(i in 1:length(idDEtected)){
+    for(t in 1:nimConstants$n.years){
+      if(!is.na(nimInits$sxy[i,1,t])){
+        SXY <- nimInits$sxy[i,,t]  
+      }else{SXY <- nimData$sxy[i,,t]}
+      sxyID <- nimData$habitatID[trunc(SXY[2]/nimConstants$ResizeFactor)+1, trunc(SXY[1]/nimConstants$ResizeFactor)+1]
+      DETECTIndexdetectorIndex <- nimData$detectorIndex[1:nimConstants$n.cellsSparse, 
+                                                        1:nimConstants$maxNBDets] 
+      DETECTLESS <- nimData$nDetectorsLESS[1:nimConstants$n.cellsSparse]
+      index <- DETECTIndexdetectorIndex [sxyID,1:DETECTLESS[sxyID]]
+      
+      #table(detectorIndex)
+      ## GET NECESSARY INFO 
+      n.detectors <- length(index)
+      
+      YDET <- nimData$yDets[i,1:nimConstants$nMaxDetectors, t]
+      YDETOth <- nimData$yDetsOth[i,1:nimConstants$nMaxDetectorsOth, t]
+      
+      ## RECREATE Y
+      if(nimData$nbDetections[i, t] > 0){
+        for(j in 1:nimData$nbDetections[i, t]){
+          ## check if a detection is out of the "detection window"
+          if(sum(YDET[j]==index)==0){
+            print(paste("id",i,"t",t,"j",j))
+          }
+        }
+      }
+    }}
+  
+  
+  
+  ##------ 7. SAVE NIMBLE INPUT ------
+  
+  save(nimData,
+       nimConstants,
+       y.dead,
+       nimParams,
+       nimParams2,
+       modelCode,
+       nimInits,
+       file = file.path(working.dir, "nimbleInFiles", 
+                        paste0(modelName, "Chain", c, ".RData")))
+}#c
 
 
 
-## ------   7. LOOP THROUGH INITIAL VALUES & SAVE OBJECT ------
+##------ 8. SAVE NECESSARY OBJECTS ------
 
-# sxy
-#create a data.frame with all detection of all Individuals detected
-#project death to the next year
-myData.deadProj <- myData.dead[ ,c("Id","Year")]
-myData.deadProj$Year <- myData.deadProj$Year + 1#project dead reco to the next year
-#remove dead reco occuring the last year (not used)
-myData.deadProj <- myData.deadProj[!myData.deadProj$Year %in% max(myData.deadProj$Year), ]
+myHabitat.list <- habitat
+myDetectors <- detectors
+myStudyArea.poly <- myStudyArea
 
-AllDets <- rbind(myData.alive$data.sp[ ,c("Id","Year")],
-                 myData.deadProj[ ,c("Id","Year")])
-AllDetections <- as.data.frame(AllDets)
-AllDetsxy <- st_coordinates(AllDets) 
-colnames(AllDetsxy) <- c("x","y")
-AllDetsxyscaled <- scaleCoordsToHabitatGrid(
-  coordsData = AllDetsxy,
-  coordsHabitatGridCenter = habitat$habitat.xy,
-  scaleToGrid =T )$coordsDataScaled
-
-AllDetections <- cbind(AllDetections, AllDetsxyscaled)
-
-idAugmented <- which(rownames(z) %in% "Augmented")
-Id.vector <- y.ar$Id.vector
-lowerCoords = nimData$lowerHabCoords
-upperCoords = nimData$upperHabCoords
-habitatGrid = nimData$habitatGrid
-
-sxy.init <- getSInits( AllDetections = AllDetections,
-                       Id.vector = Id.vector,
-                       idAugmented = idAugmented,
-                       lowerCoords = lowerCoords,
-                       upperCoords = upperCoords,
-                       habitatGrid = habitatGrid,
-                       intensity = NULL,
-                       sd = 4,
-                       movementMethod = "dbernppACmovement_normal")
-
-# get location of individuals 
-sxy.initscaled <- scaleCoordsToHabitatGrid(
-  coordsData = sxy.init,
-  coordsHabitatGridCenter = habitat$habitat.xy,
-  scaleToGrid =F )$coordsDataScaled
+save( myHabitat.list,
+      myDetectors,
+      COUNTRIES,
+      myStudyArea.poly,
+      COMMUNES,
+      COUNTIES_AGGREGATEDSubset,
+      myFilteredData.sp,
+      myFullData.sp,
+      COUNTIES_AGGREGATED,
+      file = file.path(working.dir, "data/NecessaryObjects.RData"))
 
 
 
-## ------   8. calculate realized phi ------
-#
-# #initialize objects 
-# recruit <- 0
-# z_caculate <- nimData$z#[,1:(n.years-1)]
-# z_caculate[is.na(z_caculate)] <- 0
-# lev <- levels(habitatRasterResolution$'2.5km'$Countries)
-# #EXTRACT LOCATION BASED ON INITIAL AC
-# countryId <- list()
-# for(t in 1:dim(z_caculate)[2]){
-#   tmp <- st_as_sf(data.frame(sxy.initscaled[,,t]), coords = c("x", "y"))
-#   countryId[[t]] <- raster::extract( habitatRasterResolution$'2.5km'$Countries ,tmp,sparse = F)
-# }
-# phi <- phiind1 <- culled <- recruit <- recruitnb<- matrix(0,nrow=n.years-1,ncol=length(lev[[1]]$ID))
-# colnames(phi) <- colnames(phiind1) <- colnames(culled) <- 
-#   colnames(recruitnb) <-  colnames(recruit)  <- factorValues(habitatRasterResolution$'2.5km'$Countries,lev[[1]]$ID)[,1]
-# for(c in 1:ncol(phi)){
-#   for(t in 2:dim(z_caculate)[2]){
-#     #phi
-#     alivet <- which(z_caculate[,t-1] %in% c(2) & countryId[[t-1]] %in% c )
-#     phi[t-1, c] <- sum(z_caculate[alivet,t] %in% c(2))/length(alivet)
-#     #culled
-#     #culled[t-1] <- sum(z_caculate[alivet,t] %in% c(3))/length(alivet)
-#     #recru
-#     notentered <- which(z_caculate[,t-1] == 0)
-#     recruitnb[t-1,c] <- sum(z_caculate[notentered,t] %in% c(2) & 
-#                               countryId[[t]][notentered] %in% c)#/sum(z_caculate[,t-1] %in% c(2))
-#     recruit[t-1,c] <- sum(z_caculate[notentered,t] %in% c(2) & 
-#                             countryId[[t]][notentered] %in% c)/sum(z_caculate[,t-1] %in% c(2) & 
-#                                                                      countryId[[t-1]] %in% c)
-#   }
-# }
-# phi <- phi[,c(2,4)]        # overall phi
-# recruit <- recruit[,c(2,4)]        # overall phi
-# recruitnb <- recruitnb[,c(2,4)]        # overall phi
-# 
-# 
-# ###
-# pdf(file = file.path( working.dir, "figures/realizedPhiCountry.pdf"))
-# par(mfrow = c(1,1))
-# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized phi from z")
-# axis(1, at = 1:(n.years-1) , labels = years[1:(n.years-1)]+1)
-# yr <- c(1:(n.years-1))
-# for(c in 1:ncol(phi)){
-#   points(phi[,c]~yr,pch=16,type="b", col=c)
-# }
-# legend("bottomright",colnames(phi),col=c(1:4),pch=16)
-# 
-# 
-# par(mfrow = c(1,1))
-# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized recruit from z")
-# axis(1, at = 1:(n.years-1) , labels = years[1:(n.years-1)]+1)
-# yr <- c(1:(n.years-1))
-# for(c in 1:ncol(recruit)){
-#   points(recruit[,c]~yr,pch=16,type="b", col=c)
-# }
-# legend("topright",colnames(recruit),col=c(1:4),pch=16)
-# dev.off()
-# 
-# 
-# ###
-# lev <- levels(habitatRasterResolution$'10km'$Counties)
-# countryId <- list()
-# for(t in 1:dim(z)[2]){
-#   tmp <- st_as_sf(data.frame(sxy.initscaled[,,t]), coords = c("x", "y"))
-#   countryId[[t]] <- raster::extract( habitatRasterResolution$'10km'$Counties ,tmp,sparse = F)
-# }
-# 
-# phi <- phiind1 <- culled <- recruit <- recruitnb<- matrix(0,nrow=n.years-1,ncol=length(lev[[1]]$ID))
-# colnames(phi) <- colnames(phiind1) <- colnames(culled) <- 
-#   colnames(recruitnb) <-  colnames(recruit)  <- factorValues(habitatRasterResolution$'10km'$Counties,lev[[1]]$ID)[,1]
-# 
-# for(c in 1:ncol(phi)){
-#   for(t in 2:dim(z)[2]){
-#     #phi
-#     alivet <- which(z_caculate[,t-1] %in% c(2) & countryId[[t-1]] %in% c )
-#     phi[t-1, c] <- sum(z_caculate[alivet,t] %in% c(2))/length(alivet)
-#     #culled
-#     #culled[t-1] <- sum(z_caculate[alivet,t] %in% c(3))/length(alivet)
-#     #recru
-#     notentered <- which(z_caculate[,t-1] == 0)
-#     recruitnb[t-1,c] <- sum(z_caculate[notentered,t] %in% c(2) & 
-#                               countryId[[t]][notentered] %in% c)#/sum(z_caculate[,t-1] %in% c(2))
-#     recruit[t-1,c] <- sum(z_caculate[notentered,t] %in% c(2) & 
-#                             countryId[[t]][notentered] %in% c)/sum(z_caculate[,t-1] %in% c(2) & 
-#                                                                      countryId[[t-1]] %in% c)
-#   }
-# }
-# phi <- phi[,c(13,16,17,18,19,20,21,27,28,30,31,32,33,35,36,38)]        # overall phi
-# 
-# phiNOR <- phi[,c(8,9,10,11,12,13)]
-# phiSWE <- phi[,-c(8,9,10,11,12,13,14,15,16)]
-# 
-# recruitnb <- recruitnb[,c(13,16,17,18,19,20,21,27,28,30,31,32,33,35,36,38)]        # overall phi
-# recruitnbNOR <- recruitnb[,c(8,9,10,11,12,13)]
-# recruitnbSWE <- recruitnb[,-c(8,9,10,11,12,13,14,15,16)]
-# 
-# recruit <- recruit[,c(13,16,17,18,19,20,21,27,28,30,31,32,33,35,36,38)]        # overall phi
-# recruitNOR <- recruit[,c(8,9,10,11,12,13)]
-# recruitSWE <- recruit[,-c(8,9,10,11,12,13,14,15,16)]
-# 
-# 
-# ###
-# pdf( file = file.path(working.dir, "figures/realizedPhiCounties.pdf"),
-#      width = 11, height = 6)
-# # PHI
-# #NORWAY
-# par(mfrow = c(1,2))
-# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized phi from z", main="Norway")
-# axis(1, at = 1:(n.years-1) , labels = paste( years[1:(n.years-1)]+1, years[1:(n.years-1)]+2,sep="-"))
-# yr <- c(1:(n.years-1))
-# for(c in 1:ncol(phiNOR)){
-#   points(phiNOR[,c]~yr,pch=16,type="b", col=c)
-# }
-# legend("bottomleft",colnames(phiNOR),col=c(1:ncol(phiNOR)),pch=16)
-# 
-# ###SWEDEN
-# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized phi from z", main="Sweden")
-# axis(1, at = 1:(n.years-1) , labels = paste( years[1:(n.years-1)]+1, years[1:(n.years-1)]+2,sep="-"))
-# yr <- c(1:(n.years-1))
-# for(c in 1:ncol(phiSWE)){
-#   points(phiSWE[,c]~yr,pch=16,type="b", col=c)
-# }
-# legend("bottomleft",colnames(phiSWE),col=c(1:ncol(phiSWE)),pch=16)
-# 
-# 
-# # RECRUITS
-# #NORWAY
-# par(mfrow = c(1,2))
-# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", 
-#      ylab = "Realized recruitment from z", main="Norway")
-# axis(1, at = 1:(n.years-1) , labels = paste( years[1:(n.years-1)]+1, years[1:(n.years-1)]+2,sep="-"))
-# yr <- c(1:(n.years-1))
-# for(c in 1:ncol(recruitNOR)){
-#   points(recruitNOR[,c]~yr,pch=16,type="b", col=c)
-# }
-# legend("topleft",colnames(phiNOR),col=c(1:ncol(phiNOR)),pch=16)
-# 
-# ###SWEDEN
-# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized recruitment from z", main="Sweden")
-# axis(1, at = 1:(n.years-1) , labels = paste( years[1:(n.years-1)]+1, years[1:(n.years-1)]+2,sep="-"))
-# yr <- c(1:(n.years-1))
-# for(c in 1:ncol(recruitSWE)){
-#   points(recruitSWE[,c]~yr,pch=16,type="b", col=c)
-# }
-# legend("topleft",colnames(recruitSWE),col=c(1:ncol(phiSWE)),pch=16)
-# dev.off()
-# 
-# ##prop detected vs Alive in z
-# propDet <- 0
-# for(t in 1:n.years){
-#   whichdets <- unique(c(which(nimData$nbDetections[,t]>0),
-#                         which(nimData$nbDetectionsOth[,t]>0)))
-#   whichAlive <- which(nimData$z[,t]%in%2)
-#   propDet[t] <- length(whichdets)/length(whichAlive)
-# }
 
+## END OF makeRovquantData_wolverine() ------
 
 
 for(c in 1:4){
@@ -3016,8 +2815,8 @@ for(c in 1:4){
                     "pResponse" = runif(1,0.4,0.5),
                     "phi" = runif(dim(y.alive)[3]-1,0.1,0.3)) 
   
-  ### TEST IF THE LESS RESTRICTION ON DETECTORS WILL WORK 
-  ## GET DETECTOR INDEX FROM THE HABITAT ID MATRIX
+  ##-- TEST IF THE LESS RESTRICTION ON DETECTORS WILL WORK 
+  ##-- GET DETECTOR INDEX FROM THE HABITAT ID MATRIX
   idDEtected <- which(!rownames(z) %in%"Augmented")
   for(i in 1:length(idDEtected)){
     for(t in 1:nimConstants$n.years){
@@ -3033,7 +2832,7 @@ for(c in 1:4){
       #table(detectorIndex)
       ## GET NECESSARY INFO 
       n.detectors <- length(index)
-
+      
       YDET <- nimData$yDets[i,1:nimConstants$nMaxDetectors, t]
       YDETOth <- nimData$yDetsOth[i,1:nimConstants$nMaxDetectorsOth, t]
       
@@ -3048,30 +2847,24 @@ for(c in 1:4){
       }
     }}
   
-  
-  plot(nimData$detector.xy[,2]~nimData$detector.xy[,1])
-  points(nimData$detector.xy[index,2]~nimData$detector.xy[index,1], col="red")
-  points(SXY[2]~SXY[1], col="blue", pch=16)
-  points(nimData$detector.xy[YDET[1:nimData$nbDetections[i, t]],2]~
-           nimData$detector.xy[YDET[1:nimData$nbDetections[i, t]],1], col="green", pch=16)
-  points(nimData$detector.xy[YDETOth[1:nimData$nbDetectionsOth[i, t]],2]~
-           nimData$detector.xy[YDETOth[1:nimData$nbDetectionsOth[i, t]],1], col="purple", pch=16)
-  
-  
-  plot(st_geometry(COUNTRIES))
-  tmp <- myData.alive$data.sp[myData.alive$data.sp$Id %in% row.names(y.ar.ALIVE)[i] & myData.alive$data.sp$Year %in% years[t],]
-  plot(st_geometry(tmp),col="red",add=T)
-  
+  # plot(nimData$detector.xy[,2]~nimData$detector.xy[,1])
+  # points(nimData$detector.xy[index,2]~nimData$detector.xy[index,1], col="red")
+  # points(SXY[2]~SXY[1], col="blue", pch=16)
+  # points(nimData$detector.xy[YDET[1:nimData$nbDetections[i, t]],2]~
+  #          nimData$detector.xy[YDET[1:nimData$nbDetections[i, t]],1], col="green", pch=16)
+  # points(nimData$detector.xy[YDETOth[1:nimData$nbDetectionsOth[i, t]],2]~
+  #          nimData$detector.xy[YDETOth[1:nimData$nbDetectionsOth[i, t]],1], col="purple", pch=16)
+  # plot(st_geometry(COUNTRIES))
+  # tmp <- myData.alive$data.sp[myData.alive$data.sp$Id %in% row.names(y.ar.ALIVE)[i] & myData.alive$data.sp$Year %in% years[t],]
+  # plot(st_geometry(tmp),col="red",add=T)
   
   nimInits$sxy <- round(nimInits$sxy, 5)#---an extreme number of decimals may cause a number to appear as an integer to Nimble, and then coincide with habitat window boundaries
   
-  
-  ##CHECK WHERE IS NORRBOTTEN. IT IS ON THE 5TH INDEX
-  plot(st_geometry(GLOBALMAP), col = "gray80", main = "Aggregated Counties")
-  plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-  plot(st_geometry(detectors$main.detector.sp[detCounties%in% c(1),]), col = myCol[5], pch = 16, cex = 0.8,add=T)
-  
+  # ##CHECK WHERE IS NORRBOTTEN. IT IS ON THE 5TH INDEX
+  # plot(st_geometry(GLOBALMAP), col = "gray80", main = "Aggregated Counties")
+  # plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
+  # plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
+  # plot(st_geometry(detectors$main.detector.sp[detCounties%in% c(1),]), col = myCol[5], pch = 16, cex = 0.8,add=T)
   nimConstants$countyToggle <- nimInits$p01
   nimConstants$countyToggle[] <- 1
   
@@ -3117,132 +2910,159 @@ for(c in 1:4){
 }#c
 
 
-## ------   9. SAVE NECESSARY OBJECTS ------
-for(c in 1:4){
-  
-  ## List NIMBLE inits
-  nimInits <- list(
-    "sxy" = sxy.init,
-    "dmean" = runif(1,0,10),
-    "z" = z.init,
-    "omeg1" = c(0.5,0.5),
-    "gamma" = runif(dim(y.alive)[3]-1,0,1),
-    "p01" = array(runif(18,0,0.2), c(nimConstants$n.counties,dim(y.alive)[3])),
-    "p01Oth" = array(runif(18,0,0.2), c(nimConstants$n.countries+1,dim(y.alive)[3])),
-    "sigma" = runif(n.years,1,4),
-    "betaDens" = runif(1,-0.1,0.1),
-    "betaCovs" = array( runif(dim(detCovs)[3],-0.1,0.1),c(dim(detCovsOth)[3],n.years)),
-    "betaCovsOth" = array( runif(dim(detCovsOth)[3],-0.1,0.1),c(dim(detCovsOth)[3],n.years)),
-    "betaResponseOth" = runif(dim(y.alive)[3], -0.1, 0.1),
-    "betaResponse" = runif(dim(y.alive)[3], -0.1, 0.1),
-    "detResponse" = InitsDetResponse,
-    "pResponse" = runif(1,0.4,0.5),
-    "phi" = runif(dim(y.alive)[3]-1,0.1,0.3)) 
-  
-  ## TEST IF THE LESS RESTRICTION ON DETECTORS WILL WORK 
-  ## GET DETECTOR INDEX FROM THE HABITAT ID MATRIX
-  idDEtected <- which(!rownames(z) %in%"Augmented")
-  for(i in 1:length(idDEtected)){
-    for(t in 1:nimConstants$n.years){
-      if(!is.na(nimInits$sxy[i,1,t])){
-        SXY <- nimInits$sxy[i,,t]  
-      }else{SXY <- nimData$sxy[i,,t]}
-      sxyID <- nimData$habitatID[trunc(SXY[2]/nimConstants$ResizeFactor)+1, trunc(SXY[1]/nimConstants$ResizeFactor)+1]
-      DETECTIndexdetectorIndex <- nimData$detectorIndex[1:nimConstants$n.cellsSparse, 
-                                                        1:nimConstants$maxNBDets] 
-      DETECTLESS <- nimData$nDetectorsLESS[1:nimConstants$n.cellsSparse]
-      index <- DETECTIndexdetectorIndex [sxyID,1:DETECTLESS[sxyID]]
-      
-      #table(detectorIndex)
-      ## GET NECESSARY INFO 
-      n.detectors <- length(index)
-
-      YDET <- nimData$yDets[i,1:nimConstants$nMaxDetectors, t]
-      YDETOth <- nimData$yDetsOth[i,1:nimConstants$nMaxDetectorsOth, t]
-      
-      ## RECREATE Y
-      if(nimData$nbDetections[i, t] > 0){
-        for(j in 1:nimData$nbDetections[i, t]){
-          ## check if a detection is out of the "detection window"
-          if(sum(YDET[j]==index)==0){
-            print(paste("id",i,"t",t,"j",j))
-          }
-        }
-      }
-    }}
-  
-  nimInits$sxy <- round(nimInits$sxy, 5)#---an extreme number of decimals may cause a number to appear as an integer to Nimble, and then coincide with habitat window boundaries
-  
-  ##CHECK WHERE IS NORRBOTTEN. IT IS ON THE 5TH INDEX
-  # plot(st_geometry(GLOBALMAP), col = "gray80", main = "Aggregated Counties")
-  # plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  # plot(st_geometry(myBufferedArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-  # plot(st_geometry(detectors$main.detector.sp[detCounties%in% c(1),]), col = myCol[5], pch = 16, cex = 0.8,add=T)
-  # 
-  nimConstants$countyToggle <- nimInits$p01
-  nimConstants$countyToggle[] <- 1
-  
-  yearsNotSampled <- which(!years%in% yearsSampledNorrb)
-  for(t in yearsNotSampled){
-    nimConstants$countyToggle[1,t] <- 0
-  }
-  
-  ## add another category to detCountry if in Norrbotten, to turnoff detection to 0 there. 
-  detCountriesNorb <- matrix(NA, nrow=length(detCountries),ncol=n.years)
-  detCountries1 <- detCountries
-  detCountries1[detCounties %in% 1] <- 3
-  for(t in 1:n.years){
-    if(t %in% yearsNotSampled){
-      detCountriesNorb[,t] <- detCountries1
-    }else{
-      detCountriesNorb[,t] <- detCountries
-    }
-  }  
-  
-  nimData$detCountries <- detCountriesNorb
-  
-  nimConstants$countryToggle <- nimInits$p01Oth
-  nimConstants$countryToggle[] <- 1
-  yearsNotSampled <- which(!years %in% yearsSampledNorrb)
-  for(t in yearsNotSampled){
-    nimConstants$countryToggle[3,t] <- 0
-  }
-  
-  
-  
-  ## 7. SAVE NIMBLE INPUT ------
-  
-  save(nimData,
-       nimConstants,
-       y.dead,
-       nimParams,
-       nimParams2,
-       modelCode,
-       nimInits,
-       file = file.path(working.dir, "nimbleInFiles", 
-                        paste0(modelName, "Chain", c, ".RData")))
-}#c
-myHabitat.list <- habitat
-myDetectors <- myDetectors
-myStudyArea.poly <- myStudyArea
 
 
-save( myHabitat.list,
-      myDetectors,
-      COUNTRIES,
-      myStudyArea.poly,
-      COMMUNES,
-      COUNTIES_AGGREGATEDSubset,
-      myFilteredData.sp,
-      myFullData.sp,
-      COUNTIES_AGGREGATED,
-      file = file.path(working.dir, "data/NecessaryObjects.RData"))
-
-
-
-
-## END OF makeRovquantData_wolverine() ------
-
+## ------   8. calculate realized phi ------
+#
+# #initialize objects 
+# recruit <- 0
+# z_caculate <- nimData$z#[,1:(n.years-1)]
+# z_caculate[is.na(z_caculate)] <- 0
+# lev <- levels(habitatRasterResolution$'2.5km'$Countries)
+# #EXTRACT LOCATION BASED ON INITIAL AC
+# countryId <- list()
+# for(t in 1:dim(z_caculate)[2]){
+#   tmp <- st_as_sf(data.frame(sxy.initscaled[,,t]), coords = c("x", "y"))
+#   countryId[[t]] <- raster::extract( habitatRasterResolution$'2.5km'$Countries ,tmp,sparse = F)
+# }
+# phi <- phiind1 <- culled <- recruit <- recruitnb<- matrix(0,nrow=n.years-1,ncol=length(lev[[1]]$ID))
+# colnames(phi) <- colnames(phiind1) <- colnames(culled) <- 
+#   colnames(recruitnb) <-  colnames(recruit)  <- 
+#     factorValues(habitatRasterResolution$'2.5km'$Countries,lev[[1]]$ID)[,1]
+# for(c in 1:ncol(phi)){
+#   for(t in 2:dim(z_caculate)[2]){
+#     #phi
+#     alivet <- which(z_caculate[,t-1] %in% c(2) & countryId[[t-1]] %in% c )
+#     phi[t-1, c] <- sum(z_caculate[alivet,t] %in% c(2))/length(alivet)
+#     #culled
+#     #culled[t-1] <- sum(z_caculate[alivet,t] %in% c(3))/length(alivet)
+#     #recru
+#     notentered <- which(z_caculate[,t-1] == 0)
+#     recruitnb[t-1,c] <- sum(z_caculate[notentered,t] %in% c(2) & 
+#                               countryId[[t]][notentered] %in% c)#/sum(z_caculate[,t-1] %in% c(2))
+#     recruit[t-1,c] <- sum(z_caculate[notentered,t] %in% c(2) & 
+#                             countryId[[t]][notentered] %in% c)/sum(z_caculate[,t-1] %in% c(2) & 
+#                                                                      countryId[[t-1]] %in% c)
+#   }
+# }
+# phi <- phi[,c(2,4)]                    # overall phi
+# recruit <- recruit[,c(2,4)]            # overall phi
+# recruitnb <- recruitnb[,c(2,4)]        # overall phi
+# 
+# 
+# pdf(file = file.path( working.dir, "figures/realizedPhiCountry.pdf"))
+# par(mfrow = c(1,1))
+# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized phi from z")
+# axis(1, at = 1:(n.years-1) , labels = years[1:(n.years-1)]+1)
+# yr <- c(1:(n.years-1))
+# for(c in 1:ncol(phi)){
+#   points(phi[,c]~yr,pch=16,type="b", col=c)
+# }
+# legend("bottomright",colnames(phi),col=c(1:4),pch=16)
+# 
+# 
+# par(mfrow = c(1,1))
+# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized recruit from z")
+# axis(1, at = 1:(n.years-1) , labels = years[1:(n.years-1)]+1)
+# yr <- c(1:(n.years-1))
+# for(c in 1:ncol(recruit)){
+#   points(recruit[,c]~yr,pch=16,type="b", col=c)
+# }
+# legend("topright",colnames(recruit),col=c(1:4),pch=16)
+# dev.off()
+# 
+# 
+# lev <- levels(habitatRasterResolution$'10km'$Counties)
+# countryId <- list()
+# for(t in 1:dim(z)[2]){
+#   tmp <- st_as_sf(data.frame(sxy.initscaled[,,t]), coords = c("x", "y"))
+#   countryId[[t]] <- raster::extract( habitatRasterResolution$'10km'$Counties ,tmp,sparse = F)
+# }
+# 
+# phi <- phiind1 <- culled <- recruit <- recruitnb<- matrix(0,nrow=n.years-1,ncol=length(lev[[1]]$ID))
+# colnames(phi) <- colnames(phiind1) <- colnames(culled) <- 
+#   colnames(recruitnb) <-  colnames(recruit)  <- 
+#    factorValues(habitatRasterResolution$'10km'$Counties,lev[[1]]$ID)[,1]
+# 
+# for(c in 1:ncol(phi)){
+#   for(t in 2:dim(z)[2]){
+#     #phi
+#     alivet <- which(z_caculate[,t-1] %in% c(2) & countryId[[t-1]] %in% c )
+#     phi[t-1, c] <- sum(z_caculate[alivet,t] %in% c(2))/length(alivet)
+#     #culled
+#     #culled[t-1] <- sum(z_caculate[alivet,t] %in% c(3))/length(alivet)
+#     #recru
+#     notentered <- which(z_caculate[,t-1] == 0)
+#     recruitnb[t-1,c] <- sum(z_caculate[notentered,t] %in% c(2) & 
+#                               countryId[[t]][notentered] %in% c)#/sum(z_caculate[,t-1] %in% c(2))
+#     recruit[t-1,c] <- sum(z_caculate[notentered,t] %in% c(2) & 
+#                             countryId[[t]][notentered] %in% c)/sum(z_caculate[,t-1] %in% c(2) & 
+#                                                                      countryId[[t-1]] %in% c)
+#   }
+# }
+# phi <- phi[,c(13,16,17,18,19,20,21,27,28,30,31,32,33,35,36,38)]               # overall phi
+# phiNOR <- phi[,c(8,9,10,11,12,13)]
+# phiSWE <- phi[,-c(8,9,10,11,12,13,14,15,16)]
+# recruitnb <- recruitnb[,c(13,16,17,18,19,20,21,27,28,30,31,32,33,35,36,38)]   # overall phi
+# recruitnbNOR <- recruitnb[,c(8,9,10,11,12,13)]
+# recruitnbSWE <- recruitnb[,-c(8,9,10,11,12,13,14,15,16)]
+# recruit <- recruit[,c(13,16,17,18,19,20,21,27,28,30,31,32,33,35,36,38)]       # overall phi
+# recruitNOR <- recruit[,c(8,9,10,11,12,13)]
+# recruitSWE <- recruit[,-c(8,9,10,11,12,13,14,15,16)]
+# 
+# 
+# pdf( file = file.path(working.dir, "figures/realizedPhiCounties.pdf"),
+#      width = 11, height = 6)
+# # PHI
+# #NORWAY
+# par(mfrow = c(1,2))
+# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized phi from z", main="Norway")
+# axis(1, at = 1:(n.years-1) , labels = paste( years[1:(n.years-1)]+1, years[1:(n.years-1)]+2,sep="-"))
+# yr <- c(1:(n.years-1))
+# for(c in 1:ncol(phiNOR)){
+#   points(phiNOR[,c]~yr,pch=16,type="b", col=c)
+# }
+# legend("bottomleft",colnames(phiNOR),col=c(1:ncol(phiNOR)),pch=16)
+# 
+# ###SWEDEN
+# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized phi from z", main="Sweden")
+# axis(1, at = 1:(n.years-1) , labels = paste( years[1:(n.years-1)]+1, years[1:(n.years-1)]+2,sep="-"))
+# yr <- c(1:(n.years-1))
+# for(c in 1:ncol(phiSWE)){
+#   points(phiSWE[,c]~yr,pch=16,type="b", col=c)
+# }
+# legend("bottomleft",colnames(phiSWE),col=c(1:ncol(phiSWE)),pch=16)
+# 
+# # RECRUITS
+# #NORWAY
+# par(mfrow = c(1,2))
+# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", 
+#      ylab = "Realized recruitment from z", main="Norway")
+# axis(1, at = 1:(n.years-1) , labels = paste( years[1:(n.years-1)]+1, years[1:(n.years-1)]+2,sep="-"))
+# yr <- c(1:(n.years-1))
+# for(c in 1:ncol(recruitNOR)){
+#   points(recruitNOR[,c]~yr,pch=16,type="b", col=c)
+# }
+# legend("topleft",colnames(phiNOR),col=c(1:ncol(phiNOR)),pch=16)
+# 
+# ###SWEDEN
+# plot(-10, xlim = c(0,n.years), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "Realized recruitment from z", main="Sweden")
+# axis(1, at = 1:(n.years-1) , labels = paste( years[1:(n.years-1)]+1, years[1:(n.years-1)]+2,sep="-"))
+# yr <- c(1:(n.years-1))
+# for(c in 1:ncol(recruitSWE)){
+#   points(recruitSWE[,c]~yr,pch=16,type="b", col=c)
+# }
+# legend("topleft",colnames(recruitSWE),col=c(1:ncol(phiSWE)),pch=16)
+# dev.off()
+# 
+# ##prop detected vs Alive in z
+# propDet <- 0
+# for(t in 1:n.years){
+#   whichdets <- unique(c(which(nimData$nbDetections[,t]>0),
+#                         which(nimData$nbDetectionsOth[,t]>0)))
+#   whichAlive <- which(nimData$z[,t]%in%2)
+#   propDet[t] <- length(whichdets)/length(whichAlive)
+# }
 
 
 
