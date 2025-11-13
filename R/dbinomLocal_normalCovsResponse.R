@@ -146,6 +146,7 @@ dbinomLocal_normalCovsResponse <- nimbleFunction(
     detIndices1 <- c(detIndices1, 0)
     indCov <- responseCovs * responseBetas
     count <- 1 
+    n.covs <- nimDim(trapCovs)[2]
     
     for(r in 1:localTrapsNum[sID]){
       ##-- Calculate distance to local traps
@@ -153,7 +154,7 @@ dbinomLocal_normalCovsResponse <- nimbleFunction(
         pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
       ##-- Calculate p0 
       pZero <- ilogit(logitp0[trapCountries[theseLocalTraps[r]]] + 
-                        inprod(trapBetas,trapCovs[theseLocalTraps[r], ]) +
+                        sum(trapBetas[1:n.covs]*trapCovs[theseLocalTraps[r],1:n.covs]) + 
                         indCov)
       p <- pZero * exp(alpha * d2)
       
