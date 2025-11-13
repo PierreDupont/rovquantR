@@ -2094,7 +2094,7 @@ for(thisSex in c("Hann","Hunn")){
           sigma = sigma[t],
           nbDetectionsOth[i,t],
           yDets = yDetsOth[i,1:nMaxDetectorsOth,t],
-          detector.xy =  detector.xy[1:n.detectors,1:2],
+          detector.xy = detector.xy[1:n.detectors,1:2],
           trials = trials[1:n.detectors],
           detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
           nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],

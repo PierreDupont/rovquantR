@@ -41,7 +41,7 @@ gc()
 ## INSTALL 'rovquantR' FROM GITHUB ------
 
 ## Ctrl + Shift + F10 (to restart R session)
-#devtools::install_github("PierreDupont/rovquantR")
+devtools::install_github("PierreDupont/rovquantR@devel")
 
 
 ## LOAD REQUIRED LIBRARIES ------
@@ -74,7 +74,7 @@ dir.dropbox <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant"
 # sourceDirectory(dir.function, modifiedOnly = FALSE)
 # sourceDirectory(dir.function.nimble, modifiedOnly = FALSE)
 # load(file.path(dir.dropbox, "DATA/MISC DATA/age.lookup.table.RData"))
-source("C:/My_documents/RovQuant/Temp/CM/functions/Nimble/dbin_LESS_Cached_MultipleCovResponse.R")
+#source("C:/My_documents/RovQuant/Temp/CM/functions/Nimble/dbin_LESS_Cached_MultipleCovResponse.R")
 source("C:/My_documents/RovQuant/Source/DoScale.R")
 
 
@@ -87,7 +87,7 @@ years <- 2014:2023
 n.years <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
 species <- "Jerv"
-load("C:/My_documents/rovquantR/R/sysdata.rda")
+#load("C:/My_documents/rovquantR/R/sysdata.rda")
 sampling.months <- list(12,1:6)
 
 two.sex <- TRUE
@@ -882,9 +882,9 @@ habitat <- makeHabitatFromRaster(
 
 ##-- Retrieve number of habitat windows 
 isHab <- habitat$habitat.r[] == 1
-n.habwindows <- habitat$n.habwindows <- sum(isHab)
+n.habWindows <- habitat$n.habWindows <- sum(isHab)
 habitat$habitat.df <- cbind.data.frame(
-  "id" = 1:habitat$n.habwindows,
+  "id" = 1:habitat$n.habWindows,
   "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
   "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
 
@@ -988,7 +988,7 @@ if(plot.check){
 
 ##-- EXTRACT COVARIATES
 denCounts <- DEN.r[habitat$habitat.r[ ] == 1]
-denCounts <- round(scale(denCounts), digits = 2)
+denCounts <- as.vector(round(scale(denCounts), digits = 2))
 
 
 
@@ -2390,16 +2390,16 @@ for(thisSex in sex){
     lambda <- 1/dmean
     
     betaDens ~ dnorm(0.0,0.01)
-    habIntensity[1:n.habwindows] <- exp(betaDens * denCounts[1:n.habwindows,1])
-    sumHabIntensity <- sum(habIntensity[1:n.habwindows])
-    logHabIntensity[1:n.habWindows] <- log(habIntensity[1:n.habwindows])
+    habIntensity[1:n.habWindows] <- exp(betaDens * denCounts[1:n.habWindows])
+    sumHabIntensity <- sum(habIntensity[1:n.habWindows])
+    logHabIntensity[1:n.habWindows] <- log(habIntensity[1:n.habWindows])
     logSumHabIntensity <- log(sumHabIntensity)
     
     for(i in 1:n.individuals){
       sxy[i,1:2,1] ~ dbernppAC(
         lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
         upperCoords = upperHabCoords[1:n.habWindows,1:2],
-        logIntensities = logHabIntensity[1:n.habwindows],
+        logIntensities = logHabIntensity[1:n.habWindows],
         logSumIntensity = logSumHabIntensity,
         habitatGrid = habitatGrid[1:y.max,1:x.max],
         numGridRows = y.max,
@@ -2407,15 +2407,15 @@ for(thisSex in sex){
       
       for(t in 2:n.years){
         sxy[i,1:2,t] ~ dbernppACmovement_exp(
-          lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
-          upperCoords = upperHabCoords[1:n.habwindows,1:2],
+          lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
+          upperCoords = upperHabCoords[1:n.habWindows,1:2],
           s = sxy[i,1:2,t-1],
           lambda = lambda,
-          baseIntensities = habIntensity[1:n.habwindows],
+          baseIntensities = habIntensity[1:n.habWindows],
           habitatGrid = habitatGrid[1:y.max,1:x.max],
           numGridRows = y.max,
           numGridCols = x.max,
-          numWindows = n.habwindows)
+          numWindows = n.habWindows)
       }#i  
     }#t
     
@@ -2484,7 +2484,7 @@ for(thisSex in sex){
     for(t in 1:n.years){
       for(i in 1:n.individuals){
         
-        y[i,1:maxDetNums,t] ~ dbinomLocal_normalCovsResponse( 
+        y[i,1:maxDetNums,t] ~ dbinomLocal_normalCovsResponse2( 
           detNums = detNums[i,t],
           detIndices = detIndices[i,1:maxDetNums,t],
           size = size[1:n.detectors],
@@ -2493,18 +2493,18 @@ for(thisSex in sex){
           s = sxy[i,1:2,t],
           trapCoords = detector.xy[1:n.detectors,1:2],
           localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-          localTrapsNum = numLocalDets[1:n.habWindows],
+          localTrapsNum = localDetNum[1:n.habWindows],
           resizeFactor = resizeFactor,
-          lengthYCombined = lengthYCombined,
           habitatGrid = habitatGrid[1:y.max,1:x.max],
           indicator = isAlive[i,t],
+          lengthYCombined = lengthYCombined,
           trapCountries = detCounties[1:n.detectors],
           trapCovs = detCovs[1:n.detectors,t,1:n.covs],
           trapBetas = betaCovs[1:n.covs,t],
           responseCovs = detResponse[i,t],
           responseBetas = betaResponse[t])
         
-        y.Oth[i,1:maxDetNumsOth,t] ~ dbinomLocal_normalCovsResponse( 
+        y.Oth[i,1:maxDetNumsOth,t] ~ dbinomLocal_normalCovsResponse2( 
           detNums = detNumsOth[i,t],
           detIndices = detIndicesOth[i,1:maxDetNumsOth,t],
           size = size[1:n.detectors],
@@ -2513,7 +2513,7 @@ for(thisSex in sex){
           s = sxy[i,1:2,t],
           trapCoords = detector.xy[1:n.detectors,1:2],
           localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-          localTrapsNum = numLocalDets[1:n.habWindows],
+          localTrapsNum = localDetNum[1:n.habWindows],
           resizeFactor = resizeFactor,
           lengthYCombined = lengthYCombined.Oth,
           habitatGrid = habitatGrid[1:y.max,1:x.max],
@@ -2548,8 +2548,8 @@ for(thisSex in sex){
   nimConstants <- list( 
     n.individuals = dim(y.sparse$y)[1],
     n.detectors = nrow(detectors$scaledCoords),
-    n.habwindows = nrow(habitat$scaledLowerCoords),
-    n.years = y.sparse$y, 
+    n.habWindows = nrow(habitat$scaledLowerCoords),
+    n.years =  dim(y.sparse$y)[3], 
     n.covs = dim(detCovs)[3],
     n.covs.Oth = dim(detCovsOth)[3],
     n.countries = max(detCountries),
@@ -2561,7 +2561,9 @@ for(thisSex in sex){
     x.max = dim(detectors$localObjects$habitatGrid)[2],
     numLocalIndicesMax = detectors$localObjects$numLocalIndicesMax,
     maxDetNums = y.sparse$maxDetNums,
-    maxDetNumsOth = y.sparseOth$maxDetNums)
+    maxDetNumsOth = y.sparseOth$maxDetNums,
+    lengthYCombined = y.sparse$lengthYCombined,
+    lengthYCombined.Oth = y.sparseOth$lengthYCombined)
   
   
   
@@ -2599,8 +2601,8 @@ for(thisSex in sex){
     detCovsOth = detCovsOth,
     detResponse = already.detected,
     denCounts = denCounts,
-    detectorIndex = detectors$localObjects$localIndices,
-    nDetectorsLESS = detectors$localObjects$numLocalIndices,
+    localDetIndices = detectors$localObjects$localIndices,
+    localDetNum = detectors$localObjects$numLocalIndices,
     habitatGrid = detectors$localObjects$habitatGrid,
     size = detectors$detectors.df$size,
     alpha = rep(1,2),
@@ -2648,7 +2650,7 @@ for(thisSex in sex){
     ##-- Remove dead reco occuring the last year (not used)
     filter(!Year %in% max(Year)) %>%
     ##-- Combine with detections alive
-    rbind(.,myData.alive$myData.sp[ ,c("Id","Year")]) %>%
+    rbind(.,myData.alive$data.sp[ ,c("Id","Year")]) %>%
     ##-- Add coordinates
     mutate("x" = st_coordinates(.)[ ,1],
            "y" = st_coordinates(.)[ ,2]) %>%
@@ -2693,7 +2695,7 @@ for(thisSex in sex){
   
   ##-- An extreme number of decimals may cause a number to appear as an integer
   ##-- to Nimble, and then coincide with habitat window boundaries
-  sxy.init<- round(sxy.init, 4)
+  sxy.init <- round(sxy.init, 4)
   
   # ##-- Get location of individuals 
   # sxy.initscaled <- scaleCoordsToHabitatGrid(
@@ -2719,7 +2721,7 @@ for(thisSex in sex){
   
   for(c in 1:4){
     
-    ##-- List NIMBLE inits
+    ## ------    6.1. LIST INITIAL VALUES ------
     nimInits <- list(
       "sxy" = sxy.init,
       "z" = z.init,
@@ -2756,10 +2758,8 @@ for(thisSex in sex){
     #     DETECTLESS <- nimData$nDetectorsLESS[1:nimConstants$n.cellsSparse]
     #     index <- DETECTIndexdetectorIndex [sxyID,1:DETECTLESS[sxyID]]
     #     
-    #     #table(detectorIndex)
     #     ## GET NECESSARY INFO 
     #     n.detectors <- length(index)
-    #     
     #     YDET <- nimData$yDets[i,1:nimConstants$nMaxDetectors, t]
     #     YDETOth <- nimData$yDetsOth[i,1:nimConstants$nMaxDetectorsOth, t]
     #     
@@ -2776,7 +2776,7 @@ for(thisSex in sex){
 
     
     
-    ##------ 7. SAVE NIMBLE INPUT ------
+    ## ------    6.2. SAVE NIMBLE INPUT ------
     
     save(nimData,
          nimConstants,
@@ -2789,6 +2789,14 @@ for(thisSex in sex){
                            paste0("nimbleInput_", DATE, "_", thisSex, "_", c, ".RData")))
   }#c
 }#thisSex
+
+model <- nimbleModel( code = modelCode,
+                      constants = nimConstants,
+                      inits = nimInits,
+                      data = nimData,
+                      check = FALSE,
+                      calculate = FALSE) 
+model$calculate()
 
 
 
@@ -3091,11 +3099,11 @@ for(c in 1:4){
 ##------------------------------------------------------------------------------
 
 
-### ==== 11. NIMBLE RUN ====
+## ------ III. NIMBLE RUN ====
 
-### ====    11.1. CONFIGURE NIMBLE MODEL ====
+## ------   1. CONFIGURE NIMBLE MODEL ====
 
-load(file.path( working.dir, "nimbleInFiles/female/nimbleInput_2025-11-12_female_1.RData"))
+load(file.path( working.dir, "nimbleInFiles/male/nimbleInput_2025-11-13_male_1.RData"))
 model <- nimbleModel( code = modelCode,
                       constants = nimConstants,
                       inits = nimInits,
@@ -3104,9 +3112,34 @@ model <- nimbleModel( code = modelCode,
                       calculate = FALSE) 
 model$calculate()
 
+t <- 1
+i <- 1
+
+dbinomLocal_normalCovsResponse( 
+  x = nimData$y[i, ,t],
+  s = nimInits$sxy[i, ,t],
+  sigma = nimInits$sigma[t],
+  detNums = nimData$detNums[i,t],
+  detIndices = nimData$detIndices[i, ,t],
+  trapCoords = nimData$detector.xy,
+  size = nimData$size,
+  localTrapsIndices = ni$,
+  localTrapsNum = nimData$localDetNum
+  ResizeFactor = nimConstants$ResizeFactor,
+  maxNBDets = nimConstants$maxNBDets,
+  habitatID = nimData$habitatIDDet[1:nimConstants$y.maxDet,1:nimConstants$x.maxDet],
+  indicator = model$z[i,t]    ,
+  p0State = model$p01[1:nimConstants$n.countries,t],
+  detCountries = nimData$detCountries[1:nimConstants$n.detectors],
+  detCov = nimData$detCovs[1:nimConstants$n.detectors,t,1:nimConstants$n.covs],
+  betaCov = nimInits$betaCovs[1:nimConstants$n.covs],
+  BetaResponse = nimInits$betaResponse[t],
+  detResponse = nimData$detResponse[i,t])
 
 
-### ====    11.2. CHECK INITIAL LOG-LIKELIHOODS ====
+
+
+## ------   2. CHECK INITIAL LOG-LIKELIHOODS ====
 
 model$calculate("sxy")
 which(is.infinite(model$logProb_sxy), arr.ind = T)
@@ -3364,7 +3397,7 @@ if(cmodel$calculate("sxy") == -Inf){
 
 
 
-### ====    11.3. RESUME MODEL CONFIGURATION ====
+## ------   3. RESUME MODEL CONFIGURATION ====
 
 conf <- configureMCMC(model, monitors = nimParams, thin = 1)
 Rmcmc <- buildMCMC(conf)
@@ -3374,7 +3407,7 @@ Cmcmc <- compiledList$mcmc
 
 
 
-### ====    11.4. RUN NIMBLE MCMC IN SUCCESSIVE BITES ====
+## ------   4. RUN NIMBLE MCMC IN SUCCESSIVE BITES ====
 
 ## SET NUMBER OF BITES AND NUMBER OF ITERATIONS PER BITE
 bite.size <- 100 
@@ -3410,7 +3443,7 @@ for(nb in 1:bite.number){
 ##------------------------------------------------------------------------------
 ## ------ IV. TURN OPSCR INTO SCR ------
 
-### ==== 1. SCR MODEL ====
+## ------   1. SCR MODEL ====
 
 modelCode1 <- nimbleCode({
   
@@ -3526,7 +3559,7 @@ modelCode1 <- nimbleCode({
 
 
 
-### ==== 2. LOOP OVER YEARS ====
+## ------   2. LOOP OVER YEARS ====
 
 for(thisSex in c("Hann","Hunn")){
   
@@ -3536,7 +3569,7 @@ for(thisSex in c("Hann","Hunn")){
   for(ch in 1:4){
     for(t in 1:nYears){   
       
-      ### ====    2.1. LOAD OPSCR INPUT FILE ====
+      ## ------   2.1. LOAD OPSCR INPUT FILE ====
       
       load( file.path(myVars$WD, myVars$modelName, thisSex,
                       paste0(myVars$modelName, thisSex, "_Chain", c, ".RData")))
@@ -3554,7 +3587,7 @@ for(thisSex in c("Hann","Hunn")){
       
       
       
-      ### ====    2.2. SUBSET NIMDATA ====
+      ## ------   2.2. SUBSET NIMDATA ====
       
       ## SUBSET & AUGMENT ALL OBJECTS BASED ON WHETHER INDIVIDUALS WERE DETECTED OR NOT
       ## y.alive
@@ -3603,7 +3636,7 @@ for(thisSex in c("Hann","Hunn")){
       
       
       
-      ### ====    2.3. SUBSET NIMCONSTANTS ====
+      ## ------   2.3. SUBSET NIMCONSTANTS ====
       
       ## countyToggle to toggle off Norrbotten
       nimConstants$countyToggle <- nimConstants$countyToggle[,t]
@@ -3611,7 +3644,7 @@ for(thisSex in c("Hann","Hunn")){
       
       
       
-      ### ====    2.4. SUBSET NIMINITS ====
+      ## ------   2.4. SUBSET NIMINITS ====
       
       ## z
       nimInits$z <- nimInits$z[detected[,t],t]  
@@ -3652,7 +3685,7 @@ for(thisSex in c("Hann","Hunn")){
       
       
       
-      ### ====    2.5. SUBSET NIMPARAMS ====
+      ## ------   2.5. SUBSET NIMPARAMS ====
       
       nimParams <- c("N", "psi", "pResponse","p0Oth","betaCovsOth","betaResponseOth",
                      "p0", "sigma", "betaDens", "betaCovs","betaResponse","betaResponseOth")
@@ -3661,7 +3694,7 @@ for(thisSex in c("Hann","Hunn")){
       
       
       
-      ### ====    2.6. SAVE SCR INPUT ====
+      ## ------   2.6. SAVE SCR INPUT ====
       
       modelCode <- modelCode1
       
@@ -3679,7 +3712,7 @@ for(thisSex in c("Hann","Hunn")){
 
 
 
-### ==== 3. CHECK MODEL LIKELIHOODS ====
+## ------   3. CHECK MODEL LIKELIHOODS ====
 
 model <- nimbleModel( code = modelCode,
                       constants = nimConstants,
