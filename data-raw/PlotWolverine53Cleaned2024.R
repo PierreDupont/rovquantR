@@ -64,6 +64,12 @@ modelNameF <- "Hann"
 modelNameM <- "Hunn"
 
 
+##-- Extract date from the last cleaned data file
+DATE <- getMostRecent( 
+  path = file.path(working.dir, "data"),
+  pattern = "CleanData_wolverine")
+
+
 ##------------------------------------------------------------------------------
 
 ## ------ I. LOAD & SELECT DATA ------
@@ -898,7 +904,8 @@ if (!overwrite) {
   }
 }
 
-
+if(mcmcTest){
+  
 ## ------   2.1. FEMALES ------
 
 ##-- Compile MCMC bites
@@ -997,8 +1004,9 @@ resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
 
 ##-- SAVE AND LOAD DATA
 save( results_F, results_M, resultsSXYZ_MF,
-      file = file.path( working.dir, "data", paste0("MCMC_wolverine_", DATE, ".RData")))
+      file = file.path( working.dir, "data", paste0("MCMC_wolverine.RData")))
 
+}
 
 
 ## ------       1.4.1. CREATE POLYGON WITHOUT BUFFER ------
@@ -1011,202 +1019,15 @@ habbRNobuffF <- habitat$habitat.rWthBuffer
 
 
 
-## ------     1.5. COMBINE MALES & FEMALES ------
-
-##-- ASSUMING THE SAME NUMBER OF CHAINS AND ITERATIONS/ WE CAN JUST ADD N ESIMAES OF FEMALES AND MALES
-resultsSXYZ_MF <- myResultsSXYZ_M
-
-##-- HERE I ONLY HAVE ONE CHAIN FOR THE MALES
-dimmF <- dim(myResults_F$sims.list$N)[1]
-dimmFsxy <- dim(resultsSXYZ_MF$sims.list$sxy)[1]
-
-resultsSXYZ_MF$sims.list$N <- myResults_M$sims.list$N + 
-  myResults_F$sims.list$N
-
-
-
-## ------     1.6. COMBINE SXY & Z ------
-
-##-- Activity centers
-resultsSXYZ_MF$sims.list$sxy <- abind(
-  myResultsSXYZ_M$sims.list$sxy,
-  myResultsSXYZ_F$sims.list$sxy, along = 2)
-dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x", "y")
-gc()
-
-##-- Individual states
-resultsSXYZ_MF$sims.list$z <- abind(
-  myResultsSXYZ_M$sims.list$z[1:dimmFsxy[1], , ],
-  myResultsSXYZ_F$sims.list$z, along = 2)
-resultsSXYZ_MF$sims.list$z1 <- abind(
-  myResultsSXYZ_M$sims.list$z1[1:dimmFsxy[1], , ],
-  myResultsSXYZ_F$sims.list$z1, along = 2)
-gc()
-
-##-- Sigma
-resultsSXYZ_MF$sims.list$sigma <- abind(
-  myResults_M$sims.list$sigma[1:dimmF[1], ] * res(habitat$habitat.r)[1],
-  myResults_F$sims.list$sigma * res(habitat$habitat.r)[1], along = 2)
-gc()
-
-##-- Individual sex
-resultsSXYZ_MF$sims.list$sex <- rep(
-  c("M","F"),
-  c(dim(myResultsSXYZ_M$sims.list$sxy)[2], 
-    dim(myResultsSXYZ_F$sims.list$sxy)[2]))
-
-##-- EMPTY USELESS ARRAYS
-myResults_F$sims.list$z <- NULL
-myResults_M$sims.list$z <- NULL
-myResults_M$sims.list$N <- NULL
-myResults_F$sims.list$N <- NULL
-myResults_F$sims.list$sxy <- NULL
-myResults_M$sims.list$sxy <- NULL
-gc()
-
-# ##-- select 100 iterations for RB
-# dim(resultsSXYZ_MF$sims.list$sxy)
-# nit <- sample(dim(resultsSXYZ_MF$sims.list$sxy)[1],100)
-# sxy <- round(resultsSXYZ_MF$sims.list$sxy[nit,,,],digits=5)
-# z <- resultsSXYZ_MF$sims.list$z[nit,,]
-# 
-# save(sxy, z,
-#      file = file.path(working.dir, "figures" , "Itera.RData"))
-# #contains 100 iterations of "sxy" and "z"
-# load("C://Users//cymi//Dropbox (Old)//AQEG Dropbox//AQEG Team Folder//RovQuant//wolverine//CM//2024/plot53Cleaned2024/Figure/Itera.RData")
-
-##-- MERGE RESULTS IN A LIST
-Results.list <- list(myResults_F, myResults_M)
-names(Results.list) <- c("F","M")
-
-
-
-## ------     1.7. SAVE AND LOAD DATA ------
-
-# save(Results.list, resultsSXYZ_MF,
-#     file = file.path(paste(dir.dropbox,"/wolverine/CM/2022/plot25Cleaned/Figure/",sep=""), "MCMC.RData" ))
-# load(file.path(paste(dir.dropbox,"/wolverine/CM/2022/plot25Cleaned/Figure/",sep=""), "MCMC.RData" ))
-
-Results.list[["F"]]$mean$sigma
-Results.list[["M"]]$mean$sigma
-
-myResults_F <- Results.list[["F"]]
-myResults_M <- Results.list[["M"]]
-
 
 
 ## ------     1.8. CHECK RHAT ------
 
-myResults_F$Rhat
-myResults_M$Rhat
+results_F$Rhat
+results_M$Rhat
 
 
 
-## ------     1.9. rovquantR COMPARISON ------
-
-
-
-if(mcmcTest){
-  ## ------   2.1. FEMALES -----
-  
-  ##-- Compile MCMC bites
-  nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
-                                   burnin = nburnin)
-  
-  ##-- Traceplots
-  grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
-  plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
-  grDevices::dev.off()
-  
-  ##-- Process MCMC output
-  results_F <- processCodaOutput( nimOutput_F$samples,
-                                  params.omit = c("sxy","z"))
-  resultsSXYZ_F <- processCodaOutput(nimOutput_F$samples2)
-  
-  ##-- Remove unnecessary objects from memory
-  rm(list = c("nimOutput_F"))
-  gc(verbose = FALSE)
-  
-  ##-- Rescale sxy to the original coordinate system
-  dimnames(resultsSXYZ_F$sims.list$sxy)[[3]] <- c("x","y")
-  resultsSXYZ_F$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
-    coordsData = resultsSXYZ_F$sims.list$sxy,
-    coordsHabitatGridCenter = habitat$habitat.xy,
-    scaleToGrid = FALSE)$coordsDataScaled
-  
-  ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
-  results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
-  results_F$sims.list$tau <- results_F$sims.list$tau * raster::res(habitat$habitat.r)[1]
-  
-  
-  
-  ## ------   2.2. MALES -----
-  
-  ##-- Compile MCMC bites
-  nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/male"),
-                                   burnin = nburnin)
-  
-  ##-- Traceplots
-  grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
-  plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
-  dev.off()
-  
-  ##-- Process MCMC output
-  results_M <- processCodaOutput( nimOutput_M$samples,
-                                  params.omit = c("sxy","z"))
-  resultsSXYZ_M <- processCodaOutput(nimOutput_M$samples2)
-  
-  ##-- Remove unnecessary objects from memory
-  rm(list = c("nimOutput_M"))
-  gc(verbose = FALSE)
-  
-  
-  ##-- RESCALE SXY TO THE ORIGINAL COORDINATE SYSTEM
-  dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
-  resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
-    coordsData = resultsSXYZ_M$sims.list$sxy,
-    coordsHabitatGridCenter = habitat$habitat.df,
-    scaleToGrid = FALSE)$coordsDataScaled
-  
-  ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
-  results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
-  results_M$sims.list$tau <- results_M$sims.list$tau * raster::res(habitat$habitat.r)[1]
-  
-  
-  
-  ## ------   2.3. COMBINE MALES & FEMALES -----
-  
-  resultsSXYZ_MF <- resultsSXYZ_M
-  
-  ##-- Get minimum number of iterations between model F and M
-  minIter <- min(dim(resultsSXYZ_F$sims.list$sxy)[1],
-                 dim(resultsSXYZ_M$sims.list$sxy)[1])
-  
-  ##-- sxy
-  resultsSXYZ_MF$sims.list$sxy <- abind::abind(resultsSXYZ_M$sims.list$sxy[1:minIter, , , ],
-                                               resultsSXYZ_F$sims.list$sxy[1:minIter, , , ],
-                                               along = 2)
-  dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x","y")
-  
-  ##-- z
-  resultsSXYZ_MF$sims.list$z <- abind::abind(resultsSXYZ_M$sims.list$z[1:minIter, , ],
-                                             resultsSXYZ_F$sims.list$z[1:minIter, , ],
-                                             along = 2)
-  
-  ##-- sigma
-  resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter],
-                                          results_F$sims.list$sigma[1:minIter])
-  dimnames(resultsSXYZ_MF$sims.list$sigma)[[2]] <- c("M","F")
-  
-  ##-- sex
-  resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
-                                      c(dim(resultsSXYZ_M$sims.list$sxy)[2],
-                                        dim(resultsSXYZ_F$sims.list$sxy)[2]))
-  
-  ##-- SAVE AND LOAD DATA
-  save( results_F, results_M, resultsSXYZ_MF,
-        file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
-}
 ##------------------------------------------------------------------------------
 ## ------   2. EXTRACT DENSITY (5km) ------
 
