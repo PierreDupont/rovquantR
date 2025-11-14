@@ -36,7 +36,7 @@
 #' @rdname processRovquantOutput_wolverine
 #' @export
 processRovquantOutput_wolverine <- function(
-    ##-- paths
+  ##-- paths
   data.dir = getwd(),
   working.dir = NULL,
   ##-- MCMC
@@ -117,18 +117,59 @@ processRovquantOutput_wolverine <- function(
   years <- as.numeric(dimnames(detectors$covariates)[[3]])
   n.years <- length(years) 
   
-  ##-- MERGE & SIMPLIFY SOME NORWEGIAN COUNTIES
-  COUNTIES_s <- COUNTIES[COUNTIES$country %in% "NOR", ] %>% sf::st_intersection(COUNTRIES)
-  COUNTIES_s$county[COUNTIES_s$county %in% c("Trøndelag","Nordland")] <- "Trøndelag"
-  COUNTIES_s$county[COUNTIES_s$county %in% c("Troms","Finnmark")] <- "Finnmark"
-  COUNTIES_s$county[!COUNTIES_s$county %in% c("Finnmark","Trøndelag")] <- "Innlandet"
-  COUNTIES_s <- COUNTIES_s %>%
-    group_by(county) %>%
-    dplyr::summarize() 
- 
-  COUNTIES_s <- sf::st_simplify(sf::st_as_sf(COUNTIES_s), preserveTopology = T, dTolerance = 500)
-  COUNTIES_s$index <- c(1,3,2)
-  COUNTIES_s$Name <- c("NO1","NO3","NO2")
+  # ##-- MERGE & SIMPLIFY SOME NORWEGIAN COUNTIES
+  # COUNTIES_s <- COUNTIES[COUNTIES$country %in% "NOR", ] %>% sf::st_intersection(COUNTRIES)
+  # COUNTIES_s$county[COUNTIES_s$county %in% c("Trøndelag","Nordland")] <- "Trøndelag"
+  # COUNTIES_s$county[COUNTIES_s$county %in% c("Troms","Finnmark")] <- "Finnmark"
+  # COUNTIES_s$county[!COUNTIES_s$county %in% c("Finnmark","Trøndelag")] <- "Innlandet"
+  # COUNTIES_s <- COUNTIES_s %>%
+  #   group_by(county) %>%
+  #   dplyr::summarize() 
+  # 
+  # COUNTIES_s <- sf::st_simplify(sf::st_as_sf(COUNTIES_s), preserveTopology = T, dTolerance = 500)
+  # COUNTIES_s$index <- c(1,3,2)
+  # COUNTIES_s$Name <- c("NO1","NO3","NO2")
+  
+  ##-- Merge counties for practical reasons
+  COUNTIES_AGGREGATED <- REGIONS %>%
+    mutate(id = case_when(
+      county %in% c("Norrbotten") ~ 1,
+      county %in% c("Västerbotten") ~ 2,
+      county %in% c("Blekinge","Dalarna","Gävleborg","Gotland","Halland","Jämtland",
+                    "Jönköping","Kalmar","Kronoberg","Örebro","Östergötland","Skåne",
+                    "Södermanland","Stockholm","Uppsala","Värmland","Västernorrland",
+                    "Västmanland","Västra Götaland") ~ 3,
+      county %in% c("Agder","Akershus","Buskerud","Innlandet","Møre og Romsdal",
+                    "Oppland","Oslo","Østfold","Rogaland","Vestland","Telemark",
+                    "Vestfold") ~ 4,
+      county %in% c("Trøndelag") ~ 5,
+      county %in% c("Finnmark") ~ 6,
+      county %in% c("Nordland") ~ 7,
+      county %in% c("Troms") ~ 8)) %>%
+    group_by(id) %>%
+    summarize() %>%
+    st_simplify( ., preserveTopology = T, dTolerance = 500)
+  plot(COUNTIES_AGGREGATED)
+  
+
+  ## AGGREGATE COUNTIES (OPTIONAL)
+  COUNTIES_AGGREGATE <- COUNTIES
+  #COUNTIES_AGGREGATED <- gSimplify(COUNTIES_AGGREGATED,tol=500, topologyPreserve = TRUE)
+  COUNTIES_AGGREGATE$id <- 1:nrow(COUNTIES_AGGREGATE)
+  #[CM] adjust Counties aggregation
+  COUNTIES_AGGREGATE$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
+  COUNTIES_AGGREGATE$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
+  COUNTIES_AGGREGATE$id[c(19)] <- 1
+  COUNTIES_AGGREGATE$id[c(35)] <- 2
+  COUNTIES_AGGREGATE$id[c(17,28)] <- 5
+  COUNTIES_AGGREGATE$id[c(18)] <- 7
+  COUNTIES_AGGREGATE$id[c(30)] <- 8
+  COUNTIES_AGGREGATE <- COUNTIES_AGGREGATE %>% group_by(id) %>% summarize()
+  COUNTIES_AGGREGATED <- st_simplify(COUNTIES_AGGREGATE,preserveTopology = T,dTolerance = 500)
+  COUNTIES_AGGREGATED$id <- COUNTIES_AGGREGATE$id
+  ggplot(COUNTIES_AGGREGATED) +
+    geom_sf(aes(fill = id)) +
+    geom_sf_label(aes(label = id))
   
   
   
@@ -160,7 +201,7 @@ processRovquantOutput_wolverine <- function(
     ## ------   2.1. FEMALES -----
     
     ##-- Compile MCMC bites
-    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
+    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/female"),
                                      burnin = nburnin)
     
     ##-- Traceplots
@@ -193,7 +234,7 @@ processRovquantOutput_wolverine <- function(
     ## ------   2.2. MALES -----
     
     ##-- Compile MCMC bites
-    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/male"),
+    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/male"),
                                      burnin = nburnin)
     
     ##-- Traceplots
@@ -503,7 +544,7 @@ processRovquantOutput_wolverine <- function(
           UDdensityF,
           UDdensityM,
           file = file.path(working.dir,"data",paste0("Density_wolverine_",DATE,".RData")))
-  }
+  } 
   
   
   

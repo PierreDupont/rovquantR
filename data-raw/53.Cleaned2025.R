@@ -2634,7 +2634,7 @@ for(thisSex in c("Hann","Hunn")){
          nimParams2,
          modelCode,
          nimInits,
-         file = file.path(myVars$WD, myVars$modelName, thisSex,
+         file = file.path(myVars$WD, myVars$modelName, "nimbleInFiles", thisSex,
                           paste0(myVars$modelName, thisSex,"_Chain", c, ".RData")))
   }#c
   

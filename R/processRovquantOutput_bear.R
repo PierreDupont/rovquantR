@@ -160,7 +160,7 @@ processRovquantOutput_bear <- function(
     ## ------   2.1. FEMALES -----
     
     ##-- Compile MCMC bites
-    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/female"),
+    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/female"),
                                      burnin = nburnin)
     
     ##-- Traceplots
@@ -193,7 +193,7 @@ processRovquantOutput_bear <- function(
     ## ------   2.2. MALES -----
     
     ##-- Compile MCMC bites
-    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/male"),
+    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/male"),
                                      burnin = nburnin)
     
     ##-- Traceplots

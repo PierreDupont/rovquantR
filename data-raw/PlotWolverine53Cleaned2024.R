@@ -51,6 +51,9 @@ myVars <- list(
   years = 2014:2023,
   plot.check = TRUE)
 
+working.dir <- file.path(myVars$WD, myVars$modelName)
+
+
 ##-- Number of years
 years <- myVars$years
 nYears <- length(years)
@@ -59,12 +62,6 @@ YEARS <- lapply(years, function(x)c(x,x+1))
 ##-- Name of the female and male models
 modelNameF <- "Hann"
 modelNameM <- "Hunn"
-
-##-- SET DIRECTORY WHERE WOLF FIGURES WILL BE STORED
-WDFigures <- file.path(myVars$WD, myVars$modelName, "figures")
-WDTables <- file.path(myVars$WD, myVars$modelName, "tables")
-if(!dir.exists(file.path(WDFigures))){dir.create(WDFigures)}
-if(!dir.exists(file.path(WDTables))){dir.create(WDTables)}
 
 
 ##------------------------------------------------------------------------------
@@ -76,7 +73,7 @@ if(!dir.exists(file.path(WDTables))){dir.create(WDTables)}
 ##-- LOAD GLOBAL MAP
 GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
   dplyr::filter(area > 80000000) %>%
-  st_crop(, st_bbox(extent(c(-70000,1200000,5100000,8080000))))
+  st_crop(., st_bbox(extent(c(-70000,1200000,5100000,8080000))))
 
 ##-- POLYGONS OF SWEDEN & NORWAY
 COUNTRIES <- GLOBALMAP %>%
@@ -94,41 +91,25 @@ COUNTIES <- COMMUNES %>%
  group_by(NAME_1) %>%
   summarize()
 
-##-- AGGREGATE COUNTIES (OPTIONAL)
-# COUNTIES_AGGREGATED <- COUNTIES
-# COUNTIES_AGGREGATED$id <- 1:nrow(COUNTIES_AGGREGATED)
-# COUNTIES_AGGREGATED$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
-# COUNTIES_AGGREGATED$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
-# COUNTIES_AGGREGATED$id[c(19)] <- 1
-# COUNTIES_AGGREGATED$id[c(35)] <- 2
-# COUNTIES_AGGREGATED$id[c(17,28)] <- 5
-# COUNTIES_AGGREGATED$id[c(18)] <- 7
-# COUNTIES_AGGREGATED$id[c(30)] <- 6
-# COUNTIES_AGGREGATED <- COUNTIES_AGGREGATED %>% 
-#   group_by(id) %>%
-#   summarize()
-COUNTIES_AGGREGATED <- REGIONS %>%
-  mutate(id = case_when(
-    county %in% c("Norrbotten") ~ 1,
-    county %in% c("Västerbotten") ~ 2,
-    county %in% c("Blekinge","Dalarna","Gävleborg","Gotland","Halland","Jämtland",
-                  "Jönköping","Kalmar","Kronoberg","Örebro","Östergötland","Skåne",
-                  "Södermanland","Stockholm","Uppsala","Värmland","Västernorrland",
-                  "Västmanland","Västra Götaland") ~ 3,
-    county %in% c("Agder","Akershus","Buskerud","Innlandet","Møre og Romsdal",
-                  "Oppland","Oslo","Østfold","Rogaland","Vestland","Telemark",
-                  "Vestfold") ~ 4,
-    county %in% c("Trøndelag") ~ 5,
-    county %in% c("Finnmark") ~ 6,
-    county %in% c("Nordland") ~ 7,
-    county %in% c("Troms") ~ 8)) %>%
-  st_simplify( COUNTIES_AGGREGATED,
-               preserveTopology = T,
-               dTolerance = 500)
-
+## AGGREGATE COUNTIES (OPTIONAL)
+COUNTIES_AGGREGATE <- COUNTIES
+#COUNTIES_AGGREGATED <- gSimplify(COUNTIES_AGGREGATED,tol=500, topologyPreserve = TRUE)
+COUNTIES_AGGREGATE$id <- 1:nrow(COUNTIES_AGGREGATE)
+#[CM] adjust Counties aggregation
+COUNTIES_AGGREGATE$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
+COUNTIES_AGGREGATE$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
+COUNTIES_AGGREGATE$id[c(19)] <- 1
+COUNTIES_AGGREGATE$id[c(35)] <- 2
+COUNTIES_AGGREGATE$id[c(17,28)] <- 5
+COUNTIES_AGGREGATE$id[c(18)] <- 7
+COUNTIES_AGGREGATE$id[c(30)] <- 8
+COUNTIES_AGGREGATE <- COUNTIES_AGGREGATE %>% group_by(id) %>% summarize()
+COUNTIES_AGGREGATED <- st_simplify(COUNTIES_AGGREGATE,preserveTopology = T,dTolerance = 500)
+COUNTIES_AGGREGATED$id <- COUNTIES_AGGREGATE$id
 ggplot(COUNTIES_AGGREGATED) +
   geom_sf(aes(fill = id)) +
   geom_sf_label(aes(label = id))
+
 
 ##-- SHAPEFILE OF NEW COUNTIES IN SWEDEN
 NewCountySwe <- readOGR(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/rk_lan_07_WGS84.shp"))
@@ -143,12 +124,14 @@ load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewS
 ## ------   2. LOAD NECESSARY OBJECTS ------
 
 ##-- Females
-load(file.path( myVars$WD, modelNameF, paste0(modelNameF,"Chain1.RData")))
+load(file.path( myVars$WD, myVars$modelName, modelNameF,
+                paste0(myVars$modelName, modelNameF,"_Chain1.RData")))
 nimDataF <- nimData
 nimInitsF <- nimInits
 
 ##-- Males
-load(file.path(myVars$WD, modelNameM, paste0(modelNameM,"Chain1.RData")))
+load(file.path( myVars$WD, myVars$modelName, modelNameM,
+                paste0(myVars$modelName, modelNameM,"_Chain1.RData")))
 nimDataM <- nimData
 nimInitsM <- nimInits
 
@@ -156,14 +139,15 @@ nimInitsM <- nimInits
 rm(list = c("nimInits", "nimData"))
 gc(verbose = FALSE)
 
-##-- Habitat
-load(file.path( working.dir, "data", paste0("Habitat_wolverine_", DATE, ".RData")))
+##-- Load Necessary objects
+load(file.path( myVars$WD, myVars$modelName, "NecessaryObjects.RData"))
 
-##-- Detectors
-load(file.path( working.dir, "data", paste0("Detectors_wolverine_", DATE, ".RData")))
+habitat <- myHabitat.list
+detectors <- myDetectors
+rm(list = c("myHabitat.list","myDetectors"))
 
 ##-- Load filtered data
-load(file.path( working.dir, "data", paste0("FilteredData_wolverine_", DATE, ".RData")))
+load(file.path( myVars$WD, myVars$modelName, "myFilteredData.RData"))
 
    
 
@@ -172,15 +156,11 @@ load(file.path( working.dir, "data", paste0("FilteredData_wolverine_", DATE, ".R
 
 ## ------   1. OVERALL NUMBERS ------
 
-##-- LOAD CLEANED DATASETS
-load(file.path(myVars$WD, modelNameM, paste0(modelNameM,"_NGSData.RData")))
-load(file.path(myVars$WD, modelNameF, paste0(modelNameF,"_NGSData.RData")))
-
 ##-- SOME TALLIES TO CHECK THINGS
 ##-- NGS
-NGS <- rbind(myFilteredData.spF$alive, myFilteredData.spM$alive)
-NGSStructured <- rbind( myFilteredData.spStructuredF, myFilteredData.spStructuredM)
-NGSOther <- rbind( myFilteredData.spOthersF, myFilteredData.spOthersM)
+NGS <- myFilteredData.sp$alive #rbind(myFilteredData.spF$alive, myFilteredData.spM$alive)
+NGSStructured <- myData.aliveStruc$myData.sp #rbind( myFilteredData.spStructuredF, myFilteredData.spStructuredM)
+NGSOther <- myData.aliveOthers$myData.sp #rbind( myFilteredData.spOthersF, myFilteredData.spOthersM)
 
 ##-- FOR REPORT SUMMARY
 length(NGS$Id)                                ## Number of NGS samples
@@ -209,7 +189,7 @@ length(NGSOther$Id[NGSOther$Sex=="Hann"])     ## Number of other Male NGS sample
 
 
 ##-- DEAD RECOVERY
-dead <- rbind(myFullData.spF$dead.recovery, myFullData.spM$dead.recovery)
+dead <- myFullData.sp$dead.recovery #rbind(myFullData.sp$dead.recovery, myFullData.spM$dead.recovery)
 table(dead$Year)
 length(dead$Id)                               ## Number of individuals
 length(unique(dead$Id[dead$Sex=="Hunn"]))     ## Number of Female individuals
@@ -310,10 +290,11 @@ print(xtable(NGSCountrySEX, type = "latex",
       #scalebox = .8,
       floating = FALSE,include.colnames=F,
       add.to.row = addtorow,
-      file = file.path(WDTables,"NGSCountrySEX.tex"))
+      file = file.path(working.dir, "tables","NGSCountrySEX.tex"))
 
 ##-- Export .csv table
-write.csv(NGSCountrySEX ,file = file.path(WDTables,paste("NGSCountrySEX.csv",sep="")))
+write.csv( NGSCountrySEX, 
+           file = file.path(working.dir, "tables", "NGSCountrySEX.csv"))
 
 # ##-- Checks
 # sum(as.numeric(NGSCountrySEX["Total",]))
@@ -347,9 +328,7 @@ for(s in 1:2){
     NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[2], ye[t] + sex1[s] ] <- nrow(tempOther[tempOther$Country %in% "N", ])
     NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[2], ye[t] + sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S", ])
     NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[2], ye[t] + sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S" | tempOther$Country %in% "N", ])
-    
-    ## TOTAL ????
-  }#t
+    }#t
 }#s
 
 ##-- Export .tex table
@@ -374,7 +353,7 @@ print(xtable( NGSCountrySEXoBS,
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,"NGSCountrySEXperObs.tex"))
+      file = file.path(working.dir, "tables","NGSCountrySEXperObs.tex"))
 
 # ##-- Checks
 # sum(as.numeric(NGSCountrySEX["Total",]))
@@ -382,14 +361,14 @@ print(xtable( NGSCountrySEXoBS,
 # sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "M"]))
 # 
 # #PLOT CHECK 
-# plot(myHabitat.list$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
+# plot(habitat$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
 # plot(st_geometry(NGSOther),pch=21,col="black",cex=0.5,bg="red",add=T)
 # plot(st_geometry(NGSStructured),pch=21,col="black",cex=0.5,bg="red",add=T)
 # 
 # par(mfrow=c(1,2),mar=c(0,0,0,0))
-# plot(myHabitat.list$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
+# plot(habitat$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
 # plot(st_geometry(NGSStructured),pch=21,col="black",cex=0.5,bg="#E69F00",add=T)
-# plot(myHabitat.list$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
+# plot(habitat$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
 # plot(st_geometry(NGSOther),pch=21,col="black",cex=0.5,bg="#009E73",add=T)
 # 
 # dev.off()
@@ -402,9 +381,10 @@ print(xtable( NGSCountrySEXoBS,
 # legend("topleft",fill=c("#E69F00","#009E73"),legend=c("Structured","Other") )
 
 ##-- GIVE FILE TO HENRIK ([PD] for what????)
-tmp <- NGSOther[NGSOther$Year %in% c(2019,2020,2021),]
+tmp <- NGSOther[NGSOther$Year %in% c(2019,2020,2021), ]
 tmp
-write.csv(tmp,file= file.path(WDTables,paste("Unstructured2020_2022.csv",sep="")))
+write.csv( tmp,
+           file = file.path(working.dir, "tables", "Unstructured2020_2022.csv"))
 
 
 
@@ -437,16 +417,18 @@ addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnam
                                     '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
 colnames(NGSidCountrySEX) <- rep("", ncol(NGSidCountrySEX))
 
-print(xtable(NGSidCountrySEX, type = "latex",
-             align = paste0("l", rep("c", ncol(NGSidCountrySEX)))),
+print(xtable( NGSidCountrySEX,
+              type = "latex",
+             align = paste(c("l",rep("c",ncol(NGSidCountrySEX))), collapse = "")),
       #scalebox = .8, 
       floating = FALSE,
       include.colnames = F,
       add.to.row = addtorow,
-      file = file.path(WDTables,"NGSidCountrySEX.tex"))
+      file = file.path(working.dir, "tables","NGSidCountrySEX.tex"))
 
 ##-- Export .csv
-write.csv(NGSidCountrySEX ,file = file.path(WDTables,"NGSidCountrySEX.csv"))
+write.csv( NGSidCountrySEX,
+           file = file.path(working.dir, "tables", "NGSidCountrySEX.csv"))
 
 
 ##-- Export .csv TABLE WITH THE NUMBER OF TOTAL IDS PER YEAR
@@ -459,7 +441,8 @@ for(t in 1:nYears){
   temp <- NGS[NGS$Year == years[t] , ]
   NGSidCountryTotal["Total", t] <- length(unique(temp$Id))
 }#t
-write.csv(NGSidCountryTotal, file = file.path(WDTables,"TotalIdDetected.csv"))
+write.csv( NGSidCountryTotal,
+           file = file.path(working.dir, "tables","TotalIdDetected.csv"))
 
 ### PRINT A CSV TABLE WITH THE NUMBER OF TOTAL IDS PER YEAR PER SEX
 
@@ -520,7 +503,7 @@ print(xtable(NGSCountrySEXoBSid, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables, "NGSCountrySEXperObsid.tex"))
+      file = file.path(working.dir, "tables", "NGSCountrySEXperObsid.tex"))
 
 
 
@@ -623,7 +606,7 @@ print(xtable(DeadidCountrySEX, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables, "DeadidCountrySEX.tex"))
+      file = file.path(working.dir, "tables", "DeadidCountrySEX.tex"))
 
 # check 
 # tmp <- dead[dead$Year == 2019 & 
@@ -642,7 +625,7 @@ print(xtable(DeadidCountrySEX, type = "latex",
 
 ## ------   5. GET THE DETECTED INDIVIDUALS ------
 
-n.detected <- read.csv(file.path(WDTables, "TotalIdDetected.csv"))
+n.detected <- read.csv(file.path(working.dir, "tables", "TotalIdDetected.csv"))
 n.detected <- n.detected[1,2:ncol(n.detected)]
 
 
@@ -780,7 +763,7 @@ col <- c("firebrick2", "deepskyblue2")#c("turquoise","darkmagenta")# c("goldenro
 names(country.colors) <- c("Norway", "Sweden")
 border.col <- NA
 
-pdf(file = file.path(WDTables, "RegionMaps.pdf"),
+pdf(file = file.path(working.dir, "figures", "RegionMaps.pdf"),
     width = 9, height = 13, pointsize = 12)
 par(mar=c(0,0,0,0))
 plot(gSimplify(COUNTIESsimp, tol=5000), col=NA, border=NA)
@@ -892,296 +875,152 @@ dev.off()
 
 ## ------ III. PROCESS MODEL OUTPUTS -----
 
-## ------   1. GET AND COMPILE BITES ------
+## ------ 1. GET AND COMPILE BITES ------
+message("## Processing model MCMC outputs...")
 
-##-- COMPILE CHARACTERISTICS 
-bitesize <- 250
-burnin <- 10000
-NSkipBites <- burnin/bitesize
-nthinsxy <- 5 #thinnumber for the sxy AND z values (necessary to save memory) 
-
-##-- Retrieve the minimum number of bites per chain
-outDirectoriesF <- list.files(file.path(myVars$WD, myVars$modelName, "Hunn"))
-path.listF <- file.path(myVars$WD, modelNameF, outDirectoriesF)
-numBitesF <- unlist(lapply(path.listF, function(x){
-  files <- list.files(x)
-  files <- files[grep(".RData", files)]
-  length(files)/2
-}))
-
-outDirectoriesM <- list.files(file.path(myVars$WD, modelNameM))[grep(paste0("NimbleOutFOR", modelNameM),
-                                                                     list.files(file.path(myVars$WD, modelNameM)))]
-path.listM <- file.path(myVars$WD, modelNameM, outDirectoriesM)
-numBitesM <- unlist(lapply(path.listM, function(x){
-  files <- list.files(x)
-  files <- files[grep(".RData", files)]
-  length(files)/2
-}))
-
-##-- Identify min number of bites
-minBites <- floor(min(c(numBitesF,numBitesM)))
-
-
-
-## ------     1.1. FEMALES ------
-
-##-- GO TROUGH THE BITES AND GET THEM
-nimOutput <- nimOutputSXY <- RUNTIME <- list()
-for(p in 1:length(path.listF)){
-  print(path.listF[p])
-  outfiles <- list.files(path.listF[p])
-  out <- outSXYZ <- runtime <- list()
-  for(x in NSkipBites:minBites){
-    print(x)
-    load(file.path(path.listF[p], paste("bite_", x, ".RData", sep = "")))
-    runtime[[x]] <- RunTime[3]
-    # params.simple <- sapply(strsplit(colnames(this.sample), "\\["), "[", 1)
-    # REMOVE SXY AND Z, NO THINING
-    # parmIndex <- which(! params.simple %in% c("sxy","z"))
-    
-    if(sum(is.na(this.sample)) > 0){
-      id <- unique(which(is.na(this.sample),arr.ind = T)[,1])
-      this.sample <- this.sample[-id,]
-      print(x)
-      print("here")
+##-- Check that a file with that name does not already exist to avoid overwriting
+mcmcTest <- TRUE
+if (!overwrite) {
+  fileName <- paste0("MCMC_wolverine_", DATE, ".RData")
+  if (file.exists(file.path(working.dir, "data", fileName))) {
+    message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
+                   file.path(working.dir, "data")))
+    message("Do you want to proceed and overwrite the existing processed MCMC output file? (y/n) ")
+    question1 <- readLines(n = 1)
+    if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
+      message("Not overwriting existing files...")
+      message(paste0("Loading '", fileName, "' instead..."))
+      load(file.path(working.dir, "data", fileName))
+      mcmcTest <- FALSE
+    } else {
+      message(paste0("Now overwriting '", fileName,"'.\n"))
     }
-    out[[x]] <- this.sample
-    
-    ##-- KEEP SXY AND Z, THINING
-    load(file.path(path.listF[p], paste("biteSxyZ_", x, ".RData", sep = "")))
-    outSXYZ[[x]] <- this.sampleSxyZ
-  }#x
-  RUNTIME[[p]] <- unlist(runtime)
-  out.mx <- do.call(rbind, out)
-  out.mxSXY <- do.call(rbind, outSXYZ)
-  nimOutput[[p]] <- as.mcmc(out.mx)
-  nimOutputSXY[[p]] <- as.mcmc(out.mxSXY)
-}#p
-
-##-- Compile results in mcmc.lists
-nimOutput <- as.mcmc.list(nimOutput)
-nimOutputSXY <- as.mcmc.list(nimOutputSXY)
-
-##-- Process the results
-myResults_F <- ProcessCodaOutput(nimOutput, params.omit = c("sxy","z"))
-myResultsSXYZ_F <- ProcessCodaOutput(nimOutputSXY, params.omit = c("sxy","z"))
+  }
+}
 
 
+## ------   2.1. FEMALES ------
 
-## ------     1.2. MALES ------
+##-- Compile MCMC bites
+nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/female"),
+                                 burnin = nburnin)
 
-##-- GO TROUGH THE BITES AND GET THEM
-nimOutput <- nimOutputSXY <- RUNTIME <- list()
-for(p in 1:length(path.listM)){
-  print(path.listM[p])
-  outfiles <- list.files(path.listM[p])
-  out <- outSXYZ <- runtime <- list()
-  for(x in NSkipBites:minBites){
-    print(x)
-    load(file.path(path.listM[p], paste("bite_", x, ".RData", sep = "")))
-    runtime[[x]] <- RunTime[3]
-    
-    if(sum(is.na(this.sample))>0){
-      id <- unique(which(is.na(this.sample),arr.ind = T)[,1])
-      this.sample <- this.sample[-id,]
-      print(x)
-      print("here")
-    }
-    
-    out[[x]] <- this.sample
-    
-    # KEEP SXY AND Z, THINING
-    #nthins <- seq(1,dim(this.sample)[1], by=nthinsxy)
-    load(file.path(path.listM[p], paste("biteSxyZ_", x, ".RData", sep = "")))
-    
-    #parmIndex <- which(params.simple %in% c("sxy","z","N","sigma"))
-    outSXYZ[[x]] <- this.sampleSxyZ#[nthins,parmIndex]#[ ,parmIndex]
-  }#x
-  RUNTIME[[p]] <- unlist(runtime)
-  out.mx <- do.call(rbind, out)
-  out.mxSXY <- do.call(rbind, outSXYZ)
-  
-  nimOutput[[p]] <- as.mcmc(out.mx)
-  nimOutputSXY[[p]] <- as.mcmc(out.mxSXY)
-}#p
+##-- Traceplots
+grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
+plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
+grDevices::dev.off()
 
-##-- Compile results in mcmc.lists
-nimOutput <- as.mcmc.list(nimOutput)
-nimOutputSXY <- as.mcmc.list(nimOutputSXY)
+##-- Process MCMC output
+results_F <- processCodaOutput( nimOutput_F$samples,
+                                params.omit = c("sxy","z"))
+resultsSXYZ_F <- processCodaOutput(nimOutput_F$samples2)
 
-##-- Process the results
-myResults_M <- ProcessCodaOutput(nimOutput, params.omit = c("sxy","z"))
-myResultsSXYZ_M <- ProcessCodaOutput(nimOutputSXY, params.omit = c("sxy","z"))
+##-- Remove unnecessary objects from memory
+rm(list = c("nimOutput_F"))
+gc(verbose = FALSE)
 
-## check how many ids are left available based on z. 
-# nState <- array(NA, c(dim(myResultsSXYZ_M$sims.list$z)[2], 3, nYears))
-# for(t in 1:nYears){
-#   for(i in 1:dim(myResultsSXYZ_M$sims.list$z)[2]){
-#     tmp <- table(myResultsSXYZ_M$sims.list$z[i,,t])
-#     nState[i,as.numeric(names(tmp)),t] <- tmp 
-#   }
-# }
-# MIN <- apply(nState,c(2,3),min)
-# MAX <- apply(nState,c(2,3),max)
-# 
-# min(nState[,1,1])
-# 
-# #ndetected
-# Ndete <- 0
-# whichDet <- list()
-# for(t in 1:nYears){
-#   Ndete[t] <- sum(nimDataM$y.alive[,1,t]>0)
-#   whichDet[[t]] <- which(nimDataM$y.alive[,1,t]>0)
-# }
-# 
-#  
-# whichDet
-# plot(Ndete~years, ylim=c(0,1500),pch=16,ylab="N")
-# points(MAX[2,]~years,col="red",pch=16)
-# points(MIN[1,]~years,col="blue",pch=16)
-# points(MIN[3,]~years,col="orange",pch=16)
-# legend("topleft",legend=c("NDetected","NAlive Max","N Available","N state 3" ),col=c("black","red","blue","orange"),pch=16)
-# 
-# 
-# whichDetAll <- unique(unlist(whichDet))
-# 
-# ## check how many ids are left available based on z. 
-# nState1 <- array(NA, c(dim(myResultsSXYZ_M$sims.list$z)[2], 3, nYears))
-# for(t in 1:nYears){
-#   for(i in 1:dim(myResultsSXYZ_M$sims.list$z)[2]){
-#     tmp <- table(myResultsSXYZ_M$sims.list$z[i,-whichDetAll,t])
-#     nState1[i,as.numeric(names(tmp)),t] <- tmp 
-#   }
-# }
-# MIN1 <- apply(nState1,c(2,3),min)
-# MAX1 <- apply(nState1,c(2,3),max)
-# 
-# plot(Ndete~years, ylim=c(0,1500),pch=16,ylab="N")
-# points(MAX1[2,]~years,col="red",pch=16)
-# points(MIN1[1,]~years,col="blue",pch=16)
-# points(MIN1[3,]~years,col="orange",pch=16)
-# legend("topleft",legend=c("NDetected","NAlive Max","N Available","N state 3" ),col=c("black","red","blue","orange"),pch=16)
-# 
-# plot(myResultsSXYZ_M$sims.list$N[1:5600,1], type="l")
-# points(myResultsSXYZ_M$sims.list$N[5601:(5600+5600),1], type="l",col="red")
-# 
-# plot(myResultsSXYZ_F$sims.list$N[1:5600,1], type="l")
-# points(myResultsSXYZ_F$sims.list$N[5601:(5600+5600),1], type="l",col="red")
-# plot(myResultsSXYZ_F$sims.list$N[1:5600,1])
-
-
-
-## ------     1.3. RESCALE SXY SO THEY CAN BE COMPARED ------
-
-dimnames(myResultsSXYZ_F$sims.list$sxy)[[3]] <- c("x","y")
-myResultsSXYZ_F$sims.list$sxy <- scaleCoordsToHabitatGrid(
-  coordsData = myResultsSXYZ_F$sims.list$sxy,
-  coordsHabitatGridCenter = myHabitat.list$habitat.xy,
+##-- Rescale sxy to the original coordinate system
+dimnames(resultsSXYZ_F$sims.list$sxy)[[3]] <- c("x","y")
+resultsSXYZ_F$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
+  coordsData = resultsSXYZ_F$sims.list$sxy,
+  coordsHabitatGridCenter = habitat$habitat.xy,
   scaleToGrid = FALSE)$coordsDataScaled
 
-dimnames(myResultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
-myResultsSXYZ_M$sims.list$sxy <- scaleCoordsToHabitatGrid(
-  coordsData = myResultsSXYZ_M$sims.list$sxy,
-  coordsHabitatGridCenter = myHabitat.list$habitat.xy,
+##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
+results_F$sims.list$dmean <- results_F$sims.list$dmean * raster::res(habitat$habitat.r)[1]
+
+
+
+## ------   2.2. MALES -----
+
+##-- Compile MCMC bites
+nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "NimbleOutFiles/male"),
+                                 burnin = nburnin)
+
+##-- Traceplots
+grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
+plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
+dev.off()
+
+##-- Process MCMC output
+results_M <- processCodaOutput( nimOutput_M$samples,
+                                params.omit = c("sxy","z"))
+resultsSXYZ_M <- processCodaOutput(nimOutput_M$samples2)
+
+##-- Remove unnecessary objects from memory
+rm(list = c("nimOutput_M"))
+gc(verbose = FALSE)
+
+
+##-- RESCALE SXY TO THE ORIGINAL COORDINATE SYSTEM
+dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
+resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
+  coordsData = resultsSXYZ_M$sims.list$sxy,
+  coordsHabitatGridCenter = habitat$habitat.df,
   scaleToGrid = FALSE)$coordsDataScaled
 
-##-- QUICK CHECK
-t = 9
-##-- Male
-plot(st_geometry(myHabitat.list$buffered.habitat.poly))
-points( myResultsSXYZ_M$sims.list$sxy[1,myResultsSXYZ_M$sims.list$z[1, ,t] %in% 2,2,t] ~
-         myResultsSXYZ_M$sims.list$sxy[1,myResultsSXYZ_M$sims.list$z[1, ,t] %in% 2,1,t],
-       pch = 16, col = "red")
-
-##-- Female
-plot(st_geometry(myHabitat.list$buffered.habitat.poly))
-points( myResultsSXYZ_F$sims.list$sxy[1,myResultsSXYZ_F$sims.list$z[1, ,t] %in% 2,2,t] ~
-         myResultsSXYZ_F$sims.list$sxy[1,myResultsSXYZ_F$sims.list$z[1 ,,t] %in% 2,1,t],
-       pch = 16, col = "red")
-
-# which(myResultsSXYZ_M$sims.list$sxy[1,, 2, t]> 7930000)
-# id <- 690
-# myResultsSXYZ_M$sims.list$z[1,id,t]
-# nimDataM$yDets[id,,t]
-# points(myDetectors$main.detector.sp[nimDataM$yDets[id,1,t],],pch=16)
-# tmp <- myFilteredData.spM$alive[ myFilteredData.spM$alive$Id %in% row.names(nimDataM$z[])[id] &
-#                                  myFilteredData.spM$alive$Year %in%  years[t],]
-# points(tmp, pch=16,col="blue")
-# points(myResultsSXYZ_F$sims.list$sxy[1,,2,1]~myResultsSXYZ_F$sims.list$sxy[1,,1,1], pch=16, col="blue")
+##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
+results_M$sims.list$dmean <- results_M$sims.list$dmean * raster::res(habitat$habitat.r)[1]
 
 
 
-## ------     1.4. IDENTIFY INDIVIDUALS IN THE BUFFER AND ASSIGN THEM A Z NOT ALIVE (Z==5) ------
+## ------   2.3. COMBINE MALES & FEMALES -----
+
+resultsSXYZ_MF <- resultsSXYZ_M
+
+##-- Get minimum number of iterations between model F and M
+minIter <- min(dim(resultsSXYZ_F$sims.list$sxy)[1],
+               dim(resultsSXYZ_M$sims.list$sxy)[1])
+
+##-- sxy
+resultsSXYZ_MF$sims.list$sxy <- abind::abind(resultsSXYZ_M$sims.list$sxy[1:minIter, , , ],
+                                             resultsSXYZ_F$sims.list$sxy[1:minIter, , , ],
+                                             along = 2)
+dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x","y")
+
+##-- z
+resultsSXYZ_MF$sims.list$z <- abind::abind(resultsSXYZ_M$sims.list$z[1:minIter, , ],
+                                           resultsSXYZ_F$sims.list$z[1:minIter, , ],
+                                           along = 2)
+
+##-- sigma
+resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter],
+                                        results_F$sims.list$sigma[1:minIter])
+dimnames(resultsSXYZ_MF$sims.list$sigma)[[2]] <- c("M","F")
+
+##-- sex
+resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
+                                    c(dim(resultsSXYZ_M$sims.list$sxy)[2],
+                                      dim(resultsSXYZ_F$sims.list$sxy)[2]))
+
+##-- SAVE AND LOAD DATA
+save( results_F, results_M, resultsSXYZ_MF,
+      file = file.path( working.dir, "data", paste0("MCMC_wolverine_", DATE, ".RData")))
+
+
 
 ## ------       1.4.1. CREATE POLYGON WITHOUT BUFFER ------
 
 ##-- MALES
-# habitat.r <- myHabitat.listM$habitat.r
-# habitat.r[habitat.r!=1] <- NA
-# myStudyArea.polyMnoHoles <- RemoveHolesSp(myHabitat.listM$habitat.poly)
-# habbRNobuffM <- mask(habitat.r, myStudyArea.polyMnoHoles)
-# plot(habbRNobuffM)
-# areanobuffM <- aggregate(rasterToPolygons(habbRNobuffM,fun=function(x)x==1))
-# 
-# plot(areanobuffM, add=T)
-# plot(myHabitat.listM$habitat.rWthBuffer,add=T)
-
-habbRNobuffM <- myHabitat.list$habitat.rWthBuffer
+habbRNobuffM <- habitat$habitat.rWthBuffer
 
 ##-- FEMALES
-# habitat.r <- myHabitat.listF$habitat.r
-# habitat.r[habitat.r!=1] <- NA
-# myStudyArea.polyFnoHoles <- RemoveHolesSp(myHabitat.listF$habitat.poly)
-# habbRNobuffF <- mask(habitat.r, myStudyArea.polyFnoHoles)
-# plot(habbRNobuffF)
-# areanobuffF <- aggregate(rasterToPolygons(habbRNobuffF,fun=function(x)x==1))
-# plot(areanobuffF, add=T)
-# plot(myHabitat.listF$buffered.habitat.poly,add=T)
-habbRNobuffF <- myHabitat.list$habitat.rWthBuffer
-
-# points(myResultsSXYZ_F$sims.list$sxy[i,1,2,t]~myResultsSXYZ_F$sims.list$sxy[i,1,1,t], col="red")
-# points(myResultsSXYZ_F$sims.list$sxy[i,3126,2,t]~myResultsSXYZ_F$sims.list$sxy[i,3126,1,t], col="red")
-
-
-
-## ------       1.4.2. IDENTIFY INDIVIDUALS IN THE BUFFER AND GIVE THEM A STATE 5 ------
-
-##-- MAKE A COPY [PD] ?????
-myResultsSXYZ_F$sims.list$z1 <- myResultsSXYZ_F$sims.list$z 
-
-##-- FEMALES
-gc()
-for(t in 1:nYears){
-  for(i in 1:dim( myResultsSXYZ_F$sims.list$z)[1]){
-    whichNA <- which(is.na(habbRNobuffF[cellFromXY(habbRNobuffF, myResultsSXYZ_F$sims.list$sxy[i, ,1:2,t])]))
-    myResultsSXYZ_F$sims.list$z[i,whichNA,t] <- 5
-  }#i
-  print(t)
-}#t
-
-
-##-- MALES
-gc()
-for(t in 1:nYears){
-  for(i in 1:dim( myResultsSXYZ_M$sims.list$z)[1]){
-    whichNA <- which(is.na(habbRNobuffM[cellFromXY(habbRNobuffM,myResultsSXYZ_M$sims.list$sxy[i,,1:2,t])]))
-    myResultsSXYZ_M$sims.list$z[i,whichNA,t] <- 5
-  }
-  print(t)
-}
+habbRNobuffF <- habitat$habitat.rWthBuffer
 
 
 
 ## ------     1.5. COMBINE MALES & FEMALES ------
 
 ##-- ASSUMING THE SAME NUMBER OF CHAINS AND ITERATIONS/ WE CAN JUST ADD N ESIMAES OF FEMALES AND MALES
-myResultsSXYZ_MF <- myResultsSXYZ_M
+resultsSXYZ_MF <- myResultsSXYZ_M
 
 ##-- HERE I ONLY HAVE ONE CHAIN FOR THE MALES
 dimmF <- dim(myResults_F$sims.list$N)[1]
-dimmFsxy <- dim(myResultsSXYZ_MF$sims.list$sxy)[1]
+dimmFsxy <- dim(resultsSXYZ_MF$sims.list$sxy)[1]
 
-myResultsSXYZ_MF$sims.list$N <- myResults_M$sims.list$NdimmF[1:dimmF[1], , ] + 
+resultsSXYZ_MF$sims.list$N <- myResults_M$sims.list$N + 
   myResults_F$sims.list$N
 
 
@@ -1189,29 +1028,29 @@ myResultsSXYZ_MF$sims.list$N <- myResults_M$sims.list$NdimmF[1:dimmF[1], , ] +
 ## ------     1.6. COMBINE SXY & Z ------
 
 ##-- Activity centers
-myResultsSXYZ_MF$sims.list$sxy <- abind(
-  myResultsSXYZ_M$sims.list$sxy[1:dimmFsxy[1], , , ],
+resultsSXYZ_MF$sims.list$sxy <- abind(
+  myResultsSXYZ_M$sims.list$sxy,
   myResultsSXYZ_F$sims.list$sxy, along = 2)
-dimnames(myResultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x", "y")
+dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x", "y")
 gc()
 
 ##-- Individual states
-myResultsSXYZ_MF$sims.list$z <- abind(
+resultsSXYZ_MF$sims.list$z <- abind(
   myResultsSXYZ_M$sims.list$z[1:dimmFsxy[1], , ],
   myResultsSXYZ_F$sims.list$z, along = 2)
-myResultsSXYZ_MF$sims.list$z1 <- abind(
+resultsSXYZ_MF$sims.list$z1 <- abind(
   myResultsSXYZ_M$sims.list$z1[1:dimmFsxy[1], , ],
   myResultsSXYZ_F$sims.list$z1, along = 2)
 gc()
 
 ##-- Sigma
-myResultsSXYZ_MF$sims.list$sigma <- abind(
-  myResults_M$sims.list$sigma[1:dimmF[1], ] * res(myHabitat.list$habitat.r)[1],
-  myResults_F$sims.list$sigma * res(myHabitat.list$habitat.r)[1], along = 2)
+resultsSXYZ_MF$sims.list$sigma <- abind(
+  myResults_M$sims.list$sigma[1:dimmF[1], ] * res(habitat$habitat.r)[1],
+  myResults_F$sims.list$sigma * res(habitat$habitat.r)[1], along = 2)
 gc()
 
 ##-- Individual sex
-myResultsSXYZ_MF$sims.list$sex <- rep(
+resultsSXYZ_MF$sims.list$sex <- rep(
   c("M","F"),
   c(dim(myResultsSXYZ_M$sims.list$sxy)[2], 
     dim(myResultsSXYZ_F$sims.list$sxy)[2]))
@@ -1226,13 +1065,13 @@ myResults_M$sims.list$sxy <- NULL
 gc()
 
 # ##-- select 100 iterations for RB
-# dim(myResultsSXYZ_MF$sims.list$sxy)
-# nit <- sample(dim(myResultsSXYZ_MF$sims.list$sxy)[1],100)
-# sxy <- round(myResultsSXYZ_MF$sims.list$sxy[nit,,,],digits=5)
-# z <- myResultsSXYZ_MF$sims.list$z[nit,,]
+# dim(resultsSXYZ_MF$sims.list$sxy)
+# nit <- sample(dim(resultsSXYZ_MF$sims.list$sxy)[1],100)
+# sxy <- round(resultsSXYZ_MF$sims.list$sxy[nit,,,],digits=5)
+# z <- resultsSXYZ_MF$sims.list$z[nit,,]
 # 
 # save(sxy, z,
-#      file = file.path(WDFigures , "Itera.RData"))
+#      file = file.path(working.dir, "figures" , "Itera.RData"))
 # #contains 100 iterations of "sxy" and "z"
 # load("C://Users//cymi//Dropbox (Old)//AQEG Dropbox//AQEG Team Folder//RovQuant//wolverine//CM//2024/plot53Cleaned2024/Figure/Itera.RData")
 
@@ -1244,7 +1083,7 @@ names(Results.list) <- c("F","M")
 
 ## ------     1.7. SAVE AND LOAD DATA ------
 
-# save(Results.list, myResultsSXYZ_MF,
+# save(Results.list, resultsSXYZ_MF,
 #     file = file.path(paste(dir.dropbox,"/wolverine/CM/2022/plot25Cleaned/Figure/",sep=""), "MCMC.RData" ))
 # load(file.path(paste(dir.dropbox,"/wolverine/CM/2022/plot25Cleaned/Figure/",sep=""), "MCMC.RData" ))
 
@@ -1265,27 +1104,7 @@ myResults_M$Rhat
 
 ## ------     1.9. rovquantR COMPARISON ------
 
-message("## Processing model MCMC outputs...")
 
-##-- Check that a file with that name does not already exist to avoid overwriting
-mcmcTest <- TRUE
-if (!overwrite) {
-  fileName <- paste0("MCMC_bear_", DATE, ".RData")
-  if (file.exists(file.path(working.dir, "data", fileName))) {
-    message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
-                   file.path(working.dir, "data")))
-    message("Do you want to proceed and overwrite the existing processed MCMC output file? (y/n) ")
-    question1 <- readLines(n = 1)
-    if (regexpr(question1, 'y', ignore.case = TRUE) != 1) {
-      message("Not overwriting existing files...")
-      message(paste0("Loading '", fileName, "' instead..."))
-      load(file.path(working.dir, "data", fileName))
-      mcmcTest <- FALSE
-    } else {
-      message(paste0("Now overwriting '", fileName,"'.\n"))
-    }
-  }
-} 
 
 if(mcmcTest){
   ## ------   2.1. FEMALES -----
@@ -1410,7 +1229,7 @@ rrCountries <- habitatRasterResolution$`5km`[["Countries"]]
 rrCountries[rrCountries%in% c(1,3)] <- NA
 plot(rrCountries)
 
-habitat.rWthBuffer <- myHabitat.list$habitat.rWthBuffer
+habitat.rWthBuffer <- habitat$habitat.rWthBuffer
 habitat.rWthBuffer[habitat.rWthBuffer %in% 0] <- NA
 
 searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer), 
@@ -1419,7 +1238,7 @@ searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
 # searchedPolygon <- rasterToPolygons(habitat.rWthBuffer, dissolve = T, function(x) x==1 )
 
 rrCountries <- mask(rrCountries, searchedPolygon)
-rrCountries <- crop(rrCountries, myHabitat.list$habitat.r)
+rrCountries <- crop(rrCountries, habitat$habitat.r)
 plot(rrCountries)
 
 ##-- REGIONS & COUNTIES 
@@ -1435,18 +1254,18 @@ levels(rrRegions)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
 rrRegions[habitatRasterResolution$`5km`[["Countries"]]%in% c(1, 3)] <- NA
 plot(rrRegions)
 rrRegions <- mask(rrRegions, searchedPolygon)
-rrRegions <- crop(rrRegions, myHabitat.list$habitat.r)
+rrRegions <- crop(rrRegions, habitat$habitat.r)
 
-##-- habitatPolygon <- rasterToPolygons(myHabitat.list$habitat.r, dissolve = T, function(x) x==1 )
-habitatPolygon <- sf::st_as_sf(stars::st_as_stars(myHabitat.list$habitat.r), 
+##-- habitatPolygon <- rasterToPolygons(habitat$habitat.r, dissolve = T, function(x) x==1 )
+habitatPolygon <- sf::st_as_sf(stars::st_as_stars(habitat$habitat.r), 
                                 as_points = FALSE, merge = TRUE)
 habitatPolygon <- habitatPolygon[habitatPolygon$Habitat > 0, ]
 
 habitatPolygon5km <- mask(habitatRasterResolution$`5km`[["Habitat"]], habitatPolygon)
-habitatPolygon5km <- crop(habitatRasterResolution$`5km`[["Habitat"]], myHabitat.list$habitat.r)
+habitatPolygon5km <- crop(habitatRasterResolution$`5km`[["Habitat"]], habitat$habitat.r)
 plot(rrRegions)
 plot(habitatPolygon5km)
-# points(myDetectors$main.detector.sp,pch=16,cex=0.5)
+# points(detectors$main.detector.sp,pch=16,cex=0.5)
 
 ##-- SWEDISH REGIONS 
 rrRegionsSwe <- habitatRasterResolution$`5km`[["Regions"]]
@@ -1455,7 +1274,7 @@ rrRegionsSwe <- habitatRasterResolution$`5km`[["Regions"]]
 rrRegionsSwe[habitatRasterResolution$`5km`[["Countries"]]%in% c(1,2,3)] <- NA
 plot(rrRegionsSwe)
 rrRegionsSwe <- mask(rrRegionsSwe, searchedPolygon)
-rrRegionsSwe <- crop(rrRegionsSwe, myHabitat.list$habitat.r)
+rrRegionsSwe <- crop(rrRegionsSwe, habitat$habitat.r)
 plot(rrRegionsSwe)
 rrRegionsSwe[]
 
@@ -1471,7 +1290,7 @@ levels(rrRegionsSwe)[[1]] <- df
 rrCountiesNor <- habitatRasterResolution$`5km`[["Counties"]]
 rrCountiesNor[rrCountiesNor[] %in% c(1,2, 3)] <- NA
 rrCountiesNor <- mask(rrCountiesNor, searchedPolygon)
-rrCountiesNor <- crop(rrCountiesNor, myHabitat.list$habitat.r)
+rrCountiesNor <- crop(rrCountiesNor, habitat$habitat.r)
 #remove sweden
 rrCountiesNor[rrCountries[]%in%4] <- NA
 plot(rrCountiesNor)
@@ -1485,7 +1304,7 @@ gc()
 densityInputCountries <- getDensityInput(
   regions = rrCountries, 
   habitat = habitatPolygon5km,
-  s = myResultsSXYZ_MF$sims.list$sxy,
+  s = resultsSXYZ_MF$sims.list$sxy,
   plot.check = TRUE)
 
 ##-- GET THE OBJECTS TO RUN THE DENSITY FUNCTION 
@@ -1493,14 +1312,14 @@ densityInputCountries <- getDensityInput(
 densityInputRegions <- getDensityInput( 
   regions = rrRegions, 
   habitat = habitatPolygon5km,
-  s = myResultsSXYZ_MF$sims.list$sxy,
+  s = resultsSXYZ_MF$sims.list$sxy,
   plot.check = TRUE)
 
 ##-- Swedish Regions
 densityInputRegionsSwe <- getDensityInput( 
   regions = rrRegionsSwe, 
   habitat = habitatPolygon5km,
-  s = myResultsSXYZ_MF$sims.list$sxy,
+  s = resultsSXYZ_MF$sims.list$sxy,
   plot.check = TRUE)
 
 ##-- MERGE COUNTRY AND REGION MATRICES TO ALLOW SIMULTANEOUS EXTRACTION
@@ -1515,7 +1334,7 @@ row.names(regionID) <- c(row.names(densityInputCountries$regions.rgmx),
 densityInputRegionsNor <- getDensityInput( 
   regions = rrCountiesNor, 
   habitat = habitatPolygon5km,
-  s = myResultsSXYZ_MF$sims.list$sxy,
+  s = resultsSXYZ_MF$sims.list$sxy,
   plot.check = TRUE)
 
 
@@ -1583,7 +1402,7 @@ for(t in 1:nYears){
   DensityCountriesRegions[[t]] <- GetDensity_PD(
     sx = densityInputCountries$sx[ite,,t],
     sy =  densityInputCountries$sy[ite,,t],
-    z = myResultsSXYZ_MF$sims.list$z[ite,,t],
+    z = resultsSXYZ_MF$sims.list$z[ite,,t],
     IDmx = densityInputCountries$habitat.id,
     aliveStates = alive.states,
     regionID = regionID,
@@ -1601,7 +1420,7 @@ save( DensityCountriesRegions,
 ## ------       2.1.3. MALE (5km) ------
 
 ##-- Identify Males
-IDMales <- which(myResultsSXYZ_MF$sims.list$sex == "M")
+IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
 
 ##-- EXTRACT DENSITY 
 DensityCountriesRegionsM <- list()
@@ -1609,7 +1428,7 @@ for(t in 1:nYears){
   DensityCountriesRegionsM[[t]] <- GetDensity_PD(
     sx = densityInputCountries$sx[ite,IDMales,t],
     sy =  densityInputCountries$sy[ite,IDMales,t],
-    z = myResultsSXYZ_MF$sims.list$z[ite,IDMales,t],
+    z = resultsSXYZ_MF$sims.list$z[ite,IDMales,t],
     IDmx = densityInputCountries$habitat.id,
     aliveStates = alive.states,
     regionID = regionID,
@@ -1627,7 +1446,7 @@ save( DensityCountriesRegionsM,
 ## ------       2.1.4. FEMALE (5km) ------
 
 ##-- Identify Females
-IDFemales <- which(myResultsSXYZ_MF$sims.list$sex == "F")
+IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
 
 ##-- EXTRACT DENSITY 
 DensityCountriesRegionsF <- list()
@@ -1635,7 +1454,7 @@ for(t in 1:nYears){
   DensityCountriesRegionsF[[t]] <- GetDensity_PD(
     sx = densityInputCountries$sx[ite,IDFemales,t],
     sy =  densityInputCountries$sy[ite,IDFemales,t],
-    z = myResultsSXYZ_MF$sims.list$z[ite,IDFemales,t],
+    z = resultsSXYZ_MF$sims.list$z[ite,IDFemales,t],
     IDmx = densityInputCountries$habitat.id,
     aliveStates = alive.states,
     regionID = regionID,
@@ -1657,7 +1476,7 @@ for(t in 1:nYears){
   DensityCountriesRegionsNOR[[t]] <- GetDensity_PD(
     sx = densityInputRegionsNor$sx[ite,,t],
     sy =  densityInputRegionsNor$sy[ite,,t],
-    z = myResultsSXYZ_MF$sims.list$z[ite,,t],
+    z = resultsSXYZ_MF$sims.list$z[ite,,t],
     IDmx = densityInputRegionsNor$habitat.id,
     aliveStates = alive.states,
     regionID = densityInputRegionsNor$regions.rgmx,
@@ -1740,7 +1559,7 @@ idcountySWE1 <- sort(idcountySWE1)
 
 ##-- Export .csv
 write.csv( NCarRegionEstimates,
-           file = file.path(WDTables,"NAllYears.csv"),
+           file = file.path(working.dir, "tables","NAllYears.csv"),
            fileEncoding = "latin1")
 
 
@@ -1779,7 +1598,7 @@ print( xtable( NCarRegionEstimates,
       # scalebox=.8,
       floating = FALSE, sanitize.text.function=function(x){x},
       add.to.row = list(list(seq(1,nrow(NCarRegionEstimates),by=2)),"\\rowcolor[gray]{.96} "),
-      file = file.path(WDTables, "NCountiesCarnivoreRegions.tex"))
+      file = file.path(working.dir, "tables", "NCountiesCarnivoreRegions.tex"))
 
 
 
@@ -1816,7 +1635,7 @@ for( i in 1:length(idcountyTable)){
 
 ##-- Export .csv
 write.csv( NCountyEstimatesLastRegions,
-          file = file.path(WDTables, "NLastYearPerSex.csv"),
+          file = file.path(working.dir, "tables", "NLastYearPerSex.csv"),
           fileEncoding = "latin1")
 
 ##-- ADJUST NAMES OF THE TABLE 
@@ -1862,7 +1681,7 @@ print(xtable( NCountyEstimatesLastRegions,
       floating = FALSE,
       add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions), by = 2)),
                         "\\rowcolor[gray]{.95} "),
-      file = file.path(WDTables,"NCountiesSexLastYearRegions.tex"))
+      file = file.path(working.dir, "tables","NCountiesSexLastYearRegions.tex"))
 
 
 
@@ -1903,7 +1722,7 @@ NCountyEstimatesLastRegions[NCountyEstimatesLastRegions[,4] %in% c("98","99"),4]
 
 ##--  Export .tex
 write.csv( NCountyEstimatesLastRegions,
-          file = file.path(WDTables, "NLastYearPerSexArea.csv"),
+          file = file.path(working.dir, "tables", "NLastYearPerSexArea.csv"),
           fileEncoding = "latin1")
 
 # ADJUST NAMES OF THE TABLE 
@@ -1952,7 +1771,7 @@ print(xtable(NCountyEstimatesLastRegions, type = "latex",
       # scalebox=.8,
       floating = FALSE,
       add.to.row=list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-      file = file.path(WDTables,paste("NCountiesSexLastYearRegionsArea.tex")))
+      file = file.path(working.dir, "tables",paste("NCountiesSexLastYearRegionsArea.tex")))
 
 
 
@@ -2014,8 +1833,9 @@ idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
 
 
 #print csv
-write.csv(NCountyEstimatesLast2Regions,
-          file = file.path(WDTables,paste("NLast2YearsPerSex.csv")),fileEncoding="latin1")
+write.csv( NCountyEstimatesLast2Regions,
+          file = file.path(working.dir, "tables","NLast2YearsPerSex.csv"),
+          fileEncoding="latin1")
 
 
 
@@ -2058,7 +1878,7 @@ print(xtable(NCountyEstimatesLast2Regions, type = "latex",
       floating = FALSE,
       add.to.row = addtorow,
       include.colnames = F,
-      file = file.path(WDTables,"NCountiesSexLast2YearsRegions.tex"))
+      file = file.path(working.dir, "tables","NCountiesSexLast2YearsRegions.tex"))
 
 
 
@@ -2102,7 +1922,7 @@ for(t in 1:nYears){
 
 ##--  Export .csv
 write.csv( NCountyEstimatesAllSexRegions,
-          file = file.path(WDTables, "NAllYearsPerSex.csv"),
+          file = file.path(working.dir, "tables", "NAllYearsPerSex.csv"),
           fileEncoding="latin1")
 
 # # ADJUST NAMES OF THE TABLE 
@@ -2139,7 +1959,7 @@ write.csv( NCountyEstimatesAllSexRegions,
 #       # scalebox=.8,
 #       floating = FALSE,
 #       add.to.row=list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-#       file = file.path(WDTables,paste("NCountiesSexLastYearRegions.tex",sep="")))
+#       file = file.path(working.dir, "tables","NCountiesSexLastYearRegions.tex"))
 
 
 
@@ -2208,16 +2028,17 @@ row.names(NCarRegionEstimatesNOR) <- idcounty1
 # NCarRegionEstimatesNOR <- data.frame(NCarRegionEstimatesNOR)
 # NCarRegionEstimatesNOR$name <- row.names(NCarRegionEstimatesNOR)
 # Encoding(NCarRegionEstimatesNOR[1,"name"]) <- "UTF-16"#"UTF-16"
-#save(NCarRegionEstimatesNOR,file=file.path(WDTables,paste("NAllYearsNorwegianCounties.RData",sep="")))
-write.csv(NCarRegionEstimatesNOR,
-          file = file.path(WDTables,paste("NAllYearsNorwegianCounties.csv",sep="")),fileEncoding= "latin1")
+#save(NCarRegionEstimatesNOR,file=file.path(working.dir, "tables",paste("NAllYearsNorwegianCounties.RData",sep="")))
+write.csv( NCarRegionEstimatesNOR,
+          file = file.path(working.dir, "tables","NAllYearsNorwegianCounties.csv"),
+          fileEncoding = "latin1")
 
 # Encoding(NCarRegionEstimatesNOR[,"name"])[9] <- "ISO-8859-1"
 # mb_convert_encoding($file, 'UTF-8', 'ISO-8859-1')
 # write.csv2(NCarRegionEstimatesNOR,
-#            file = file.path(WDTables,paste("NAllYearsNorwegianCounties.csv",sep="")),fileEncoding= "UTF-16LE")
+#            file = file.path(working.dir, "tables",paste("NAllYearsNorwegianCounties.csv",sep="")),fileEncoding= "UTF-16LE")
 # readr::write_excel_csv(NCarRegionEstimatesNOR,
-#                         file = file.path(WDTables,paste("NAllYearsNorwegianCounties.csv",sep="")))
+#                         file = file.path(working.dir, "tables",paste("NAllYearsNorwegianCounties.csv",sep="")))
 ## try to join to the Norwegian layer for Richard
 # tmp <- data.frame(NCarRegionEstimatesNOR)
 # tmp$NAME_1 <- row.names(tmp) 
@@ -2255,8 +2076,8 @@ row.names(NCarRegionEstimatesNOR)[grep("VÃ¤straGÃ¶taland", row.names(NCarReg
 print(xtable(NCarRegionEstimatesNOR, type = "latex",align=paste(c("l",rep("c",ncol(NCarRegionEstimatesNOR))),collapse = "")),
       # scalebox=.8,
       floating = FALSE, sanitize.text.function=function(x){x},
-      add.to.row=list(list(seq(1,nrow(NCarRegionEstimatesNOR),by=2)),"\\rowcolor[gray]{.96} "),
-      file = file.path(WDTables, paste("NCountiesCarnivoreRegionsNorway.tex",sep="")))
+      add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesNOR),by=2)),"\\rowcolor[gray]{.96} "),
+      file = file.path(working.dir, "tables", "NCountiesCarnivoreRegionsNorway.tex"))
 
 
 
@@ -2283,7 +2104,8 @@ names(country.colors) <- c("Norway","Sweden")
 violin.alpha95 <- 0.3
 violin.alpha50 <- 0.7
 
-pdf(file= file.path(WDFigures , paste("NCountriesBars.pdf", sep="")), width = 12, height = 8)
+pdf(file= file.path(working.dir, "figures" , "NCountriesBars.pdf"),
+    width = 12, height = 8)
 par(mar = c(5,8,3,1),las=1, cex.lab=2, cex.axis=1.3, mgp=c(6, 2, 0), xaxs="i", yaxs="i")
 plot(-1000, xlim=c(0.5, nYears+.5), ylim=c(0,1300),
      xlab="", ylab = paste("Estimated number of wolverines"), xaxt="n")
@@ -2292,7 +2114,7 @@ at = c(1:nYears)
 abline(h=seq(100,1200,by=100), lty=2, col=grey(0.90))
 
 ## GET THE DETECTED INDIVIDUALS 
-# n.detected <- read.csv(file.path(WDTables, paste("TotalIdDetected.csv",sep="")))
+# n.detected <- read.csv(file.path(working.dir, "tables", paste("TotalIdDetected.csv",sep="")))
 # n.detected <- as.vector(n.detected[1,2:ncol(n.detected)])
 # n.detected[1]
 # 
@@ -2450,7 +2272,7 @@ names(country.colors) <- c("Norway","Sweden")
 violin.alpha95 <- 0.3
 violin.alpha50 <- 0.7
 
-pdf( file = file.path(WDFigures, "NCountriesBarsSex.pdf"), width = 18, height = 8)
+pdf( file = file.path(working.dir, "figures", "NCountriesBarsSex.pdf"), width = 18, height = 8)
 par( mfrow = c(1,2), mar = c(5,8,3,1),
      las = 1, cex.lab = 2, cex.axis = 1.3, mgp = c(6,2,0),
      xaxs = "i", yaxs = "i")
@@ -2702,7 +2524,8 @@ dev.off()
 
 
 ## ------         2.2.1.3. LAST YEAR ------
-pdf(file= file.path(WDFigures , paste("NCountriesBarsLastYear.pdf", sep="")), width = 12, height = 8)
+
+pdf(file= file.path(working.dir, "figures" , "NCountriesBarsLastYear.pdf"), width = 12, height = 8)
 plot(-1000, xlim=c(nYears-0.1, nYears+0.1), ylim=c(0,1300),
      xlab="", ylab = paste("Estimated number of wolves"), xaxt="n")
 axis(1, at=c(nYears), labels = SeasonText[nYears], cex.axis=1.2)
@@ -2915,7 +2738,7 @@ cuts <- seq(0,max,length.out = 100)   #set breaks
 col <- rev(terrain.colors(100))
 
 ##-- PLOT
-pdf(file=file.path(WDFigures, "DensityMapsAC5kms.pdf"))
+pdf(file=file.path(working.dir, "figures", "DensityMapsAC5kms.pdf"))
 for(t in 1: nYears){
   habbdens <- densityInputRegions$regions.r
   habbdens[] <- NA
@@ -2923,7 +2746,7 @@ for(t in 1: nYears){
   habbdensCropped[[t]] <- habbdens#crop(habbdens, e.sp)
   
   plot(habbdensCropped[[t]], breaks=cuts, col = col,legend=FALSE, main=years[t]) #p
-  plot(nngeo::st_remove_holes(myHabitat.list$habitat.poly),add=T, col=NA,border=grey(0.5))
+  plot(nngeo::st_remove_holes(habitat$habitat.poly),add=T, col=NA,border=grey(0.5))
   # points(myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t],],
   #        pch=16, cex=0.4, col=adjustcolor("black",alpha.f = 0.2))
   plot(habbdensCropped[[t]], legend.only=TRUE,breaks=cuts, col=col,
@@ -2946,7 +2769,7 @@ habitatMask[!is.na(habitatMask)] <- 1
 
 ## COMPUTE THE UD BASED FOR A FEW ITERATIONS
 ## RESCALE SIGMA TO METERS 
-sigma <- myResultsSXYZ_MF$sims.list$sigma#*res(myHabitat.list$habitat.r)[1]
+sigma <- resultsSXYZ_MF$sims.list$sigma#*res(habitat$habitat.r)[1]
 ##-- RESCALE SIGMA TO THE HABITAT SCALE
 sigmaRescaled <- sigma/res(rrCountries)[1]
 
@@ -2956,7 +2779,7 @@ iter <- sample(1:dim(densityInputCountries$sy)[1], size = 1000)
 # for(t in 1:nYears){
 #   spaceUSED[[t]] <- GetSpaceUse(densityInputCountries$sx[iter,,t],
 #                                 densityInputCountries$sy[iter,,t],
-#                                 myResultsSXYZ_MF$sims.list$z[iter,,t],
+#                                 resultsSXYZ_MF$sims.list$z[iter,,t],
 #                                 sigmaRescaled[iter],#sigmaRescaled[iter],
 #                                 densityInputCountries$habitat.xy,
 #                                 aliveStates = alive.states,
@@ -2971,8 +2794,8 @@ iter <- sample(1:dim(densityInputCountries$sy)[1], size = 1000)
 #   spaceUSED[[t]] <- list()
 #   spaceUSED[[t]][["MeanCell"]] <- spaceUSED1[[t]]$MeanCell
 # }
-# save(spaceUSED, file = file.path(WDFigures , "spaceUsed5km.RData" ))
-load(file = file.path(WDFigures , "spaceUsed5km.RData" ))
+# save(spaceUSED, file = file.path(working.dir, "figures" , "spaceUsed5km.RData" ))
+load(file = file.path(working.dir, "figures" , "spaceUsed5km.RData" ))
 
 
 
@@ -2990,7 +2813,7 @@ habbRFig <- densityInputRegions$regions.r
 spaceUSED100km2 <- lapply(spaceUSED, function(x) x$MeanCell * 4 )
 
 
-# studDis <- disaggregate(myHabitat.list$habitat.poly)
+# studDis <- disaggregate(habitat$habitat.poly)
 # studDis$id <- 1:length(studDis)
 # plot(studDis)
 # text(studDis,studDis$id)
@@ -3023,7 +2846,7 @@ COUNTIESNorrbotten <- st_simplify(COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten",], 
 
 
 ##PLOT
-pdf(file=file.path(WDFigures , paste("DensityMapsUD.pdf",sep="")), width = 12, height = 8)
+pdf(file=file.path(working.dir, "figures" , "DensityMapsUD.pdf"), width = 12, height = 8)
 #layout
 mx <- rbind(c(1,rep(1:5, each=2)),
             c(rep(1:5, each=2),5))
@@ -3044,7 +2867,7 @@ for(t in 1:length(years)){
   habbdensFig[habbRFig[]==0] <- NA
   
   habbdensUDCropped[[t]] <- habbdensFig#mask(habbdensFig, e.sp)
-  crs( habbdensUDCropped[[t]]) <- st_crs(myHabitat.list$habitat.poly)
+  crs( habbdensUDCropped[[t]]) <- st_crs(habitat$habitat.poly)
   #---BECAUSE raster::plot MESSES UP THE LAYOUT
   image(habbdensUDCropped[[t]], add=TRUE, breaks=c(cuts, max(cuts)+1000), col = col, legend=FALSE,)
  # plot(RemoveHolesSp(COUNTRIESsimpFig), border=grey(0.4), col = NA, add=TRUE)
@@ -3052,7 +2875,7 @@ for(t in 1:length(years)){
   
   mtext(SeasonText[[t]], 1, -2, adj=0.15, cex=1.2)
   #box()
-  # spPol <- rasterToPolygons(myHabitat.list$habitat.r,
+  # spPol <- rasterToPolygons(habitat$habitat.r,
   #                  fun = function(x) x==1) 
   # spPol <- aggregate(spPol)
   # plot(SpatialPolygons(spPol@polygons[[1]]@Polygons[[1]]))
@@ -3064,15 +2887,15 @@ for(t in 1:length(years)){
   #   ungroup() %>% st_as_sf()
   # plot(state_union$geometry)
   # 
-  # agg <- aggregate(rasterToPolygons(myHabitat.list$habitat.r,
+  # agg <- aggregate(rasterToPolygons(habitat$habitat.r,
   #                                   fun = function(x) x==1))
   # agg <- RemoveHolesSp(agg)
   # 
   # plot(agg, add=TRUE, border="black", col=NA)
-   agg1 <- aggregate(rasterToPolygons(myHabitat.list$habitat.rWthBuffer,
+   agg1 <- aggregate(rasterToPolygons(habitat$habitat.rWthBuffer,
                                      fun = function(x) x==1))
    #plot(agg1, add=TRUE, border="red", col=NA)
-  # plot(RemoveHolesSp(aggregate(myHabitat.list$habitat.poly)), add=TRUE, border=grey(0.5), col=NA)
+  # plot(RemoveHolesSp(aggregate(habitat$habitat.poly)), add=TRUE, border=grey(0.5), col=NA)
    
   
   
@@ -3102,8 +2925,9 @@ for(t in 1:length(years)){
 dev.off()
 
 ## ------       2.3.2. PLOT LAST 2 YEARS ------
+
 ## PLOT LAST 2 YEARS  
-pdf(file=file.path(WDFigures , paste("DensityMapsUDLast2Years.pdf",sep="")), 
+pdf(file=file.path(working.dir, "figures" , "DensityMapsUDLast2Years.pdf"), 
     width = 8, height = 8)
 
 #layout
@@ -3130,7 +2954,7 @@ for(t in (length(years)-1):length(years)){
   plot(st_geometry(COUNTRIESsimpFig), border=grey(0.4), col = NA, add=TRUE)
   mtext(SeasonText[[t]], 1, -2, adj=0.15, cex=1.2)
   #box()
-  plot(nngeo::st_remove_holes(myHabitat.list$habitat.poly), add=TRUE, border="black", col=NA)
+  plot(nngeo::st_remove_holes(habitat$habitat.poly), add=TRUE, border="black", col=NA)
   #plot(Lake2, add=TRUE, border=grey(0.4), col=NA)
   
   
@@ -3159,8 +2983,9 @@ dev.off()
 
 
 ## ------       2.3.3. PLOT LAST YEAR ------
+
 ## PLOT LAST  YEAR  
-pdf(file=file.path(WDFigures , paste("DensityMapsUDLastYear.pdf",sep="")), 
+pdf(file=file.path(working.dir, "figures", "DensityMapsUDLastYear.pdf"), 
     width = 8, height = 8)
 
 #layout
@@ -3187,7 +3012,7 @@ for(t in length(years)){
   plot(st_geometry(COUNTRIESsimpFig), border=grey(0.4), col = NA, add=TRUE)
   mtext(SeasonText[[t]], 1, -4, adj=0.25, cex=1.2)#YEARS[[t]][2]
   #box()
-  #plot(RemoveHolesSp(aggregate(myHabitat.list$habitat.poly)), add=TRUE, border="black", col=NA)
+  #plot(RemoveHolesSp(aggregate(habitat$habitat.poly)), add=TRUE, border="black", col=NA)
   #plot(Lake2, add=TRUE, border=grey(0.4), col=NA)
   
   #PLOT COUNTIES 
@@ -3222,8 +3047,9 @@ dev.off()
 
 
 ## ------       2.3.4. PLOT LAST YEAR SUMMARY ------
+
 ## PLOT LAST  YEAR  
-pdf(file=file.path(WDFigures , paste("DensityMapsUDLastYearSummary.pdf",sep="")), 
+pdf(file=file.path(working.dir, "figures" , "DensityMapsUDLastYearSummary.pdf"), 
     width = 8, height = 8)
 
 #layout
@@ -3252,7 +3078,7 @@ for(t in length(years)){
   
   mtext(SeasonText[[t]], 1, -4, adj=0.25, cex=1.2)
   #box()
-  #plot(RemoveHolesSp(aggregate(myHabitat.listF$habitat.poly)), add=TRUE, border="black", col=NA)
+  #plot(RemoveHolesSp(aggregate(habitatF$habitat.poly)), add=TRUE, border="black", col=NA)
   #plot(Lake2, add=TRUE, border="black", col=NA)
   
   #PLOT COUNTIES 
@@ -3289,7 +3115,7 @@ dev.off()
 
 ## ------       2.3.5. PLOT LAST YEAR SUMMARY NO ------
 ## PLOT LAST  YEAR  
-pdf(file=file.path(WDFigures , paste("DensityMapsUDLastYearSummaryNO.pdf",sep="")), 
+pdf(file=file.path(working.dir, "figures" , paste("DensityMapsUDLastYearSummaryNO.pdf",sep="")), 
     width = 8, height = 8)
 
 #layout
@@ -3318,7 +3144,7 @@ for(t in length(years)){
   
   mtext(SeasonText[[t]], 1, -4, adj=0.25, cex=1.2)
   #box()
-  #plot(RemoveHolesSp(aggregate(myHabitat.listF$habitat.poly)), add=TRUE, border="black", col=NA)
+  #plot(RemoveHolesSp(aggregate(habitatF$habitat.poly)), add=TRUE, border="black", col=NA)
   #plot(Lake2, add=TRUE, border="black", col=NA)
   
   #PLOT COUNTIES 
@@ -3333,7 +3159,7 @@ for(t in length(years)){
     
     length(years)
     
-    plot( habbdensUDCropped[[t]] , legend.only=TRUE,breaks=cuts, col=col,
+    plot( habbdensUDCropped[[t]], legend.only=TRUE,breaks=cuts, col=col,
           legend.width = 2,
           axis.args=list(at=round(seq(0, max-0.05, length.out = 4), digits = 1),
                          labels=round(seq(0, max-0.05, length.out = 4), digits = 1),
@@ -3341,13 +3167,7 @@ for(t in length(years)){
           smallplot=c(0.72, 0.75, 0.2, 0.4),
           legend.args=list(text=expression(paste("Individer/100 km"^ 2, "", sep="")),
                            side=4, font=1, line=4.5, cex=1.2))
-    
-    
   }
-  
-  
-  
-  
 }
 dev.off()
 
@@ -3355,15 +3175,17 @@ dev.off()
 
 
 ## ------       2.3.6. WRITE UD 5km RASTER FOR ROVBASE ------
-if(!dir.exists(file.path(WDFigures , "RasterForRovbase"))){dir.create(file.path(WDFigures , "RasterForRovbase"))}
+
+if(!dir.exists(file.path(working.dir, "rasters"))){
+  dir.create(file.path(working.dir, "rasters"))
+}
 
 for(t in 1:length(years)){
- raster::crs(habbdensUDCropped[[t]]) <- "EPSG:32633"#st_crs(myHabitat.list$habitat.poly))
-
-  
-  path <- file.path(WDFigures , "RasterForRovbase",paste("wolverine_5km",paste(YEARS[[t]][1],collapse = "_"),".tif",sep=""))
+  raster::crs(habbdensUDCropped[[t]]) <- "EPSG:32633"#st_crs(habitat$habitat.poly))
+  path <- file.path(working.dir, "rasters", paste0("wolverine_5km",YEARS[[t]][1],".tif"))
   writeRaster(habbdensUDCropped[[t]], path, overwrite=TRUE)
 }
+
 
 
 ## ------   3. DERIVED PARAMETERS FROM ABUNDANCE ------ 
@@ -3405,7 +3227,7 @@ print(xtable( growthRate, type = "latex",
              align = paste(c("l", rep("c",ncol(growthRate))), collapse = "")),
       floating = FALSE, sanitize.text.function=function(x){x},
       add.to.row = list(list(seq(1,nrow(growthRate), by = 2)), "\\rowcolor[gray]{.96} "),
-      file = file.path(WDTables, "growthRate.tex"))
+      file = file.path(working.dir, "tables", "growthRate.tex"))
 
 #colSums(DensityCountriesRegions[[t+1]]$PosteriorRegions[c("Sweden","Norway"), ]) 
 
@@ -3449,7 +3271,7 @@ print(xtable( propFemale_tab, type = "latex",
               align = paste(c("l", rep("c",ncol(propFemale_tab))), collapse = "")),
       floating = FALSE, sanitize.text.function = function(x){x},
       add.to.row=list(list(seq(1,nrow(propFemale_tab), by = 2)), "\\rowcolor[gray]{.96} "),
-      file = file.path(WDTables, "propFemale.tex"))
+      file = file.path(working.dir, "tables", "propFemale.tex"))
 
 
 
@@ -3479,10 +3301,10 @@ DensityCountriesRegions[[t]]$summary["Total","95%CIHigh"]/areaSqKm*100
 
 ## ------     3.4.  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED ------
 
-n.detectedTotal <- read.csv(file.path(WDTables, "TotalIdDetected.csv"))
+n.detectedTotal <- read.csv(file.path(working.dir, "tables", "TotalIdDetected.csv"))
 n.detectedTotal <- as.vector(n.detectedTotal[1, 2:ncol(n.detectedTotal)])
 
-n.detectedSex <- read.csv(file.path(WDTables, "NGSidCountrySEX.csv"))
+n.detectedSex <- read.csv(file.path(working.dir, "tables", "NGSidCountrySEX.csv"))
 tF <- seq(2, length.out = nYears, by=2)
 tM <- seq(3, length.out = nYears, by=2)
 
@@ -3505,18 +3327,18 @@ print( xtable( propDetected, type = "latex",
                align = paste(c("l",rep("c",ncol(propDetected))), collapse = "")),
        floating = FALSE, sanitize.text.function=function(x){x},
        add.to.row = list(list(seq(1,nrow(propDetected), by = 2)), "\\rowcolor[gray]{.96} "),
-       file = file.path(WDTables, "PropDetectedIds.tex"))
+       file = file.path(working.dir, "tables", "PropDetectedIds.tex"))
 
 
 
 ## ------     3.5.  MAKE A TABLE PROPORTION OF INDIVIDUALS DETECTED PER COUNTRIES  ------
 
-n.detectedCountry <- read.csv(file.path(WDTables, "NGSidCountrySEX.csv"))
+n.detectedCountry <- read.csv(file.path(working.dir, "tables", "NGSidCountrySEX.csv"))
 colnames(n.detectedCountry) <- c("", unlist(lapply(YEARS,function(x) c(x[2],x[2])))) 
 propDetectedCountry <- n.detectedCountry 
 propDetectedCountry[2:4, 2:ncol(propDetectedCountry)] <- NA
 
-NCountrySex <- read.csv(file.path(WDTables, "NAllYearsPerSex.csv"))
+NCountrySex <- read.csv(file.path(working.dir, "tables", "NAllYearsPerSex.csv"))
 colnames(NCountrySex) <- c("", unlist(lapply(YEARS,function(x) c(x[2],x[2],x[2]))))
 
 yrs <- unlist(lapply(YEARS, function(x) c(x[2]))) 
@@ -3577,7 +3399,7 @@ print(xtable(propDetectedCountry, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables, "propDetectedCountry.tex"))
+      file = file.path(working.dir, "tables", "propDetectedCountry.tex"))
 
 
 ##-- SPLIT THE TABLE IN TWO 
@@ -3599,7 +3421,7 @@ print(xtable(propDetectedCountry1, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("propDetectedCountry1.tex", sep="")))
+      file = file.path(working.dir, "tables","propDetectedCountry1.tex"))
 
 ##-- SAVE TABLE 2
 addtorow1$command <- command2
@@ -3611,7 +3433,7 @@ print(xtable(propDetectedCountry2, type = "latex",
       include.colnames = F,
       include.rownames = FALSE,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("propDetectedCountry2.tex", sep="")))
+      file = file.path(working.dir, "tables","propDetectedCountry2.tex"))
 
 
 
@@ -3623,7 +3445,7 @@ widthPolygon2 <- 0.15
 
 ## ------     4.1. SURVIVAL BARS  ------
 
-pdf( file = file.path(WDFigures, "SurvivalBars.pdf"),
+pdf( file = file.path(working.dir, "figures", "SurvivalBars.pdf"),
      width = 8, height = 4)
 
 nf <- layout( cbind(c(6,3), c(4,1), c(5,2)),
@@ -3689,7 +3511,7 @@ for(i in 1:2){
 dev.off()
 
 ## ------     4.2. MORTALITY BARS  ------
-# pdf(file=file.path(WDFigures , paste("Mortality.pdf",sep="")),width=10,height=8)
+# pdf(file=file.path(working.dir, "figures" , paste("Mortality.pdf",sep="")),width=10,height=8)
 # 
 # nf <- layout(cbind(c(3,4,5),c(7,1,2),c(9,8,6)),widths=c(0.15,1,0.35),heights=c(0.15,1,1))
 # # layout.show(nf)
@@ -3779,7 +3601,7 @@ y.deadMF <- rbind(y.deadM, y.deadF)
 
 
 ##ARRAY 
-itera <- 1:dim(myResultsSXYZ_MF$sims.list$z1)[1]#sample(1:dim(myResultsSXYZ_MF$sims.list$z1)[1], size = 1000)
+itera <- 1:dim(resultsSXYZ_MF$sims.list$z1)[1]#sample(1:dim(resultsSXYZ_MF$sims.list$z1)[1], size = 1000)
 
 MortalityAll  <- array(NA, c(length(itera),nYears-1,2))
 MortalityCulled <- array(NA, c(length(itera),nYears-1,2))
@@ -3789,16 +3611,16 @@ dimnames(MortalityAll)[[3]] <- dimnames(MortalityCulled)[[3]] <-
   dimnames(MortalityOther)[[3]] <- c("M","F")
 
 t=1
-# tmp <-lapply(1:dim(myResultsSXYZ_MF$sims.list$z1)[1],FUN = function(x) sum(myResultsSXYZ_MF$sims.list$z1[x,myResultsSXYZ_MF$sims.list$sex %in% "M",t] %in% 2))
+# tmp <-lapply(1:dim(resultsSXYZ_MF$sims.list$z1)[1],FUN = function(x) sum(resultsSXYZ_MF$sims.list$z1[x,resultsSXYZ_MF$sims.list$sex %in% "M",t] %in% 2))
 # hist(sum(y.deadM[,t+1])/ unlist(tmp))
 
 for(iter in 1:length(itera) ){
   for(t in 1:(nYears-1)){
     #MALE
     
-    sumDead <-  sum(myResultsSXYZ_MF$sims.list$z1[itera[iter], myResultsSXYZ_MF$sims.list$sex %in% "M",t] %in% 2 &
-                      myResultsSXYZ_MF$sims.list$z1[itera[iter], myResultsSXYZ_MF$sims.list$sex %in% "M",t+1] %in% 3) 
-    sumAlive <- sum(myResultsSXYZ_MF$sims.list$z1[itera[iter], myResultsSXYZ_MF$sims.list$sex %in% "M",t] %in% 2)
+    sumDead <-  sum(resultsSXYZ_MF$sims.list$z1[itera[iter], resultsSXYZ_MF$sims.list$sex %in% "M",t] %in% 2 &
+                      resultsSXYZ_MF$sims.list$z1[itera[iter], resultsSXYZ_MF$sims.list$sex %in% "M",t+1] %in% 3) 
+    sumAlive <- sum(resultsSXYZ_MF$sims.list$z1[itera[iter], resultsSXYZ_MF$sims.list$sex %in% "M",t] %in% 2)
     
     MortalityAll[iter,t,1] <- sumDead / sumAlive
     
@@ -3807,14 +3629,14 @@ for(iter in 1:length(itera) ){
     
     
     #
-    # MortalityCulled[iter,t,1] <- sum(y.deadM[,t+1]) / sum(myResultsSXYZ_MF$sims.list$z1[iter,myResultsSXYZ_MF$sims.list$sex %in% "M",t] %in% 2)
+    # MortalityCulled[iter,t,1] <- sum(y.deadM[,t+1]) / sum(resultsSXYZ_MF$sims.list$z1[iter,resultsSXYZ_MF$sims.list$sex %in% "M",t] %in% 2)
     # 
     # MortalityOther[iter,t,1] <-  MortalityAll[iter,t,1] - MortalityCulled[iter,t,1]
     # 
     #FEMALE
-    sumDead <-  sum(myResultsSXYZ_MF$sims.list$z1[itera[iter], myResultsSXYZ_MF$sims.list$sex %in% "F",t] %in% 2 &
-                      myResultsSXYZ_MF$sims.list$z1[itera[iter], myResultsSXYZ_MF$sims.list$sex %in% "F",t+1] %in% 3) 
-    sumAlive <- sum(myResultsSXYZ_MF$sims.list$z1[itera[iter], myResultsSXYZ_MF$sims.list$sex %in% "F",t] %in% 2)
+    sumDead <-  sum(resultsSXYZ_MF$sims.list$z1[itera[iter], resultsSXYZ_MF$sims.list$sex %in% "F",t] %in% 2 &
+                      resultsSXYZ_MF$sims.list$z1[itera[iter], resultsSXYZ_MF$sims.list$sex %in% "F",t+1] %in% 3) 
+    sumAlive <- sum(resultsSXYZ_MF$sims.list$z1[itera[iter], resultsSXYZ_MF$sims.list$sex %in% "F",t] %in% 2)
     
     MortalityAll[iter,t,2] <- sumDead / sumAlive
     
@@ -3837,7 +3659,8 @@ Results.list[["F"]]$sims.list$w <- MortalityOther[,,2]
 Results.list[["F"]]$sims.list$h <- MortalityCulled[,,2]
 
 
-pdf(file=file.path(WDFigures , paste("MortalityBars.pdf",sep="")),width=10,height=8)
+pdf(file=file.path(working.dir, "figures", "MortalityBars.pdf"),
+    width=10,height=8)
 
 nf <- layout(cbind(c(3,4,5),c(7,1,2),c(9,8,6)),widths=c(0.15,1,0.35),heights=c(0.15,1,1))
 # layout.show(nf)
@@ -3921,7 +3744,8 @@ dev.off()
 
 ## ------     4.3. PER CAPITA RECRUITMENT  ------
 ## ------       4.3.1. PLOT NUMBER OF RECRUITS + PER CAPITA RECRUITMENT ------
-pdf(file=file.path(WDFigures , paste("NbRecruitsPerCapita.pdf",sep="")),width=10,height=8)
+pdf(file = file.path(working.dir, "figures", "NbRecruitsPerCapita.pdf"),
+    width=10,height=8)
 
 nf <- layout(rbind(c(3,5,6,7),
                    c(3,1,2,4),
@@ -3936,7 +3760,7 @@ axis(1, c(2:(nYears+1)), labels = paste(years, years+1, sep= " to "),
 abline(v=1:(nYears-1)+0.5,lty=2)
 myCol <- grey(0.2)#c("red","blue")
 
-myResults <- myResultsSXYZ_MF
+myResults <- resultsSXYZ_MF
 
 for(t in 1:(nYears-1)){
   #available <-apply(myResults$sims.list$z[,,t+1],1,function(x)sum(x%in%c(1)))
@@ -3987,7 +3811,8 @@ plot(1,axes=FALSE,ylim=c(-1,1),xlim=c(-1,1),type="n")
 dev.off()
 
 ## ------       4.3.2. PLOT NUMBER OF RECRUITS  ------
-pdf(file=file.path(WDFigures , paste("Recruitment.pdf",sep="")),width=8,height=4)
+pdf(file = file.path(working.dir, "figures", "Recruitment.pdf"),
+    width=8,height=4)
 widthPolygon <- 0.15
 
 # nf <- layout(rbind(c(3,5,6,7),
@@ -4000,7 +3825,7 @@ nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1)
 
 par(mar=c(5,4.5,0.5,0.5),tck=0,xaxs="i",cex.axis=1.3,cex.lab=1.6)
 #par(mar=c(4.5,4.5,1,1) ,xaxs="i", cex.axis=1.3, cex.lab=1.6)#
-myResults <- myResultsSXYZ_MF
+myResults <- resultsSXYZ_MF
 
 ##NUMBER OF RECRUITS 
 plot(10, xlim = c(0.5, nYears-0.5), ylim = c(0,300), type ="n", xaxt="n", xlab = "Years", ylab = "Number of recruits")
@@ -4015,17 +3840,17 @@ violin.alpha50 <- 0.7
 myDev <- c(-0.16,+0.16)
 
 t=8
-n.recruitF <- apply(myResultsSXYZ_MF$sims.list$z[,which(myResultsSXYZ_MF$sims.list$sex=="F"),c(t,t+1)], 1, function(x)sum( x[,1]%in%c(1) & x[,2]%in%c(2) ))
-n.recruitM <- apply(myResultsSXYZ_MF$sims.list$z[,which(myResultsSXYZ_MF$sims.list$sex=="M"),c(t,t+1)], 1, function(x)sum( x[,1]%in%c(1) & x[,2]%in%c(2) ))
+n.recruitF <- apply(resultsSXYZ_MF$sims.list$z[,which(resultsSXYZ_MF$sims.list$sex=="F"),c(t,t+1)], 1, function(x)sum( x[,1]%in%c(1) & x[,2]%in%c(2) ))
+n.recruitM <- apply(resultsSXYZ_MF$sims.list$z[,which(resultsSXYZ_MF$sims.list$sex=="M"),c(t,t+1)], 1, function(x)sum( x[,1]%in%c(1) & x[,2]%in%c(2) ))
  quantile(n.recruitF+n.recruitM, prob=c(0.0275, 0.975))
  quantile(n.recruitF, prob=c(0.0275, 0.975))+quantile(n.recruitM, prob=c(0.0275, 0.975))
 
 
 for(s in 1:2){
   if(s==1){
-    IDSex <- which(myResultsSXYZ_MF$sims.list$sex=="F")
+    IDSex <- which(resultsSXYZ_MF$sims.list$sex=="F")
   }else{
-    IDSex <- which(myResultsSXYZ_MF$sims.list$sex=="M")
+    IDSex <- which(resultsSXYZ_MF$sims.list$sex=="M")
   }
   
   for(t in 1:(nYears-1)){
@@ -4127,10 +3952,10 @@ for(s in 1:2){
 for(s in 1:2){
   # choose the sex
   if(s==1){results <- myResults_M
-  results$sims.list$z <- myResultsSXYZ_MF$sims.list$z[,myResultsSXYZ_MF$sims.list$sex=="M",]
+  results$sims.list$z <- resultsSXYZ_MF$sims.list$z[,resultsSXYZ_MF$sims.list$sex=="M",]
   
   }else{results <- myResults_F
-  results$sims.list$z <- myResultsSXYZ_MF$sims.list$z[,myResultsSXYZ_MF$sims.list$sex=="F",]
+  results$sims.list$z <- resultsSXYZ_MF$sims.list$z[,resultsSXYZ_MF$sims.list$sex=="F",]
   
   }
   for(t in 1:(nYears-1)){
@@ -4151,7 +3976,8 @@ for(s in 1:2){
 
 
 ##
-write.csv(TableState, file=file.path(WDFigures , paste("TableParametersState.csv",sep="")))
+write.csv( TableState,
+          file = file.path(working.dir, "figures", "TableParametersState.csv"))
 #write latex
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
@@ -4166,15 +3992,17 @@ addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnam
 rownames(TableState)[2:3] <- c("$\\rho$","$\\phi$")
 
 
-
-print(xtable(TableState, type = "latex",align = paste(rep("c",ncol(TableState)+1),collapse = "")),
-      # scalebox=.7,
+print(xtable(TableState,
+             type = "latex",
+             align = paste(rep("c",ncol(TableState)+1),collapse = "")),
       floating = FALSE,
-      add.to.row=addtorow,include.colnames=F,sanitize.text.function=function(x){x},
-      file = file.path(WDTables,paste("TableParametersState.tex",sep="")))
+      add.to.row = addtorow,
+      include.colnames = F,
+      sanitize.text.function = function(x){x},
+      file = file.path(working.dir, "tables","TableParametersState.tex"))
 
 
-##SPLIT THE TABLE IN TWO 
+##-- SPLIT THE TABLE IN TWO 
 TableState1 <- TableState[,c(1:10)]
 TableState2 <- TableState[,c(11:18)]
 
@@ -4196,7 +4024,7 @@ print(xtable(TableState1, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("TableParametersState1.tex", sep="")))
+      file = file.path(working.dir, "tables", "TableParametersState1.tex"))
 
 #SAVE TABLE 2
 addtorow1$command <- command2
@@ -4207,15 +4035,19 @@ print(xtable(TableState2, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("TableParametersState2.tex", sep="")))
+      file = file.path(working.dir, "tables", "TableParametersState2.tex"))
 
 
 
 
 ## ------   5. P0.  ------
+
 widthPolygon <- 0.15
+
 ## ------     5.1. BARS ------
-pdf(file=file.path(WDFigures , paste("DetectionProbBars.pdf",sep="")),width=8,height=10)
+
+pdf(file = file.path(working.dir, "figures", "DetectionProbBars.pdf"),
+    width=8,height=10)
 # mx <- matrix(1:24,12,2,byrow = TRUE)
 mx <- matrix(c(1,2,5,6,9,10,13,14),4,2,byrow = T)
 mx1 <- matrix(c(3,4,7,8,11,12,15,16),4,2,byrow = T)
@@ -4341,7 +4173,8 @@ dev.off()
 
 
 ## ------     5.1. BARS Other ------
-pdf(file=file.path(WDFigures , paste("DetectionProbBarsOther.pdf",sep="")),width=8,height=8)
+
+pdf(file=file.path(working.dir, "figures" , "DetectionProbBarsOther.pdf"),width=8,height=8)
 # mx <- matrix(1:24,12,2,byrow = TRUE)
 mx <- matrix(1:4,2,2,byrow = TRUE)
 
@@ -4447,14 +4280,14 @@ dev.off()
 
 ## ------     5.2. MAPS ------
 # t=7
-# #plot(myHabitat.listM$habitat.r)
+# #plot(habitatM$habitat.r)
 # # pairs<- 2
 # # alreadydetected <- 1
 # 
-# pdf(file=file.path(WDFigures , paste("MapDetectionProb.pdf",sep="")),width=6,height=6)
+# pdf(file=file.path(working.dir, "figures" , paste("MapDetectionProb.pdf",sep="")),width=6,height=6)
 # for(t in 1:nYears){
 #   
-#   p0.r <- myHabitat.list$habitat.r
+#   p0.r <- habitat$habitat.r
 #   P0 <- ilogit(logit(myResults_M$mean$p0[nimDataM$detCountries,t])+
 #                  myResults_M$mean$betaResponse*1 +
 #                  myResults_M$mean$betaCovs[1]*nimDataM$detCovs[,t,1]+
@@ -4463,9 +4296,9 @@ dev.off()
 #                
 #   )
 #   #    
-#   cells <- cellFromXY(p0.r,coordinates(myDetectorsM$main.detector.sp))
+#   cells <- cellFromXY(p0.r,coordinates(detectorsM$main.detector.sp))
 #   p0.r[cells] <- P0
-#   p0.r <- mask(p0.r,myHabitat.list$habitat.poly)
+#   p0.r <- mask(p0.r,habitat$habitat.poly)
 #   # plot(p0.r)
 #   # # p0.r <- focal(p0.r, w=matrix(1/25,nrow=5,ncol=5),na.rm=T) 
 #   # plot(p0.r,main="p0")
@@ -4515,14 +4348,16 @@ Tablep0 <- Tablep0[order(row.names(Tablep0)),]
 # rownames(Tablep0) <- c("",unlist(lapply(as.list(c("NO1","SE1","SE2","NO2","SE3","SE4")),function(x) rep(x,2))))
 # WRITE THE FILE
 
-write.csv(Tablep0, file=file.path(WDFigures , paste("Tablep0.csv",sep="")))
+write.csv( Tablep0,
+           file = file.path(working.dir, "figures","Tablep0.csv"))
 
 
 
 ## ------   6. BETA P0S ------
 ## ------     6.1. P0STRUCTURED ------
 ## ------       6.1.1. BETA TRACKS ------
-pdf(file=file.path(WDFigures , paste("Betap0StructuredTracks.pdf",sep="")),width=8,height=4)
+pdf(fil e =file.path(working.dir, "figures" , "Betap0StructuredTracks.pdf"),
+    width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4586,7 +4421,9 @@ dev.off()
 
 
 ## ------       6.1.2. BETA SNOW ------
-pdf(file=file.path(WDFigures , paste("Betap0StructuredSnow.pdf",sep="")),width=8,height=4)
+
+pdf(file = file.path(working.dir, "figures" , "Betap0StructuredSnow.pdf"),
+    width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4651,7 +4488,8 @@ dev.off()
 
 
 ## ------       6.1.3. BETA RESPONSE ------
-pdf(file=file.path(WDFigures , paste("Betap0StructuredResponse.pdf",sep="")),width=8,height=4)
+
+pdf(file=file.path(working.dir, "figures" ,"Betap0StructuredResponse.pdf"),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4718,7 +4556,8 @@ dev.off()
 
 ## ------     6.2. P0_OTHER ------
 ## ------       6.2.1. BETA SNOW ------
-pdf(file=file.path(WDFigures , paste("Betap0OtherSnow.pdf",sep="")),width=8,height=4)
+
+pdf(file=file.path(working.dir, "figures" ,"Betap0OtherSnow.pdf"),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4782,7 +4621,8 @@ dev.off()
 
 
 ## ------       6.2.2. BETA ROADS ------
-pdf(file=file.path(WDFigures , paste("Betap0OtherRoads.pdf",sep="")),width=8,height=4)
+
+pdf(file=file.path(working.dir, "figures" , "Betap0OtherRoads.pdf",),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4847,7 +4687,8 @@ dev.off()
 
 
 ## ------       6.2.3. BETA SKANDOBS ------
-pdf(file=file.path(WDFigures , paste("Betap0OtherSkandobs.pdf",sep="")),width=8,height=4)
+
+pdf(file=file.path(working.dir, "figures" , "Betap0OtherSkandobs.pdf"),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4913,7 +4754,8 @@ dev.off()
 
 
 ## ------       6.2.4. BETA RESPONSE ------
-pdf(file=file.path(WDFigures , paste("Betap0OtherResponse.pdf",sep="")),width=8,height=4)
+
+pdf(file=file.path(working.dir, "figures" , "Betap0OtherResponse.pdf"),width=8,height=4)
 
 nf <- layout(cbind(c(6,3),c(4,1),c(5,2)),widths=c(0.05,1,0.30),heights=c(0.15,1))
 
@@ -4979,10 +4821,11 @@ dev.off()
 
 
 ## ------   7. TABLE OTHERS  ------
+
 ## ------     7.1. TABLE DENSITY & MOVEMENT OPSCR ------
+
 parameters <- c("betaDens","sigma","dmean")#,"betaResponse", "betaTracks","betaRoads", "betaSnow")
 parameters1 <- c("$\\beta_{dens}^*$","$\\sigma$","$\\lambda^*$")#,"$\\beta_1$", "$\\beta_2$", "$\\beta_3$","$\\beta_4$")
-
 
 n.digits = 2
 n.digitsigma = 0
@@ -5006,39 +4849,35 @@ for(s in 1:2){
   rows <- which(rownames(TableDensityMovementSCR)==param)[1]
   col <- which(TableDensityMovementSCR[1,]==sex[s])
   
-  TableDensityMovementSCR[rows,col] <-  paste( format(round(median(results$sims.list[[param]]), 2), nsmall = 2), #median
+  TableDensityMovementSCR[rows,col] <-  paste0( format(round(median(results$sims.list[[param]]), 2), nsmall = 2), #median
                                                " (", format(round(quantile(results$sims.list[[param]], probs=0.025),2), nsmall = 2),#UpperCI
                                                "-" , format(round(quantile(results$sims.list[[param]], probs=0.975),2), nsmall = 2),#Lower CI
-                                               ")", sep="")
-  
-  ### SIGMA
+                                               ")")
+  ## SIGMA
   # for(st in 1:2){
   param <- "sigma"
   rows <- which(rownames(TableDensityMovementSCR)==param)
   col <- which(TableDensityMovementSCR[1,]==sex[s])
   
-  TableDensityMovementSCR[rows,col] <-  paste( format(round(apply(results$sims.list[[param]] * myHabitat.list$resolution /1000,2,median), 2), nsmall = 2), #median
-                                               " (", format( round(apply(results$sims.list[[param]]* myHabitat.list$resolution/1000,2,function(x) quantile(x, probs=0.025 )),2), nsmall = 2),#UpperCI
-                                               "-" , format(round(apply(results$sims.list[[param]]* myHabitat.list$resolution/1000,2,function(x) quantile(x, probs=0.975 )),2), nsmall = 2),#Lower CI
-                                               ")", sep="")
-  
-  # }
+  TableDensityMovementSCR[rows,col] <-  paste0( format(round(apply(results$sims.list[[param]]/1000,2,median), 2), nsmall = 2), #median
+                                               " (", format( round(apply(results$sims.list[[param]]/1000,2,function(x) quantile(x, probs=0.025 )),2), nsmall = 2),#UpperCI
+                                               "-" , format(round(apply(results$sims.list[[param]]/1000,2,function(x) quantile(x, probs=0.975 )),2), nsmall = 2),#Lower CI
+                                               ")")
   
   ### LAMBDA
   param <- "dmean"
   rows <- which(rownames(TableDensityMovementSCR)==param)
   col <- which(TableDensityMovementSCR[1,]==sex[s])
   
-  TableDensityMovementSCR[rows,col] <-  paste( format(round(median(results$sims.list[[param]] * myHabitat.list$resolution /1000), 2), nsmall = 2), #median
-                                               " (", format( round(quantile(results$sims.list[[param]]* myHabitat.list$resolution/1000, probs=0.025 ),2), nsmall = 2),#UpperCI
-                                               "-" , format(round(quantile(results$sims.list[[param]]* myHabitat.list$resolution/1000, probs=0.975 ),2), nsmall = 2),#Lower CI
-                                               ")", sep="")
-  
+  TableDensityMovementSCR[rows,col] <-  paste0( format(round(median(results$sims.list[[param]]/1000), 2), nsmall = 2), #median
+                                               " (", format( round(quantile(results$sims.list[[param]]/1000, probs=0.025 ),2), nsmall = 2),#UpperCI
+                                               "-" , format(round(quantile(results$sims.list[[param]]/1000, probs=0.975 ),2), nsmall = 2),#Lower CI
+                                               ")")
 }
 
-
 ##WRITE TABLES 
-write.csv(TableDensityMovementSCR, file=file.path(WDFigures , paste("TableDensityMovement.csv",sep="")))
+write.csv( TableDensityMovementSCR,
+          file = file.path(working.dir, "figures", "TableDensityMovement.csv"))
 #write latex
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
@@ -5056,11 +4895,14 @@ rownames(TableDensityMovementSCR)[2:nrow(TableDensityMovementSCR)] <- parameters
 
 
 
-print(xtable(TableDensityMovementSCR, type = "latex",align = paste(rep("c",ncol(TableDensityMovementSCR)+1),collapse = "")),
-      # scalebox=.7,
+print(xtable( TableDensityMovementSCR,
+             type = "latex",
+             align = paste(rep("c",ncol(TableDensityMovementSCR)+1),collapse = "")),
       floating = FALSE,
-      add.to.row=addtorow,include.colnames=F,sanitize.text.function=function(x){x},
-      file = file.path(WDTables,paste("TableDensityMovement.tex", sep="")))
+      add.to.row = addtorow,
+      include.colnames = F,
+      sanitize.text.function=function(x){x},
+      file = file.path(working.dir, "tables","TableDensityMovement.tex"))
 
 
 ##SPLIT THE TABLE IN TWO 
@@ -5080,7 +4922,7 @@ print(xtable(TableDensityMovementSCR1, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("TableDensityMovement1.tex", sep="")))
+      file = file.path(working.dir, "tables",paste("TableDensityMovement1.tex", sep="")))
 
 #SAVE TABLE 2
 addtorow1$command <- command2
@@ -5091,7 +4933,7 @@ print(xtable(TableDensityMovementSCR2, type = "latex",
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("TableDensityMovement2.tex", sep="")))
+      file = file.path(working.dir, "tables","TableDensityMovement2.tex"))
 
 
 
@@ -5143,7 +4985,8 @@ for(s in 1:2){
 }
 
 ##WRITE TABLES 
-write.csv(TableStructured, file=file.path(WDFigures , paste("TableStructured.csv",sep="")))
+write.csv( TableStructured,
+           file = file.path(working.dir, "figures" ,"TableStructured.csv"))
 #write latex
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
@@ -5156,19 +4999,20 @@ command2 <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(Table
                             '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
 
 colnames(TableStructured) <- rep("", ncol(TableStructured))
-
 rownames(TableStructured)[2:nrow(TableStructured)] <- parameters1
 
-
-
-print(xtable(TableStructured, type = "latex",align = paste(rep("c",ncol(TableStructured)+1),collapse = "")),
+print(xtable(TableStructured,
+             type = "latex",
+             align = paste(rep("c",ncol(TableStructured)+1),collapse = "")),
       # scalebox=.7,
       floating = FALSE,
-      add.to.row=addtorow,include.colnames=F,sanitize.text.function=function(x){x},
-      file = file.path(WDTables,paste("TableStructured.tex", sep="")))
+      add.to.row = addtorow,
+      include.colnames = FALSE,
+      sanitize.text.function = function(x){x},
+      file = file.path(working.dir, "tables","TableStructured.tex"))
 
 
-##SPLIT THE TABLE IN TWO 
+##-- SPLIT THE TABLE IN TWO 
 TableStructured1 <- TableStructured[,c(1:10)]
 TableStructured2 <- TableStructured[,c(11:20)]
 
@@ -5178,25 +5022,26 @@ TableStructured2 <- TableStructured[,c(11:20)]
 
 addtorow1 <- addtorow
 addtorow1$command <- command1
-print(xtable(TableStructured1, type = "latex",
+print(xtable(TableStructured1,
+             type = "latex",
              align = paste(rep("c", ncol(TableStructured1)+1), collapse = "")),
-      # scalebox = .7,
       floating = FALSE,
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("TableStructured1.tex", sep="")))
+      file = file.path(working.dir, "tables","TableStructured1.tex"))
 
 #SAVE TABLE 2
 addtorow1$command <- command2
-print(xtable(TableStructured2, type = "latex",
+print(xtable(TableStructured2,
+             type = "latex",
              align = paste(rep("c", ncol(TableStructured2)+1), collapse = "")),
       # scalebox = .7,
       floating = FALSE,
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("TableStructured2.tex", sep="")))
+      file = file.path(working.dir, "tables", "TableStructured2.tex"))
 
 
 
@@ -5248,7 +5093,8 @@ for(s in 1:2){
 }
 
 ##WRITE TABLES 
-write.csv(TableOther, file=file.path(WDFigures , paste("TableOther.csv",sep="")))
+write.csv( TableOther,
+          file = file.path(working.dir, "figures", "TableOther.csv"))
 #write latex
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
@@ -5266,46 +5112,50 @@ rownames(TableOther)[2:nrow(TableOther)] <- parameters1
 
 
 
-print(xtable(TableOther, type = "latex",align = paste(rep("c",ncol(TableOther)+1),collapse = "")),
-      # scalebox=.7,
+print(xtable(TableOther,
+             type = "latex",
+             align = paste(rep("c",ncol(TableOther)+1),collapse = "")),
       floating = FALSE,
-      add.to.row=addtorow,include.colnames=F,sanitize.text.function=function(x){x},
-      file = file.path(WDTables,paste("TableOther.tex", sep="")))
+      add.to.row = addtorow,
+      include.colnames = FALSE,
+      sanitize.text.function = function(x){x},
+      file = file.path(working.dir, "tables","TableOther.tex"))
 
 
 ##SPLIT THE TABLE IN TWO 
-TableOther1 <- TableOther[,c(1:10)]
-TableOther2 <- TableOther[,c(11:20)]
+TableOther1 <- TableOther[ ,c(1:10)]
+TableOther2 <- TableOther[ ,c(11:20)]
 
 # uniqueYEAR1 <- uniqueYEAR[1: ((ncol(TableState1)-2)/2)]
 # uniqueYEAR2 <- uniqueYEAR[((ncol(TableState2)-2)/2+1): length(uniqueYEAR) ]
 #SAVE TABLE 1
-
 addtorow1 <- addtorow
 addtorow1$command <- command1
-print(xtable(TableOther1, type = "latex",
+print(xtable(TableOther1,
+             type = "latex",
              align = paste(rep("c", ncol(TableOther1)+1), collapse = "")),
-      # scalebox = .7,
       floating = FALSE,
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("TableOther1.tex", sep="")))
+      file = file.path(working.dir, "tables","TableOther1.tex"))
 
-#SAVE TABLE 2
+# SAVE TABLE 2
 addtorow1$command <- command2
-print(xtable(TableOther2, type = "latex",
+print(xtable(TableOther2,
+             type = "latex",
              align = paste(rep("c", ncol(TableOther2)+1), collapse = "")),
-      # scalebox = .7,
       floating = FALSE,
       add.to.row = addtorow1,
       include.colnames = F,
       sanitize.text.function = function(x){x},
-      file = file.path(WDTables,paste("TableOther2.tex", sep="")))
+      file = file.path(working.dir, "tables", "TableOther2.tex"))
+
+
 
 ## ------   8. TRANSITION SURFACES  ------
 ## ------     8.1. SET UP HABITAT ------
-habbR <- raster::disaggregate(myHabitat.list$habitat.r, fact=4)
+habbR <- raster::disaggregate(habitat$habitat.r, fact=4)
 
 ##
 #COUNTRIES <- aggregate(x = COMMUNESM, by = "ISO")
@@ -5313,11 +5163,11 @@ COUNTRIES <- COMMUNES %>%    group_by(ISO) %>%summarize()
 
 COUNTRIESsimp <- COUNTRIES#gSimplify(COUNTIES,tol = 100, topologyPreserve = T)
 COUNTRIESsimp$NAME_1 <- COUNTRIES$ISO
-plot(st_geometry(myHabitat.list$habitat.poly))
+plot(st_geometry(habitat$habitat.poly))
 plot(st_geometry(COUNTRIESsimp), add=T)
 
 ## IDENTIFY COUNTIES
-myStudyArea.polyMnoHoles <- nngeo::st_remove_holes(myHabitat.list$habitat.poly)
+myStudyArea.polyMnoHoles <- nngeo::st_remove_holes(habitat$habitat.poly)
 habbRCountieswbuff <- habbR <- mask(habbR, myStudyArea.polyMnoHoles)
 habbR[habbR==0] <- NA
 plot(habbR)
@@ -5340,10 +5190,10 @@ habbR[this.r==1] <- 1
 plot(habbR)
 # plot(COUNTRIES,add=T)
 ##remove buffer from habitat
-# e <- extent(myHabitat.listM$habitat.poly)
+# e <- extent(habitatM$habitat.poly)
 # e.sp <- as(e, 'SpatialPolygons')
 ##GET THE BUFFERLESS AREA
-# habitat.r <- myHabitat.listM$habitat.r
+# habitat.r <- habitatM$habitat.r
 # habitat.r[habitat.r!=1] <- NA
 plot(habbR)
 habbR <- mask(habbR, myStudyArea.polyMnoHoles)
@@ -5376,21 +5226,21 @@ row.names(regionIDmat) <- unique(regionIDunique)
 ##sourceCpp("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/functions/cpp/GetTransitionSurface1.cpp")
 habbRxy <- coordinates(habbR)  
 colnames(habbRxy) <- c("x","y")
-myResultsSXYZ_MF$sims.list$scaledsxy <- scaleCoordsToHabitatGrid(coordsData = myResultsSXYZ_MF$sims.list$sxy,
+resultsSXYZ_MF$sims.list$scaledsxy <- scaleCoordsToHabitatGrid(coordsData = resultsSXYZ_MF$sims.list$sxy,
                                                                    coordsHabitatGridCenter = habbRxy)$coordsDataScaled
 
 ## ------     8.2. TRANSITION PROBABILITY OTHER CAUSES ------
 TransitionSurfaceOther <- list()
-iter <- sample(1:dim(myResultsSXYZ_MF$sims.list$scaledsxy)[1], size = 100)#dim(densityInputCountries$sx)[1])
+iter <- sample(1:dim(resultsSXYZ_MF$sims.list$scaledsxy)[1], size = 100)#dim(densityInputCountries$sx)[1])
 
 
 
 #for(t in 6:(nYears-1)){
 for(t in 1:(nYears-1)){
-   TransitionSurfaceOther[[t]] <- GetTransitionSurface( myResultsSXYZ_MF$sims.list$scaledsxy[,IDFemales,1,t],
-                                                        myResultsSXYZ_MF$sims.list$scaledsxy[,IDFemales,2,t],
-                                                        myResultsSXYZ_MF$sims.list$z[,IDFemales,t],
-                                                        myResultsSXYZ_MF$sims.list$z[,IDFemales,t+1],
+   TransitionSurfaceOther[[t]] <- GetTransitionSurface( resultsSXYZ_MF$sims.list$scaledsxy[,IDFemales,1,t],
+                                                        resultsSXYZ_MF$sims.list$scaledsxy[,IDFemales,2,t],
+                                                        resultsSXYZ_MF$sims.list$z[,IDFemales,t],
+                                                        resultsSXYZ_MF$sims.list$z[,IDFemales,t+1],
                                                         habIDCells.mx,
                                                         regionID = regionIDmat,
                                                         stateFrom = c(2),
@@ -5410,17 +5260,17 @@ TransitionSurfaceOther[[2]]$SummaryTransitionRegion
 SpatialRaster <- habbR
 SpatialRaster[] <- TransitionSurfaceOther[[t]]$MeanCell
 plot(SpatialRaster)
-plot(myHabitat.list$habitat.poly,add=T)
+plot(habitat$habitat.poly,add=T)
 
 
 
 ## ------     8.3. TRANSITION PROBABILITY CULLING  ------
 TransitionSurfaceCulling <- list()
 for(t in 1:(nYears-1)){
-   TransitionSurfaceCulling[[t]] <- GetTransitionSurface( myResultsSXYZ_MF$sims.list$scaledsxy[,,1,t],
-                                                          myResultsSXYZ_MF$sims.list$scaledsxy[,,2,t],
-                                                          myResultsSXYZ_MF$sims.list$z[,,t],
-                                                          myResultsSXYZ_MF$sims.list$z[,,t+1],
+   TransitionSurfaceCulling[[t]] <- GetTransitionSurface( resultsSXYZ_MF$sims.list$scaledsxy[,,1,t],
+                                                          resultsSXYZ_MF$sims.list$scaledsxy[,,2,t],
+                                                          resultsSXYZ_MF$sims.list$z[,,t],
+                                                          resultsSXYZ_MF$sims.list$z[,,t+1],
                                                           habIDCells.mx,
                                                           regionID = regionIDmat,
                                                           stateFrom = c(2),
@@ -5439,54 +5289,60 @@ TransitionSurfaceCulling[[t]]$SummaryTransitionRegion
 SpatialRaster <- habbR
 SpatialRaster[] <- TransitionSurfaceCulling[[t]]$MeanCell
 plot(SpatialRaster)
-plot(myHabitat.list$habitat.poly,add=T)
+plot(habitat$habitat.poly,add=T)
 
 
 ## ------     8.4. PLOT  ------
-pdf(file=file.path(WDFigures , paste("CountryMortalityRates.pdf",sep="")), width = 9, height = 7)
-par(mfrow=c(1,2))
+
+pdf( file = file.path(working.dir, "figures", "CountryMortalityRates.pdf"),
+     width = 9,
+     height = 7)
+
+par(mfrow = c(1,2))
 offset <- c(-0.2,0.2)
-plot(-10, xlim=c(0,nYears),ylim=c(0,1), ylab="Mortality rate" ,xaxt="n")
-axis(1,at=c(1:nYears),labels = years)
 col <- c("red","blue")
+
+plot(-10, xlim = c(0,nYears), ylim = c(0,1), ylab = "Mortality rate", xaxt = "n")
+axis(1, at = c(1:nYears), labels = years)
 for(t in 1:(nYears-1)){
    for(r in 1:2){
-      plot.violins(list(TransitionSurfaceOther[[t]]$PosteriorTransitionRegion[r,]),
-                   at = t +offset[r],
-                   x=1, col=col[r], alpha = 0.5,add=T)
-   }
-}
+      plot.violins(list(TransitionSurfaceOther[[t]]$PosteriorTransitionRegion[r, ]),
+                   at = t + offset[r],
+                   x = 1,
+                   col = col[r],
+                   alpha = 0.5,
+                   add = T)
+   }#r
+}#t
 
-offset <- c(-0.2,0.2)
-plot(-10, xlim=c(0,nYears),ylim=c(0,1), ylab="Mortality rate culling" ,xaxt="n")
-axis(1,at=c(1:nYears),labels = years)
-col <- c("red","blue")
+plot(-10, xlim = c(0,nYears), ylim = c(0,1), ylab = "Mortality rate culling", xaxt = "n")
+axis(1, at = c(1:nYears), labels = years)
 for(t in 1:(nYears-1)){
    for(r in 1:2){
       plot.violins(list(TransitionSurfaceCulling[[t]]$PosteriorTransitionRegion[r,]),
-                   at = t +offset[r],
-                   x=1, col=col[r], alpha = 0.5,add=T)
-   }
-}
+                   at = t + offset[r],
+                   x = 1,
+                   col = col[r],
+                   alpha = 0.5,
+                   add = T)
+   }#r
+}#t
 
 legend("topright", fill=col, legend=c("Norway","Sweden"))
-
 dev.off()
 
-# 
-# 
 
 
-## ------   9. OTHER PLOTS  ------
+## ------   9. OTHER PLOTS ------
 
 ## ------     9.1. SKANDOBS ------
 
-habitat.detectors <- aggregate(rasterToPolygons(disaggregate(myHabitat.list$habitat.rWthBuffer, 
+habitat.detectors <- aggregate(rasterToPolygons(disaggregate(habitat$habitat.rWthBuffer, 
                                                              fact=2),fun=function(x)x==1))
-skandobs.r1 <- skandobs.r <- disaggregate(myHabitat.list$habitat.rWthBuffer, 
+skandobs.r1 <- skandobs.r <- disaggregate(habitat$habitat.rWthBuffer, 
                                          fact=2)
 
-pdf( file= file.path(WDFigures, "SkandobsRovbaseCovariates.pdf"),
+pdf( file= file.path(working.dir, "figures", "SkandobsRovbaseCovariates.pdf"),
      width = 12, height = 8)
 par(mfrow = c(2,5), mar = c(1,1,3,1))
 rrr <- list()
@@ -5500,7 +5356,7 @@ for(t in 1:nYears){
 }
 dev.off()
 
-save( rrr, file = file.path(WDFigures, "Skandobs.RData"))
+save(rrr, file = file.path(working.dir, "figures", "Skandobs.RData"))
 
 
 
@@ -5519,9 +5375,9 @@ save( rrr, file = file.path(WDFigures, "Skandobs.RData"))
 # 
 # ###c++
 # t=2
-# habbRtransWolverine <- habbRid <- disaggregate(myHabitat.listM$habitat.r,fact=4)
+# habbRtransWolverine <- habbRid <- disaggregate(habitatM$habitat.r,fact=4)
 # habbRid[] <-1:ncell(habbRtransWolverine) 
-# myResultsSXYZ_MF$sims.list$sxy <- UTMToGrid(data.sxy = myResultsSXYZ_MF$sims.list$sxy,
+# resultsSXYZ_MF$sims.list$sxy <- UTMToGrid(data.sxy = resultsSXYZ_MF$sims.list$sxy,
 #                                             grid.sp = SpatialPoints(coordinates(habbRtransWolverine)))$data.scaled.xy
 # 
 # 
@@ -5536,10 +5392,10 @@ save( rrr, file = file.path(WDFigures, "Skandobs.RData"))
 # TransitionSurfaceWolverine <- list()
 # for(t in 1:(nYears-1)){
 # TransitionSurfaceWolverine[[t]] <- GetTransitionSurface( 
-#   myResultsSXYZ_MF$sims.list$sxy[,,1,t],
-#   myResultsSXYZ_MF$sims.list$sxy[,,2,t],
-#   myResultsSXYZ_MF$sims.list$z[,,t],
-#   myResultsSXYZ_MF$sims.list$z[,,t+1],
+#   resultsSXYZ_MF$sims.list$sxy[,,1,t],
+#   resultsSXYZ_MF$sims.list$sxy[,,2,t],
+#   resultsSXYZ_MF$sims.list$z[,,t],
+#   resultsSXYZ_MF$sims.list$z[,,t+1],
 #   as.matrix(rr),
 #   stateFrom = 2,
 #   stateTo = c(3),
@@ -5565,9 +5421,9 @@ save( rrr, file = file.path(WDFigures, "Skandobs.RData"))
 # ###LARGE RASTER 
 # ###c++
 # t=2
-# habbRtransWolverine <-habbRid<-  aggregate(disaggregate(myHabitat.listM$habitat.r,fact=2),fact=3)
+# habbRtransWolverine <-habbRid<-  aggregate(disaggregate(habitatM$habitat.r,fact=2),fact=3)
 # habbRid[] <-1:ncell(habbRtransWolverine) 
-# myResultsSXYZ_MF$sims.list$sxy <- UTMToGrid(data.sxy = myResultsSXYZ_MF$sims.list$sxy,
+# resultsSXYZ_MF$sims.list$sxy <- UTMToGrid(data.sxy = resultsSXYZ_MF$sims.list$sxy,
 #                                             grid.sp = SpatialPoints(coordinates(habbRtransWolverine)) )$data.scaled.xy
 # 
 # 
@@ -5582,10 +5438,10 @@ save( rrr, file = file.path(WDFigures, "Skandobs.RData"))
 # TransitionSurfaceWolverine <- list()
 # for(t in 1:(nYears-1)){
 #   TransitionSurfaceWolverine[[t]] <- GetTransitionSurface( 
-#     myResultsSXYZ_MF$sims.list$sxy[,,1,t],
-#     myResultsSXYZ_MF$sims.list$sxy[,,2,t],
-#     myResultsSXYZ_MF$sims.list$z[,,t],
-#     myResultsSXYZ_MF$sims.list$z[,,t+1],
+#     resultsSXYZ_MF$sims.list$sxy[,,1,t],
+#     resultsSXYZ_MF$sims.list$sxy[,,2,t],
+#     resultsSXYZ_MF$sims.list$z[,,t],
+#     resultsSXYZ_MF$sims.list$z[,,t+1],
 #     as.matrix(rr),
 #     stateFrom = 2,
 #     stateTo = c(3),

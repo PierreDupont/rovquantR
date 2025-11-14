@@ -98,7 +98,7 @@ plot.check = TRUE
 
 ##------------------------------------------------------------------------------
 
-##  cleanRovBaseData() ------
+## cleanRovBaseData() ------
 
 # CleanDataNew2sf( 
 #   dna_samples = DNA,
