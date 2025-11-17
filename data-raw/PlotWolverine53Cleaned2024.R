@@ -22,6 +22,8 @@ library(dplyr)
 library(ggplot2)
 library(colorspace)
 
+library(rovquantR)
+
 
 ## ------ SET REQUIRED WORKING DIRECTORIES ------
 
@@ -65,6 +67,7 @@ modelNameM <- "Hann"
 
 
 nburnin <- 10
+overwrite <- FALSE
 
 ##-- Extract date from the last cleaned data file
 DATE <- getMostRecent( 
@@ -78,26 +81,26 @@ DATE <- getMostRecent(
 
 ## ------   1. LOAD SHAPEFILES ------
 
-# ##-- LOAD GLOBAL MAP
-# GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
-#   dplyr::filter(area > 80000000) %>%
-#   st_crop(., st_bbox(extent(c(-70000,1200000,5100000,8080000))))
+##-- LOAD GLOBAL MAP
+GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
+  dplyr::filter(area > 80000000) %>%
+  st_crop(., st_bbox(extent(c(-70000,1200000,5100000,8080000))))
 
-# ##-- POLYGONS OF SWEDEN & NORWAY
-# COUNTRIES <- GLOBALMAP %>%
-#   dplyr::filter(ISO %in% c("SWE","NOR")) %>%
-#   group_by(ISO) %>%
-#   summarize()
+##-- POLYGONS OF SWEDEN & NORWAY
+COUNTRIES <- GLOBALMAP %>%
+  dplyr::filter(ISO %in% c("SWE","NOR")) %>%
+  group_by(ISO) %>%
+  summarize()
 
-# ##-- POLYGONS OF COMMUNES IN SWEDEN & NORWAY
-# COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) ## Communal map of Norway
-# COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp")) ## Communal map of Sweden
-# COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
-# 
-# ##-- POLYGONS OF COUNTIES IN SWEDEN & NORWAY
-# COUNTIES <- COMMUNES %>%   
-#  group_by(NAME_1) %>%
-#   summarize()
+##-- POLYGONS OF COMMUNES IN SWEDEN & NORWAY
+COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) ## Communal map of Norway
+COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp")) ## Communal map of Sweden
+COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
+
+##-- POLYGONS OF COUNTIES IN SWEDEN & NORWAY
+COUNTIES <- COMMUNES %>%
+ group_by(NAME_1) %>%
+  summarize()
 
 ## AGGREGATE COUNTIES (OPTIONAL)
 COUNTIES_AGGREGATE <- COUNTIES
@@ -883,7 +886,7 @@ dev.off()
 
 ## ------ III. PROCESS MODEL OUTPUTS -----
 
-## ------ 1. GET AND COMPILE BITES ------
+## ------   1. GET AND COMPILE BITES ------
 message("## Processing model MCMC outputs...")
 
 ##-- Check that a file with that name does not already exist to avoid overwriting
@@ -966,7 +969,7 @@ gc(verbose = FALSE)
 dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
 resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
   coordsData = resultsSXYZ_M$sims.list$sxy,
-  coordsHabitatGridCenter = habitat$habitat.df,
+  coordsHabitatGridCenter = habitat$habitat.xy,
   scaleToGrid = FALSE)$coordsDataScaled
 
 ##-- RESCALE sigma AND dmean TO THE ORIGINAL COORDINATE SYSTEM
@@ -1010,7 +1013,8 @@ save( results_F, results_M, resultsSXYZ_MF,
 }
 
 
-## ------       1.4.1. CREATE POLYGON WITHOUT BUFFER ------
+
+## ------   2. CREATE POLYGON WITHOUT BUFFER ------
 
 ##-- MALES
 habbRNobuffM <- habitat$habitat.rWthBuffer
@@ -1022,7 +1026,7 @@ habbRNobuffF <- habitat$habitat.rWthBuffer
 
 
 
-## ------     1.8. CHECK RHAT ------
+## ------   3. CHECK RHAT ------
 
 results_F$Rhat
 results_M$Rhat
@@ -1056,7 +1060,6 @@ searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
 rrCountries <- habitatRasterResolution$`5km`[["Countries"]]
 ##-- REMOVE FINLAND AND RUSSIA 
 rrCountries[rrCountries%in% c(1,3)] <- NA
-plot(rrCountries)
 rrCountries <- mask(rrCountries, searchedPolygon)
 rrCountries <- crop(rrCountries, habitat$habitat.r)
 plot(rrCountries)
@@ -1068,7 +1071,6 @@ levels(rrRegions)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
   "Södermanland", "Östergötland","Jönköping", "Skåne", "VästraGötaland",
   "Värmland","Örebro","Västmanland","Gävleborg",
   "Västernorrland","Jämtland" ,"Västerbotten")
-##-- REMOVE FINLAND & RUSSIA 
 rrRegions[habitatRasterResolution$`5km`[["Countries"]]%in% c(1, 3)] <- NA
 plot(rrRegions)
 rrRegions <- mask(rrRegions, searchedPolygon)
@@ -1084,15 +1086,10 @@ plot(habitatPolygon5km)
 
 ##-- SWEDISH REGIONS 
 rrRegionsSwe <- habitatRasterResolution$`5km`[["Regions"]]
-
-##-- REMOVE FINLAND AND RUSSIA 
 rrRegionsSwe[habitatRasterResolution$`5km`[["Countries"]]%in% c(1,2,3)] <- NA
-plot(rrRegionsSwe)
 rrRegionsSwe <- mask(rrRegionsSwe, searchedPolygon)
 rrRegionsSwe <- crop(rrRegionsSwe, habitat$habitat.r)
 plot(rrRegionsSwe)
-rrRegionsSwe[]
-
 ##-- TRANSFORM INTO MANAGEMENT REGIONS 
 rrRegionsSwe[rrRegionsSwe[]%in% c(18,19,20,21)] <- 1
 rrRegionsSwe[rrRegionsSwe[]%in% c(13,17,16,14,15,12,22,3)] <- 2
@@ -1101,7 +1098,7 @@ rrRegionsSwe <- ratify(rrRegionsSwe)
 df <- data.frame("ID"=c(1,2,3), "Regions"= c("Nordre","Midtre","SÃ¸ndre"))
 levels(rrRegionsSwe)[[1]] <- df
 
-##NorwegianCounty 
+## NorwegianCounty 
 rrCountiesNor <- habitatRasterResolution$`5km`[["Counties"]]
 rrCountiesNor[rrCountiesNor[] %in% c(1,2, 3)] <- NA
 rrCountiesNor <- mask(rrCountiesNor, searchedPolygon)
@@ -1228,8 +1225,8 @@ DensityCountriesRegions[[t]]$summary
 
 ##-- SAVE .RData
 save( DensityCountriesRegions,
-      file = file.path( dir.dropbox,
-                        "wolverine/CM/2021/plot25Cleaned/Figure/DensityCountriesRegions.RData"))
+      file = file.path( working.dir,
+                        "data/DensityCountriesRegions.RData"))
 
 
 
@@ -1254,8 +1251,8 @@ DensityCountriesRegionsM[[t]]$summary
 
 ##-- SAVE .RData
 save( DensityCountriesRegionsM,
-      file = file.path( dir.dropbox,
-                       "wolverine/CM/2021/plot25Cleaned/Figure/DensityCountriesRegionsM.RData"))
+      file = file.path( working.dir,
+                       "data/DensityCountriesRegionsM.RData"))
 
 
 
@@ -1269,7 +1266,7 @@ DensityCountriesRegionsF <- list()
 for(t in 1:nYears){
   DensityCountriesRegionsF[[t]] <- GetDensity_PD(
     sx = densityInputCountries$sx[ite,IDFemales,t],
-    sy =  densityInputCountries$sy[ite,IDFemales,t],
+    sy = densityInputCountries$sy[ite,IDFemales,t],
     z = resultsSXYZ_MF$sims.list$z[ite,IDFemales,t],
     IDmx = densityInputCountries$habitat.id,
     aliveStates = alive.states,
@@ -1280,8 +1277,8 @@ DensityCountriesRegionsF[[t]]$summary
 
 ##-- SAVE .RData
 save( DensityCountriesRegionsF,
-      file = file.path( dir.dropbox,
-                       "wolverine/CM/2021/plot25Cleaned/Figure/DensityCountriesRegionsF.RData" ))
+      file = file.path( working.dir,
+                       "data/DensityCountriesRegionsF.RData" ))
 
 
 
@@ -1375,7 +1372,7 @@ idcountySWE1 <- sort(idcountySWE1)
 
 ##-- Export .csv
 write.csv( NCarRegionEstimates,
-           file = file.path(working.dir, "tables","NAllYears.csv"),
+           file = file.path(working.dir, "tables", "NAllYears.csv"),
            fileEncoding = "latin1")
 
 
@@ -1387,26 +1384,18 @@ NCarRegionEstimates["TOTAL",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",N
 NCarRegionEstimates["Nordre",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates["Nordre",yearsNotSampled], "**","}", sep="")
 
 row.names(NCarRegionEstimates) <- c("TOTAL",
-                                    paste("\\hspace{0.25cm}","NORWAY",sep=""),
-                                    paste("\\hspace{0.5cm} ",
-                                          idcountyNOR,sep=""),
-                                    paste("\\hspace{0.25cm}","SWEDEN",sep=""),
-                                    paste("\\hspace{0.5cm}","Norra",sep=""),
-                                    paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth], sep=""),
-                                    paste("\\hspace{0.5cm}","Mellersta",sep=""),
-                                    paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle], sep=""),
-                                    paste("\\hspace{0.5cm}","Södra",sep=""),
-                                    paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth], sep="")
-)
+                                    paste0("\\hspace{0.25cm}", "NORWAY"),
+                                    paste0("\\hspace{0.5cm} ", idcountyNOR),
+                                    paste0("\\hspace{0.25cm}", "SWEDEN"),
+                                    paste0("\\hspace{0.5cm}", "Norra"),
+                                    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth]),
+                                    paste0("\\hspace{0.5cm}", "Mellersta"),
+                                    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle]),
+                                    paste0("\\hspace{0.5cm}", "Södra"),
+                                    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth]))
 
-row.names(NCarRegionEstimates)[grep("VÃ¤straGÃ¶taland", row.names(NCarRegionEstimates))] <- paste("\\hspace{0.75cm}",
-                                                                                                  "VÃ¤stra GÃ¶taland", sep="")
-# row.names(NCarRegionEstimates) <- c("TOTAL",
-#                                             paste("\\hspace{0.25cm}","NORWAY",sep=""),
-#                                             paste("\\hspace{0.5cm} ",
-#                                                   idcountyNOR,sep=""),
-#                                             paste("\\hspace{0.25cm}","SWEDEN",sep=""),
-#                                             paste("\\hspace{0.5cm}", idcountySWE1,sep=""))
+row.names(NCarRegionEstimates)[grep("VÃ¤straGÃ¶taland", row.names(NCarRegionEstimates))] <- paste0("\\hspace{0.75cm}", "VÃ¤stra GÃ¶taland")
+
 
 print( xtable( NCarRegionEstimates,
               type = "latex",
@@ -1805,9 +1794,9 @@ for(t in 1:nYears){
 
 
 
-##QUICK CHECK TO MAKE SURE VALUES SUMS UP 
- tmp <- DensityCountriesRegionsNOR[[t]]$summary#[1:(nrow(DensityCountriesRegions[[t]]$summary)),]
-# SWE
+## QUICK CHECK TO MAKE SURE VALUES SUMS UP 
+tmp <- DensityCountriesRegionsNOR[[t]]$summary#[1:(nrow(DensityCountriesRegions[[t]]$summary)),]
+## SWE
 row.names(DensityCountriesRegions[[t]]$summary)
 
 
@@ -1859,8 +1848,6 @@ write.csv( NCarRegionEstimatesNOR,
 # tmp <- data.frame(NCarRegionEstimatesNOR)
 # tmp$NAME_1 <- row.names(tmp) 
 # COUNTIES_1 <- merge(COUNTIES,tmp[,c("X2024","NAME_1")],by="NAME_1")
-# 
-
 
 
 
@@ -2811,6 +2798,7 @@ nf <- layout(mx, widths = c(rep(1,ncol(mx))), heights=rep(1,2))
 #layout.show(nf)
 
 max <- max(unlist(lapply(spaceUSED100km2, function(x) max(x))))
+
 cuts <- seq(0, max, length.out = 100)   #set breaks
 colfunc <- colorRampPalette(c("white", "slateblue", "yellow", "orange", "red", "red"))
 col <- colfunc(100)

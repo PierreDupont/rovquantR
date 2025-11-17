@@ -109,7 +109,7 @@ REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_bord
       NAME_1 %in% c("Nordland") ~ "Region 7",
       NAME_1 %in% c("Sør-Trøndelag","Nord-Trøndelag","Møre og Romsdal") ~ "Region 6",
       NAME_1 %in% c("Hedmark") ~ "Region 5",
-      NAME_1 %in% c("Akershus", "Ãstfold", "Oslo") ~ "Region 4",
+      NAME_1 %in% c("Akershus","Ãstfold","Oslo") ~ "Region 4",
       NAME_1 %in% c("Oppland") ~ "Region 3",
       NAME_1 %in% c("Vestfold","Telemark","Buskerud","Aust-Agder") ~ "Region 2",
       TRUE ~ "Region 1"),

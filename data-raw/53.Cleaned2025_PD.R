@@ -459,7 +459,7 @@ DATA <- DATA %>%
     Death = ifelse(substr(RovbaseID,1,1) %in% "M", Year, NA),
     Birth = Death - Age)
 
-# [PD] This is useless
+# [PD] This is not used in this analysis (and most likely not working)
 # ##-- Reconstruct minimal & maximal ages
 # DATA$Age.orig <- DATA$Age
 # temp <- as.character(base::levels(DATA$Age.orig)) ## list age levels
@@ -525,7 +525,7 @@ DATA <- sf::st_as_sf( x = DATA,
   sf::st_set_crs(., sf::st_crs(32633)) 
 
 ##-- Remove all samples outside the polygon of interest (study area)
-## [PD] : MIGHT WANT TO KEEP SAMPLES OUTSIDE NOR & SWE IN cleanRovbaseDat
+## [PD] : MIGHT WANT TO KEEP SAMPLES OUTSIDE NOR & SWE IN cleanRovbaseData()?
 DATA <- DATA[!is.na(as.numeric(st_intersects(DATA, st_union(COUNTRIES)))), ]
 
 ##-- Intersect and extract country name
@@ -804,7 +804,7 @@ myStudyArea <- COUNTRIES %>%
 #   st_buffer(dist = HABITAT$habBuffer) %>%
 #   st_intersection(., GLOBALMAP)
 # 
-# ##-- PLOT CHECK
+# ##-- Plot check
 # if(plot.check){
 #   par(mfrow = c(1,1))
 #   plot(st_geometry(COUNTRIES))
@@ -817,12 +817,12 @@ myStudyArea <- COUNTRIES %>%
 
 ##-- Extract date from the last cleaned data file
 DATE <- getMostRecent( 
-  path = file.path(working.dir,"data"),
+  path = file.path(working.dir, "data"),
   pattern = "CleanData_wolverine")
 
-##-- Load the most recent Bear data from RovBase
+##-- Load the most recent wolverine data from RovBase
 myFullData.sp <- readMostRecent( 
-  path = file.path(working.dir,"data"),
+  path = file.path(working.dir, "data"),
   pattern = "CleanData_wolverine",
   extension = ".RData")
 
@@ -905,20 +905,20 @@ habitat.rWthBufferPol <- sf::st_as_sf(
   merge = TRUE) %>%
   filter(Habitat %in% 1)
 
-##-- PLOT CHECK 
+##-- Plot check 
 par(mfrow = c(1,2))
 plot(habitat$habitat.r,legend = F)
 plot(st_geometry(studyArea), add = T)
 plot(st_geometry(habitat$grid), add = T)
 
 
-# ## [PD] USELESS!
+# ## [PD] DONE LATER
 # ##-- Retrieve habitat windows boundaries
 # lowerHabCoords <- coordinates(habitat$habitat.r)[habitat$habitat.r[]==1, ] - 0.5*habitat$resolution
 # upperHabCoords <- coordinates(habitat$habitat.r)[habitat$habitat.r[]==1, ] + 0.5*habitat$resolution
 # nHabCells <- dim(lowerHabCoords)[1]
 # 
-# # ## [PD] USELESS !
+# ## [PD] DONE LATER
 # ##-- CREATE HABITAT GRID
 # habIDCells.mx <- habitat$IDCells.mx
 # habIDCells.mx[] <- 0
@@ -928,7 +928,7 @@ plot(st_geometry(habitat$grid), add = T)
 # }
 # # image(habIDCells.mx)
 #
-# ## [PD] USELESS!
+# ## [PD] DONE DURING THE INITIAL CLEANING
 # whichOut <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$alive, myStudyArea))))
 # if(length(whichOut) > 0){
 #   myFilteredData.sp$alive <- myFilteredData.sp$alive[whichOut, ]
@@ -938,7 +938,7 @@ plot(st_geometry(habitat$grid), add = T)
 # whichOutBuff <- which(!as.numeric(unlist(st_intersects(myFilteredData.sp$dead.recovery, habitat$buffered.habitat.poly))))
 # if(length(whichOutBuff) > 0){ myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[whichOutBuff, ]}
 
-##-- PLOT CHECK
+##-- Plot check
 if(plot.check){
   # par(mfrow = c(1,2))
   plot(habitat$habitat.r)
@@ -980,7 +980,7 @@ DEN.r <- raster(
                             h = 30000,
                             grid = as(habitat$habitat.r, 'SpatialPixels'))))
 
-##-- PLOT CHECK
+##-- Plot check
 if(plot.check){
   plot(DEN.r)
   plot(st_geometry(myStudyArea), add = TRUE, border = "black")
@@ -1050,7 +1050,7 @@ distDetsCounties <- st_distance( detectors$main.detector.sp,
 detsNorrbotten <- which(apply(distDetsCounties, 1, which.min) == 3)
 
 
-##-- PLOT CHECK
+##-- Plot check
 if(plot.check){
   ##-- Plot detectors in Norrbotten
   plot( st_geometry(COUNTIESAroundNorrbotten))
@@ -1088,7 +1088,7 @@ for(t in whichYearsNotSampled){
   countyToggle[1,t] <- 0
 }
 
-##-- PLOT CHECK 
+##-- Plot check 
 if(plot.check){
   myCol <- terrain.colors(nrow(COUNTIES_AGGREGATED))
   plot(st_geometry(GLOBALMAP), col = "gray80", main = "Aggregated Counties")
@@ -1131,7 +1131,7 @@ for(t in whichYearsNotSampled){
   countryToggle[3,t] <- 0
 }
 
-##-- PLOT CHECK 
+##-- Plot check 
 if(plot.check){
   par(mfrow = c(1,1))
   myCol <- c("blue4", "yellow1", "red")
@@ -1228,7 +1228,7 @@ for(t in 1:n.years){
 }#t
 
 
-##-- PLOT CHECK 
+##-- Plot check 
 if(plot.check){
   max <- max(unlist(lapply(TRACKS.r, function(x) max(x[], na.rm = T))))
   cuts <- seq(0, max,length.out = 100)   ## Set breaks
@@ -1294,7 +1294,7 @@ tmp <- raster::extract( DistAllRoads,
                         na.rm = T)
 detRoads[isna] <- tmp
 
-##-- PLOT CHECK 
+##-- Plot check 
 if(plot.check){
   par(mfrow = c(1,1))
   plot( st_geometry(GLOBALMAP),
@@ -1334,7 +1334,7 @@ tmp <- raster::extract( SNOW, det.sptransf[isna, ],
                         buffer = 15000, fun = mean, na.rm = T)
 detSnow[isna,1:n.years] <- tmp
 
-##-- PLOT CHECK
+##-- Plot check
 if(plot.check){
   plot( st_geometry(detectors$main.detector.sp),
         cex = DoScale(detSnow[ ,6], l = 0, u = 0.5),
@@ -1485,7 +1485,7 @@ for(t in 1:n.years){
 }
 
 
-##-- PLOT CHECK
+##-- Plot check
 if(plot.check){
   plot(st_geometry(habitat.rWthBufferPol))
   plot(st_geometry(skandObs), col = "red", add = T)
@@ -1563,7 +1563,7 @@ if(plot.check){
 # ds.brickCont <- brick(lapply(ds.list, function(x) x[[2]]))
 # names(ds.brick) <- names(ds.brickCont) <-years
 # 
-# ##-- PLOT CHECK
+# ##-- Plot check
 # if(plot.check){
 #   par(mfrow = c(1,3))
 #   plot(r.SkandObsRovbaseBinary[[t]], main = "Raw Binary", axes = F, box = F)
@@ -1619,7 +1619,7 @@ detCovsOth[,,3] <- detOtherSamples
 if(any(is.na(detCovs))){print("WARNINGS!!!!!!! ONE OF THE DETECTOR MATRIX CONTAINS NA")}
 
 
-##-- PLOT CHECK
+##-- Plot check
 if(plot.check){
   tmp <- detectors$raster
   par(mfrow=c(2,5),mar=c(0,0,0,0))
@@ -1664,7 +1664,7 @@ if(plot.check){
 
 
 
-## ------   3. RESCALE COORDINATES ------
+## ------   3. RESCALE COORDINATES------
 
 # ##-- Scaled habitat windows boundaries
 # lowerHabCoords <- scaledCoords$coordsHabitatGridCenterScaled - 0.5
@@ -1712,11 +1712,11 @@ detectors$localObjects <- getLocalObjects(
 
 save( habitat,
       file = file.path( working.dir, "data",
-                        paste0("Habitat_bear_", DATE, ".RData")))
+                        paste0("Habitat_wolverine_", DATE, ".RData")))
 
 save( detectors,
       file = file.path( working.dir,"data",
-                        paste0("Detectors_bear_", DATE, ".RData")))
+                        paste0("Detectors_wolverine_", DATE, ".RData")))
 
 
 
@@ -1785,9 +1785,6 @@ for(thisSex in sex){
   # # myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
   # #   ##-- Subset to years of interest
   # #   dplyr::filter(Year %in% years)
-  # 
-  # 
-  # 
   # 
   # 
   ## ------     6.2. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016:18 and 2023 ------
@@ -1895,7 +1892,7 @@ for(thisSex in sex){
   table(myFilteredData.sp$alive$Collector_role, useNA = "always")
   table(myFilteredData.sp$alive$structured, useNA = "always")
   
-  ##-- PLOT CHECK
+  ##-- Plot check
   if(plot.check){
     plot(REGIONS[REGIONS$county %in% "Norrbotten", ]$geometry)
     tmp <- myFilteredData.sp$alive %>%  filter(hairTrap)
@@ -1991,7 +1988,7 @@ for(thisSex in sex){
     dev.off()
     
     
-    ##-- plot check
+    ##-- Plot check
     pdf( file = file.path(working.dir, "figures/OverallDetectionsDeadRecoveries.pdf"))
     plot( st_geometry(GLOBALMAP))
     plot( st_geometry(myStudyArea), add = T)
@@ -2023,7 +2020,7 @@ for(thisSex in sex){
   # Other.death <- myFilteredData.sp$dead.recovery[!myFilteredData.sp$dead.recovery$DeathCause %in% legalCauses, ]
   
   
-  ##-- PLOT CHECK
+  ##-- Plot check
   if(plot.check){
     par(mfrow = c(1,3))
     for(t in 1:n.years){
@@ -2210,7 +2207,7 @@ for(thisSex in sex){
     distances[[t]] <- checkDistanceDetections( 
       y = y.ar$y.ar[,,t], 
       detector.xy = detectors$detectors.df[, c("x","y")], 
-      max.distance = 40000,
+      max.distance = 40000, #maxDist
       method = "pairwise",
       plot.check = F)
     
@@ -2789,14 +2786,6 @@ for(thisSex in sex){
                            paste0("nimbleInput_", DATE, "_", thisSex, "_", c, ".RData")))
   }#c
 }#thisSex
-
-model <- nimbleModel( code = modelCode,
-                      constants = nimConstants,
-                      inits = nimInits,
-                      data = nimData,
-                      check = FALSE,
-                      calculate = FALSE) 
-model$calculate()
 
 
 
