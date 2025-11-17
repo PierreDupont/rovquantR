@@ -60,9 +60,11 @@ nYears <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
 
 ##-- Name of the female and male models
-modelNameF <- "Hann"
-modelNameM <- "Hunn"
+modelNameF <- "Hunn"
+modelNameM <- "Hann"
 
+
+nburnin <- 10
 
 ##-- Extract date from the last cleaned data file
 DATE <- getMostRecent( 
@@ -76,26 +78,26 @@ DATE <- getMostRecent(
 
 ## ------   1. LOAD SHAPEFILES ------
 
-##-- LOAD GLOBAL MAP
-GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
-  dplyr::filter(area > 80000000) %>%
-  st_crop(., st_bbox(extent(c(-70000,1200000,5100000,8080000))))
+# ##-- LOAD GLOBAL MAP
+# GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) %>%
+#   dplyr::filter(area > 80000000) %>%
+#   st_crop(., st_bbox(extent(c(-70000,1200000,5100000,8080000))))
 
-##-- POLYGONS OF SWEDEN & NORWAY
-COUNTRIES <- GLOBALMAP %>%
-  dplyr::filter(ISO %in% c("SWE","NOR")) %>%
-  group_by(ISO) %>%
-  summarize()
+# ##-- POLYGONS OF SWEDEN & NORWAY
+# COUNTRIES <- GLOBALMAP %>%
+#   dplyr::filter(ISO %in% c("SWE","NOR")) %>%
+#   group_by(ISO) %>%
+#   summarize()
 
-##-- POLYGONS OF COMMUNES IN SWEDEN & NORWAY
-COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) ## Communal map of Norway
-COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp")) ## Communal map of Sweden
-COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
-
-##-- POLYGONS OF COUNTIES IN SWEDEN & NORWAY
-COUNTIES <- COMMUNES %>%   
- group_by(NAME_1) %>%
-  summarize()
+# ##-- POLYGONS OF COMMUNES IN SWEDEN & NORWAY
+# COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) ## Communal map of Norway
+# COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp")) ## Communal map of Sweden
+# COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
+# 
+# ##-- POLYGONS OF COUNTIES IN SWEDEN & NORWAY
+# COUNTIES <- COMMUNES %>%   
+#  group_by(NAME_1) %>%
+#   summarize()
 
 ## AGGREGATE COUNTIES (OPTIONAL)
 COUNTIES_AGGREGATE <- COUNTIES
@@ -122,21 +124,21 @@ NewCountySwe <- readOGR(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/
 plot(NewCountySwe, border = "red")
 
 ##-- HABITAT RASTERS
-load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20kmNewSweCounties.RData"))
-load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
-
+# load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20kmNewSweCounties.RData"))
+# load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
+# 
 
 
 ## ------   2. LOAD NECESSARY OBJECTS ------
 
 ##-- Females
-load(file.path( myVars$WD, myVars$modelName, modelNameF,
+load(file.path( working.dir, "nimbleInFiles/Hunn",
                 paste0(myVars$modelName, modelNameF,"_Chain1.RData")))
 nimDataF <- nimData
 nimInitsF <- nimInits
 
 ##-- Males
-load(file.path( myVars$WD, myVars$modelName, modelNameM,
+load(file.path( working.dir, "nimbleInFiles/Hann",
                 paste0(myVars$modelName, modelNameM,"_Chain1.RData")))
 nimDataM <- nimData
 nimInitsM <- nimInits
@@ -933,7 +935,7 @@ resultsSXYZ_F$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
   coordsHabitatGridCenter = habitat$habitat.xy,
   scaleToGrid = FALSE)$coordsDataScaled
 
-##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+##-- RESCALE sigma AND dmean TO THE ORIGINAL COORDINATE SYSTEM
 results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
 results_F$sims.list$dmean <- results_F$sims.list$dmean * raster::res(habitat$habitat.r)[1]
 
@@ -967,7 +969,7 @@ resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
   coordsHabitatGridCenter = habitat$habitat.df,
   scaleToGrid = FALSE)$coordsDataScaled
 
-##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+##-- RESCALE sigma AND dmean TO THE ORIGINAL COORDINATE SYSTEM
 results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
 results_M$sims.list$dmean <- results_M$sims.list$dmean * raster::res(habitat$habitat.r)[1]
 
@@ -993,9 +995,8 @@ resultsSXYZ_MF$sims.list$z <- abind::abind(resultsSXYZ_M$sims.list$z[1:minIter, 
                                            along = 2)
 
 ##-- sigma
-resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter],
-                                        results_F$sims.list$sigma[1:minIter])
-dimnames(resultsSXYZ_MF$sims.list$sigma)[[2]] <- c("M","F")
+resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter, ],
+                                        results_F$sims.list$sigma[1:minIter, ])
 
 ##-- sex
 resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
@@ -1042,51 +1043,44 @@ yearsNotSampled <- which(!years %in% yearsSampledNorrb)
 
 ## ------     2.1. AC BASED DENSITY (5km) ------
 
-##-- REMOVE THE BUFFER FROM THE HABITAT 
-##-- COUNTRIES 
-rrCountries <- habitatRasterResolution$`5km`[["Countries"]]
-
-##-- REMOVE FINLAND AND RUSSIA 
-rrCountries[rrCountries%in% c(1,3)] <- NA
-plot(rrCountries)
-
 habitat.rWthBuffer <- habitat$habitat.rWthBuffer
 habitat.rWthBuffer[habitat.rWthBuffer %in% 0] <- NA
 
 searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer), 
-                                  as_points = FALSE, merge = TRUE)
+                                as_points = FALSE, merge = TRUE)
 searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
 # searchedPolygon <- rasterToPolygons(habitat.rWthBuffer, dissolve = T, function(x) x==1 )
 
+##-- REMOVE THE BUFFER FROM THE HABITAT 
+##-- COUNTRIES 
+rrCountries <- habitatRasterResolution$`5km`[["Countries"]]
+##-- REMOVE FINLAND AND RUSSIA 
+rrCountries[rrCountries%in% c(1,3)] <- NA
+plot(rrCountries)
 rrCountries <- mask(rrCountries, searchedPolygon)
 rrCountries <- crop(rrCountries, habitat$habitat.r)
 plot(rrCountries)
 
 ##-- REGIONS & COUNTIES 
 rrRegions <- habitatRasterResolution$`5km`[["Regions"]] 
-
 ##-- Deal with the special characters
 levels(rrRegions)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
   "Södermanland", "Östergötland","Jönköping", "Skåne", "VästraGötaland",
   "Värmland","Örebro","Västmanland","Gävleborg",
   "Västernorrland","Jämtland" ,"Västerbotten")
-
 ##-- REMOVE FINLAND & RUSSIA 
 rrRegions[habitatRasterResolution$`5km`[["Countries"]]%in% c(1, 3)] <- NA
 plot(rrRegions)
 rrRegions <- mask(rrRegions, searchedPolygon)
 rrRegions <- crop(rrRegions, habitat$habitat.r)
 
-##-- habitatPolygon <- rasterToPolygons(habitat$habitat.r, dissolve = T, function(x) x==1 )
 habitatPolygon <- sf::st_as_sf(stars::st_as_stars(habitat$habitat.r), 
                                 as_points = FALSE, merge = TRUE)
 habitatPolygon <- habitatPolygon[habitatPolygon$Habitat > 0, ]
-
 habitatPolygon5km <- mask(habitatRasterResolution$`5km`[["Habitat"]], habitatPolygon)
 habitatPolygon5km <- crop(habitatRasterResolution$`5km`[["Habitat"]], habitat$habitat.r)
 plot(rrRegions)
 plot(habitatPolygon5km)
-# points(detectors$main.detector.sp,pch=16,cex=0.5)
 
 ##-- SWEDISH REGIONS 
 rrRegionsSwe <- habitatRasterResolution$`5km`[["Regions"]]
@@ -1168,8 +1162,8 @@ rrRegions1 <- habitatRasterResolution$`5km`[["Regions"]]
 ##-- Deal with the special characters
 levels(rrRegions1)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
   "Södermanland", "Östergötland","Jönköping", "Skåne", "VästraGötaland",
-                                                                     "Värmland","Örebro","Västmanland","Gävleborg",
-                                                                     "Västernorrland","Jämtland" ,"Västerbotten")
+  "Värmland","Örebro","Västmanland","Gävleborg",
+  "Västernorrland","Jämtland" ,"Västerbotten")
 ##-- CALCULATE AREA OF EACH COUNTY
 AreaStudiedRegion <- table(factorValues(rrRegions, rrRegions[]))*res(rrRegions)[1]*1e-6
 TotalArea <- table(factorValues(rrRegions1, rrRegions1[]))*res(rrRegions1)[1]*1e-6
@@ -1205,6 +1199,7 @@ TotalAreaCountry <- table(factorValues(rrCountries1, rrCountries1[]))*res(rrCoun
 AreaStudiedCountry <- table(factorValues(rrCountries, rrCountries[]))*res(rrCountries)[1]*1e-6
 TotalAreaCountry["Total"] <- sum(TotalAreaCountry)
 AreaStudiedCountry["Total"] <- sum(AreaStudiedCountry)
+
 ##-- CALCULATE AREA OF EACH COUNTRY
 areaCountry <- AreaStudiedCountry/TotalAreaCountry[names(AreaStudiedCountry)]
 
