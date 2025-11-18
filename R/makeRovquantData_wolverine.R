@@ -239,8 +239,7 @@ makeRovquantData_wolverine <- function(
   }
   data$years <- years
   n.years <- length(years)
-  #YEARS <- lapply(years, function(x)c(x,x+1))
-  
+
   ##-- list years with or without sampling in Norrbotten
   yearsSampledNorrb <- c(2016:2018,2023)
   yearsNotSampled <- years[!years %in% yearsSampledNorrb]
@@ -331,7 +330,7 @@ makeRovquantData_wolverine <- function(
   
   # colnames(DEN) <- translateForeignCharacters(dat = colnames(DEN))
   # DEN.sp <- st_as_sf(DEN, coords = c("UTM33_X", "UTM33_Y"))
-  # st_crs(DEN.sp) <- st_crs(myFilteredData.sp$alive)
+  # st_crs(DEN.sp) <- st_crs(data.alive)
   # DEN.sp$id  <- rep(1, nrow(DEN.sp))
   # DEN.sp <- DEN.sp[ ,("id")]
   
@@ -864,10 +863,10 @@ makeRovquantData_wolverine <- function(
     
     # pdf(file = file.path(working.dir, "figures/mapStructuredOthers.pdf"))
     # for(t in 1:n.years){
-    #   tmpOthers <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t] &
-    #                                          !myFilteredData.sp$alive$structured, ]
-    #   tmpStruct <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years[t] &
-    #                                          myFilteredData.sp$alive$structured, ]
+    #   tmpOthers <- data.alive[data.alive$Year %in% years[t] &
+    #                                          !data.alive$structured, ]
+    #   tmpStruct <- data.alive[data.alive$Year %in% years[t] &
+    #                                          data.alive$structured, ]
     # 
     #   par(mfrow=c(2,2),mar=c(0,0,5,0))
     #   plot(r.OtherSamplesBinary[[t]], main=paste(years[t],"\n Rovbase Samples Structured"), box=F, axes=F)
@@ -1062,7 +1061,6 @@ makeRovquantData_wolverine <- function(
   
   
   
-  
   ## ------   6. FILTER DATA -----
   
   ## ------     6.1. ALIVE DATA -----
@@ -1100,22 +1098,17 @@ makeRovquantData_wolverine <- function(
     dplyr::group_by(county) %>%
     dplyr::summarize()
   
-  ##-- Check how many detections have been collected in Norrbotten overall
+  ##-- Identify detections collected in Norrbotten 
   is.Norr <- as.numeric(st_intersects(data.alive, COUNTIESNorrbotten))
-  # sum(is.Norr, na.rm = T)
-  
+
   # ##-- Check how many detections are removed per year
   # table(data.alive$Year[data.alive$Year %in% yearsNotSampled & is.Norr %in% 1])
   # sum(data.alive$Year %in% yearsNotSampled & is.Norr %in% 1)
   
-  ##-- Subset NGS dataset
+  ##-- Filter out detections in Norrbotten in years without sampling
   data.alive <- data.alive %>%
     filter(!(Year %in% yearsNotSampled & is.Norr %in% 1))
-   
-  # ##-- Checks
-  # dim(myFilteredData.sp$alive)
-  # table(myFilteredData.sp$alive$Year)
-  
+
   
   
   ## ------     6.3. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
@@ -1149,18 +1142,16 @@ makeRovquantData_wolverine <- function(
         !is.na(trackID) &
         trackDist <= distanceThreshold & 
         !hairTrap)
-  table(data.alive$Collector_role, useNA = "always")
-  table(data.alive$structured, useNA = "always")
   
-  ##-- Plot check
-  if(plot.check){
-    plot(REGIONS[REGIONS$county %in% "Norrbotten", ]$geometry)
-    tmp <- data.alive %>%  filter(hairTrap)
-    plot(tmp$geometry, add = T, col = "red", pch = 16)
-    if(length(which(data.alive$DNAID[data.alive$structured] %in% HairTrapSamples$DNAID)) > 0){
-      print("WARNING SAMPLES FROM HAIR TRAPS ASSIGNED TO STRUCTURED")
-    }
-  }
+  # ##-- Plot check
+  # if(plot.check){
+  #   plot(REGIONS[REGIONS$county %in% "Norrbotten", ]$geometry)
+  #   tmp <- data.alive %>%  filter(hairTrap)
+  #   plot(tmp$geometry, add = T, col = "red", pch = 16)
+  #   if(length(which(data.alive$DNAID[data.alive$structured] %in% HairTrapSamples$DNAID)) > 0){
+  #     print("WARNING SAMPLES FROM HAIR TRAPS ASSIGNED TO STRUCTURED")
+  #   }
+  # }
   
   
   
@@ -1273,42 +1264,40 @@ makeRovquantData_wolverine <- function(
                                     function(x)grep(x,MortalityNames)))
   legalCauses <- MortalityNames[whichLegalCauses]
   
-  ##-- Split data based on mortality causes
-  myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery %>%
+  ##-- Identify legal dead recoveries based on mortality causes
+  data.dead <- data.dead %>%
     mutate(legal = Death_cause %in% legalCauses)
-  # legal.death <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$DeathCause %in% legalCauses, ]
-  # Other.death <- myFilteredData.sp$dead.recovery[!myFilteredData.sp$dead.recovery$DeathCause %in% legalCauses, ]
-  
+
   
   ##-- Plot check
   if(plot.check){
-    par(mfrow = c(1,3))
-    for(t in 1:n.years){
-      ## DEAD RECOVERIES TOTAL
-      tempTotal <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t], ]
-      NGS_TabTotal <- table(tempTotal$Country_sf)
-      ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sf), 2, function(x) sum(x>0))
-      ## DEAD RECOVERIES INSIDE STUDY AREA/SAMPLING PERIOD
-      tempIn <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t], ]
-      NGS_TabIn <- table(tempIn$Country_sf)
-      ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sf), 2, function(x) sum(x>0))
-      ## PLOT NGS SAMPLES
-      plot(st_geometry(GLOBALMAP), col="gray80")
-      plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-      plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
-      ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-      graphics::text(x = 100000, y = 7250000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
-      graphics::text(x = 820000, y = 6820000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
-      ## ADD OVERALL NUMBERS
-      mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-      mtext(text = paste(sum(NGS_TabIn), "Dead Recoveries /", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
-      # mtext(text = paste(sum(NGS_TabTotal), "Recoveries /", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
-    }#t
+    # par(mfrow = c(1,3))
+    # for(t in 1:n.years){
+    #   ## DEAD RECOVERIES TOTAL
+    #   tempTotal <- data.dead[data.dead$Year == years[t], ]
+    #   NGS_TabTotal <- table(tempTotal$Country_sf)
+    #   ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sf), 2, function(x) sum(x>0))
+    #   ## DEAD RECOVERIES INSIDE STUDY AREA/SAMPLING PERIOD
+    #   tempIn <- data.dead[data.dead$Year == years[t], ]
+    #   NGS_TabIn <- table(tempIn$Country_sf)
+    #   ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sf), 2, function(x) sum(x>0))
+    #   ## PLOT NGS SAMPLES
+    #   plot(st_geometry(GLOBALMAP), col="gray80")
+    #   plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
+    #   plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
+    #   ## ADD NUMBER OF NGS samples and IDs per COUNTRY
+    #   graphics::text(x = 100000, y = 7250000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
+    #   graphics::text(x = 820000, y = 6820000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
+    #   ## ADD OVERALL NUMBERS
+    #   mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
+    #   mtext(text = paste(sum(NGS_TabIn), "Dead Recoveries /", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
+    #   # mtext(text = paste(sum(NGS_TabTotal), "Recoveries /", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
+    # }#t
+     
     
+    ##-- Plot dtemporal trends
     
-    ## PLOT TREND DETECTIONS & DEAD RECOVERIES OVER TIME AND SPACE
-    
-    ## DETECTIONS
+    ##-- Number of detections
     pdf(file = file.path(working.dir, "figures/TRENDDetections.pdf"))
     
     temp <- unique(data.alive[ ,c("Year","Country_sf","DNAID")])
@@ -1321,7 +1310,7 @@ makeRovquantData_wolverine <- function(
     lines(tab_Country.Year[,"(S)"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[2], lwd=2, pch=16, type="b")
     legend("bottomright",c("N","S"), fill=country.colors)
     
-    ## ID DETECTED
+    ##-- Number of IDs detected
     temp <- table(data.alive$Year,data.alive$Country_sf,data.alive$Id)
     tab_Country.Year1 <- apply(temp,c(1,2),function(x) sum(x>0))
     country.colors <- c("goldenrod1","goldenrod3")
@@ -1331,26 +1320,34 @@ makeRovquantData_wolverine <- function(
     lines(tab_Country.Year1[,"(S)"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[2], lwd=2, pch=16, type="b")
     legend("bottomright",c("N","S"), fill=country.colors)
     
-    ## Average number of detection per detected ID
+    ##-- Average number of detection per detected ID
     tab_Country.Year2 <- tab_Country.Year/tab_Country.Year1
     par(mfrow = c(1,1), mar = c(5,5,5,5))
-    plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year2))), ylim=c(0,max(tab_Country.Year2)),
-         ylab="Average Number of detections", xlab="Years")
-    lines(tab_Country.Year2[,"(N)"]~as.numeric(row.names(tab_Country.Year2)), col=country.colors[1], lwd=2, pch=16, type="b")
-    lines(tab_Country.Year2[,"(S)"]~as.numeric(row.names(tab_Country.Year2)), col=country.colors[2], lwd=2, pch=16, type="b")
-    legend("bottomright",c("N","S"), fill=country.colors)
+    plot(-10,
+         xlim = range(as.numeric(row.names(tab_Country.Year2))),
+         ylim = c(0,max(tab_Country.Year2)),
+         ylab = "Average Number of detections", xlab="Years")
+    lines(tab_Country.Year2[ ,"(N)"] ~ as.numeric(row.names(tab_Country.Year2)),
+          col = country.colors[1], lwd = 2, pch = 16, type = "b")
+    lines(tab_Country.Year2[ ,"(S)"] ~ as.numeric(row.names(tab_Country.Year2)),
+          col = country.colors[2], lwd = 2, pch = 16, type = "b")
+    legend("bottomright", c("N","S"), fill = country.colors)
     
-    ## deadrecovery
-    temp <- unique(myFilteredData.sp$dead.recovery[,c("Year","Country_sf","Id")])
+    ##-- Dead recoveries
+    temp <- unique(data.dead[,c("Year","Country_sf","Id")])
     tab_Country.Year <- table(temp$Year, temp$Country_sf)
     country.colors <- c("goldenrod1","goldenrod3")
     
     par(mfrow = c(1,1), mar = c(5,5,5,5))
-    plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year))), ylim=c(0,max(tab_Country.Year)),
-         ylab="N Id Dead recovered", xlab="Years")
-    lines(tab_Country.Year[,"(N)"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[1], lwd=2, pch=16, type="b")
-    lines(tab_Country.Year[,"(S)"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[2], lwd=2, pch=16, type="b")
-    legend("topright",c("N","S"), fill=country.colors)
+    plot(-10,
+         xlim = range(as.numeric(row.names(tab_Country.Year))),
+         ylim = c(0,max(tab_Country.Year)),
+         ylab = "N Id Dead recovered", xlab="Years")
+    lines(tab_Country.Year[ ,"(N)"] ~ as.numeric(row.names(tab_Country.Year)),
+          col = country.colors[1], lwd = 2, pch = 16, type = "b")
+    lines(tab_Country.Year[ ,"(S)"] ~ as.numeric(row.names(tab_Country.Year)),
+          col = country.colors[2], lwd = 2, pch = 16, type = "b")
+    legend("topright", c("N","S"), fill = country.colors)
     dev.off()
   }
   
@@ -1359,8 +1356,8 @@ makeRovquantData_wolverine <- function(
   ## ------     6.5. ASSIGN SAMPLES TO DETECTORS -----
   
   ##-- ALL SAMPLES
-  myData.alive <- assignDetectors( 
-    data = myFilteredData.sp$alive,                
+  data.alive <- assignDetectors( 
+    data = data.alive,                
     detectors = detectors$main.detector.sp,
     subDetectors = detectors$detector.sp,
     radius = detectors$resolution)
@@ -1385,148 +1382,29 @@ makeRovquantData_wolverine <- function(
                                 detectors$main.detector.sp$main.cell.id[detsNorrbotten])
   
   ##-- Identify which detections are assigned to Norrbotten in years not sampled
-  whichDets <- which(!myData.alive$data.sp$Year %in% yearsSampledNorrb &
-                       myData.alive$data.sp$Detector %in% detsNorrbotten)
+  whichDets <- which(!data.alive$data.sp$Year %in% yearsSampledNorrb &
+                       data.alive$data.sp$Detector %in% detsNorrbotten)
   
   ##-- Loop over flagged detections & assign them to closest detector outside Norrbotten
   for(i in 1:length(whichDets)){
-    tmp <- myData.alive$data.sp[whichDets[i], ]
+    tmp <- data.alive$data.sp[whichDets[i], ]
     ## Calculate distance to all sub-detectors
     dist <- st_distance(tmp, detectors$detector.sp)
     ## Artificially increase distance for detectors in Norrbotten 
     dist[ ,subDetsNorrbotten] <- 500000
     ## Assign detection to closest sub-detector outside Norrbotten
-    myData.alive$data.sp$sub.detector[whichDets[i]] <- which.min(dist[1, ])
+    data.alive$data.sp$sub.detector[whichDets[i]] <- which.min(dist[1, ])
     ## Assign detection to the corresponding main detector outside Norrbotten
     thisDet <- detectors$detector.sp$main.cell.id[which.min(dist[1, ])]
-    myData.alive$data.sp$Detector[whichDets[i]] <- which(detectors$main.detector.sp$main.cell.id == thisDet)
+    data.alive$data.sp$Detector[whichDets[i]] <- which(detectors$main.detector.sp$main.cell.id == thisDet)
   }#i
   
   ##-- SHOULD NOT BE ANY INDIVIDUAL DETECTED IN NORRBOTTEN NOW 
-  sum(myData.alive$data.sp$sub.detector[!myData.alive$data.sp$Year %in% yearsSampledNorrb] %in% subDetsNorrbotten)
-  sum(myData.alive$data.sp$Detector[!myData.alive$data.sp$Year %in% yearsSampledNorrb] %in% detsNorrbotten)
+  sum(data.alive$data.sp$sub.detector[!data.alive$data.sp$Year %in% yearsSampledNorrb] %in% subDetsNorrbotten)
+  sum(data.alive$data.sp$Detector[!data.alive$data.sp$Year %in% yearsSampledNorrb] %in% detsNorrbotten)
   
   
-  
-  ## ------     6.7. GENERATE DETECTION HISTORIES : y.alive[i,j,t] & y.dead[i,t] ------
-  
-  ##-- ALL SAMPLES
-  y.ar <- makeY( data = myData.alive$data.sp,
-                 detectors = detectors$main.detector.sp,
-                 method = "Binomial",
-                 data2 = myData.dead,
-                 detectors2 = detectors$main.detector.sp,
-                 returnIdvector = TRUE)
-  
-  ##-- STRUCTURED
-  y.arStruc <- makeY( data = myData.alive$data.sp[myData.alive$data.sp$structured, ],
-                      detectors = detectors$main.detector.sp,
-                      method = "Binomial",
-                      data2 = myData.dead,
-                      detectors2 = detectors$main.detector.sp,
-                      returnIdvector = TRUE)
-  
-  ##-- OTHERS
-  y.arOth <- makeY( data = myData.alive$data.sp[!myData.alive$data.sp$structured, ],
-                    detectors = detectors$main.detector.sp,
-                    method = "Binomial",
-                    data2 = myData.dead,
-                    detectors2 = detectors$main.detector.sp,
-                    returnIdvector = TRUE)
-  
-  ##-- Make sure all detection arrays have the same dimensions
-  y.ar.ALIVEOthers <- y.ar.ALIVEStructured <- array( 0, 
-                                                     dim = dim(y.ar$y.ar),
-                                                     dimnames = dimnames(y.ar$y.ar))
-  ##-- Fill in the y arrays
-  y.ar.ALIVEOthers[dimnames(y.arOth$y.ar)[[1]], , ] <- y.arOth$y.ar
-  y.ar.ALIVEStructured[dimnames(y.arStruc$y.ar)[[1]], , ] <- y.arStruc$y.ar
-  
-  ##-- Project death to the next occasion.
-  y.ar.DEADProjected <- y.ar$y.ar2 
-  y.ar.DEADProjected[] <- 0
-  for(t in 2:n.years){y.ar.DEADProjected[,,t] <- y.ar$y.ar2[,,t-1]}
-  
-  ##-- Create binary dead recovery histories (0: not recovered ; 1: recovered dead)
-  y.ar.DEAD <- apply(y.ar.DEADProjected, c(1,3), function(x){as.numeric(sum(x)>0)})
-  dimnames(y.ar.DEAD) <- list(dimnames(y.ar$y.ar2)[[1]], dimnames(y.ar$y.ar2)[[3]])
-  y.ar.DEAD[y.ar.DEAD > 0] <- 1
-  
-  
-  
-  
-  ## ------     6.8. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------
-  
-  distances <- list()
-  for(t in 1:n.years){
-    
-    ##[PD] WE NEED TO DISCUSS THE MAX DIST USED HERE 
-    ## MUCH SMALLER THAN THE MAX DIST USED IN THE LOCAL EVAL
-    ##-- Identify detections further than maxDist
-    print(paste("------ ", t ," -------", sep = "" ))
-    distances[[t]] <- checkDistanceDetections( 
-      y = y.ar$y.ar[,,t], 
-      detector.xy = detectors$detectors.df[, c("x","y")], 
-      max.distance = 40000,
-      method = "pairwise",
-      plot.check = F)
-    
-    ##-- Plot individuals that have detections further than the threshold
-    if(plot.check){
-      par(mfrow = c(1,1))
-      if(sum(distances[[t]]$y.flagged) > 0){
-        affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
-        count <- 0
-        for(i in affected.ids){
-          count <- count+1
-          plot(st_geometry(myStudyArea), main = paste0("t: ",t,"     i: ", names(affected.ids)[count]))
-          scalebar( 2 * detectors$maxDist,
-                    xy = c(800000,6700000),
-                    type = "bar", divs = 2, below = "km",
-                    label = c(0, detectors$maxDist/1000, detectors$maxDist/500),
-                    cex = 0.8, adj = c(0.5,-0.9))
-          plot( st_geometry(COUNTRIES), add = T)
-          plot( st_geometry(detectors$main.detector.sp),
-                add = T, col = grey(0.8), cex = 0.3, pch = 19)
-          
-          tmp <- myData.alive$data.sp[myData.alive$data.sp$Id == dimnames(y.ar$y.ar)[[1]][i] &
-                                        myData.alive$data.sp$Year == years[t], ]
-          tmp <- tmp[order(tmp$Date), ]
-          tmp.xy <- st_coordinates(tmp)
-          n.det <- nrow(tmp.xy)
-          
-          plot(st_geometry(tmp), col = "pink", pch = 16, cex = 1,add=T)
-          arrows( x0 = tmp.xy[1:(n.det-1),1], y0 = tmp.xy[1:(n.det-1),2],
-                  x1 = tmp.xy[2:n.det,1], y1 = tmp.xy[2:n.det,2],
-                  length = 0.1, lwd = 1)
-          plot(st_geometry(detectors$main.detector.sp[which(y.ar$y.ar[i, ,t] > 0), ]),
-               pch = 16, col = "red", add = T)
-          
-          tmp2 <- detectors$main.detector.sp[which(y.ar$y.ar[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
-          plot(st_geometry(tmp2), add = T, col = "blue", pch = 13, cex = 1.5, lwd = 1)
-        }#i
-      }#if
-    }#if
-    
-    ##-- Remove detections that are further then the threshold
-    #y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
-    y.ar.ALIVEOthers[,,t] <- y.ar.ALIVEOthers[,,t] * (1-distances[[t]]$y.flagged)
-    y.ar.ALIVEStructured[,,t] <- y.ar.ALIVEStructured[,,t] * (1-distances[[t]]$y.flagged)
-    
-    ##-- Remove detections also in myData.alive to run getSInits later
-    idd <- names(affected.ids)
-    for(i in 1:length(idd)){
-      detIds <- which(distances[[t]]$y.flagged[idd[i], ]>0)
-      # myData.alive$data.sp <- myData.alive$data.sp[!(myData.alive$data.sp$Id %in% idd[i] &
-      #                                                      myData.alive$data.sp$Detector %in% detIds &
-      #                                                      myData.alive$data.sp$Year %in% years[t]), ]
-      myData.alive$data.sp <- myData.alive$data.sp %>%
-        dplyr::filter(!(Id %in% idd[i] & Detector %in% detIds & Year %in% years[t]))
-    }#i
-  }#t
-  
-  
-  
+
   ## ------     6.9. SAVE FILTERED DATA ----- 
 
   save( data.alive, data.dead,
@@ -1549,21 +1427,44 @@ makeRovquantData_wolverine <- function(
     data.alive$myData.sp <- data.alive$myData.sp %>%
       dplyr::filter(Sex %in% thisSex)
     
-    data.dead <-  data.dead %>%
+    data.dead <- data.dead %>%
       dplyr::filter(Sex %in% thisSex)
     
     
     
     ## ------     7.2. GENERATE DETECTION HISTORY ARRAYS -----
     
+    ##-- ALL SAMPLES
     y.ar <- makeY( data = data.alive$data.sp,
                    detectors = detectors$main.detector.sp,
                    method = "Binomial",
                    data2 = data.dead,
                    detectors2 = detectors$main.detector.sp,
                    returnIdvector = TRUE)
-    y.ar.ALIVE <- y.ar$y.ar
-    dimnames(y.ar.ALIVE) <- dimnames(y.ar$y.ar)
+    
+    ##-- STRUCTURED
+    y.arStruc <- makeY( data = data.alive$data.sp[data.alive$data.sp$structured, ],
+                        detectors = detectors$main.detector.sp,
+                        method = "Binomial",
+                        data2 = data.dead,
+                        detectors2 = detectors$main.detector.sp,
+                        returnIdvector = TRUE)
+    
+    ##-- OTHERS
+    y.arOth <- makeY( data = data.alive$data.sp[!data.alive$data.sp$structured, ],
+                      detectors = detectors$main.detector.sp,
+                      method = "Binomial",
+                      data2 = data.dead,
+                      detectors2 = detectors$main.detector.sp,
+                      returnIdvector = TRUE)
+    
+    ##-- Make sure all detection arrays have the same dimensions
+    y.ar.ALIVEOthers <- y.ar.ALIVEStructured <- array( 0, 
+                                                       dim = dim(y.ar$y.ar),
+                                                       dimnames = dimnames(y.ar$y.ar))
+    ##-- Fill in the y arrays
+    y.ar.ALIVEOthers[dimnames(y.arOth$y.ar)[[1]], , ] <- y.arOth$y.ar
+    y.ar.ALIVEStructured[dimnames(y.arStruc$y.ar)[[1]], , ] <- y.arStruc$y.ar
     
     ##-- Project death to the next occasion
     y.ar.DEADProjected <- y.ar$y.ar2 
@@ -1581,20 +1482,50 @@ makeRovquantData_wolverine <- function(
     dimnames(y.ar.DEAD) <- list( "id" = dimnames(y.ar$y.ar2)[[1]],
                                  "year" = dimnames(y.ar$y.ar2)[[3]])
     
+    ##-- Create binary dead recovery histories (0: not recovered ; 1: recovered dead)
+    y.ar.DEAD <- apply(y.ar.DEADProjected, c(1,3), function(x){as.numeric(sum(x)>0)})
+    dimnames(y.ar.DEAD) <- list(dimnames(y.ar$y.ar2)[[1]], dimnames(y.ar$y.ar2)[[3]])
+    y.ar.DEAD[y.ar.DEAD > 0] <- 1
+
     
     
-    ## ------     7.3. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR -----
-    
+    ## ------     6.8. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------
+      
     distances <- list()
     for(t in 1:n.years){
-      # print(paste("------ ", t ," -------", sep = "" ))
-      distances[[t]] <- CheckDistanceDetections(
-        y = y.ar.ALIVE[,,t], 
+      
+      ##[PD] WE NEED TO DISCUSS THE maxDist USED HERE 
+      ## MUCH SMALLER THAN THE MAX DIST USED IN THE LOCAL EVAL
+      
+      ##-- Identify detections further than maxDist
+      print(paste0("------ ", t ," -------"))
+      distances[[t]] <- checkDistanceDetections( 
+        y = y.ar$y.ar[ , ,t], 
         detector.xy = detectors$detectors.df[ ,c("x","y")], 
-        max.distance = detectors$maxDist,
+        max.distance = 40000,
         method = "pairwise",
-        plot.check = F,
-        verbose = F)
+        plot.check = F)
+      
+      ##-- REMOVE DETECTIONS THAT ARE FURTHER THAN THE THRESHOLD
+      y.ar.ALIVE[ , ,t] <- y.ar.ALIVE[ , ,t] * (1-distances[[t]]$y.flagged)
+    }#t
+      
+      ##-- Remove detections that are further then the threshold
+      #y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
+      y.ar.ALIVEOthers[ , ,t] <- y.ar.ALIVEOthers[ , ,t] * (1-distances[[t]]$y.flagged)
+      y.ar.ALIVEStructured[ , ,t] <- y.ar.ALIVEStructured[ , ,t] * (1-distances[[t]]$y.flagged)
+      
+      ##-- Remove detections also in data.alive$data.sp to run getSInits later
+      idd <- names(affected.ids)
+      for(i in 1:length(idd)){
+        detIds <- which(distances[[t]]$y.flagged[idd[i], ] > 0)
+        data.alive <- data.alive %>%
+          dplyr::filter(!(Id %in% idd[i] & Detector %in% detIds & Year %in% years[t]))
+      }#i
+    }#t
+    
+    
+  
       
       # ##-- Plot individuals with detections further than the threshold distance
       # if(plot.check){
@@ -1610,8 +1541,8 @@ makeRovquantData_wolverine <- function(
       #       plot(st_geometry(COUNTRIES), add = T)
       #       plot(st_geometry(detectors$main.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
       #       
-      #       tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Id == dimnames(y.ar.ALIVE)[[1]][i] &
-      #                                        myFilteredData.sp$alive$Year == years[t], ]
+      #       tmp <- data.alive[data.alive$Id == dimnames(y.ar.ALIVE)[[1]][i] &
+      #                                        data.alive$Year == years[t], ]
       #       tmp <- tmp[order(tmp$Date), ]
       #       tmp.xy <- st_coordinates(tmp)
       #       n.det <- nrow(tmp.xy)
@@ -1627,7 +1558,7 @@ makeRovquantData_wolverine <- function(
       #     }#i
       #   }#if
       # }#if plot.check
-      # 
+      
       ##-- REMOVE DETECTIONS THAT ARE FURTHER THAN THE THRESHOLD
       y.ar.ALIVE[ , ,t] <- y.ar.ALIVE[ , ,t] * (1-distances[[t]]$y.flagged)
     }#t
