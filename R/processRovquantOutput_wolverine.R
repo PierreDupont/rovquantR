@@ -285,9 +285,12 @@ processRovquantOutput_wolverine <- function(
                                                along = 2)
     
     ##-- sigma
-    resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter],
-                                            results_F$sims.list$sigma[1:minIter])
-    dimnames(resultsSXYZ_MF$sims.list$sigma)[[2]] <- c("M","F")
+    minIterSigma <- min(dim(results_F$sims.list$sigma)[1],dim(results_M$sims.list$sigma)[1])
+    iterSigma <- seq(1, minIterSigma, by = minIterSigma/minIter)
+    resultsSXYZ_MF$sims.list$sigma <- abind::abind(results_M$sims.list$sigma[iterSigma, ],
+                                                   results_F$sims.list$sigma[iterSigma, ],
+                                                   along = 3)
+    dimnames(resultsSXYZ_MF$sims.list$sigma)[[3]] <- c("M","F")
     
     ##-- sex
     resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
@@ -459,14 +462,14 @@ processRovquantOutput_wolverine <- function(
     ## ------   3. UD-BASED DENSITY (5km) ------
     
     ##-- Combine male and female sigma
-    sigma <- do.call(cbind,lapply(resultsSXYZ_MF$sims.list$sex,
-                                  function(x){
-                                    if(x == "M"){
-                                      resultsSXYZ_MF$sims.list$sigma[iter,"M"]
-                                    } else {
-                                      resultsSXYZ_MF$sims.list$sigma[iter,"F"]
-                                    }
-                                  }))
+    sigma <- array(NA, c(length(iter), length(resultsSXYZ_MF$sims.list$sex), n.years))
+    for(t in 1:n.years){
+      for(i in 1:length(resultsSXYZ_MF$sims.list$sex)){
+        sigma[ ,i,t] <- ifelse(resultsSXYZ_MF$sims.list$sex[i] == "M",
+                               resultsSXYZ_MF$sims.list$sigma[iter,t,"M"],
+                               resultsSXYZ_MF$sims.list$sigma[iter,t,"F"])
+      }#i
+    }#t
     
     ##-- Rescale sigma to the raster resolution
     sigma <- sigma/raster::res(rrRegions)[1]
