@@ -58,7 +58,7 @@ makeRovquantData_wolverine <- function(
   years = NULL,
   sex = c("female","male"),
   aug.factor = 0.8,
-  samplingMonths = list(12,1:6),
+  sampling.months = list(12,1:6),
   
   ##-- habitat
   habitat.res = 20000, 
