@@ -59,7 +59,7 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2
 
 cleanRovbaseData( 
   species = "wolverine",
-  #years = 2014:2023,
+  years = 2014:2023,
   data.dir = data.dir,
   working.dir = working.dir)
 
@@ -94,7 +94,7 @@ makeRovquantData(
 ## -----   1. Females ------
 
 ##-- List all prepared input files
-inputFiles <- list.files(file.path( working.dir, "nimbleInFiles/Hunn"),
+inputFiles <- list.files(file.path( working.dir, "nimbleInFiles/female"),
                          full.names = T)
 
 ##-- Load the first one
