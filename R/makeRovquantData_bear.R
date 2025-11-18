@@ -138,70 +138,7 @@ makeRovquantData_bear <- function(
   
   
   
-  ## ------   2. DETECTORS DATA ----- 
-  
-  ## ------     2.1. DISTANCE TO ROADS -----
-  
-  ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster::raster(file.path(data.dir,"GIS/Roads/MinDistAllRoads1km.tif"))
-  
-  ##-- Fasterize to remove values that fall in the sea
-  r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)
-  r[!is.na(r)] <- DistAllRoads[!is.na(r)]
-  DistAllRoads <- r
-  
-  
-  
-  ## ------     2.2. SKANDOBS ------
-  
-  ##-- Load the last SkandObs data file
-  skandObs <- readMostRecent( 
-    path = file.path(data.dir, "Skandobs"),
-    extension = ".xlsx",
-    pattern = "Skandobs")
-  
-  ##-- Replace scandinavian characters
-  colnames(skandObs) <- translateForeignCharacters(data = colnames(skandObs))
-  
-  skandObs <- skandObs %>%
-    ##-- Extract important info (e.g. month, year)
-    dplyr::mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
-                   year = as.numeric(format(date,"%Y")),
-                   month = as.numeric(format(date,"%m")),
-                   species = stringi::stri_trans_general(species, "Latin-ASCII")) %>%
-    ##-- Turn into spatial points object
-    sf::st_as_sf(., coords = c("longitude","latitude")) %>%
-    sf::st_set_crs(. , value = "EPSG:4326") %>%
-    sf::st_transform(. ,sf::st_crs(COUNTIES))
-  
-  
-  
-  ## ------     2.3. ROVBASE OBS ------
-  
-  ##-- GET ALL SAMPLES COLLECTED (all species)
-  rovbaseObs <- readMostRecent( path = data.dir,
-                                extension = ".xls",
-                                pattern = "all_samples") %>%
-    ##-- Deal with Scandinavian characters
-    dplyr::mutate(Species = stringi::stri_trans_general(Species, "Latin-ASCII")) %>%
-    ##-- Filter out samples without coordinates
-    dplyr::filter( !is.na(East_UTM33),
-                   Species %in% c("Bjorn","Fjellrev","Gaupe","Hund","Jerv","Rodrev","Ulv"),
-                   Sample_type %in% c("Ekskrement","Har","Urin","Valpeekskrement (Ulv)",
-                                      "Sekret (Jerv)","Saliv/Spytt")) %>%
-    ##-- Extract important info (e.g. month, year, country of collection)
-    dplyr::mutate( Sample_type = translateForeignCharacters(data = Sample_type),
-                   Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
-                   year = as.numeric(format(Date,"%Y")),
-                   month = as.numeric(format(Date,"%m")),
-                   country = substrRight(County,3)) %>%
-    ##-- Turn into spatial points object
-    sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
-    sf::st_set_crs(. , sf::st_crs(COUNTIES))
-  
-  
-  
-  ## ------   3. NGS DATA -----
+  ## ------   2. NGS DATA -----
   
   ##-- Extract date from the last cleaned data file
   DATE <- getMostRecent( 
@@ -420,6 +357,14 @@ makeRovquantData_bear <- function(
   
   ## ------       2.2.2. EXTRACT DISTANCES TO ROADS -----
   
+  ##-- Load map of distance to roads (1km resolution)
+  DistAllRoads <- raster::raster(file.path(data.dir,"GIS/Roads/MinDistAllRoads1km.tif"))
+  
+  ##-- Fasterize to remove values that fall in the sea
+  r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)
+  r[!is.na(r)] <- DistAllRoads[!is.na(r)]
+  DistAllRoads <- r
+  
   ##-- AGGREGATE TO MATCH THE DETECTORS RESOLUTION
   DistAllRoads <- raster::aggregate( 
     x = DistAllRoads,
@@ -451,11 +396,34 @@ makeRovquantData_bear <- function(
                  as_points = FALSE,
                  merge = TRUE) %>%
     dplyr::filter(Habitat %in% 1)
-  #detArea <- aggregate(rasterToPolygons(myHabitat$habitat.rWthBuffer,function(x) x==1))
-  
+
   r.detector <- raster::aggregate( 
     subdetectors.r,
     fact = (detectors$resolution/detectors$resolution.sub))
+  
+  
+  
+  ## ------         2.2.3.1. SKANDOBS ------
+  
+  ##-- Load the last SkandObs data file
+  skandObs <- readMostRecent( 
+    path = file.path(data.dir, "Skandobs"),
+    extension = ".xlsx",
+    pattern = "Skandobs")
+  
+  ##-- Replace scandinavian characters
+  colnames(skandObs) <- translateForeignCharacters(data = colnames(skandObs))
+  
+  skandObs <- skandObs %>%
+    ##-- Extract important info (e.g. month, year)
+    dplyr::mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
+                   year = as.numeric(format(date,"%Y")),
+                   month = as.numeric(format(date,"%m")),
+                   species = stringi::stri_trans_general(species, "Latin-ASCII")) %>%
+    ##-- Turn into spatial points object
+    sf::st_as_sf(., coords = c("longitude","latitude")) %>%
+    sf::st_set_crs(. , value = "EPSG:4326") %>%
+    sf::st_transform(. ,sf::st_crs(COUNTIES))
   
   ##-- Subset SkandObs 
   skandObs <- skandObs %>%
@@ -483,6 +451,31 @@ makeRovquantData_bear <- function(
   # })
   # r.skandObsSamplesBinary <- brick(lapply(r.list,function(x) x[[1]]))
   # r.skandObsSamplesContinuous <- brick(lapply(r.list,function(x) x[[2]]))
+  
+  
+  
+  ## ------         2.2.3.2. ROVBASE ------
+  
+  ##-- Get all samples collected (all species)
+  rovbaseObs <- readMostRecent( path = data.dir,
+                                extension = ".xls",
+                                pattern = "all_samples") %>%
+    ##-- Deal with Scandinavian characters
+    dplyr::mutate(Species = stringi::stri_trans_general(Species, "Latin-ASCII")) %>%
+    ##-- Filter out samples without coordinates
+    dplyr::filter( !is.na(East_UTM33),
+                   Species %in% c("Bjorn","Fjellrev","Gaupe","Hund","Jerv","Rodrev","Ulv"),
+                   Sample_type %in% c("Ekskrement","Har","Urin","Valpeekskrement (Ulv)",
+                                      "Sekret (Jerv)","Saliv/Spytt")) %>%
+    ##-- Extract important info (e.g. month, year, country of collection)
+    dplyr::mutate( Sample_type = translateForeignCharacters(data = Sample_type),
+                   Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
+                   year = as.numeric(format(Date,"%Y")),
+                   month = as.numeric(format(Date,"%m")),
+                   country = substrRight(County,3)) %>%
+    ##-- Turn into spatial points object
+    sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
+    sf::st_set_crs(. , sf::st_crs(COUNTIES))
   
   
   ##-- Subset RovbaseObs 
@@ -513,6 +506,9 @@ makeRovquantData_bear <- function(
   #   r.SkandObsOtherSamplesBinary[[t]][r.SkandObsOtherSamplesBinary[[t]][]>1 ] <- 1
   # }
   
+  
+  
+  ## ------         2.2.3.3. COMBINE ROVBASE & SKANDOBS ------
   
   ##-- Smooth binary map
   ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.02 
