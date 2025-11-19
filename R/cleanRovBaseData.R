@@ -780,6 +780,14 @@ cleanRovbaseData <- function(
     zeroWeightDeads <- which(dead.recovery$Age %in% 0 &
                                dead.recovery$Month > 2 &
                                dead.recovery$Month < 12)
+    
+    ##-- Identify samples collected by hair traps
+    HairTrapSamples <- readMostRecent(
+      path = data.dir,
+      extension = ".xlsx",
+      pattern = "hairtrap")
+    alive <- alive %>%
+      mutate(hairTrap = DNAID %in% HairTrapSamples$DNAID)
   }
   
   

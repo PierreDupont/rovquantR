@@ -210,7 +210,7 @@ makeRovquantData <- function(
       subdetector.res,
       max.det.dist,
       resize.factor,
-      renam.list)
+      rename.list)
   }
   
   
