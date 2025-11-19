@@ -33,14 +33,11 @@ source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
 
 
 ## ------ SOURCE THE REQUIRED FUNCTIONS ------
-
-sourceDirectory(dir.function, modifiedOnly = FALSE)
-# load(file.path(dir.dropbox,"DATA/MISC DATA/age.lookup.table.RData"))
-# source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/PD/FUNCTIONS/FunctionScripts/dbin_LESS_Cached_MultipleCov.R")
-source("C:/My_documents/RovQuant/Temp/PD/FUNCTIONS/FunctionScripts/dbin_LESS_Cached_MultipleCov.R")
-
-##-- LOAD CPP FUNCTIONS 
-for(i in list.files(dir.function.cpp)){sourceCpp(filePath(dir.function.cpp,i))}
+ 
+# sourceDirectory(dir.function, modifiedOnly = FALSE)
+# 
+# ##-- LOAD CPP FUNCTIONS 
+# for(i in list.files(dir.function.cpp)){sourceCpp(filePath(dir.function.cpp,i))}
 
 
 
@@ -61,6 +58,14 @@ years <- myVars$years
 nYears <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
 
+##-- Alive states
+alive.states <- c(2) 
+
+##-- years not sampled in Norrbotten
+yearsSampledNorrb <- c(2016:2018,2023)
+yearsNotSampled <- which(!years %in% yearsSampledNorrb)
+
+
 ##-- Name of the female and male models
 modelNameF <- "Hunn"
 modelNameM <- "Hann"
@@ -69,11 +74,13 @@ niter <- 100
 nburnin <- 10
 extraction.res <- 5000
 overwrite <- FALSE
+plot.check <- TRUE
 
 ##-- Extract date from the last cleaned data file
 DATE <- getMostRecent( 
   path = file.path(working.dir, "data"),
   pattern = "CleanData_wolverine")
+
 
 
 ##------------------------------------------------------------------------------
@@ -142,8 +149,6 @@ years <- 2014:2023
 n.years <- length(years) 
 
 
-
-
 ##-- POLYGONS OF SWEDEN & NORWAY
 COUNTRIES <- REGIONS %>%
   dplyr::filter(country %in% c("SWE","NOR")) %>%
@@ -174,18 +179,23 @@ COUNTIES_AGGREGATED <- REGIONS %>%
   group_by(id) %>%
   summarize() %>%
   st_simplify( ., preserveTopology = T, dTolerance = 500)
-plot(COUNTIES_AGGREGATED)
 
 
 ##-- SHAPEFILE OF NEW COUNTIES IN SWEDEN
 NewCountySwe <- read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/rk_lan_07_WGS84.shp"))
-plot(NewCountySwe, border = "red")
 
 ##-- HABITAT RASTERS
 # load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20kmNewSweCounties.RData"))
 # load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
 
-   
+##-- Plot check
+if(plot.check){
+  plot(st_geometry(COUNTIES_AGGREGATED))
+  plot(st_geometry(COUNTIES), border = "blue", add = T)
+  plot(st_geometry(NewCountySwe), border = "red", add = T)
+}
+
+
 
 ##------------------------------------------------------------------------------
 ## ------ II. INPUT SUMMARY ------
@@ -342,37 +352,38 @@ write.csv( NGSCountrySEX,
 ## ------     2.2. PER OBSERVATION PROCESS ------
 
 NGSCountrySEXoBS <- matrix("", ncol = nYears*2+1, nrow = 7)
-row.names(NGSCountrySEXoBS) <- c("", rep(c("Norway","Sweden","Total"), each = 2))
-colnames(NGSCountrySEXoBS) <- c("",unlist(lapply(YEARS, function(x) c(x[2],x[2]))))
-
 NGSCountrySEXoBS[1, ] <- c("", rep(c("F","M"), nYears))
 NGSCountrySEXoBS[ ,1] <- c("", rep(c("Structured","Unstructured"), 3))
+row.names(NGSCountrySEXoBS) <- c("", rep(c("Norway","Sweden","Total"), each = 2))
+colnames(NGSCountrySEXoBS) <- c("", unlist(lapply(YEARS, function(x) c(x[2],x[2]))))
 
 sex <- c("Hunn","Hann")
 sex1 <- c(0,1)
-ye <- seq(2,nYears*2,by=2)
+ye <- seq(2, nYears*2, by = 2)
 for(s in 1:2){
   for(t in 1:nYears){
-    ## Structured
-    tempStruc <- NGSStructured[NGSStructured$Year == years[t] & NGSStructured$Sex==sex[s], ]
-    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[1], ye[t] + sex1[s] ] <- nrow(tempStruc[tempStruc$Country %in% "N", ])
-    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[1], ye[t] + sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "S", ])
-    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[1], ye[t] + sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "S" | tempStruc$Country %in% "N", ])
+    ##-- Structured
+    tempStruc <- NGSStructured[NGSStructured$Year == years[t] & NGSStructured$Sex == sex[s], ]
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[1],ye[t]+sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "N", ])
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[1],ye[t]+sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "S", ])
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[1], ye[t]+sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "S" | tempStruc$Country %in% "N", ])
     
-    ## Other
-    tempOther <- NGSOther[NGSOther$Year == years[t] & NGSOther$Sex==sex[s], ]
-    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[2], ye[t] + sex1[s] ] <- nrow(tempOther[tempOther$Country %in% "N", ])
-    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[2], ye[t] + sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S", ])
-    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[2], ye[t] + sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S" | tempOther$Country %in% "N", ])
+    ##-- Other
+    tempOther <- NGSOther[NGSOther$Year == years[t] & NGSOther$Sex == sex[s], ]
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[2],ye[t]+sex1[s]] <- nrow(tempOther[tempOther$Country %in% "N", ])
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[2],ye[t]+sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S", ])
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[2], ye[t]+sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S" | tempOther$Country %in% "N", ])
     }#t
 }#s
 
 ##-- Export .tex table
 addtorow <- list()
 addtorow$pos <- list(c(0),0)
-addtorow$command <- c(paste0('& \\multicolumn{1}{c}{} & \\multicolumn{2}{c}{',
-                             sort(unique(colnames(NGSCountrySEXoBS)[2:ncol(NGSCountrySEXoBS)])),
-                             '}\\\\'),
+addtorow$command <- c(paste0('& \\multicolumn{2}{c}{}',
+                            paste0(' & \\multicolumn{2}{c}{',
+                                   sort(unique(colnames(NGSCountrySEXoBS)[2:ncol(NGSCountrySEXoBS)])),
+                                   '}', collapse = ""),
+                            '\\\\'),
                       rep("\\rowcolor[gray]{.95}",1))
 colnames(NGSCountrySEXoBS) <- rep("", ncol(NGSCountrySEXoBS))
 multirow <- paste0( paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Norway","Sweden","Total"), "}}"))
@@ -418,9 +429,8 @@ print(xtable( NGSCountrySEXoBS,
 
 ##-- GIVE FILE TO HENRIK ([PD] for what????)
 tmp <- NGSOther[NGSOther$Year %in% c(2019,2020,2021), ]
-tmp
-write.csv( tmp,
-           file = file.path(working.dir, "tables", "Unstructured2020_2022.csv"))
+#tmp
+write.csv(tmp, file = file.path(working.dir, "tables", "Unstructured2020_2022.csv"))
 
 
 
@@ -904,14 +914,12 @@ polygonsLabel( swedenCounties2,
 dev.off()
 
 
-
-
-
 ##------------------------------------------------------------------------------
 
 ## ------ III. PROCESS MODEL OUTPUTS -----
 
 ## ------   1. GET AND COMPILE BITES ------
+
 message("## Processing model MCMC outputs...")
 
 ##-- Check that a file with that name does not already exist to avoid overwriting
@@ -1041,16 +1049,8 @@ save( results_F, results_M, resultsSXYZ_MF,
       file = file.path( working.dir, "data", paste0("MCMC_wolverine.RData")))
 }
 
-
-
-
-## ------   2. CREATE POLYGON WITHOUT BUFFER ------
-
-##-- MALES
-habbRNobuffM <- habitat$habitat.rWthBuffer
-
-##-- FEMALES
-habbRNobuffF <- habitat$habitat.rWthBuffer
+##-- Number of activity center posterior samples
+n.mcmc <- dim(resultsSXYZ_MF$sims.list$z)[1]
 
 
 
@@ -1062,7 +1062,18 @@ results_M$Rhat
 
 
 ##------------------------------------------------------------------------------
-## ------   2. EXTRACT DENSITY (5km) ------
+
+## ------   2. CREATE POLYGON WITHOUT BUFFER ------
+
+# ##-- MALES
+# habbRNobuffM <- habitat$habitat.rWthBuffer
+# 
+# ##-- FEMALES
+# habbRNobuffF <- habitat$habitat.rWthBuffer
+
+
+
+## ------   3. EXTRACT DENSITY ------
 
 message("## Processing density outputs...")
 
@@ -1078,15 +1089,37 @@ if(n.mcmc >= niter){
 
 ##-- Remove buffer from the habitat
 ## [PD] maybe remove?
-# habitat.rWthBuffer <- habitat$habitat.rWthBuffer
-# habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
-# searchedPolygon <- raster::rasterToPolygons( habitat.rWthBuffer,
-#                                              dissolve = T,
-#                                              function(x) x == 1)
+habitat.rWthBuffer <- habitat$habitat.rWthBuffer
+habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
+searchedPolygon <- raster::rasterToPolygons( habitat.rWthBuffer,
+                                             dissolve = T,
+                                             function(x) x == 1)
 
 ##-- Habitat raster with extent used in the model
 habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
                                    habitat$habitat.r)
+
+##################
+##-- [PD] from CM
+habitat.rWthBuffer <- habitat$habitat.rWthBuffer
+habitat.rWthBuffer[habitat.rWthBuffer %in% 0] <- NA
+
+searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer), 
+                                as_points = FALSE, merge = TRUE)
+searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
+
+# habitatPolygon <- sf::st_as_sf(stars::st_as_stars(habitat$habitat.r), 
+#                                as_points = FALSE, merge = TRUE)
+# habitatPolygon <- habitatPolygon[habitatPolygon$Habitat > 0, ]
+# habitatPolygon5km <- mask(habitatRasterResolution$`5km`[["Habitat"]], habitatPolygon)
+habitatPolygon5km <- crop(habitatRasterResolution$`5km`[["Habitat"]], habitat$habitat.r)
+plot(rrRegions)
+plot(habitatPolygon5km)
+##################
+
+
+
+
 
 ##-- Create 5km raster of carnivore regions for extraction
 rrRegions <- extraction.raster$Regions
@@ -1097,6 +1130,59 @@ rrRegions <- raster::crop(rrRegions, habitat$habitat.r)
 rrCounties <- extraction.raster$Counties
 rrCounties <- raster::mask(rrCounties, habitat$habitat.poly)
 rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
+
+##################
+##-- [PD] from CM
+##-- COUNTRIES 
+rrCountries <- habitatRasterResolution$`5km`[["Countries"]]
+rrCountries[rrCountries%in% c(1,3)] <- NA
+rrCountries <- mask(rrCountries, searchedPolygon)
+rrCountries <- crop(rrCountries, habitat$habitat.r)
+plot(rrCountries)
+
+##-- REGIONS & COUNTIES 
+rrRegions <- habitatRasterResolution$`5km`[["Regions"]] 
+levels(rrRegions)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
+  "Södermanland", "Östergötland","Jönköping", "Skåne", "VästraGötaland",
+  "Värmland","Örebro","Västmanland","Gävleborg",
+  "Västernorrland","Jämtland" ,"Västerbotten")
+rrRegions[habitatRasterResolution$`5km`[["Countries"]]%in% c(1, 3)] <- NA
+rrRegions <- mask(rrRegions, searchedPolygon)
+rrRegions <- crop(rrRegions, habitat$habitat.r)
+plot(rrRegions)
+
+##-- SWEDISH REGIONS 
+rrRegionsSwe <- habitatRasterResolution$`5km`[["Regions"]]
+rrRegionsSwe[habitatRasterResolution$`5km`[["Countries"]]%in% c(1,2,3)] <- NA
+rrRegionsSwe <- mask(rrRegionsSwe, searchedPolygon)
+rrRegionsSwe <- crop(rrRegionsSwe, habitat$habitat.r)
+plot(rrRegionsSwe)
+
+##-- TRANSFORM INTO MANAGEMENT REGIONS 
+rrRegionsSwe[rrRegionsSwe[]%in% c(18,19,20,21)] <- 1
+rrRegionsSwe[rrRegionsSwe[]%in% c(13,17,16,14,15,12,22,3)] <- 2
+rrRegionsSwe[rrRegionsSwe[]%in% c(4,5,10,6,7,9,11,8)] <- 3
+rrRegionsSwe <- ratify(rrRegionsSwe)
+df <- data.frame("ID"=c(1,2,3), "Regions"= c("Nordre","Midtre","Söndre"))
+levels(rrRegionsSwe)[[1]] <- df
+
+##--- Norwegian County 
+rrCountiesNor <- habitatRasterResolution$`5km`[["Counties"]]
+rrCountiesNor[rrCountiesNor[] %in% c(1,2, 3)] <- NA
+rrCountiesNor <- mask(rrCountiesNor, searchedPolygon)
+rrCountiesNor <- crop(rrCountiesNor, habitat$habitat.r)
+#remove sweden
+rrCountiesNor[rrCountries[]%in%4] <- NA
+plot(rrCountiesNor)
+plot(rrRegions)
+plot(rrCountries)
+gc()
+##################
+
+
+
+
+
 
 ##-- Calculate density only if necessary
 ##-- Check that a file with that name does not already exist to avoid overwriting
@@ -1122,81 +1208,11 @@ if(!overwrite){
 if(densTest){
 message("## Extracting population density... \n## This might take a while...")
 
-##-- WHAT STATES ARE CONSIDERED AS ALIVE IN THE MODEL
-alive.states <- c(2) 
 
-##-- years not sampled in Norrbotten
-yearsSampledNorrb <- c(2016:2018,2023)
-yearsNotSampled <- which(!years %in% yearsSampledNorrb)
+## ------   1. PREPARE DENSITY EXTRACTION ------
 
+## ------     3.1. AC BASED DENSITY (5km) ------
 
-
-## ------     2.1. AC BASED DENSITY (5km) ------
-
-habitat.rWthBuffer <- habitat$habitat.rWthBuffer
-habitat.rWthBuffer[habitat.rWthBuffer %in% 0] <- NA
-
-searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer), 
-                                as_points = FALSE, merge = TRUE)
-searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
-# searchedPolygon <- rasterToPolygons(habitat.rWthBuffer, dissolve = T, function(x) x==1 )
-
-##-- REMOVE THE BUFFER FROM THE HABITAT 
-##-- COUNTRIES 
-rrCountries <- habitatRasterResolution$`5km`[["Countries"]]
-##-- REMOVE FINLAND AND RUSSIA 
-rrCountries[rrCountries%in% c(1,3)] <- NA
-rrCountries <- mask(rrCountries, searchedPolygon)
-rrCountries <- crop(rrCountries, habitat$habitat.r)
-plot(rrCountries)
-
-##-- REGIONS & COUNTIES 
-rrRegions <- habitatRasterResolution$`5km`[["Regions"]] 
-##-- Deal with the special characters
-levels(rrRegions)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
-  "Södermanland", "Östergötland","Jönköping", "Skåne", "VästraGötaland",
-  "Värmland","Örebro","Västmanland","Gävleborg",
-  "Västernorrland","Jämtland" ,"Västerbotten")
-rrRegions[habitatRasterResolution$`5km`[["Countries"]]%in% c(1, 3)] <- NA
-plot(rrRegions)
-rrRegions <- mask(rrRegions, searchedPolygon)
-rrRegions <- crop(rrRegions, habitat$habitat.r)
-
-habitatPolygon <- sf::st_as_sf(stars::st_as_stars(habitat$habitat.r), 
-                                as_points = FALSE, merge = TRUE)
-habitatPolygon <- habitatPolygon[habitatPolygon$Habitat > 0, ]
-habitatPolygon5km <- mask(habitatRasterResolution$`5km`[["Habitat"]], habitatPolygon)
-habitatPolygon5km <- crop(habitatRasterResolution$`5km`[["Habitat"]], habitat$habitat.r)
-plot(rrRegions)
-plot(habitatPolygon5km)
-
-##-- SWEDISH REGIONS 
-rrRegionsSwe <- habitatRasterResolution$`5km`[["Regions"]]
-rrRegionsSwe[habitatRasterResolution$`5km`[["Countries"]]%in% c(1,2,3)] <- NA
-rrRegionsSwe <- mask(rrRegionsSwe, searchedPolygon)
-rrRegionsSwe <- crop(rrRegionsSwe, habitat$habitat.r)
-plot(rrRegionsSwe)
-##-- TRANSFORM INTO MANAGEMENT REGIONS 
-rrRegionsSwe[rrRegionsSwe[]%in% c(18,19,20,21)] <- 1
-rrRegionsSwe[rrRegionsSwe[]%in% c(13,17,16,14,15,12,22,3)] <- 2
-rrRegionsSwe[rrRegionsSwe[]%in% c(4,5,10,6,7,9,11,8)] <- 3
-rrRegionsSwe <- ratify(rrRegionsSwe)
-df <- data.frame("ID"=c(1,2,3), "Regions"= c("Nordre","Midtre","SÃ¸ndre"))
-levels(rrRegionsSwe)[[1]] <- df
-
-## NorwegianCounty 
-rrCountiesNor <- habitatRasterResolution$`5km`[["Counties"]]
-rrCountiesNor[rrCountiesNor[] %in% c(1,2, 3)] <- NA
-rrCountiesNor <- mask(rrCountiesNor, searchedPolygon)
-rrCountiesNor <- crop(rrCountiesNor, habitat$habitat.r)
-#remove sweden
-rrCountiesNor[rrCountries[]%in%4] <- NA
-plot(rrCountiesNor)
-plot(rrRegions)
-plot(rrCountries)
-
-
-gc()
 ##-- GET THE OBJECTS TO RUN THE DENSITY FUNCTION 
 ##-- COUNTRY
 densityInputCountries <- getDensityInput(
@@ -1205,6 +1221,8 @@ densityInputCountries <- getDensityInput(
   s = resultsSXYZ_MF$sims.list$sxy,
   plot.check = TRUE)
 
+rownames(densityInputCountries$regions.rgmx)
+
 ##-- GET THE OBJECTS TO RUN THE DENSITY FUNCTION 
 ##-- REGIONS
 densityInputRegions <- getDensityInput( 
@@ -1212,6 +1230,7 @@ densityInputRegions <- getDensityInput(
   habitat = habitatPolygon5km,
   s = resultsSXYZ_MF$sims.list$sxy,
   plot.check = TRUE)
+rownames(densityInputRegions$regions.rgmx)
 
 ##-- Swedish Regions
 densityInputRegionsSwe <- getDensityInput( 
@@ -1219,6 +1238,7 @@ densityInputRegionsSwe <- getDensityInput(
   habitat = habitatPolygon5km,
   s = resultsSXYZ_MF$sims.list$sxy,
   plot.check = TRUE)
+rownames(densityInputRegionsSwe$regions.rgmx)
 
 ##-- MERGE COUNTRY AND REGION MATRICES TO ALLOW SIMULTANEOUS EXTRACTION
 regionID <- rbind( densityInputCountries$regions.rgmx,
@@ -1234,6 +1254,7 @@ densityInputRegionsNor <- getDensityInput(
   habitat = habitatPolygon5km,
   s = resultsSXYZ_MF$sims.list$sxy,
   plot.check = TRUE)
+rownames(densityInputRegionsNor$regions.rgmx)
 
 
 
@@ -1291,14 +1312,14 @@ areaAllRegions <- c(areaCountry, areaRegionsSwe, areaRegions)
 
 
 
-## ------       2.1.2 MALE & FEMALES (5km) ------
+## ------       2.1.2. MALE & FEMALES (5km) ------
 
 ite <- seq(1,dim(densityInputCountries$sx[ , ,t])[1], by = 1)
  
 ##-- EXTRACT DENSITY 
 DensityCountriesRegions <- list()
 for(t in 1:nYears){
-  DensityCountriesRegions[[t]] <- GetDensity_PD(
+  DensityCountriesRegions[[t]] <- GetDensity(
     sx = densityInputCountries$sx[ite,,t],
     sy =  densityInputCountries$sy[ite,,t],
     z = resultsSXYZ_MF$sims.list$z[ite,,t],
@@ -1309,10 +1330,58 @@ for(t in 1:nYears){
 }#t
 DensityCountriesRegions[[t]]$summary
 
-##-- SAVE .RData
-save( DensityCountriesRegions,
-      file = file.path( working.dir,
-                        "data/DensityCountriesRegions.RData"))
+
+ACdensity <- list()
+for(t in 1:n.years){
+  ACdensity[[t]] <- GetDensity(
+    sx = densityInputRegions$sx[ , ,t],
+    sy = densityInputRegions$sy[ , ,t],
+    z = resultsSXYZ_MF$sims.list$z[ , ,t],
+    IDmx = densityInputRegions$habitat.id,
+    aliveStates = alive.states,
+    regionID = rbind(regionID,countyID),
+    returnPosteriorCells = F)
+}#t
+names(ACdensity) <- years
+
+
+
+## ------     2.2. MALE -----
+
+IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
+
+ACdensityM <- list()
+for(t in 1:n.years){
+  ACdensityM[[t]] <- GetDensity(
+    sx = densityInputRegions$sx[ ,IDMales,t],
+    sy =  densityInputRegions$sy[ ,IDMales,t],
+    z = resultsSXYZ_MF$sims.list$z[ ,IDMales,t],
+    IDmx = densityInputRegions$habitat.id,
+    aliveStates = 2,
+    regionID = rbind(regionID,countyID),
+    returnPosteriorCells = F)
+}#t
+names(ACdensityM) <- years
+
+
+
+## ------     2.3. FEMALE -----
+
+IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
+
+ACdensityF <- list()
+for(t in 1:n.years){
+  ACdensityF[[t]] <- GetDensity(
+    sx = densityInputRegions$sx[ ,IDFemales,t],
+    sy = densityInputRegions$sy[ ,IDFemales,t],
+    z = resultsSXYZ_MF$sims.list$z[ ,IDFemales,t],
+    IDmx = densityInputRegions$habitat.id,
+    aliveStates = 2,
+    regionID = rbind(regionID,countyID),
+    returnPosteriorCells = F)
+}
+names(ACdensityF) <- years
+
 
 
 
@@ -1324,7 +1393,7 @@ IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
 ##-- EXTRACT DENSITY 
 DensityCountriesRegionsM <- list()
 for(t in 1:nYears){
-  DensityCountriesRegionsM[[t]] <- GetDensity_PD(
+  DensityCountriesRegionsM[[t]] <- GetDensity(
     sx = densityInputCountries$sx[ite,IDMales,t],
     sy =  densityInputCountries$sy[ite,IDMales,t],
     z = resultsSXYZ_MF$sims.list$z[ite,IDMales,t],
@@ -1333,12 +1402,6 @@ for(t in 1:nYears){
     regionID = regionID,
     returnPosteriorCells = F)
 }#t
-DensityCountriesRegionsM[[t]]$summary
-
-##-- SAVE .RData
-save( DensityCountriesRegionsM,
-      file = file.path( working.dir,
-                       "data/DensityCountriesRegionsM.RData"))
 
 
 
@@ -1350,7 +1413,7 @@ IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
 ##-- EXTRACT DENSITY 
 DensityCountriesRegionsF <- list()
 for(t in 1:nYears){
-  DensityCountriesRegionsF[[t]] <- GetDensity_PD(
+  DensityCountriesRegionsF[[t]] <- GetDensity(
     sx = densityInputCountries$sx[ite,IDFemales,t],
     sy = densityInputCountries$sy[ite,IDFemales,t],
     z = resultsSXYZ_MF$sims.list$z[ite,IDFemales,t],
@@ -1359,12 +1422,6 @@ for(t in 1:nYears){
     regionID = regionID,
     returnPosteriorCells = F)
 }
-DensityCountriesRegionsF[[t]]$summary
-
-##-- SAVE .RData
-save( DensityCountriesRegionsF,
-      file = file.path( working.dir,
-                       "data/DensityCountriesRegionsF.RData" ))
 
 
 
@@ -1372,7 +1429,7 @@ save( DensityCountriesRegionsF,
 
 DensityCountriesRegionsNOR <- list()
 for(t in 1:nYears){
-  DensityCountriesRegionsNOR[[t]] <- GetDensity_PD(
+  DensityCountriesRegionsNOR[[t]] <- GetDensity(
     sx = densityInputRegionsNor$sx[ite,,t],
     sy =  densityInputRegionsNor$sy[ite,,t],
     z = resultsSXYZ_MF$sims.list$z[ite,,t],
@@ -1383,10 +1440,83 @@ for(t in 1:nYears){
 }#t
 
 
+## ------   3. UD-BASED DENSITY (5km) ------
+
+##-- Combine male and female sigma
+sigma <- array(NA, c(length(iter), length(resultsSXYZ_MF$sims.list$sex), n.years))
+for(t in 1:n.years){
+  for(i in 1:length(resultsSXYZ_MF$sims.list$sex)){
+    sigma[ ,i,t] <- ifelse(resultsSXYZ_MF$sims.list$sex[i] == "M",
+                           resultsSXYZ_MF$sims.list$sigma[iter,t,"M"],
+                           resultsSXYZ_MF$sims.list$sigma[iter,t,"F"])
+  }#i
+}#t
+
+##-- Rescale sigma to the raster resolution
+sigma <- sigma/raster::res(rrRegions)[1]
+
+##-- IDENTIFY PROXIMITY HABITAT CELLS 
+habitatMask <- densityInputCountries$habitat.id
+habitatMask[!is.na(habitatMask)] <- 1 
+
+## COMPUTE THE UD BASED FOR A FEW ITERATIONS
+sigma <- resultsSXYZ_MF$sims.list$sigma
+##-- RESCALE SIGMA TO THE HABITAT SCALE
+sigmaRescaled <- sigma/res(rrCountries)[1]
+
+##-- SELECT xxx ITERATIONS RANDOMLY 
+spaceUSED <- list()
+iter <- sample(1:dim(densityInputCountries$sy)[1], size = 100)
+for(t in 1:nYears){
+  spaceUSED[[t]] <- GetSpaceUse(
+    sx = densityInputCountries$sx[iter, ,t],
+    sy = densityInputCountries$sy[iter, ,t],
+    z = resultsSXYZ_MF$sims.list$z[iter, ,t],
+    sigma = sigmaRescaled[iter],
+    densityInputCountries$habitat.xy,
+    aliveStates = alive.states,
+    regionID = densityInputCountries$regions.rgmx,
+    display_progress = TRUE,
+    returnPosteriorCells = FALSE)
+}
+
+spaceUSED1 <- spaceUSED
+spaceUSED <- list()
+for(t in 1:nYears){
+  spaceUSED[[t]] <- list()
+  spaceUSED[[t]][["MeanCell"]] <- spaceUSED1[[t]]$MeanCell
+}
+
+
+UDdensity <- list()
+for(t in 1:n.years){
+  UDdensity[[t]] <- GetSpaceUse(
+    sx = densityInputRegions$sx[ , ,t],
+    sy = densityInputRegions$sy[ , ,t],
+    z = resultsSXYZ_MF$sims.list$z[iter, ,t],
+    sigma = sigma,
+    habitatxy = densityInputRegions$habitat.xy,
+    aliveStates = 2,
+    regionID = regionID,
+    display_progress = T,
+    returnPosteriorCells = F)
+}#t
+names(UDdensity) <- years
 
 
 
+## ------   4. SAVE DENSITY OBJECTS ------
 
+save( inputRaster,
+      ACdensity,
+      ACdensityF,
+      ACdensityM,
+      UDdensity,
+      UDdensityF,
+      UDdensityM,
+      file = file.path( working.dir, "data",
+                        paste0("Density_bear_",DATE,".RData")))
+}
 
 
 
@@ -2423,57 +2553,6 @@ for(t in 1: nYears){
   
 }
 dev.off()
-
-
-
-## ------   3. UD-BASED DENSITY (5km) ------
-
-##-- Combine male and female sigma
-sigma <- array(NA, c(length(iter), length(resultsSXYZ_MF$sims.list$sex), n.years))
-for(t in 1:n.years){
-  for(i in 1:length(resultsSXYZ_MF$sims.list$sex)){
-    sigma[ ,i,t] <- ifelse(resultsSXYZ_MF$sims.list$sex[i] == "M",
-                           resultsSXYZ_MF$sims.list$sigma[iter,t,"M"],
-                           resultsSXYZ_MF$sims.list$sigma[iter,t,"F"])
-  }#i
-}#t
-
-##-- Rescale sigma to the raster resolution
-sigma <- sigma/raster::res(rrRegions)[1]
-
-##-- IDENTIFY PROXIMITY HABITAT CELLS 
-habitatMask <- densityInputCountries$habitat.id
-habitatMask[!is.na(habitatMask)] <- 1 
-
-## COMPUTE THE UD BASED FOR A FEW ITERATIONS
-sigma <- resultsSXYZ_MF$sims.list$sigma
-##-- RESCALE SIGMA TO THE HABITAT SCALE
-sigmaRescaled <- sigma/res(rrCountries)[1]
-
-##-- SELECT xxx ITERATIONS RANDOMLY 
-spaceUSED <- list()
-iter <- sample(1:dim(densityInputCountries$sy)[1], size = 100)
-for(t in 1:nYears){
-  spaceUSED[[t]] <- GetSpaceUse(
-    sx = densityInputCountries$sx[iter, ,t],
-    sy = densityInputCountries$sy[iter, ,t],
-    z = resultsSXYZ_MF$sims.list$z[iter, ,t],
-    sigma = sigmaRescaled[iter],
-    densityInputCountries$habitat.xy,
-    aliveStates = alive.states,
-    regionID = densityInputCountries$regions.rgmx,
-    display_progress = TRUE,
-    returnPosteriorCells = FALSE)
-}
-
-spaceUSED1 <- spaceUSED
-spaceUSED <- list()
-for(t in 1:nYears){
-  spaceUSED[[t]] <- list()
-  spaceUSED[[t]][["MeanCell"]] <- spaceUSED1[[t]]$MeanCell
-}
-save(spaceUSED, file = file.path(working.dir, "data/spaceUsed5km.RData"))
-load(file = file.path(working.dir, "data/spaceUsed5km.RData"))
 
 
 

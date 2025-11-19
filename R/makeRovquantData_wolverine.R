@@ -1603,9 +1603,6 @@ makeRovquantData_wolverine <- function(
         method = "pairwise",
         plot.check = F)
       
-      ##-- REMOVE DETECTIONS THAT ARE FURTHER THAN THE THRESHOLD
-      y.ar.ALIVE[ , ,t] <- y.ar.ALIVE[ , ,t] * (1-distances[[t]]$y.flagged)
-      
       ##-- Remove detections that are further then the threshold
       #y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
       y.ar.ALIVEOthers[ , ,t] <- y.ar.ALIVEOthers[ , ,t] * (1-distances[[t]]$y.flagged)

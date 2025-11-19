@@ -502,7 +502,8 @@ processRovquantOutput_bear <- function(
           UDdensity,
           UDdensityF,
           UDdensityM,
-          file = file.path(working.dir,"data",paste0("Density_bear_",DATE,".RData")))
+          file = file.path( working.dir, "data",
+                            paste0("Density_bear_",DATE,".RData")))
   }
   
   

@@ -62,6 +62,9 @@ processRovquantOutput_wolverine <- function(
                engSpecies = "wolverine",
                DATE = DATE)
   
+  ##-- States alive
+  alive.states <- 2
+  
   
   
   ## ------ 1. LOAD NECESSARY INPUTS -----
@@ -114,8 +117,14 @@ processRovquantOutput_wolverine <- function(
           extraction.raster <- habitatRasters
           extraction.res <- 20000
         }}}}
+  
+  ##-- Extract years
   years <- as.numeric(dimnames(detectors$covariates)[[3]])
   n.years <- length(years) 
+  
+  ##-- years not sampled in Norrbotten
+  yearsSampledNorrb <- c(2016:2018,2023)
+  yearsNotSampled <- which(!years %in% yearsSampledNorrb)
   
   # ##-- MERGE & SIMPLIFY SOME NORWEGIAN COUNTIES
   # COUNTIES_s <- COUNTIES[COUNTIES$country %in% "NOR", ] %>% sf::st_intersection(COUNTRIES)
@@ -125,7 +134,6 @@ processRovquantOutput_wolverine <- function(
   # COUNTIES_s <- COUNTIES_s %>%
   #   group_by(county) %>%
   #   dplyr::summarize() 
-  # 
   # COUNTIES_s <- sf::st_simplify(sf::st_as_sf(COUNTIES_s), preserveTopology = T, dTolerance = 500)
   # COUNTIES_s$index <- c(1,3,2)
   # COUNTIES_s$Name <- c("NO1","NO3","NO2")
