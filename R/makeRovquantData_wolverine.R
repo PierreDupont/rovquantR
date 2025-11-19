@@ -917,8 +917,8 @@ makeRovquantData_wolverine <- function(
   #     plot(r.SkandObsRovbaseBinary[[t]])
   #   }#t
   # }
-  # 
-  # 
+  
+  
   
   # ## ------         2.2.6.4. SMOOTH THE BINARY MAP ------
   # 
@@ -1166,23 +1166,12 @@ makeRovquantData_wolverine <- function(
         !is.na(trackID) &
         trackDist <= distanceThreshold & 
         !hairTrap)
-  
-  # ##-- Plot check
-  # if(plot.check){
-  #   plot(REGIONS[REGIONS$county %in% "Norrbotten", ]$geometry)
-  #   tmp <- data.alive %>%  filter(hairTrap)
-  #   plot(tmp$geometry, add = T, col = "red", pch = 16)
-  #   if(length(which(data.alive$DNAID[data.alive$structured] %in% HairTrapSamples$DNAID)) > 0){
-  #     print("WARNING SAMPLES FROM HAIR TRAPS ASSIGNED TO STRUCTURED")
-  #   }
-  # }
-  
+
   
   
   ## ------       6.3.3. PLOT CHECKS ------
   
   # if(plot.check){
-  #   
   #   ##-- Barplot of structured vs. opportunistic samples
   #   pdf(file = file.path(working.dir, "figures/DetectionsStructuredOppBarplot.pdf"))
   #   par(mfrow = c(2,1), mar = c(4,4,3,2))
@@ -1214,7 +1203,6 @@ makeRovquantData_wolverine <- function(
   #   legend("topleft",fill=c(grey(0.2),grey(0.8)),
   #          legend = c("Structured","Other"))
   #   dev.off()
-  #   
   #   
   #   ##-- CONSTRAIN TO SAMPLES COLLECTED "Fylkesmannen","SNO"
   #   tmp <- data.alive %>%
@@ -1252,7 +1240,6 @@ makeRovquantData_wolverine <- function(
   #     plot( st_geometry(tmpOpp),
   #           pch = 21, col = "black",
   #           cex = 1, bg = "green", add = T)
-  #     
   #     mtext(years[t], adj = -0.8, padj = 1)
   #   }#t
   #   
@@ -1261,7 +1248,6 @@ makeRovquantData_wolverine <- function(
   #   barplot( tab[ ,which(is.na(colnames(tab)))]/rowSums(tab),
   #            main = "% of samples from Statsforvalteren and \nSNO that cannot be assigned to a track")
   #   dev.off()
-  #   
   #   
   #   ##-- plot check
   #   pdf( file = file.path(working.dir, "figures/OverallDetectionsDeadRecoveries.pdf"))
@@ -1493,14 +1479,21 @@ makeRovquantData_wolverine <- function(
   for(t in 1:length(years)){
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
-    try(
-      plot( sf::st_geometry(data.dead[data.dead$Year == years[t] & 
-                                        data.dead$Legal, ]), add = TRUE, col = "slateblue1", pch = 3),
-      silent = TRUE)
-    try(
-      plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]), add = TRUE, col = "slateblue4", pch = 3),
-      silent = TRUE)
-    plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
+    try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t] & 
+                                           data.dead$Legal, ]),
+               add = TRUE, 
+               col = "slateblue1",
+               pch = 3),
+         silent = TRUE)
+    try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]),
+               add = TRUE,
+               col = "slateblue4",
+               pch = 3),
+         silent = TRUE)
+    plot( sf::st_geometry(COUNTRIES),
+          border = "gray20",
+          col = NA,
+          add = TRUE)
     
     ##-- Add year
     graphics::mtext(text = years[t],
@@ -1511,9 +1504,8 @@ makeRovquantData_wolverine <- function(
   
   
   
-  
   ## ------     6.8. SAVE FILTERED DATA ----- 
-
+  
   save( data.alive, data.dead,
         file = file.path( working.dir, "data",
                           paste0("FilteredData_wolverine_", DATE, ".RData")))
@@ -1531,7 +1523,7 @@ makeRovquantData_wolverine <- function(
     load(file.path( working.dir, "data",
                     paste0("FilteredData_wolverine_", DATE, ".RData")))
     
-    data.alive$myData.sp <- data.alive$myData.sp %>%
+    data.alive$data.sp <- data.alive$data.sp %>%
       dplyr::filter(Sex %in% thisSex)
     
     data.dead <- data.dead %>%
