@@ -961,7 +961,7 @@ makeRovquantData_wolverine <- function(
   ## ------         2.2.6.5. IDENTIFY CELLS WITH HAIR TRAPS AS OPPORTUNISTIC ------
   
   ##-- IDENTIFY HAIR SAMPLES
-  tmpHair <- myFullData.sp$alive %>% filter(hairTrap)
+  tmpHair <- myFullData.sp$alive %>% dplyr::filter(hairTrap)
 
   ##-- MANUALLY FIND THE HAIR SAMPLES & COLOR THE CELL.
   tmpyr <- unique(tmpHair$Year)
@@ -1131,7 +1131,7 @@ makeRovquantData_wolverine <- function(
   
   ##-- Filter out detections in Norrbotten in years without sampling
   data.alive <- data.alive %>%
-    filter(!(Year %in% yearsNotSampled & is.Norr %in% 1))
+    dplyr::filter(!(Year %in% yearsNotSampled & is.Norr %in% 1))
 
   
   
@@ -1158,7 +1158,7 @@ makeRovquantData_wolverine <- function(
   
   ##-- Identify samples from structured and opportunistic sampling
   data.alive <- data.alive %>%
-    mutate(
+    dplyr::mutate(
       ##-- Collector column was replaced by two columns, merging them now...
       Collector_role = ifelse(is.na(Collector_other_role), Collector_role, Collector_other_role),
       ##-- Identify samples collected during structured sampling 
