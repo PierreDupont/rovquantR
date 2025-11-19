@@ -81,6 +81,7 @@ makeRovquantData <- function(
   resize.factor = NULL,
   
   ##-- miscellanious
+  rename.list = NULL,
   print.report = TRUE,
   Rmd.template = NULL,
   output.dir = NULL,
@@ -208,7 +209,8 @@ makeRovquantData <- function(
       detector.res,
       subdetector.res,
       max.det.dist,
-      resize.factor)
+      resize.factor,
+      renam.list)
   }
   
   
