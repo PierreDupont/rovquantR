@@ -271,11 +271,11 @@ makeRovquantData_wolverine <- function(
                               h = 30000,
                               grid = as(habitat$habitat.r, 'SpatialPixels'))))
   
-  ##-- Plot check
-  if(plot.check){
-    plot(DEN.r)
-    plot(st_geometry(myStudyArea), add = TRUE, border = "black")
-  }
+  # ##-- Plot check
+  # if(plot.check){
+  #   plot(DEN.r)
+  #   plot(st_geometry(myStudyArea), add = TRUE, border = "black")
+  # }
   
   ##-- EXTRACT COVARIATES
   denCounts <- DEN.r[habitat$habitat.r[ ] == 1]
@@ -341,23 +341,23 @@ makeRovquantData_wolverine <- function(
   detsNorrbotten <- which(apply(distDetsCounties, 1, which.min) == 3)
   
   ##-- Plot check
-  if(plot.check){
-    ##-- Plot detectors in Norrbotten
-    plot( st_geometry(COUNTIESAroundNorrbotten))
-    plot( st_geometry(detectors$main.detector.sp),
-          col = "black", pch = 16, cex = 0.3, add = T)
-    plot( st_geometry(detectors$main.detector.sp[detsNorrbotten, ]),
-          col = "red", pch = 16, cex = 0.5, add = T)
-    ##-- Plot NGS detectors
-    plot( st_geometry(habitat$buffered.habitat.poly),
-          main = paste(detectors$n.detectors, "Detectors"),
-          col = rgb(0.16,0.67,0.16, alpha = 0.3))  
-    plot( st_geometry(studyArea), add = TRUE,
-          col = rgb(0.16,0.67,0.16, alpha = 0.5))
-    plot( st_geometry(detectors$main.detector.sp),
-          col = "red", pch = 16, cex = 0.1, add = TRUE)
-    plot( st_geometry(COUNTRIES), add = TRUE)
-  }
+  # if(plot.check){
+  #   ##-- Plot detectors in Norrbotten
+  #   plot( st_geometry(COUNTIESAroundNorrbotten))
+  #   plot( st_geometry(detectors$main.detector.sp),
+  #         col = "black", pch = 16, cex = 0.3, add = T)
+  #   plot( st_geometry(detectors$main.detector.sp[detsNorrbotten, ]),
+  #         col = "red", pch = 16, cex = 0.5, add = T)
+  #   ##-- Plot NGS detectors
+  #   plot( st_geometry(habitat$buffered.habitat.poly),
+  #         main = paste(detectors$n.detectors, "Detectors"),
+  #         col = rgb(0.16,0.67,0.16, alpha = 0.3))  
+  #   plot( st_geometry(studyArea), add = TRUE,
+  #         col = rgb(0.16,0.67,0.16, alpha = 0.5))
+  #   plot( st_geometry(detectors$main.detector.sp),
+  #         col = "red", pch = 16, cex = 0.1, add = TRUE)
+  #   plot( st_geometry(COUNTRIES), add = TRUE)
+  # }
   
   
   
@@ -378,20 +378,20 @@ makeRovquantData_wolverine <- function(
   }
   
   ##-- Plot check 
-  if(plot.check){
-    myCol <- terrain.colors(nrow(COUNTIES_AGGREGATED))
-    plot(st_geometry(GLOBALMAP), col = "gray80", main = "Aggregated Counties")
-    plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-    plot(st_geometry(COUNTRIES), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-    plot(st_geometry(detectors$main.detector.sp[detCounties %in% 5, ]),
-         col = myCol[detCounties], pch = 16, cex = 0.8, add = T)
-    plot(st_geometry(detectors$main.detector.sp),
-         col = myCol[detCounties], pch = 16, cex = 0.8, add = T)
-    plot(st_geometry(COUNTIES_AGGREGATED), add = TRUE)
-    plot(st_geometry(detectors$main.detector.sp[detCounties %in% 1, ]),
-         col = "red", pch = 16, cex = 0.8, add = T)
-    text(st_geometry(COUNTIES_AGGREGATED), labels = COUNTIES_AGGREGATED$id, col = "black")  
-  }
+  # if(plot.check){
+  #   myCol <- terrain.colors(nrow(COUNTIES_AGGREGATED))
+  #   plot(st_geometry(GLOBALMAP), col = "gray80", main = "Aggregated Counties")
+  #   plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
+  #   plot(st_geometry(COUNTRIES), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
+  #   plot(st_geometry(detectors$main.detector.sp[detCounties %in% 5, ]),
+  #        col = myCol[detCounties], pch = 16, cex = 0.8, add = T)
+  #   plot(st_geometry(detectors$main.detector.sp),
+  #        col = myCol[detCounties], pch = 16, cex = 0.8, add = T)
+  #   plot(st_geometry(COUNTIES_AGGREGATED), add = TRUE)
+  #   plot(st_geometry(detectors$main.detector.sp[detCounties %in% 1, ]),
+  #        col = "red", pch = 16, cex = 0.8, add = T)
+  #   text(st_geometry(COUNTIES_AGGREGATED), labels = COUNTIES_AGGREGATED$id, col = "black")  
+  # }
   
   
   
@@ -421,16 +421,16 @@ makeRovquantData_wolverine <- function(
   }
   
   ##-- Plot check 
-  if(plot.check){
-    par(mfrow = c(1,1))
-    myCol <- c("blue4", "yellow1", "red")
-    plot( st_geometry(GLOBALMAP), col = "gray80", main = "Countries")
-    plot( st_geometry(myStudyArea),
-          col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-    plot( st_geometry(detectors$main.detector.sp),
-          col = myCol[detCountries[,1]], pch = 16, cex = 0.8, add = T)
-    plot( st_geometry(COUNTRIES), add = TRUE)
-  }
+  # if(plot.check){
+  #   par(mfrow = c(1,1))
+  #   myCol <- c("blue4", "yellow1", "red")
+  #   plot( st_geometry(GLOBALMAP), col = "gray80", main = "Countries")
+  #   plot( st_geometry(myStudyArea),
+  #         col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
+  #   plot( st_geometry(detectors$main.detector.sp),
+  #         col = myCol[detCountries[,1]], pch = 16, cex = 0.8, add = T)
+  #   plot( st_geometry(COUNTRIES), add = TRUE)
+  # }
   
   
   
@@ -518,39 +518,39 @@ makeRovquantData_wolverine <- function(
   
   
   ##-- Plot check 
-  if(plot.check){
-    max <- max(unlist(lapply(TRACKS.r, function(x) max(x[], na.rm = T))))
-    cuts <- seq(0, max,length.out = 100)   ## Set breaks
-    col <- rev(terrain.colors(100))
-    CountriesDetRes <- disaggregate(habitatRasters$Countries, fact = 2)
-    CountriesDetRes <- crop(CountriesDetRes, TRACKS.r[[1]])
-    country.colors <- c("goldenrod1","goldenrod3")
-    
-    pdf(file = file.path(working.dir, "figures/Tracks.pdf"))
-    NORTRACKS <- SWETRACKS <- 0
-    for(t in 1:n.years){
-      plot( TRACKS.r[[t]], main = years[t], breaks = cuts, col = col, legend = FALSE)
-      plot( st_geometry(habitat$habitat.poly), main = years[t], add = T)
-      plot( TRACKS.r[[t]],
-            legend.only = TRUE, breaks = cuts, col = col, legend.width = 2,
-            axis.args = list(at = round(seq(0, max, length.out = 5), digits = 1),
-                             labels = round(seq(0, max, length.out = 5), digits = 1),
-                             cex.axis = 0.6),
-            legend.args = list(text = '', side = 4, font = 2, line = 2.5, cex = 0.8))
-      ##-- Summary tracks
-      NORTRACKS[t] <- sum(TRACKS.r[[t]][CountriesDetRes[]%in% 2],na.rm = T )/1000
-      SWETRACKS[t] <- sum(TRACKS.r[[t]][CountriesDetRes[]%in% 4],na.rm = T )/1000
-    }#t
-    
-    years1 <- years + 1
-    plot(SWETRACKS ~ years1, col = country.colors[2],
-         lwd = 2, pch = 16, type = "b",
-         ylim = c(0,300000), ylab = "sum tracks km")
-    lines(NORTRACKS ~ years1, col = country.colors[1],
-          lwd = 2, pch = 16, type = "b")
-    legend("topright",c("N","S"), fill=country.colors)
-    dev.off()
-  }
+  # if(plot.check){
+  #   max <- max(unlist(lapply(TRACKS.r, function(x) max(x[], na.rm = T))))
+  #   cuts <- seq(0, max,length.out = 100)   ## Set breaks
+  #   col <- rev(terrain.colors(100))
+  #   CountriesDetRes <- disaggregate(habitatRasters$Countries, fact = 2)
+  #   CountriesDetRes <- crop(CountriesDetRes, TRACKS.r[[1]])
+  #   country.colors <- c("goldenrod1","goldenrod3")
+  #   
+  #   pdf(file = file.path(working.dir, "figures/Tracks.pdf"))
+  #   NORTRACKS <- SWETRACKS <- 0
+  #   for(t in 1:n.years){
+  #     plot( TRACKS.r[[t]], main = years[t], breaks = cuts, col = col, legend = FALSE)
+  #     plot( st_geometry(habitat$habitat.poly), main = years[t], add = T)
+  #     plot( TRACKS.r[[t]],
+  #           legend.only = TRUE, breaks = cuts, col = col, legend.width = 2,
+  #           axis.args = list(at = round(seq(0, max, length.out = 5), digits = 1),
+  #                            labels = round(seq(0, max, length.out = 5), digits = 1),
+  #                            cex.axis = 0.6),
+  #           legend.args = list(text = '', side = 4, font = 2, line = 2.5, cex = 0.8))
+  #     ##-- Summary tracks
+  #     NORTRACKS[t] <- sum(TRACKS.r[[t]][CountriesDetRes[]%in% 2],na.rm = T )/1000
+  #     SWETRACKS[t] <- sum(TRACKS.r[[t]][CountriesDetRes[]%in% 4],na.rm = T )/1000
+  #   }#t
+  #   
+  #   years1 <- years + 1
+  #   plot(SWETRACKS ~ years1, col = country.colors[2],
+  #        lwd = 2, pch = 16, type = "b",
+  #        ylim = c(0,300000), ylab = "sum tracks km")
+  #   lines(NORTRACKS ~ years1, col = country.colors[1],
+  #         lwd = 2, pch = 16, type = "b")
+  #   legend("topright",c("N","S"), fill=country.colors)
+  #   dev.off()
+  # }
   
   
   
@@ -584,18 +584,18 @@ makeRovquantData_wolverine <- function(
   detRoads[isna] <- tmp
   
   ##-- Plot check 
-  if(plot.check){
-    par(mfrow = c(1,1))
-    plot( st_geometry(GLOBALMAP),
-          col = "gray80", main = "Distance to roads")
-    plot( st_geometry(myStudyArea),
-          col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-    plot( st_geometry(COUNTRIES),
-          col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-    plot( DistAllRoads, add = T)
-    plot( st_geometry(detectors$main.detector.sp),
-          cex = DoScale(detRoads), pch = 16, add = T)
-  }
+  # if(plot.check){
+  #   par(mfrow = c(1,1))
+  #   plot( st_geometry(GLOBALMAP),
+  #         col = "gray80", main = "Distance to roads")
+  #   plot( st_geometry(myStudyArea),
+  #         col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
+  #   plot( st_geometry(COUNTRIES),
+  #         col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
+  #   plot( DistAllRoads, add = T)
+  #   plot( st_geometry(detectors$main.detector.sp),
+  #         cex = DoScale(detRoads), pch = 16, add = T)
+  # }
   
   
   
@@ -624,11 +624,11 @@ makeRovquantData_wolverine <- function(
   detSnow[isna,1:n.years] <- tmp
   
   ##-- Plot check
-  if(plot.check){
-    plot( st_geometry(detectors$main.detector.sp),
-          cex = DoScale(detSnow[ ,6], l = 0, u = 0.5),
-          pch = 16)
-  }
+  # if(plot.check){
+  #   plot( st_geometry(detectors$main.detector.sp),
+  #         cex = DoScale(detSnow[ ,6], l = 0, u = 0.5),
+  #         pch = 16)
+  # }
   
   
   
@@ -771,54 +771,54 @@ makeRovquantData_wolverine <- function(
   
   
   ##-- Plot check
-  if(plot.check){
-    plot(st_geometry(habitat.rWthBufferPol))
-    plot(st_geometry(skandObs), col = "red", add = T)
-    
-    ##-- Summary SkanbObs
-    pdf(file = file.path(working.dir, "figures/skandObs.pdf"), width = 10)
-    barplot(table(skandObs$monitoring.season ))
-    barplot(table(skandObs$month ), xlab = "Months")
-    barplot(table(skandObs$species))
-    
-    ##-- Maps
-    par(mar = c(0,0,2,0))
-    for(t in 1:n.years){
-      plot( st_geometry(myStudyArea), main = years[t])
-      plot( st_geometry(skandObs[skandObs$monitoring.season %in% years[t], ]),
-            pch = 16, col = "red", cex = 0.1, add = T)
-    }
-    dev.off()
-    
-    # pdf(file = file.path(working.dir, "figures/mapStructuredOthers.pdf"))
-    # for(t in 1:n.years){
-    #   tmpOthers <- data.alive[data.alive$Year %in% years[t] &
-    #                                          !data.alive$structured, ]
-    #   tmpStruct <- data.alive[data.alive$Year %in% years[t] &
-    #                                          data.alive$structured, ]
-    # 
-    #   par(mfrow=c(2,2),mar=c(0,0,5,0))
-    #   plot(r.OtherSamplesBinary[[t]], main=paste(years[t],"\n Rovbase Samples Structured"), box=F, axes=F)
-    #   plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
-    #   plot(r.OtherSamplesBinary[[t]],main=paste(years[t],"\n Rovbase Samples Opportunistic"), box=F, axes=F)
-    #   plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.6,add=T)
-    # 
-    #   plot(r.skandObsSamplesBinary[[t]], main=paste(years[t]), box=F, axes=F)
-    #   plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
-    #   plot(r.skandObsSamplesBinary[[t]],main=paste(years[t],"\n SkandObs Opportunistic"), box=F, axes=F)
-    #   plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.5,add=T)
-    # }
-    # dev.off()
-    
-    for(t in 1:n.years){
-      par(mfrow=c(1,3),mar=c(0,0,5,0))
-      plot(r.rovbaseBinary[[t]],main=years[t])
-      plot(r.skandObsBinary[[t]])
-      plot(r.SkandObsRovbaseBinary[[t]])
-    }#t
-  }
-  
-  
+  # if(plot.check){
+  #   plot(st_geometry(habitat.rWthBufferPol))
+  #   plot(st_geometry(skandObs), col = "red", add = T)
+  #   
+  #   ##-- Summary SkanbObs
+  #   pdf(file = file.path(working.dir, "figures/skandObs.pdf"), width = 10)
+  #   barplot(table(skandObs$monitoring.season ))
+  #   barplot(table(skandObs$month ), xlab = "Months")
+  #   barplot(table(skandObs$species))
+  #   
+  #   ##-- Maps
+  #   par(mar = c(0,0,2,0))
+  #   for(t in 1:n.years){
+  #     plot( st_geometry(myStudyArea), main = years[t])
+  #     plot( st_geometry(skandObs[skandObs$monitoring.season %in% years[t], ]),
+  #           pch = 16, col = "red", cex = 0.1, add = T)
+  #   }
+  #   dev.off()
+  #   
+  #   # pdf(file = file.path(working.dir, "figures/mapStructuredOthers.pdf"))
+  #   # for(t in 1:n.years){
+  #   #   tmpOthers <- data.alive[data.alive$Year %in% years[t] &
+  #   #                                          !data.alive$structured, ]
+  #   #   tmpStruct <- data.alive[data.alive$Year %in% years[t] &
+  #   #                                          data.alive$structured, ]
+  #   # 
+  #   #   par(mfrow=c(2,2),mar=c(0,0,5,0))
+  #   #   plot(r.OtherSamplesBinary[[t]], main=paste(years[t],"\n Rovbase Samples Structured"), box=F, axes=F)
+  #   #   plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
+  #   #   plot(r.OtherSamplesBinary[[t]],main=paste(years[t],"\n Rovbase Samples Opportunistic"), box=F, axes=F)
+  #   #   plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.6,add=T)
+  #   # 
+  #   #   plot(r.skandObsSamplesBinary[[t]], main=paste(years[t]), box=F, axes=F)
+  #   #   plot(st_geometry(tmpOthers), pch=16, col="blue",bg="blue", cex=0.6,add=T)
+  #   #   plot(r.skandObsSamplesBinary[[t]],main=paste(years[t],"\n SkandObs Opportunistic"), box=F, axes=F)
+  #   #   plot(st_geometry(tmpStruct), pch=16, col="red",bg="red", cex=0.5,add=T)
+  #   # }
+  #   # dev.off()
+  #   
+  #   for(t in 1:n.years){
+  #     par(mfrow=c(1,3),mar=c(0,0,5,0))
+  #     plot(r.rovbaseBinary[[t]],main=years[t])
+  #     plot(r.skandObsBinary[[t]])
+  #     plot(r.SkandObsRovbaseBinary[[t]])
+  #   }#t
+  # }
+  # 
+  # 
   
   # ## ------         2.2.6.4. SMOOTH THE BINARY MAP ------
   # 
@@ -900,47 +900,47 @@ makeRovquantData_wolverine <- function(
   detCovsOth[,,3] <- detOtherSamples
   
   ##-- Plot check
-  if(plot.check){
-    tmp <- detectors$raster
-    par(mfrow=c(2,5),mar=c(0,0,0,0))
-    max <- max(detCovsOth[,,2])
-    cuts <- seq(0,max,length.out = 100) 
-    col <- rev(terrain.colors(100))
-    for(t in 1:n.years){
-      plot(detectors$raster, col=c(grey(0.2),grey(0.8)),axes=F,legend=F,box=F,)
-      tmp[!is.na(detectors$raster[ ])] <- detCovsOth[,t,2]
-      plot(tmp,axes=F,legend=F,box=F,breaks = cuts, col=col,add=T)
-    }
-    dev.off()
-    
-    pdf(file = file.path(working.dir, "figures/detections over space and time.pdf"))
-    for(t in 1:n.years){
-      ## NGS DETECTIONS TOTAL
-      tempTotal <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
-      NGS_TabTotal <- table(tempTotal$Country_sample)
-      ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sample), 2, function(x) sum(x>0))
-      ## ALIVE DETECTIONS INSIDE STUDY AREA/SAMPLING PERIOD
-      tempIn <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
-      NGS_TabIn <- table(tempIn$Country_sample)
-      ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sample), 2, function(x) sum(x>0))
-      ## PLOT NGS SAMPLES
-      plot(st_geometry(GLOBALMAP), col="gray80")
-      plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-      plot(st_geometry(habitat$buffered.habitat.poly), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
-      points(tempTotal, pch = 21, bg = "darkred")
-      plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
-      ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-      graphics::text(x = 100000, y = 7200000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="N"],"NGS"), cex = 1.1, col = "firebrick3", font = 2)
-      graphics::text(x = 100000, y = 7270000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
-      graphics::text(x = 820000, y = 6780000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="S"],"NGS"), cex = 1.1, col = "navyblue", font = 2)
-      graphics::text(x = 820000, y = 6850000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
-      ## ADD OVERALL NUMBERS
-      mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-      mtext(text = paste(sum(NGS_TabIn), "NGS/", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
-      mtext(text = paste(sum(NGS_TabTotal)-sum(NGS_TabIn), "NGS/", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
-    }#t
-    dev.off()
-  }
+  # if(plot.check){
+  #   tmp <- detectors$raster
+  #   par(mfrow=c(2,5),mar=c(0,0,0,0))
+  #   max <- max(detCovsOth[,,2])
+  #   cuts <- seq(0,max,length.out = 100) 
+  #   col <- rev(terrain.colors(100))
+  #   for(t in 1:n.years){
+  #     plot(detectors$raster, col=c(grey(0.2),grey(0.8)),axes=F,legend=F,box=F,)
+  #     tmp[!is.na(detectors$raster[ ])] <- detCovsOth[,t,2]
+  #     plot(tmp,axes=F,legend=F,box=F,breaks = cuts, col=col,add=T)
+  #   }
+  #   dev.off()
+  #   
+  #   pdf(file = file.path(working.dir, "figures/detections over space and time.pdf"))
+  #   for(t in 1:n.years){
+  #     ## NGS DETECTIONS TOTAL
+  #     tempTotal <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
+  #     NGS_TabTotal <- table(tempTotal$Country_sample)
+  #     ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sample), 2, function(x) sum(x>0))
+  #     ## ALIVE DETECTIONS INSIDE STUDY AREA/SAMPLING PERIOD
+  #     tempIn <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
+  #     NGS_TabIn <- table(tempIn$Country_sample)
+  #     ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sample), 2, function(x) sum(x>0))
+  #     ## PLOT NGS SAMPLES
+  #     plot(st_geometry(GLOBALMAP), col="gray80")
+  #     plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
+  #     plot(st_geometry(habitat$buffered.habitat.poly), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
+  #     points(tempTotal, pch = 21, bg = "darkred")
+  #     plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
+  #     ## ADD NUMBER OF NGS samples and IDs per COUNTRY
+  #     graphics::text(x = 100000, y = 7200000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="N"],"NGS"), cex = 1.1, col = "firebrick3", font = 2)
+  #     graphics::text(x = 100000, y = 7270000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
+  #     graphics::text(x = 820000, y = 6780000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="S"],"NGS"), cex = 1.1, col = "navyblue", font = 2)
+  #     graphics::text(x = 820000, y = 6850000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
+  #     ## ADD OVERALL NUMBERS
+  #     mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
+  #     mtext(text = paste(sum(NGS_TabIn), "NGS/", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
+  #     mtext(text = paste(sum(NGS_TabTotal)-sum(NGS_TabIn), "NGS/", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
+  #   }#t
+  #   dev.off()
+  # }
   
   
   
@@ -1081,102 +1081,102 @@ makeRovquantData_wolverine <- function(
   
   ## ------       6.3.3. PLOT CHECKS ------
   
-  if(plot.check){
-    
-    ##-- Barplot of structured vs. opportunistic samples
-    pdf(file = file.path(working.dir, "figures/DetectionsStructuredOppBarplot.pdf"))
-    par(mfrow = c(2,1), mar = c(4,4,3,2))
-    barplot( rbind(table(data.alive$Year[data.alive$structured]),
-                   table(data.alive$Year[!data.alive$structured])),
-             beside = T,
-             ylim = c(0,3000),
-             col = c(grey(0.2),grey(0.8)),
-             ylab = "Number of samples")
-    abline(h = seq(0, 3000, by = 500),
-           lty = 2, col = grey(0.8))
-    title(main = "500m threshold")
-    legend("topleft", fill = c(grey(0.2),grey(0.8)),
-           legend = c("Structured","Other"))
-    
-    ##-- Barplot of structured vs. opportunistic samples (threshold = 2000m)
-    structured2000 <- data.alive$Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
-      !is.na(data.alive$trackID) &
-      data.alive$trackDist <= 2000 & 
-      !data.alive$hairTrap
-    barplot( rbind(table(data.alive$Year[structured2000]),
-                   table(data.alive$Year[!structured2000])),
-             beside = T,
-             ylim = c(0,3000),
-             col = c(grey(0.2),grey(0.8)),
-             ylab = "Number of samples")
-    abline(h=seq(0,3000,by=500),lty=2,col=grey(0.8))
-    title(main="2000m threshold")
-    legend("topleft",fill=c(grey(0.2),grey(0.8)),
-           legend = c("Structured","Other"))
-    dev.off()
-    
-    
-    ##-- CONSTRAIN TO SAMPLES COLLECTED "Fylkesmannen","SNO"
-    tmp <- data.alive %>%
-      filter(Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"))
-    
-    ## plot check
-    pdf(file = file.path(working.dir, "figures/DetectionsStructuredOpp.pdf"))
-    for(t in 1:n.years){
-      par(mar = c(0,0,3,0), mfrow = c(1,3))
-      
-      ##-- samples with tracks
-      tmpTracks <- tmp %>%
-        filter( Year %in% years[t],
-                !is.na(trackID),
-                trackDist <= 500)
-      plot( st_geometry(myStudyArea), col = "gray60", main = "Structured with track")
-      plot( st_geometry(tmpTracks),
-            pch = 21, col = "black",
-            cex = 1, bg = "red", add = T)
-      
-      ##-- samples without tracks
-      tmpNoTracks <- tmp %>%
-        filter( Year %in% years[t],
-                is.na(trackID) | trackDist > 500)
-      plot( st_geometry(myStudyArea), col = "gray60", main = "Structured without track")
-      plot( st_geometry(tmpNoTracks),
-            pch = 21, col = "black",
-            cex = 1, bg = "blue", add = T)
-      
-      ##-- Other samples
-      tmpOpp <- data.alive %>%
-        filter(!Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),
-               Year%in% years[t])
-      plot( st_geometry(myStudyArea), col = "gray60", main = "Other samples")
-      plot( st_geometry(tmpOpp),
-            pch = 21, col = "black",
-            cex = 1, bg = "green", add = T)
-      
-      mtext(years[t], adj = -0.8, padj = 1)
-    }#t
-    
-    ##-- Number of samples collected per year
-    tab <- table(tmp$Year, tmp$trackID, useNA ="always")
-    barplot( tab[ ,which(is.na(colnames(tab)))]/rowSums(tab),
-             main = "% of samples from Statsforvalteren and \nSNO that cannot be assigned to a track")
-    dev.off()
-    
-    
-    ##-- plot check
-    pdf( file = file.path(working.dir, "figures/OverallDetectionsDeadRecoveries.pdf"))
-    plot( st_geometry(GLOBALMAP))
-    plot( st_geometry(myStudyArea), add = T)
-    plot( st_geometry(myFullData.sp$alive),
-          pch = 16, col = "red", cex = 0.3, add = T)
-    plot( st_geometry(myFullData.sp$dead.recovery),
-          pch = 16, col = "blue", cex = 0.3, add = T)
-    mtext(paste("Live detections", nrow(myFullData.sp$alive),
-                "; ID:", nrow(unique(myFullData.sp$alive$Id))),
-          line = +1)
-    mtext(paste("Dead recovery:", nrow(myFullData.sp$dead.recovery)))
-    dev.off()
-  }
+  # if(plot.check){
+  #   
+  #   ##-- Barplot of structured vs. opportunistic samples
+  #   pdf(file = file.path(working.dir, "figures/DetectionsStructuredOppBarplot.pdf"))
+  #   par(mfrow = c(2,1), mar = c(4,4,3,2))
+  #   barplot( rbind(table(data.alive$Year[data.alive$structured]),
+  #                  table(data.alive$Year[!data.alive$structured])),
+  #            beside = T,
+  #            ylim = c(0,3000),
+  #            col = c(grey(0.2),grey(0.8)),
+  #            ylab = "Number of samples")
+  #   abline(h = seq(0, 3000, by = 500),
+  #          lty = 2, col = grey(0.8))
+  #   title(main = "500m threshold")
+  #   legend("topleft", fill = c(grey(0.2),grey(0.8)),
+  #          legend = c("Structured","Other"))
+  #   
+  #   ##-- Barplot of structured vs. opportunistic samples (threshold = 2000m)
+  #   structured2000 <- data.alive$Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
+  #     !is.na(data.alive$trackID) &
+  #     data.alive$trackDist <= 2000 & 
+  #     !data.alive$hairTrap
+  #   barplot( rbind(table(data.alive$Year[structured2000]),
+  #                  table(data.alive$Year[!structured2000])),
+  #            beside = T,
+  #            ylim = c(0,3000),
+  #            col = c(grey(0.2),grey(0.8)),
+  #            ylab = "Number of samples")
+  #   abline(h=seq(0,3000,by=500),lty=2,col=grey(0.8))
+  #   title(main="2000m threshold")
+  #   legend("topleft",fill=c(grey(0.2),grey(0.8)),
+  #          legend = c("Structured","Other"))
+  #   dev.off()
+  #   
+  #   
+  #   ##-- CONSTRAIN TO SAMPLES COLLECTED "Fylkesmannen","SNO"
+  #   tmp <- data.alive %>%
+  #     filter(Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"))
+  #   
+  #   ## plot check
+  #   pdf(file = file.path(working.dir, "figures/DetectionsStructuredOpp.pdf"))
+  #   for(t in 1:n.years){
+  #     par(mar = c(0,0,3,0), mfrow = c(1,3))
+  #     
+  #     ##-- samples with tracks
+  #     tmpTracks <- tmp %>%
+  #       filter( Year %in% years[t],
+  #               !is.na(trackID),
+  #               trackDist <= 500)
+  #     plot( st_geometry(myStudyArea), col = "gray60", main = "Structured with track")
+  #     plot( st_geometry(tmpTracks),
+  #           pch = 21, col = "black",
+  #           cex = 1, bg = "red", add = T)
+  #     
+  #     ##-- samples without tracks
+  #     tmpNoTracks <- tmp %>%
+  #       filter( Year %in% years[t],
+  #               is.na(trackID) | trackDist > 500)
+  #     plot( st_geometry(myStudyArea), col = "gray60", main = "Structured without track")
+  #     plot( st_geometry(tmpNoTracks),
+  #           pch = 21, col = "black",
+  #           cex = 1, bg = "blue", add = T)
+  #     
+  #     ##-- Other samples
+  #     tmpOpp <- data.alive %>%
+  #       filter(!Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),
+  #              Year%in% years[t])
+  #     plot( st_geometry(myStudyArea), col = "gray60", main = "Other samples")
+  #     plot( st_geometry(tmpOpp),
+  #           pch = 21, col = "black",
+  #           cex = 1, bg = "green", add = T)
+  #     
+  #     mtext(years[t], adj = -0.8, padj = 1)
+  #   }#t
+  #   
+  #   ##-- Number of samples collected per year
+  #   tab <- table(tmp$Year, tmp$trackID, useNA ="always")
+  #   barplot( tab[ ,which(is.na(colnames(tab)))]/rowSums(tab),
+  #            main = "% of samples from Statsforvalteren and \nSNO that cannot be assigned to a track")
+  #   dev.off()
+  #   
+  #   
+  #   ##-- plot check
+  #   pdf( file = file.path(working.dir, "figures/OverallDetectionsDeadRecoveries.pdf"))
+  #   plot( st_geometry(GLOBALMAP))
+  #   plot( st_geometry(myStudyArea), add = T)
+  #   plot( st_geometry(myFullData.sp$alive),
+  #         pch = 16, col = "red", cex = 0.3, add = T)
+  #   plot( st_geometry(myFullData.sp$dead.recovery),
+  #         pch = 16, col = "blue", cex = 0.3, add = T)
+  #   mtext(paste("Live detections", nrow(myFullData.sp$alive),
+  #               "; ID:", nrow(unique(myFullData.sp$alive$Id))),
+  #         line = +1)
+  #   mtext(paste("Dead recovery:", nrow(myFullData.sp$dead.recovery)))
+  #   dev.off()
+  # }
   
   
   
@@ -1194,86 +1194,86 @@ makeRovquantData_wolverine <- function(
 
   
   ##-- Plot check
-  if(plot.check){
-    # par(mfrow = c(1,3))
-    # for(t in 1:n.years){
-    #   ## DEAD RECOVERIES TOTAL
-    #   tempTotal <- data.dead[data.dead$Year == years[t], ]
-    #   NGS_TabTotal <- table(tempTotal$Country_sf)
-    #   ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sf), 2, function(x) sum(x>0))
-    #   ## DEAD RECOVERIES INSIDE STUDY AREA/SAMPLING PERIOD
-    #   tempIn <- data.dead[data.dead$Year == years[t], ]
-    #   NGS_TabIn <- table(tempIn$Country_sf)
-    #   ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sf), 2, function(x) sum(x>0))
-    #   ## PLOT NGS SAMPLES
-    #   plot(st_geometry(GLOBALMAP), col="gray80")
-    #   plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-    #   plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
-    #   ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-    #   graphics::text(x = 100000, y = 7250000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
-    #   graphics::text(x = 820000, y = 6820000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
-    #   ## ADD OVERALL NUMBERS
-    #   mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-    #   mtext(text = paste(sum(NGS_TabIn), "Dead Recoveries /", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
-    #   # mtext(text = paste(sum(NGS_TabTotal), "Recoveries /", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
-    # }#t
-     
-    
-    ##-- Plot dtemporal trends
-    
-    ##-- Number of detections
-    pdf(file = file.path(working.dir, "figures/TRENDDetections.pdf"))
-    
-    temp <- unique(data.alive[ ,c("Year","Country_sf","DNAID")])
-    tab_Country.Year <- table(temp$Year, temp$Country_sf)
-    country.colors <- c("goldenrod1","goldenrod3")
-    
-    par(mfrow = c(1,1), mar = c(5,5,5,5))
-    plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year))), ylim=c(0,max(tab_Country.Year)), ylab="N Detections", xlab="Years")
-    lines(tab_Country.Year[,"(N)"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[1], lwd=2, pch=16, type="b")
-    lines(tab_Country.Year[,"(S)"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[2], lwd=2, pch=16, type="b")
-    legend("bottomright",c("N","S"), fill=country.colors)
-    
-    ##-- Number of IDs detected
-    temp <- table(data.alive$Year,data.alive$Country_sf,data.alive$Id)
-    tab_Country.Year1 <- apply(temp,c(1,2),function(x) sum(x>0))
-    country.colors <- c("goldenrod1","goldenrod3")
-    par(mfrow = c(1,1), mar = c(5,5,5,5))
-    plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year1))), ylim=c(0,max(tab_Country.Year1)), ylab="N Id detected", xlab="Years")
-    lines(tab_Country.Year1[,"(N)"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[1], lwd=2, pch=16, type="b")
-    lines(tab_Country.Year1[,"(S)"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[2], lwd=2, pch=16, type="b")
-    legend("bottomright",c("N","S"), fill=country.colors)
-    
-    ##-- Average number of detection per detected ID
-    tab_Country.Year2 <- tab_Country.Year/tab_Country.Year1
-    par(mfrow = c(1,1), mar = c(5,5,5,5))
-    plot(-10,
-         xlim = range(as.numeric(row.names(tab_Country.Year2))),
-         ylim = c(0,max(tab_Country.Year2)),
-         ylab = "Average Number of detections", xlab="Years")
-    lines(tab_Country.Year2[ ,"(N)"] ~ as.numeric(row.names(tab_Country.Year2)),
-          col = country.colors[1], lwd = 2, pch = 16, type = "b")
-    lines(tab_Country.Year2[ ,"(S)"] ~ as.numeric(row.names(tab_Country.Year2)),
-          col = country.colors[2], lwd = 2, pch = 16, type = "b")
-    legend("bottomright", c("N","S"), fill = country.colors)
-    
-    ##-- Dead recoveries
-    temp <- unique(data.dead[,c("Year","Country_sf","Id")])
-    tab_Country.Year <- table(temp$Year, temp$Country_sf)
-    country.colors <- c("goldenrod1","goldenrod3")
-    
-    par(mfrow = c(1,1), mar = c(5,5,5,5))
-    plot(-10,
-         xlim = range(as.numeric(row.names(tab_Country.Year))),
-         ylim = c(0,max(tab_Country.Year)),
-         ylab = "N Id Dead recovered", xlab="Years")
-    lines(tab_Country.Year[ ,"(N)"] ~ as.numeric(row.names(tab_Country.Year)),
-          col = country.colors[1], lwd = 2, pch = 16, type = "b")
-    lines(tab_Country.Year[ ,"(S)"] ~ as.numeric(row.names(tab_Country.Year)),
-          col = country.colors[2], lwd = 2, pch = 16, type = "b")
-    legend("topright", c("N","S"), fill = country.colors)
-    dev.off()
-  }
+  # if(plot.check){
+  #   # par(mfrow = c(1,3))
+  #   # for(t in 1:n.years){
+  #   #   ## DEAD RECOVERIES TOTAL
+  #   #   tempTotal <- data.dead[data.dead$Year == years[t], ]
+  #   #   NGS_TabTotal <- table(tempTotal$Country_sf)
+  #   #   ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sf), 2, function(x) sum(x>0))
+  #   #   ## DEAD RECOVERIES INSIDE STUDY AREA/SAMPLING PERIOD
+  #   #   tempIn <- data.dead[data.dead$Year == years[t], ]
+  #   #   NGS_TabIn <- table(tempIn$Country_sf)
+  #   #   ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sf), 2, function(x) sum(x>0))
+  #   #   ## PLOT NGS SAMPLES
+  #   #   plot(st_geometry(GLOBALMAP), col="gray80")
+  #   #   plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
+  #   #   plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
+  #   #   ## ADD NUMBER OF NGS samples and IDs per COUNTRY
+  #   #   graphics::text(x = 100000, y = 7250000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
+  #   #   graphics::text(x = 820000, y = 6820000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
+  #   #   ## ADD OVERALL NUMBERS
+  #   #   mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
+  #   #   mtext(text = paste(sum(NGS_TabIn), "Dead Recoveries /", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
+  #   #   # mtext(text = paste(sum(NGS_TabTotal), "Recoveries /", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
+  #   # }#t
+  #    
+  #   
+  #   ##-- Plot dtemporal trends
+  #   
+  #   ##-- Number of detections
+  #   pdf(file = file.path(working.dir, "figures/TRENDDetections.pdf"))
+  #   
+  #   temp <- unique(data.alive[ ,c("Year","Country_sf","DNAID")])
+  #   tab_Country.Year <- table(temp$Year, temp$Country_sf)
+  #   country.colors <- c("goldenrod1","goldenrod3")
+  #   
+  #   par(mfrow = c(1,1), mar = c(5,5,5,5))
+  #   plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year))), ylim=c(0,max(tab_Country.Year)), ylab="N Detections", xlab="Years")
+  #   lines(tab_Country.Year[,"(N)"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[1], lwd=2, pch=16, type="b")
+  #   lines(tab_Country.Year[,"(S)"]~as.numeric(row.names(tab_Country.Year)), col=country.colors[2], lwd=2, pch=16, type="b")
+  #   legend("bottomright",c("N","S"), fill=country.colors)
+  #   
+  #   ##-- Number of IDs detected
+  #   temp <- table(data.alive$Year,data.alive$Country_sf,data.alive$Id)
+  #   tab_Country.Year1 <- apply(temp,c(1,2),function(x) sum(x>0))
+  #   country.colors <- c("goldenrod1","goldenrod3")
+  #   par(mfrow = c(1,1), mar = c(5,5,5,5))
+  #   plot(-10, xlim=range(as.numeric(row.names(tab_Country.Year1))), ylim=c(0,max(tab_Country.Year1)), ylab="N Id detected", xlab="Years")
+  #   lines(tab_Country.Year1[,"(N)"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[1], lwd=2, pch=16, type="b")
+  #   lines(tab_Country.Year1[,"(S)"]~as.numeric(row.names(tab_Country.Year1)), col=country.colors[2], lwd=2, pch=16, type="b")
+  #   legend("bottomright",c("N","S"), fill=country.colors)
+  #   
+  #   ##-- Average number of detection per detected ID
+  #   tab_Country.Year2 <- tab_Country.Year/tab_Country.Year1
+  #   par(mfrow = c(1,1), mar = c(5,5,5,5))
+  #   plot(-10,
+  #        xlim = range(as.numeric(row.names(tab_Country.Year2))),
+  #        ylim = c(0,max(tab_Country.Year2)),
+  #        ylab = "Average Number of detections", xlab="Years")
+  #   lines(tab_Country.Year2[ ,"(N)"] ~ as.numeric(row.names(tab_Country.Year2)),
+  #         col = country.colors[1], lwd = 2, pch = 16, type = "b")
+  #   lines(tab_Country.Year2[ ,"(S)"] ~ as.numeric(row.names(tab_Country.Year2)),
+  #         col = country.colors[2], lwd = 2, pch = 16, type = "b")
+  #   legend("bottomright", c("N","S"), fill = country.colors)
+  #   
+  #   ##-- Dead recoveries
+  #   temp <- unique(data.dead[,c("Year","Country_sf","Id")])
+  #   tab_Country.Year <- table(temp$Year, temp$Country_sf)
+  #   country.colors <- c("goldenrod1","goldenrod3")
+  #   
+  #   par(mfrow = c(1,1), mar = c(5,5,5,5))
+  #   plot(-10,
+  #        xlim = range(as.numeric(row.names(tab_Country.Year))),
+  #        ylim = c(0,max(tab_Country.Year)),
+  #        ylab = "N Id Dead recovered", xlab="Years")
+  #   lines(tab_Country.Year[ ,"(N)"] ~ as.numeric(row.names(tab_Country.Year)),
+  #         col = country.colors[1], lwd = 2, pch = 16, type = "b")
+  #   lines(tab_Country.Year[ ,"(S)"] ~ as.numeric(row.names(tab_Country.Year)),
+  #         col = country.colors[2], lwd = 2, pch = 16, type = "b")
+  #   legend("topright", c("N","S"), fill = country.colors)
+  #   dev.off()
+  # }
   
   
   
@@ -1329,7 +1329,90 @@ makeRovquantData_wolverine <- function(
   
   
 
-  ## ------     6.9. SAVE FILTERED DATA ----- 
+  ## ------     6.7. PLOT NGS and DEAD RECOVERY MAPS ----- 
+  
+  ##-- layout
+  L <- n.years
+  if(L < 6){ nrows <- 1 } else{
+    if(L < 13){ nrows <- 2 } else {
+      if(L < 22){ nrows <- 3 } else {
+        if(L < 33){ nrows <- 4 } else {
+          nrows <- 5
+        }}}}
+  ncols <- ceiling(L/nrows)
+  
+  
+  ##-- NGS maps
+  grDevices::png(filename = file.path(working.dir, "figures/NGS_TimeSeries.png"),
+                 width = ncols*2, height = nrows*4,
+                 units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  ##-- layout
+  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  for(r in 1:nrows){
+    mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
+    mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
+  }#r
+  nf <- graphics::layout(mx,
+                         widths = c(rep(1,ncol(mx))),
+                         heights = rep(1,2))
+  par(mar = c(0,0,0,0))
+  
+  for(t in 1:length(years)){
+    ##-- Plot maps
+    plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
+    try(
+      plot( sf::st_geometry(data.alive$data.sp[data.alive$data.sp$Year == years[t], ]), add = TRUE, col = "orange", pch = 3),
+      silent = TRUE)
+    plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
+    
+    ##-- Add year
+    graphics::mtext(text = years[t],
+                    side = 1, line = -18,
+                    adj = 0.18, cex = 1.2)
+  }#t
+  dev.off()
+  
+  
+  ##-- Dead recoveries maps
+  grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
+                 width = ncols*2, height = nrows*4,
+                 units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  ##-- layout
+  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  for(r in 1:nrows){
+    mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
+    mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
+  }#r
+  nf <- graphics::layout(mx,
+                         widths = c(rep(1,ncol(mx))),
+                         heights = rep(1,2))
+  par(mar = c(0,0,0,0))
+  
+  for(t in 1:length(years)){
+    ##-- Plot maps
+    plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
+    try(
+      plot( sf::st_geometry(data.dead[data.dead$Year == years[t] & 
+                                        data.dead$Legal, ]), add = TRUE, col = "slateblue1", pch = 3),
+      silent = TRUE)
+    try(
+      plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]), add = TRUE, col = "slateblue4", pch = 3),
+      silent = TRUE)
+    plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
+    
+    ##-- Add year
+    graphics::mtext(text = years[t],
+                    side = 1, line = -18,
+                    adj = 0.18, cex = 1.2)
+  }#t
+  dev.off()
+  
+  
+  
+  
+  ## ------     6.8. SAVE FILTERED DATA ----- 
 
   save( data.alive, data.dead,
         file = file.path( working.dir, "data",
