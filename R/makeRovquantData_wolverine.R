@@ -1609,6 +1609,7 @@ makeRovquantData_wolverine <- function(
       y.ar.ALIVEStructured[ , ,t] <- y.ar.ALIVEStructured[ , ,t] * (1-distances[[t]]$y.flagged)
       
       ##-- Remove detections also in data.alive$data.sp to run getSInits later
+      affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
       idd <- names(affected.ids)
       for(i in 1:length(idd)){
         detIds <- which(distances[[t]]$y.flagged[idd[i], ] > 0)
