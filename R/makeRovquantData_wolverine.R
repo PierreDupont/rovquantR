@@ -365,7 +365,7 @@ makeRovquantData_wolverine <- function(
     st_set_crs(value = st_crs(myFullData.sp$alive)) %>%
     mutate(id = 1)
   
-  DEN.r <- raster(
+  DEN.r <- raster::raster(
     adehabitatHR::estUDm2spixdf(
       adehabitatHR::kernelUD( as(DEN[ ,"id"], "Spatial"),
                               h = 30000,
@@ -418,8 +418,8 @@ makeRovquantData_wolverine <- function(
   detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
     x = detectors$raster,
     fun = function(x){x>0})) %>%
-    st_set_crs(.,value = st_crs(studyArea)) %>%
-    mutate( id = 1:nrow(.),
+    sf::st_set_crs(.,value = st_crs(studyArea)) %>%
+    dplyr::mutate( id = 1:nrow(.),
             x = st_coordinates(st_centroid(.))[ ,1],
             y = st_coordinates(st_centroid(.))[ ,2]) 
   
@@ -429,10 +429,10 @@ makeRovquantData_wolverine <- function(
   
   ##-- Identify detectors in Norrbotten 
   COUNTIESAroundNorrbotten <- REGIONS %>%
-    group_by(county) %>%
-    summarize() %>%
-    filter(county %in% c("Norrbotten","Troms","Västerbotten","Nordland","Finnmark")) %>% 
-    st_simplify( dTolerance = 500)
+    dplyr::group_by(county) %>%
+    dplyr::summarize() %>%
+    dplyr::filter(county %in% c("Norrbotten","Troms","Västerbotten","Nordland","Finnmark")) %>% 
+    sf::st_simplify( dTolerance = 500)
   
   ##-- Create an index of detectors in Norrbotten
   distDetsCounties <- st_distance( detectors$main.detector.sp,
@@ -933,7 +933,7 @@ makeRovquantData_wolverine <- function(
   #   ## SMOOTH AND RASTERIZE
   #   p <-  spatstat.geom::ppp(pts[,1], pts[,2], window = habOwin)
   #   ds <- density(p, adjust=0.02) #---change bandwith (smoothing) with "adjust
-  #   ds <- raster(ds)
+  #   ds <- raster::raster(ds)
   #   
   #   ds <- ds1 <- raster::resample(ds, detectors$raster) #mask(ds,rasterToPolygons(myHabitat.list$habitat.rWthBuffer,function(x) x==1))
   #   threshold <- 0.1 / prod(res(ds)) #--number per 1 unit of the projected raster (meters)
@@ -1613,7 +1613,7 @@ makeRovquantData_wolverine <- function(
       idd <- names(affected.ids)
       for(i in 1:length(idd)){
         detIds <- which(distances[[t]]$y.flagged[idd[i], ] > 0)
-        data.alive <- data.alive %>%
+        data.alive$data.sp <- data.alive$data.sp %>%
           dplyr::filter(!(Id %in% idd[i] & Detector %in% detIds & Year %in% years[t]))
       }#i
       
@@ -1652,7 +1652,35 @@ makeRovquantData_wolverine <- function(
     
     
     
-    ## ------     7.4. AUGMENT DETECTION HISTORIES -----
+    ## ------     7.4. GENERATE INDIVIDUAL-LEVEL COVARIATES ------
+    
+    ##-- Make matrix of previous capture indicator
+    already.detected <- makeTrapResponseCov(
+      data = myFullData.sp$alive,
+      data.dead = myFullData.sp$dead.recovery)
+    
+    ##-- Subset to focal years
+    already.detected <- already.detected[ ,dimnames(already.detected)[[2]] %in% dimnames(y.ar$y.ar)[[3]]]
+    
+    ##-- Subset to focal individuals
+    already.detected <- already.detected[dimnames(already.detected)[[1]] %in% dimnames(y.ar$y.ar)[[1]], ]
+    
+    ##-- Set first detection for augmented individuals to NA
+    already.detected[rownames(already.detected) %in% "Augmented",1]  <- NA
+    
+    # ##-- Plot an image of the matrix
+    # if(plot.check){
+    #   par(mfrow = c(1,1))
+    #   barplot(colSums(apply(y.ar$y.ar, c(1,3), function(x) any(x>0))))
+    #   barplot(colSums(already.detected), add = TRUE, col = "gray40")
+    #   legend( x = 0, y = 250, 
+    #           legend = c("newly Det", "already Det"),
+    #           fill = c("gray80", "gray40"))
+    # }
+    
+    
+    
+    ## ------     7.5. AUGMENT DETECTION HISTORIES -----
     
     ##-- DATA ARRAYS
     y.alive <- makeAugmentation( y = y.ar$y.ar,
@@ -1678,7 +1706,7 @@ makeRovquantData_wolverine <- function(
     
     
     
-    ## ------     7.5. TRANSFORM Y TO SPARSE MATRICES ------
+    ## ------     7.6. TRANSFORM Y TO SPARSE MATRICES ------
     
     ##-- STRUCTURED
     y.sparse <- nimbleSCR::getSparseY(y.aliveStructured)
