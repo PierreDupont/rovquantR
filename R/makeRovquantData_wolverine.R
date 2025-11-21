@@ -1981,26 +1981,26 @@ makeRovquantData_wolverine <- function(
     ## ------     4.3. GENERATE INITIAL sxy ------
     
     ##-- sxy
-    AllDets <- myData.dead[ ,c("Id","Year")] %>% 
+    AllDets <- data.dead[ ,c("Id","Year")] %>% 
       ##-- Project death to the next year
       mutate(Year = Year + 1) %>%
       ##-- Remove dead reco occuring the last year (not used)
       filter(!Year %in% max(Year)) %>%
       ##-- Combine with detections alive
-      rbind(.,myData.alive$data.sp[ ,c("Id","Year")]) %>%
+      rbind(.,data.alive$data.sp[ ,c("Id","Year")]) %>%
       ##-- Add coordinates
       mutate("x" = st_coordinates(.)[ ,1],
              "y" = st_coordinates(.)[ ,2]) %>%
       as.data.frame()
     
     ##-- Rescale detections
-    AllDetsxyscaled <- scaleCoordsToHabitatGrid(
+    AllDets <- scaleCoordsToHabitatGrid(
       coordsData = AllDets,
       coordsHabitatGridCenter = habitat$habitat.xy,
       scaleToGrid =T )$coordsDataScaled
   
     ##-- Generate initial sxy values
-    sxy.init <- getSInits( AllDetections = AllDetsxyscaled[,c("Id","Year","x","y")],
+    sxy.init <- getSInits( AllDetections = AllDets[,c("Id","Year","x","y")],
                            Id.vector = y.ar$Id.vector,
                            idAugmented = which(rownames(z) %in% "Augmented"),
                            lowerCoords = nimData$lowerHabCoords,

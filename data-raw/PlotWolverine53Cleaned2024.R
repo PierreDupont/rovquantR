@@ -42,7 +42,7 @@ source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
 
 
 ##------------------------------------------------------------------------------
-## ------ 0. SET ANALYSIS CHARACTERISTICS -----
+## ------ 0. BASIC SET-UP ------
 
 myVars <- list( 
   WD = file.path(dir.dropbox, "wolverine/2025"),
@@ -81,8 +81,6 @@ DATE <- getMostRecent(
   pattern = "CleanData_wolverine")
 
 
-
-##------------------------------------------------------------------------------
 
 ## ------ 1. LOAD NECESSARY INPUTS -----
 
@@ -193,10 +191,9 @@ if(plot.check){
 
 
 
-##------------------------------------------------------------------------------
-## ------ II. INPUT SUMMARY ------
+## ------ 2. DATA SUMMARY ------
 
-## ------   1. OVERALL NUMBERS ------
+## ------   2.1. OVERALL NUMBERS ------
 
 ##-- SOME TALLIES TO CHECK THINGS
 ##-- NGS
@@ -298,9 +295,9 @@ length(unique(dead$Id[dead$Sex=="Hann"]))     ## Number of Male individuals
 
 
 
-## ------   2. TABLE 1 NGS SAMPLES YEAR/COUNTRIES/SEX ------
+## ------   2.2. TABLE 1 NGS SAMPLES YEAR/COUNTRIES/SEX ------
 
-## ------     2.1. ALL ------
+## ------     2.2.1. ALL ------
 
 NGSCountrySEX <- matrix("", ncol = n.years*2, nrow = 4)
 row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")
@@ -345,7 +342,7 @@ write.csv( NGSCountrySEX,
 
 
 
-## ------     2.2. PER OBSERVATION PROCESS ------
+## ------     2.2.2. PER OBSERVATION PROCESS ------
 
 NGSCountrySEXoBS <- matrix("", ncol = n.years*2+1, nrow = 7)
 NGSCountrySEXoBS[1, ] <- c("", rep(c("F","M"), n.years))
@@ -430,9 +427,9 @@ write.csv(tmp, file = file.path(working.dir, "tables", "Unstructured2020_2022.cs
 
 
 
-## ------   3. TABLE 2 NGS ID YEAR/COUNTRIES/SEX ------
+## ------   2.3. TABLE 2 NGS ID YEAR/COUNTRIES/SEX ------
 
-## ------     3.1. ALL ------
+## ------     2.3.1. ALL ------
 
 NGSidCountrySEX <- matrix("", ncol = n.years*2, nrow = 4)
 row.names(NGSidCountrySEX) <- c("","Norway","Sweden","Total")
@@ -490,7 +487,7 @@ write.csv( NGSidCountryTotal,
 
 
 
-## ------     3.2. PER OBSERVATION PROCESS ------
+## ------     2.3.2. PER OBSERVATION PROCESS ------
 
 NGSCountrySEXoBSid <- matrix("", ncol = n.years*2+1, nrow = 7)
 row.names(NGSCountrySEXoBSid) <- c("",rep(c("Norway","Sweden","Total"),each=2))
@@ -549,7 +546,7 @@ print(xtable(NGSCountrySEXoBSid, type = "latex",
 
 
 
-## ------   4. TABLE 3 DEAD CAUSE ID YEAR/COUNTRIES/SEX ------
+## ------   2.4. TABLE 3 DEAD CAUSE ID YEAR/COUNTRIES/SEX ------
 
 DeadidCountrySEX <- matrix(0, ncol = n.years*2+1, nrow = 6)
 row.names(DeadidCountrySEX) <- c("","other","other","legal culling","legal culling","")
@@ -665,14 +662,14 @@ print(xtable(DeadidCountrySEX, type = "latex",
 
 
 
-## ------   5. GET THE DETECTED INDIVIDUALS ------
+## ------   2.5. GET THE DETECTED INDIVIDUALS ------
 
 n.detected <- read.csv(file.path(working.dir, "tables", "TotalIdDetected.csv"))
 n.detected <- n.detected[1,2:ncol(n.detected)]
 
 
 
-## ------   6. SUMMARY DETECTED INDIVIDUALS PER COUNTIES ------
+## ------   2.6. SUMMARY DETECTED INDIVIDUALS PER COUNTIES ------
 
 # myFilteredData.sp$alive$COUNTIES  <- st_intersects(myFilteredData.sp$alive[,1], COUNTIES_AGGREGATED[,1])
 # myFilteredData.sp$alive$COUNTIES <- as.numeric(myFilteredData.sp$alive$COUNTIES)
@@ -753,7 +750,7 @@ n.detected <- n.detected[1,2:ncol(n.detected)]
 
 
 
-## ------   7. EXTRACTION REGIONS MAP ------
+## ------   2.7. EXTRACTION REGIONS MAP ------
 
 ##-- only select Norwegian counties
 COMMUNESNOR <- COMMUNES[COMMUNES$NAME_0 == "Norway", ]
@@ -910,11 +907,7 @@ polygonsLabel( swedenCounties2,
 dev.off()
 
 
-##------------------------------------------------------------------------------
-
-## ------ III. PROCESS MODEL OUTPUTS -----
-
-## ------   1. GET AND COMPILE BITES ------
+## ------ 3. PROCESS MCMC SAMPLES -----
 
 message("## Processing model MCMC outputs...")
 
@@ -1050,26 +1043,7 @@ n.mcmc <- dim(resultsSXYZ_MF$sims.list$z)[1]
 
 
 
-## ------   3. CHECK RHAT ------
-
-results_F$Rhat
-results_M$Rhat
-
-
-
-##------------------------------------------------------------------------------
-
-## ------   2. CREATE POLYGON WITHOUT BUFFER ------
-
-# ##-- MALES
-# habbRNobuffM <- habitat$habitat.rWthBuffer
-# 
-# ##-- FEMALES
-# habbRNobuffF <- habitat$habitat.rWthBuffer
-
-
-
-## ------   3. EXTRACT DENSITY ------
+## ------ 4. EXTRACT DENSITY ------
 
 message("## Processing density outputs...")
 
@@ -1091,8 +1065,7 @@ searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer),
 searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
 
 ##-- Habitat raster with extent used in the model
-habitatPolygon5km <- raster::crop( extraction.raster$Habitat, habitat$habitat.r)
-
+habitatPolygon5km <- raster::crop(extraction.raster$Habitat, habitat$habitat.r)
 
 ##-- Create raster of countries for extraction
 rrCountries <- extraction.raster$Countries
@@ -1100,11 +1073,10 @@ rrCountries[extraction.raster$Countries[] %in% c(1,3)] <- NA
 areaCountriesTotal <- table(factorValues(rrCountries, rrCountries[]))*res(rrCountries)[1]*1e-6
 rrCountries <- raster::mask(rrCountries, searchedPolygon)
 rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
-plot(rrCountries)
+#plot(rrCountries)
 ##-- Calculate studied area of each county
 areaCountries <- table(factorValues(rrCountries, rrCountries[]))*res(rrCountries)[1]*1e-6 
 percCountries <- round(areaCountries/areaCountriesTotal, 2)
-
 
 ##-- Create raster of counties for extraction
 levels(extraction.raster$Counties)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
@@ -1116,12 +1088,11 @@ rrCounties[extraction.raster$Countries[] %in% c(1,3)] <- NA
 areaCountiesTotal <- table(factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
 rrCounties <- raster::mask(rrCounties, searchedPolygon)
 rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
-plot(rrCounties)
+#plot(rrCounties)
 ##-- Calculate studied area of each county
 areaCounties <- table(factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
 areaCountiesTotal <- areaCountiesTotal[names(areaCountiesTotal) %in% names(areaCounties)]
 percCounties <- round(areaCounties/areaCountiesTotal, 2)
-
 
 ##-- Create raster of carnivore regions for extraction
 rrRegions <- extraction.raster$Regions
@@ -1138,17 +1109,14 @@ levels(rrRegions)[[1]] <- data.frame(
 areaRegionsTotal <- table(factorValues(rrRegions, rrRegions[]))*res(rrRegions)[1]*1e-6
 rrRegions <- mask(rrRegions, searchedPolygon)
 rrRegions <- crop(rrRegions, habitat$habitat.r)
-plot(rrRegions)
+#plot(rrRegions)
 ##-- Calculate studied area of each county
 areaRegions <- table(factorValues(rrRegions,rrRegions[]))*res(rrRegions)[1]*1e-6
 areaRegionsTotal <- areaRegionsTotal[names(areaRegionsTotal) %in% names(areaRegions)]
 percRegions <- round(areaRegions/areaRegionsTotal, 2)
 
-
 ##-- Merge the percentages
 percAllRegions <- c(percCountries, percRegions, percCounties)
-
-
 
 
 ##-- Calculate density only if necessary
@@ -1174,243 +1142,160 @@ if(!overwrite){
 
 if(densTest){
   
-message("## Extracting population density... \n## This might take a while...")
-
+  message("## Extracting population density... \n## This might take a while...")
   
+  
+  ## ------   1. PREPARE DENSITY EXTRACTION ------
+  
+  ##-- Get the objects to run the density function
+  ##-- COUNTRY
+  densityInputCountries <- getDensityInput(
+    regions = rrCountries, 
+    habitat = habitatPolygon5km,
+    s = resultsSXYZ_MF$sims.list$sxy,
+    plot.check = FALSE)
+  rownames(densityInputCountries$regions.rgmx)
+  
+  ##-- COUNTIES
+  densityInputCounties <- getDensityInput( 
+    regions = rrCounties, 
+    habitat = habitatPolygon5km,
+    s = resultsSXYZ_MF$sims.list$sxy,
+    plot.check = FALSE)
+  rownames(densityInputCounties$regions.rgmx)
+  
+  ##-- REGIONS
+  densityInputRegions <- getDensityInput( 
+    regions = rrRegions, 
+    habitat = habitatPolygon5km,
+    s = resultsSXYZ_MF$sims.list$sxy,
+    plot.check = FALSE)
+  rownames(densityInputRegions$regions.rgmx)
+  
+  ##-- Merge country, county & region matrices to allow simultaneous estimation
+  regionID <- rbind( densityInputCountries$regions.rgmx,
+                     densityInputRegions$regions.rgmx,
+                     densityInputCounties$regions.rgmx)
+  row.names(regionID) <- c(row.names(densityInputCountries$regions.rgmx),
+                           row.names(densityInputRegions$regions.rgmx),
+                           row.names(densityInputCounties$regions.rgmx))
+  
+  
+  
+  ## ------   2. AC-BASED DENSITY ------
+  ## ------     2.1. MALE & FEMALES ------
+  
+  ##-- EXTRACT DENSITY 
+  ACdensity <- list()
+  for(t in 1:n.years){
+    ACdensity[[t]] <- GetDensity(
+      sx = densityInputRegions$sx[ , ,t],
+      sy = densityInputRegions$sy[ , ,t],
+      z = resultsSXYZ_MF$sims.list$z[ , ,t],
+      IDmx = densityInputRegions$habitat.id,
+      aliveStates = alive.states,
+      regionID = regionID,
+      returnPosteriorCells = F)
+  }#t
+  names(ACdensity) <- years
+  ACdensity[[t]]$summary
+  
+  
+  ## ------     2.2. MALE -----
+  
+  IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
+  
+  ACdensity_M <- list()
+  for(t in 1:n.years){
+    ACdensity_M[[t]] <- GetDensity(
+      sx = densityInputRegions$sx[ ,IDMales,t],
+      sy =  densityInputRegions$sy[ ,IDMales,t],
+      z = resultsSXYZ_MF$sims.list$z[ ,IDMales,t],
+      IDmx = densityInputRegions$habitat.id,
+      aliveStates = alive.states,
+      regionID = regionID,
+      returnPosteriorCells = F)
+  }#t
+  names(ACdensity_M) <- years
+  
+  
+  
+  ## ------     2.3. FEMALE -----
+  
+  IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
+  
+  ACdensity_F <- list()
+  for(t in 1:n.years){
+    ACdensity_F[[t]] <- GetDensity(
+      sx = densityInputRegions$sx[ ,IDFemales,t],
+      sy = densityInputRegions$sy[ ,IDFemales,t],
+      z = resultsSXYZ_MF$sims.list$z[ ,IDFemales,t],
+      IDmx = densityInputRegions$habitat.id,
+      aliveStates = alive.states,
+      regionID = regionID,
+      returnPosteriorCells = F)
+  }
+  names(ACdensity_F) <- years
+  
+  
+  
+  ## ------   3. UD-BASED DENSITY ------
+  
+  ##-- Select iterations randomly
+  iter <- sample(1:dim(densityInputCountries$sy)[1], size = n.iter)
+  
+  ##-- Combine male and female sigma
+  sigma <- array(NA, c(length(iter), length(resultsSXYZ_MF$sims.list$sex), n.years))
+  for(t in 1:n.years){
+    for(i in 1:length(resultsSXYZ_MF$sims.list$sex)){
+      sigma[ ,i,t] <- ifelse(resultsSXYZ_MF$sims.list$sex[i] == "M",
+                             resultsSXYZ_MF$sims.list$sigma[iter,t,"M"],
+                             resultsSXYZ_MF$sims.list$sigma[iter,t,"F"])
+    }#i
+  }#t
+  
+  ##-- Rescale sigma to the raster resolution
+  sigma <- sigma/raster::res(rrRegions)[1]
 
-## ------   1. PREPARE DENSITY EXTRACTION ------
-
-##-- GET THE OBJECTS TO RUN THE DENSITY FUNCTION 
-##-- COUNTRY
-densityInputCountries <- getDensityInput(
-  regions = rrCountries, 
-  habitat = habitatPolygon5km,
-  s = resultsSXYZ_MF$sims.list$sxy,
-  plot.check = TRUE)
-rownames(densityInputCountries$regions.rgmx)
-
-##-- COUNTIES
-densityInputRegions <- getDensityInput( 
-  regions = rrCounties, 
-  habitat = habitatPolygon5km,
-  s = resultsSXYZ_MF$sims.list$sxy,
-  plot.check = TRUE)
-rownames(densityInputRegions$regions.rgmx)
-
-##-- REGIONS
-densityInputRegionsSwe <- getDensityInput( 
-  regions = rrRegions, 
-  habitat = habitatPolygon5km,
-  s = resultsSXYZ_MF$sims.list$sxy,
-  plot.check = TRUE)
-rownames(densityInputRegionsSwe$regions.rgmx)
-
-##-- MERGE COUNTRY AND REGION MATRICES TO ALLOW SIMULTANEOUS EXTRACTION
-regionID <- rbind( densityInputCountries$regions.rgmx,
-                   densityInputRegions$regions.rgmx,
-                   densityInputCounties$regions.rgmx)
-row.names(regionID) <- c(row.names(densityInputCountries$regions.rgmx),
-                         row.names(densityInputRegions$regions.rgmx),
-                         row.names(densityInputCounties$regions.rgmx))
-
-
-
-## ------       2.1.2. MALE & FEMALES (5km) ------
-
-ite <- seq(1,dim(densityInputCountries$sx[ , ,t])[1], by = 1)
- 
-##-- EXTRACT DENSITY 
-ACdensity <- list()
-for(t in 1:n.years){
-  ACdensity[[t]] <- GetDensity(
-    sx = densityInputRegions$sx[ , ,t],
-    sy = densityInputRegions$sy[ , ,t],
-    z = resultsSXYZ_MF$sims.list$z[ , ,t],
-    IDmx = densityInputRegions$habitat.id,
-    aliveStates = alive.states,
-    regionID = regionID,
-    returnPosteriorCells = F)
-}#t
-names(ACdensity) <- years
-
-
-
-## ------     2.2. MALE -----
-
-IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
-
-ACdensity_M <- list()
-for(t in 1:n.years){
-  ACdensity_M[[t]] <- GetDensity(
-    sx = densityInputRegions$sx[ ,IDMales,t],
-    sy =  densityInputRegions$sy[ ,IDMales,t],
-    z = resultsSXYZ_MF$sims.list$z[ ,IDMales,t],
-    IDmx = densityInputRegions$habitat.id,
-    aliveStates = alive.states,
-    regionID = regionID,
-    returnPosteriorCells = F)
-}#t
-names(ACdensity_M) <- years
-
-
-
-## ------     2.3. FEMALE -----
-
-IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
-
-ACdensity_F <- list()
-for(t in 1:n.years){
-  ACdensity_F[[t]] <- GetDensity(
-    sx = densityInputRegions$sx[ ,IDFemales,t],
-    sy = densityInputRegions$sy[ ,IDFemales,t],
-    z = resultsSXYZ_MF$sims.list$z[ ,IDFemales,t],
-    IDmx = densityInputRegions$habitat.id,
-    aliveStates = alive.states,
-    regionID = regionID,
-    returnPosteriorCells = F)
-}
-names(ACdensity_F) <- years
-
-
-
-
-## ------       2.1.3. MALE ------
-
-##-- Identify Males
-IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
-
-##-- EXTRACT DENSITY 
-ACdensity_M <- list()
-for(t in 1:n.years){
-  ACdensity_M[[t]] <- GetDensity(
-    sx = densityInputCountries$sx[ite,IDMales,t],
-    sy =  densityInputCountries$sy[ite,IDMales,t],
-    z = resultsSXYZ_MF$sims.list$z[ite,IDMales,t],
-    IDmx = densityInputCountries$habitat.id,
-    aliveStates = alive.states,
-    regionID = regionID,
-    returnPosteriorCells = F)
-}#t
-
-
-
-## ------       2.1.4. FEMALE (5km) ------
-
-##-- Identify Females
-IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
-
-##-- EXTRACT DENSITY 
-ACdensity_F <- list()
-for(t in 1:n.years){
-  ACdensity_F[[t]] <- GetDensity(
-    sx = densityInputCountries$sx[ite,IDFemales,t],
-    sy = densityInputCountries$sy[ite,IDFemales,t],
-    z = resultsSXYZ_MF$sims.list$z[ite,IDFemales,t],
-    IDmx = densityInputCountries$habitat.id,
-    aliveStates = alive.states,
-    regionID = regionID,
-    returnPosteriorCells = F)
-}
-
-
-
-## ------       2.1.5. COUNTIES NORWAY M & F (5km) ------
-
-ACdensityNOR <- list()
-for(t in 1:n.years){
-  ACdensityNOR[[t]] <- GetDensity(
-    sx = densityInputRegionsNor$sx[ite,,t],
-    sy =  densityInputRegionsNor$sy[ite,,t],
-    z = resultsSXYZ_MF$sims.list$z[ite,,t],
-    IDmx = densityInputRegionsNor$habitat.id,
-    aliveStates = alive.states,
-    regionID = densityInputRegionsNor$regions.rgmx,
-    returnPosteriorCells = F)
-}#t
-
-
-## ------   3. UD-BASED DENSITY (5km) ------
-
-##-- Combine male and female sigma
-sigma <- array(NA, c(length(iter), length(resultsSXYZ_MF$sims.list$sex), n.years))
-for(t in 1:n.years){
-  for(i in 1:length(resultsSXYZ_MF$sims.list$sex)){
-    sigma[ ,i,t] <- ifelse(resultsSXYZ_MF$sims.list$sex[i] == "M",
-                           resultsSXYZ_MF$sims.list$sigma[iter,t,"M"],
-                           resultsSXYZ_MF$sims.list$sigma[iter,t,"F"])
-  }#i
-}#t
-
-##-- Rescale sigma to the raster resolution
-sigma <- sigma/raster::res(rrRegions)[1]
-
-##-- IDENTIFY PROXIMITY HABITAT CELLS 
-habitatMask <- densityInputCountries$habitat.id
-habitatMask[!is.na(habitatMask)] <- 1 
-
-## COMPUTE THE UD BASED FOR A FEW ITERATIONS
-sigma <- resultsSXYZ_MF$sims.list$sigma
-##-- RESCALE SIGMA TO THE HABITAT SCALE
-sigmaRescaled <- sigma/res(rrCountries)[1]
-
-##-- SELECT xxx ITERATIONS RANDOMLY 
-spaceUSED <- list()
-iter <- sample(1:dim(densityInputCountries$sy)[1], size = 100)
-for(t in 1:n.years){
-  spaceUSED[[t]] <- GetSpaceUse(
-    sx = densityInputCountries$sx[iter, ,t],
-    sy = densityInputCountries$sy[iter, ,t],
-    z = resultsSXYZ_MF$sims.list$z[iter, ,t],
-    sigma = sigmaRescaled[iter],
-    densityInputCountries$habitat.xy,
-    aliveStates = alive.states,
-    regionID = densityInputCountries$regions.rgmx,
-    display_progress = TRUE,
-    returnPosteriorCells = FALSE)
-}
-
-spaceUSED1 <- spaceUSED
-spaceUSED <- list()
-for(t in 1:n.years){
-  spaceUSED[[t]] <- list()
-  spaceUSED[[t]][["MeanCell"]] <- spaceUSED1[[t]]$MeanCell
-}
-
-
-UDdensity <- list()
-for(t in 1:n.years){
-  UDdensity[[t]] <- GetSpaceUse(
-    sx = densityInputRegions$sx[ , ,t],
-    sy = densityInputRegions$sy[ , ,t],
-    z = resultsSXYZ_MF$sims.list$z[iter, ,t],
-    sigma = sigma,
-    habitatxy = densityInputRegions$habitat.xy,
-    aliveStates = 2,
-    regionID = regionID,
-    display_progress = T,
-    returnPosteriorCells = F)
-}#t
-names(UDdensity) <- years
-
-
-
-## ------   4. SAVE DENSITY OBJECTS ------
-
-save( inputRaster,
-      ACdensity,
-      ACdensity_F,
-      ACdensity_M,
-      UDdensity,
-      UDdensityF,
-      UDdensityM,
-      file = file.path( working.dir, "data",
-                        paste0("Density_bear_",DATE,".RData")))
+  UDdensity <- list()
+  for(t in 1:n.years){
+    UDdensity[[t]] <- rovquantR::GetSpaceUse(
+      sx = densityInputCountries$sx[iter, ,t],
+      sy = densityInputCountries$sy[iter, ,t],
+      z = resultsSXYZ_MF$sims.list$z[iter, ,t],
+      sigma = sigma[,,t],
+      habitatxy = densityInputCountries$habitat.xy,
+      aliveStates = alive.states,
+      regionID = regionID,
+      display_progress = TRUE,
+      returnPosteriorCells = FALSE)
+  }#t
+  names(UDdensity) <- years
+  UDdensity[[t]]$summary
+  
+  spaceUSED1 <- spaceUSED
+  spaceUSED <- list()
+  for(t in 1:n.years){
+    spaceUSED[[t]] <- list()
+    spaceUSED[[t]][["MeanCell"]] <- spaceUSED1[[t]]$MeanCell
+  }
+  
+  ## ------   4. SAVE DENSITY OBJECTS ------
+  inputRaster <- densityInputRegions$regions.r
+  
+  save( inputRaster,
+        ACdensity,
+        ACdensity_F,
+        ACdensity_M,
+        UDdensity,
+        file = file.path( working.dir, "data",
+                          paste0("Density_wolverine_", DATE, ".RData")))
 }
 
 
 
 
-## ------       2.1.6. SUMMARY TABLES ------
+## ------   4.1.6. SUMMARY TABLES ------
 
 ## ------         2.1.6.1. ALL YEARS, BOTH SEX ------
 
