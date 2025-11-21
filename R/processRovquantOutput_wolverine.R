@@ -84,16 +84,19 @@ processRovquantOutput_wolverine <- function(
   gc(verbose = FALSE)
   
   ##-- Habitat
-  load(file.path( working.dir, "data", paste0("Habitat_wolverine_", DATE, ".RData")))
+  load(file.path( working.dir, "data",
+                  paste0("Habitat_wolverine_", DATE, ".RData")))
   
   ##-- Detectors
-  load(file.path( working.dir, "data", paste0("Detectors_wolverine_", DATE, ".RData")))
+  load(file.path( working.dir, "data",
+                  paste0("Detectors_wolverine_", DATE, ".RData")))
   
   ##-- Load filtered data
-  load(file.path( working.dir, "data", paste0("FilteredData_wolverine_", DATE, ".RData")))
+  load(file.path( working.dir, "data",
+                  paste0("FilteredData_wolverine_", DATE, ".RData")))
   
   ##-- Habitat Rasters
-  if(extraction.res <= 1000){
+  if(extraction.res <= 1000) {
     data(habitatRasterResolution, envir = environment()) 
     extraction.raster <- habitatRasterResolution$'1km'
     extraction.res <- 1000
@@ -126,17 +129,16 @@ processRovquantOutput_wolverine <- function(
   yearsSampledNorrb <- c(2016:2018,2023)
   yearsNotSampled <- which(!years %in% yearsSampledNorrb)
   
-  # ##-- MERGE & SIMPLIFY SOME NORWEGIAN COUNTIES
-  # COUNTIES_s <- COUNTIES[COUNTIES$country %in% "NOR", ] %>% sf::st_intersection(COUNTRIES)
-  # COUNTIES_s$county[COUNTIES_s$county %in% c("Trøndelag","Nordland")] <- "Trøndelag"
-  # COUNTIES_s$county[COUNTIES_s$county %in% c("Troms","Finnmark")] <- "Finnmark"
-  # COUNTIES_s$county[!COUNTIES_s$county %in% c("Finnmark","Trøndelag")] <- "Innlandet"
-  # COUNTIES_s <- COUNTIES_s %>%
-  #   group_by(county) %>%
-  #   dplyr::summarize() 
-  # COUNTIES_s <- sf::st_simplify(sf::st_as_sf(COUNTIES_s), preserveTopology = T, dTolerance = 500)
-  # COUNTIES_s$index <- c(1,3,2)
-  # COUNTIES_s$Name <- c("NO1","NO3","NO2")
+  ##-- Polygons of Sweden & Norway
+  COUNTRIES <- REGIONS %>%
+    dplyr::filter(country %in% c("SWE","NOR")) %>%
+    group_by(country) %>%
+    summarize()
+  
+  ##-- Polygons of counties in Sweden & Norway
+  COUNTIES <- REGIONS %>%
+    group_by(county) %>%
+    summarize()
   
   ##-- Merge counties for practical reasons
   COUNTIES_AGGREGATED <- REGIONS %>%
@@ -157,28 +159,7 @@ processRovquantOutput_wolverine <- function(
     group_by(id) %>%
     summarize() %>%
     st_simplify( ., preserveTopology = T, dTolerance = 500)
-  plot(COUNTIES_AGGREGATED)
-  
 
-  ## AGGREGATE COUNTIES (OPTIONAL)
-  COUNTIES_AGGREGATE <- COUNTIES
-  #COUNTIES_AGGREGATED <- gSimplify(COUNTIES_AGGREGATED,tol=500, topologyPreserve = TRUE)
-  COUNTIES_AGGREGATE$id <- 1:nrow(COUNTIES_AGGREGATE)
-  #[CM] adjust Counties aggregation
-  COUNTIES_AGGREGATE$id[c(24,3,15,9,14,38,40,21,27,37,31,26,34,5,8,12,36,13,7)] <- 3
-  COUNTIES_AGGREGATE$id[c(39,33,23,32,29,22,4,11,20,2,10,16,25,1)] <- 4
-  COUNTIES_AGGREGATE$id[c(19)] <- 1
-  COUNTIES_AGGREGATE$id[c(35)] <- 2
-  COUNTIES_AGGREGATE$id[c(17,28)] <- 5
-  COUNTIES_AGGREGATE$id[c(18)] <- 7
-  COUNTIES_AGGREGATE$id[c(30)] <- 8
-  COUNTIES_AGGREGATE <- COUNTIES_AGGREGATE %>% group_by(id) %>% summarize()
-  COUNTIES_AGGREGATED <- st_simplify(COUNTIES_AGGREGATE,preserveTopology = T,dTolerance = 500)
-  COUNTIES_AGGREGATED$id <- COUNTIES_AGGREGATE$id
-  ggplot(COUNTIES_AGGREGATED) +
-    geom_sf(aes(fill = id)) +
-    geom_sf_label(aes(label = id))
-  
   
   
   ## ------ 2. PROCESS MCMC SAMPLES -----
@@ -187,7 +168,7 @@ processRovquantOutput_wolverine <- function(
   
   ##-- Check that a file with that name does not already exist to avoid overwriting
   mcmcTest <- TRUE
-  if (!overwrite) {
+  if(!overwrite){
     fileName <- paste0("MCMC_wolverine_", DATE, ".RData")
     if (file.exists(file.path(working.dir, "data", fileName))) {
       message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
@@ -209,17 +190,22 @@ processRovquantOutput_wolverine <- function(
     ## ------   2.1. FEMALES -----
     
     ##-- Compile MCMC bites
+    gc(verbose = FALSE)
     nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/female"),
                                      burnin = nburnin)
     
     ##-- Traceplots
+    gc(verbose = FALSE)
     grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
     plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
     grDevices::dev.off()
     
     ##-- Process MCMC output
+    gc(verbose = FALSE)
     results_F <- processCodaOutput( nimOutput_F$samples,
                                     params.omit = c("sxy","z"))
+    
+    gc(verbose = FALSE)
     resultsSXYZ_F <- processCodaOutput(nimOutput_F$samples2)
     
     ##-- Remove unnecessary objects from memory
@@ -233,43 +219,46 @@ processRovquantOutput_wolverine <- function(
       coordsHabitatGridCenter = habitat$habitat.xy,
       scaleToGrid = FALSE)$coordsDataScaled
     
-    ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+    ##-- Rescale sigma & dmean to the original coordinate system
     results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
-    results_F$sims.list$tau <- results_F$sims.list$tau * raster::res(habitat$habitat.r)[1]
+    results_F$sims.list$dmean <- results_F$sims.list$dmean * raster::res(habitat$habitat.r)[1]
     
     
     
     ## ------   2.2. MALES -----
     
     ##-- Compile MCMC bites
+    gc(verbose = FALSE)
     nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/male"),
                                      burnin = nburnin)
     
     ##-- Traceplots
+    gc(verbose = FALSE)
     grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
     plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
     dev.off()
     
     ##-- Process MCMC output
+    gc(verbose = FALSE)
     results_M <- processCodaOutput( nimOutput_M$samples,
                                     params.omit = c("sxy","z"))
+    gc(verbose = FALSE)
     resultsSXYZ_M <- processCodaOutput(nimOutput_M$samples2)
     
     ##-- Remove unnecessary objects from memory
     rm(list = c("nimOutput_M"))
     gc(verbose = FALSE)
     
-    
-    ##-- RESCALE SXY TO THE ORIGINAL COORDINATE SYSTEM
+    ##-- Rescale sxy to the original coordinate system
     dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
     resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
       coordsData = resultsSXYZ_M$sims.list$sxy,
       coordsHabitatGridCenter = habitat$habitat.df,
       scaleToGrid = FALSE)$coordsDataScaled
     
-    ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+    ##-- Rescale sigma & dmean to the original coordinate system
     results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
-    results_M$sims.list$tau <- results_M$sims.list$tau * raster::res(habitat$habitat.r)[1]
+    results_M$sims.list$dmean <- results_M$sims.list$dmean * raster::res(habitat$habitat.r)[1]
     
     
     
@@ -307,7 +296,8 @@ processRovquantOutput_wolverine <- function(
     
     ##-- SAVE AND LOAD DATA
     save( results_F, results_M, resultsSXYZ_MF,
-          file = file.path( working.dir, "data", paste0("MCMC_wolverine_", DATE, ".RData")))
+          file = file.path( working.dir, "data",
+                            paste0("MCMC_wolverine_", DATE, ".RData")))
   }
 
   ##-- Number of activity center posterior samples
@@ -320,7 +310,7 @@ processRovquantOutput_wolverine <- function(
   message("## Processing density outputs...")
   
   ##-- Select niter iterations randomly
-  if(n.mcmc >= niter){
+  if(n.mcmc >= niter) {
     iter <- round(seq(1, n.mcmc, length.out = niter))
   } else {
     message(paste0( "The number of MCMC samples available (", n.mcmc,
@@ -330,26 +320,68 @@ processRovquantOutput_wolverine <- function(
   }
 
   ##-- Remove buffer from the habitat
-  ## [PD] maybe remove?
-  # habitat.rWthBuffer <- habitat$habitat.rWthBuffer
-  # habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
-  # searchedPolygon <- raster::rasterToPolygons( habitat.rWthBuffer,
-  #                                              dissolve = T,
-  #                                              function(x) x == 1)
+  habitat.rWthBuffer <- habitat$habitat.rWthBuffer
+  habitat.rWthBuffer[habitat.rWthBuffer %in% 0] <- NA
+  searchedPolygon <- sf::st_as_sf( stars::st_as_stars(habitat.rWthBuffer), 
+                                   as_points = FALSE, 
+                                   merge = TRUE)
+  searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
   
   ##-- Habitat raster with extent used in the model
   habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
                                      habitat$habitat.r)
   
-  ##-- Create 5km raster of carnivore regions for extraction
-  rrRegions <- extraction.raster$Regions
-  rrRegions <- raster::mask(rrRegions, habitat$habitat.poly)
-  rrRegions <- raster::crop(rrRegions, habitat$habitat.r)
+  ##-- Create raster of countries for extraction
+  rrCountries <- extraction.raster$Countries
+  rrCountries[extraction.raster$Countries[] %in% c(1,3)] <- NA
+  areaCountriesTotal <- table(factorValues(rrCountries, rrCountries[]))*res(rrCountries)[1]*1e-6
+  rrCountries <- raster::mask(rrCountries, searchedPolygon)
+  rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
+  #plot(rrCountries)
+  ##-- Calculate studied area of each county
+  areaCountries <- table(factorValues(rrCountries, rrCountries[]))*res(rrCountries)[1]*1e-6 
+  percCountries <- round(areaCountries/areaCountriesTotal, 2)
   
-  ##-- Create 5km raster of counties for extraction
+  ##-- Create raster of counties for extraction
+  levels(extraction.raster$Counties)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
+    "Södermanland", "Östergötland","Jönköping", "Skåne", "Västra Götaland",
+    "Värmland","Örebro","Västmanland","Gävleborg",
+    "Västernorrland","Jämtland","Västerbotten")
   rrCounties <- extraction.raster$Counties
-  rrCounties <- raster::mask(rrCounties, habitat$habitat.poly)
+  rrCounties[extraction.raster$Countries[] %in% c(1,3)] <- NA
+  areaCountiesTotal <- table(factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
+  rrCounties <- raster::mask(rrCounties, searchedPolygon)
   rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
+  #plot(rrCounties)
+  ##-- Calculate studied area of each county
+  areaCounties <- table(factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
+  areaCountiesTotal <- areaCountiesTotal[names(areaCountiesTotal) %in% names(areaCounties)]
+  percCounties <- round(areaCounties/areaCountiesTotal, 2)
+  
+  ##-- Create raster of carnivore regions for extraction
+  rrRegions <- extraction.raster$Regions
+  rrRegions[extraction.raster$Countries %in% c(1,3)] <- NA
+  rrRegions[rrRegions[ ] %in% c(18,19,20,21)] <- 1
+  rrRegions[rrRegions[ ] %in% c(13,17,16,14,15,12,22,3)] <- 2
+  rrRegions[rrRegions[ ] %in% c(4,5,10,6,7,9,11,8)] <- 3
+  rrRegions <- ratify(rrRegions)
+  levels(rrRegions)[[1]] <- data.frame(
+    "ID" = c(1,2,3,23:30),
+    "Regions"= c( "Nordre","Midtre","Söndre",
+                  "Region 3","Region 1","Region 2","Region 4",
+                  "Region 7","Region 6","Region 8","Region 5"))
+  areaRegionsTotal <- table(factorValues(rrRegions, rrRegions[]))*res(rrRegions)[1]*1e-6
+  rrRegions <- mask(rrRegions, searchedPolygon)
+  rrRegions <- crop(rrRegions, habitat$habitat.r)
+  #plot(rrRegions)
+  ##-- Calculate studied area of each county
+  areaRegions <- table(factorValues(rrRegions,rrRegions[]))*res(rrRegions)[1]*1e-6
+  areaRegionsTotal <- areaRegionsTotal[names(areaRegionsTotal) %in% names(areaRegions)]
+  percRegions <- round(areaRegions/areaRegionsTotal, 2)
+  
+  ##-- Merge the percentages
+  percAllRegions <- c(percCountries, percRegions, percCounties)
+  
   
   ##-- Calculate density only if necessary
   ##-- Check that a file with that name does not already exist to avoid overwriting
@@ -380,35 +412,37 @@ processRovquantOutput_wolverine <- function(
     ## ------   1. PREPARE DENSITY EXTRACTION ------
     
     ##-- Get the objects to run the density function
-    densityInputRegions <- suppressWarnings(getDensityInput(
-      regions = rrRegions,
+    ##-- COUNTRIES
+    densityInputCountries <- suppressWarnings(getDensityInput(
+      regions = rrCountries, 
       habitat = habitatPolygon5km,
-      s = resultsSXYZ_MF$sims.list$sxy[iter, , , ],
-      plot.check = F))
+      s = resultsSXYZ_MF$sims.list$sxy,
+      plot.check = FALSE))
+    rownames(densityInputCountries$regions.rgmx)
+    
+    ##-- COUNTIES
+    densityInputRegions <- suppressWarnings(getDensityInput( 
+      regions = rrRegions, 
+      habitat = habitatPolygon5km,
+      s = resultsSXYZ_MF$sims.list$sxy,
+      plot.check = FALSE))
+    rownames(densityInputRegions$regions.rgmx)
+    
+    ##-- REGIONS
+    densityInputCounties <- suppressWarnings(getDensityInput( 
+      regions = rrCounties, 
+      habitat = habitatPolygon5km,
+      s = resultsSXYZ_MF$sims.list$sxy,
+      plot.check = FALSE))
+    rownames(densityInputRegionsSwe$regions.rgmx)
     
     inputRaster <- densityInputRegions$regions.r
     
-    ##-- Subset to regions of interest
-    regions.names <- c("Region 1","Region 2","Region 3","Region 4","Region 5","Region 6","Region 7","Region 8")
-    regionID <- densityInputRegions$regions.rgmx
-    row.names(regionID) <- row.names(densityInputRegions$regions.rgmx)
-    regionID <- as.matrix(regionID[row.names(regionID) %in% regions.names, ])
-    
-    
-    ##-- Get the objects to run the density function
-    densityInputCounties <- suppressWarnings(getDensityInput(
-      regions = rrCounties,
-      habitat = habitatPolygon5km,
-      s = resultsSXYZ_MF$sims.list$sxy[iter, , , ],
-      plot.check = F))
-    
-    ##-- Subset to Counties of interest
-    county.names <- COUNTIES$county[COUNTIES$country == "NOR"]
-    countyID <- densityInputCounties$regions.rgmx
-    row.names(countyID) <- row.names(densityInputCounties$regions.rgmx)
-    countyID <- as.matrix(countyID[row.names(countyID) %in% county.names, ])
-    
-    
+    ##-- Merge region matrices to allow simultaneous extraction
+    regionID <- rbind( densityInputCountries$regions.rgmx,
+                       densityInputRegions$regions.rgmx,
+                       densityInputCounties$regions.rgmx)
+ 
     
     ## ------   2. AC-BASED DENSITY (5km) ------
     
@@ -421,8 +455,8 @@ processRovquantOutput_wolverine <- function(
         sy = densityInputRegions$sy[ , ,t],
         z = resultsSXYZ_MF$sims.list$z[ , ,t],
         IDmx = densityInputRegions$habitat.id,
-        aliveStates = 2,
-        regionID = rbind(regionID,countyID),
+        aliveStates = alive.states,
+        regionID = regionID,
         returnPosteriorCells = F)
     }#t
     names(ACdensity) <- years
@@ -440,7 +474,7 @@ processRovquantOutput_wolverine <- function(
         sy =  densityInputRegions$sy[ ,IDMales,t],
         z = resultsSXYZ_MF$sims.list$z[ ,IDMales,t],
         IDmx = densityInputRegions$habitat.id,
-        aliveStates = 2,
+        aliveStates = alive.states,
         regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }#t
@@ -459,7 +493,7 @@ processRovquantOutput_wolverine <- function(
         sy = densityInputRegions$sy[ ,IDFemales,t],
         z = resultsSXYZ_MF$sims.list$z[ ,IDFemales,t],
         IDmx = densityInputRegions$habitat.id,
-        aliveStates = 2,
+        aliveStates = alive.states,
         regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }
@@ -470,7 +504,7 @@ processRovquantOutput_wolverine <- function(
     ## ------   3. UD-BASED DENSITY (5km) ------
     
     ##-- Combine male and female sigma
-    sigma <- array(NA, c(length(iter), length(resultsSXYZ_MF$sims.list$sex), n.years))
+    sigma <- array(NA, c(n.iter, length(resultsSXYZ_MF$sims.list$sex), n.years))
     for(t in 1:n.years){
       for(i in 1:length(resultsSXYZ_MF$sims.list$sex)){
         sigma[ ,i,t] <- ifelse(resultsSXYZ_MF$sims.list$sex[i] == "M",
@@ -491,12 +525,12 @@ processRovquantOutput_wolverine <- function(
     UDdensityM <- list()
     for(t in 1:n.years){
       UDdensityM[[t]] <- GetSpaceUse(
-        sx = densityInputRegions$sx[ ,IDMales,t],
-        sy = densityInputRegions$sy[ ,IDMales,t],
+        sx = densityInputRegions$sx[iter,IDMales,t],
+        sy = densityInputRegions$sy[iter,IDMales,t],
         z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
-        sigma = sigma[ ,IDMales],
+        sigma = sigma[ ,IDMalest],
         habitatxy = densityInputRegions$habitat.xy,
-        aliveStates = 2,
+        aliveStates = alive.states,
         regionID = regionID,
         display_progress = T,
         returnPosteriorCells = F)
@@ -512,12 +546,12 @@ processRovquantOutput_wolverine <- function(
     UDdensityF <- list()
     for(t in 1:n.years){
       UDdensityF[[t]] <- GetSpaceUse(
-        sx = densityInputRegions$sx[ ,IDFemales,t],
-        sy = densityInputRegions$sy[ ,IDFemales,t],
+        sx = densityInputRegions$sx[iter,IDFemales,t],
+        sy = densityInputRegions$sy[iter,IDFemales,t],
         z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
-        sigma = sigma[ ,IDFemales],
+        sigma = sigma[ ,IDFemales,t],
         habitatxy = densityInputRegions$habitat.xy,
-        aliveStates = 2,
+        aliveStates = alive.states,
         regionID = regionID,
         display_progress = T,
         returnPosteriorCells = F)
@@ -531,12 +565,12 @@ processRovquantOutput_wolverine <- function(
     UDdensity <- list()
     for(t in 1:n.years){
       UDdensity[[t]] <- GetSpaceUse(
-        sx = densityInputRegions$sx[ , ,t],
-        sy = densityInputRegions$sy[ , ,t],
+        sx = densityInputRegions$sx[iter, ,t],
+        sy = densityInputRegions$sy[iter, ,t],
         z = resultsSXYZ_MF$sims.list$z[iter, ,t],
-        sigma = sigma,
+        sigma = sigma[ , ,t],
         habitatxy = densityInputRegions$habitat.xy,
-        aliveStates = 2,
+        aliveStates = alive.states,
         regionID = regionID,
         display_progress = T,
         returnPosteriorCells = F)
@@ -554,7 +588,8 @@ processRovquantOutput_wolverine <- function(
           UDdensity,
           UDdensityF,
           UDdensityM,
-          file = file.path(working.dir,"data",paste0("Density_wolverine_",DATE,".RData")))
+          file = file.path( working.dir,"data",
+                            paste0("Density_wolverine_",DATE,".RData")))
   } 
   
   
@@ -563,7 +598,7 @@ processRovquantOutput_wolverine <- function(
   
   ##-- Plot parameters
   diffSex <- 0.2
-  colSex <- adjustcolor(c("firebrick3", "deepskyblue2", "black"),0.5)
+  colSex <- adjustcolor( c("firebrick3", "deepskyblue2", "black"), 0.5)
   colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
   
   
@@ -574,8 +609,8 @@ processRovquantOutput_wolverine <- function(
   
   ##-- Create 5km raster for plotting
   rrNorway <- extraction.raster[["Countries"]]
-  rrNorway[!rrNorway[] %in% 2] <- NA
-  rrNorway[rrNorway[] %in% 2] <- 1
+  rrNorway[!rrNorway[] %in% c(2,4)] <- NA
+  rrNorway[rrNorway[] %in% c(2,4)] <- 1
   rrNorway <- raster::crop(rrNorway, habitat$habitat.r)
   rrCombined <- rrRegions + rrNorway
   
@@ -585,7 +620,7 @@ processRovquantOutput_wolverine <- function(
     estimates = ACdensity,
     unit = 100,
     mask = rrCombined,
-    background = COUNTRIES[1, ],
+    background = COUNTRIES,
     type = c("time.series", "last.year"),
     path = working.dir,
     name = "AC_Density")
@@ -596,12 +631,13 @@ processRovquantOutput_wolverine <- function(
     estimates = UDdensity,
     unit = 100,
     mask = rrCombined,
-    background = COUNTRIES[1, ],
+    background = COUNTRIES,
     type = c("time.series", "last.year","summary","summary_NOR"),
     species = "wolverine",
-    labels = list("nor" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")]),
-    x.labels = 0.3,
-    y.labels = 0.8,
+    labels = list("nor" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")],
+                  "swe" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")]),
+    x.labels = c(0.3,0.7),
+    y.labels = c(0.8,0.15),
     path = working.dir,
     name = "UD_Density")
   
@@ -620,7 +656,8 @@ processRovquantOutput_wolverine <- function(
   
   graphics::par(mar = c(5,5,1,1))
   
-  n.detected <- apply(rbind(nimDataM$y.alive[ ,1, ],nimDataF$y.alive[ ,1, ]) > 0, 2, sum)
+  n.detected <- apply(rbind( nimDataM$y.alive[ ,1, ],
+                             nimDataF$y.alive[ ,1, ]) > 0, 2, sum)
   
   ymax <- 10*(trunc(max(c(unlist(lapply(ACdensity, function(x)max(colSums(x$PosteriorAllRegions)))), n.detected))/10)+1)
   
@@ -1004,430 +1041,6 @@ processRovquantOutput_wolverine <- function(
 
 
 
-  ## ------   4.5. POPULATION FLUXES IN/OUT NORWAY -----
-
-  message("## Plotting population fluxes...")
-
-  norRaster <- habitatRasterResolution$`5km`[["Countries"]]
-  norRaster[norRaster[] != 2] <- NA
-
-  ##-- Calculate number of individuals
-  N_surv <- N_surv_F <- N_surv_M <- matrix(NA,n.mcmc,n.years-1)
-  N_recruit <- N_recruit_F <- N_recruit_M <- matrix(NA,n.mcmc,n.years-1)
-  N_immig <- N_immig_F <- N_immig_M <- matrix(NA,n.mcmc,n.years-1)
-  N_emig <- N_emig_F <- N_emig_M <- matrix(NA,n.mcmc,n.years-1)
-
-  for(t in 1:(n.years-1)){
-    for(iter in 1:n.mcmc){
-      isOut <- is.na(norRaster[raster::cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t+1])])
-      wasOut <- is.na(norRaster[raster::cellFromXY(norRaster,resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])])
-
-      N_recruit_F[iter,t] <- sum(isAvail[iter, ,t] & isAlive[iter, ,t+1] & (!isOut) & isFemale)
-      N_recruit_M[iter,t] <- sum(isAvail[iter, ,t] & isAlive[iter, ,t+1] & (!isOut) & isMale)
-      N_recruit[iter,t] <- N_recruit_F[iter,t] + N_recruit_M[iter,t]
-
-      N_immig_F[iter,t] <- sum(isAlive[iter, ,t] & isAlive[iter, ,t+1] & wasOut & (!isOut) & isFemale)
-      N_immig_M[iter,t] <- sum(isAlive[iter, ,t] & isAlive[iter, ,t+1] & wasOut & (!isOut) & isMale)
-      N_immig[iter,t] <- N_immig_F[iter,t] + N_immig_M[iter,t]
-
-      N_emig_F[iter,t] <- sum(isAlive[iter, ,t] & isAlive[iter, ,t+1] & (!wasOut) & isOut & isFemale)
-      N_emig_M[iter,t] <- sum(isAlive[iter, ,t] & isAlive[iter, ,t+1] & (!wasOut) & isOut & isMale)
-      N_emig[iter,t] <- N_emig_F[iter,t] + N_emig_M[iter,t]
-
-      N_surv_F[iter,t] <- sum(isAlive[iter, ,t] & isAlive[iter, ,t+1] & (!wasOut) & (!isOut) & isFemale)
-      N_surv_M[iter,t] <- sum(isAlive[iter, ,t] & isAlive[iter, ,t+1] & (!wasOut) & (!isOut) & isMale)
-      N_surv[iter,t] <- N_surv_F[iter,t] + N_surv_M[iter,t]
-    }#iter
-    #print(t)
-  }#t
-
-  ##-- Remove unnecessary objects from memory
-  rm(list = c("isMale", "isFemale","isAlive", "isAvail"))
-  gc(verbose = FALSE)
-
-
-
-  ## ------     4.5.1. PLOT RECRUITS -----
-
-  # pdf(file = file.path(working.dir, "figures", paste0("NumRecruits_bars.pdf")),
-  #     width = 12, height = 8.5)
-  grDevices::png(filename = file.path(working.dir, "figures/NumRecruits_bars.png"),
-                 width = 12, height = 8.5, units = "in", pointsize = 12,
-                 res = 300, bg = NA)
-
-  ymax <- 10*(trunc(max(N_recruit)/10)+1)
-  par(mar = c(5,5,1,1))
-  plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
-       xlab = "", ylab = paste("Number of wolverines recruited"), xaxt = "n", axes = F, cex.lab = 1.6)
-  axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
-  abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
-
-  for(t in 1:(n.years-1)){
-    ##-- TOTAL
-    plotQuantiles(x = N_recruit[ ,t],
-                  at = t,
-                  width = 0.4,
-                  col = colSex[3])
-
-    ##-- FEMALES
-    plotQuantiles(x = N_recruit_F[ ,t],
-                  at = t - diffSex,
-                  width = 0.18,
-                  col = colSex[1])
-
-    ##-- MALES
-    plotQuantiles(x = N_recruit_M[ ,t],
-                  at = t + diffSex,
-                  width = 0.18,
-                  col = colSex[2])
-
-  }#t
-  box()
-
-  ##-- legend
-  par(xpd = TRUE)
-  xx <- c(1,2.5,4)
-  yy <- c(55,55,55)
-  labs <- c("Females", "Males", "Total")
-  polygon(x = c(min(xx)-0.5,max(xx)+1.5,max(xx)+1.5,min(xx)-0.5),
-          y = c(min(yy)-5,min(yy)-5,min(yy)+5,min(yy)+5),
-          col = adjustcolor("white", alpha.f = 0.9),
-          border = "gray60")
-
-  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = colSex)
-  text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
-
-  dev.off()
-
-
-
-
-  ## ------     4.5.2. PLOT SURVIVORS -----
-
-  # pdf(file = file.path(working.dir, "figures", paste0("NumSurvival_bars.pdf")),
-  #     width = 12, height = 8.5)
-  grDevices::png(filename = file.path(working.dir, "figures/NumSurvival_bars.png"),
-                 width = 12, height = 8.5, units = "in", pointsize = 12,
-                 res = 300, bg = NA)
-
-  ymax <- 10*(trunc(max(N_surv)/10)+1)
-  par(mar = c(5,5,1,1))
-  plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
-       xlab = "", ylab = paste("Number of surviving wolverines"), xaxt = "n", axes = F, cex.lab = 1.6)
-  axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,ymax,20), labels = seq(0,ymax,20), cex.axis = 1.6)
-  abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,ymax, by = 10), lty = 2, col = "gray60")
-
-  for(t in 1:(n.years-1)){
-    ##-- TOTAL
-    plotQuantiles(x = N_surv[ ,t],
-                  at = t,
-                  width = 0.4,
-                  col = colSex[3])
-
-    ##-- FEMALES
-    plotQuantiles(x = N_surv_F[ ,t],
-                  at = t - diffSex,
-                  width = 0.18,
-                  col = colSex[1])
-
-    ##-- MALES
-    plotQuantiles(x = N_surv_M[ ,t],
-                  at = t + diffSex,
-                  width = 0.18,
-                  col = colSex[2])
-
-  }#t
-  box()
-
-  ##-- legend
-  par(xpd = TRUE)
-  xx <- c(1,2.5,4)
-  yy <- c(55,55,55)
-  labs <- c("Females", "Males", "Total")
-  polygon(x = c(min(xx)-0.5,max(xx)+1.5,max(xx)+1.5,min(xx)-0.5),
-          y = c(min(yy)-5,min(yy)-5,min(yy)+5,min(yy)+5),
-          col = adjustcolor("white", alpha.f = 0.9),
-          border = "gray60")
-
-  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = colSex)
-  text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
-
-  dev.off()
-
-
-
-  ## ------     4.5.3. PLOT IMMIGRANTS -----
-
-  # pdf(file = file.path(working.dir, "figures", paste0("NumImmigrants_bars.pdf")),
-  #     width = 12, height = 8.5)
-  grDevices::png(filename = file.path( working.dir, "figures/NumImmigrants_bars.png"),
-                 width = 12, height = 8.5, units = "in", pointsize = 12,
-                 res = 300, bg = NA)
-
-  par(mar = c(5,5,1,1))
-  ymax <- 10*(trunc(max(N_immig)/10)+1)
-  plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
-       xlab = "", ylab = paste("Number of immigrant wolverines"), xaxt = "n", axes = F, cex.lab = 1.6)
-  axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
-  abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
-
-  for(t in 1:(n.years-1)){
-    ##-- TOTAL
-    plotQuantiles(x = N_immig[ ,t],
-                  at = t,
-                  width = 0.4,
-                  col = colSex[3])
-
-    ##-- FEMALES
-    plotQuantiles(x = N_immig_F[ ,t],
-                  at = t - diffSex,
-                  width = 0.18,
-                  col = colSex[1])
-
-    ##-- MALES
-    plotQuantiles(x = N_immig_M[ ,t],
-                  at = t + diffSex,
-                  width = 0.18,
-                  col = colSex[2])
-  }#t
-  box()
-
-  ##-- legend
-  par(xpd = TRUE)
-  xx <- c(1,2.5,4)
-  yy <- c(55,55,55)
-  labs <- c("Females", "Males", "Total")
-  polygon(x = c(min(xx)-0.5,max(xx)+1.5,max(xx)+1.5,min(xx)-0.5),
-          y = c(min(yy)-5,min(yy)-5,min(yy)+5,min(yy)+5),
-          col = adjustcolor("white", alpha.f = 0.9),
-          border = "gray60")
-
-  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = colSex)
-  text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
-
-  dev.off()
-
-
-
-
-  ## ------     4.5.4. PLOT EMIGRANTS -----
-
-  # pdf(file = file.path(working.dir, "figures", paste0("NumEmigrants_bars.pdf")),
-  #     width = 12, height = 8.5)
-  grDevices::png(filename = file.path(working.dir, "figures/NumEmigrants_bars.png"),
-                 width = 12, height = 8.5, units = "in", pointsize = 12,
-                 res = 300, bg = NA)
-
-  ymax <- 10*(trunc(max(N_emig)/10)+1)
-  par(mar = c(5,5,1,1))
-  plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
-       xlab = "", ylab = paste("Number of emigrant wolverines"), xaxt = "n", axes = F, cex.lab = 1.6)
-  axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
-  abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
-
-  for(t in 1:(n.years-1)){
-    ##-- TOTAL
-    plotQuantiles(x = N_emig[ ,t],
-                  at = t,
-                  width = 0.4,
-                  col = colSex[3])
-
-    ##-- FEMALES
-    plotQuantiles(x = N_emig_F[ ,t],
-                  at = t - diffSex,
-                  width = 0.18,
-                  col = colSex[1])
-
-    ##-- MALES
-    plotQuantiles(x = N_emig_M[ ,t],
-                  at = t + diffSex,
-                  width = 0.18,
-                  col = colSex[2])
-
-  }#t
-  box()
-
-  ##-- legend
-  par(xpd = TRUE)
-  xx <- c(1,2.5,4)
-  yy <- c(55,55,55)
-  labs <- c("Females", "Males", "Total")
-  polygon(x = c(min(xx)-0.5,max(xx)+1.5,max(xx)+1.5,min(xx)-0.5),
-          y = c(min(yy)-5,min(yy)-5,min(yy)+5,min(yy)+5),
-          col = adjustcolor("white", alpha.f = 0.9),
-          border = "gray60")
-
-  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = colSex)
-  text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
-
-  dev.off()
-
-
-
-  ## ------     4.5.5. PLOT ALL -----
-
-  # pdf(file = file.path(working.dir, "figures", paste0("NumFluxes_bars.pdf")),
-  #     width = 12, height = 8.5)
-  grDevices::png(filename = file.path(working.dir, "figures/NumFluxes_bars.png"),
-                 width = 12, height = 8.5, units = "in", pointsize = 12,
-                 res = 300, bg = NA)
-
-  par(mfrow = c(2,2), mar = c(5,5,1,1))
-
-  ymax <- 10*(trunc(max(N_recruit)/10)+1)
-  plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
-       xlab = "", ylab = paste("Number of wolverines recruited"), xaxt = "n", axes = F, cex.lab = 1.6)
-  axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
-  abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
-  for(t in 1:(n.years-1)){
-    ##-- TOTAL
-    plotQuantiles(x = N_recruit[ ,t],
-                  at = t,
-                  width = 0.4,
-                  col = colSex[3])
-
-    ##-- FEMALES
-    plotQuantiles(x = N_recruit_F[ ,t],
-                  at = t - diffSex,
-                  width = 0.18,
-                  col = colSex[1])
-
-    ##-- MALES
-    plotQuantiles(x = N_recruit_M[ ,t],
-                  at = t + diffSex,
-                  width = 0.18,
-                  col = colSex[2])
-  }#t
-  box()
-
-
-  ymax <- 10*(trunc(max(N_surv)/10)+1)
-  plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
-       xlab = "", ylab = paste("Number of surviving wolverines"), xaxt = "n", axes = F, cex.lab = 1.6)
-  axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,ymax,20), labels = seq(0,ymax,20), cex.axis = 1.6)
-  abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,ymax, by = 10), lty = 2, col = "gray60")
-  for(t in 1:(n.years-1)){
-    ##-- TOTAL
-    plotQuantiles(x = N_surv[ ,t],
-                  at = t,
-                  width = 0.4,
-                  col = colSex[3])
-
-    ##-- FEMALES
-    plotQuantiles(x = N_surv_F[ ,t],
-                  at = t - diffSex,
-                  width = 0.18,
-                  col = colSex[1])
-
-    ##-- MALES
-    plotQuantiles(x = N_surv_M[ ,t],
-                  at = t + diffSex,
-                  width = 0.18,
-                  col = colSex[2])
-
-  }#t
-  box()
-
-
-  ymax <- 10*(trunc(max(N_immig)/10)+1)
-  plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
-       xlab = "", ylab = paste("Number of immigrant wolverines"), xaxt = "n", axes = F, cex.lab = 1.6)
-  axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
-  abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
-  for(t in 1:(n.years-1)){
-    ##-- TOTAL
-    plotQuantiles(x = N_immig[ ,t],
-                  at = t,
-                  width = 0.4,
-                  col = colSex[3])
-
-    ##-- FEMALES
-    plotQuantiles(x = N_immig_F[ ,t],
-                  at = t - diffSex,
-                  width = 0.18,
-                  col = colSex[1])
-
-    ##-- MALES
-    plotQuantiles(x = N_immig_M[ ,t],
-                  at = t + diffSex,
-                  width = 0.18,
-                  col = colSex[2])
-  }#t
-  box()
-
-  ymax <- 10*(trunc(max(N_emig)/10)+1)
-  plot(-1000,
-       xlim = c(0.5, (n.years-1) + 0.5), ylim = c(0,ymax),
-       xlab = "", ylab = paste("Number of emigrant wolverines"), xaxt = "n", axes = F, cex.lab = 1.6)
-  axis(1, at = c(1:(n.years-1)), labels = years[2:n.years], cex.axis = 1.6)
-  axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10), cex.axis = 1.6)
-  abline(v = (0:n.years)+0.5, lty = 2)
-  abline(h = seq(0,ymax, by = 5), lty = 2, col = "gray60")
-  for(t in 1:(n.years-1)){
-    ##-- TOTAL
-    plotQuantiles(x = N_emig[ ,t],
-                  at = t,
-                  width = 0.4,
-                  col = colSex[3])
-
-    ##-- FEMALES
-    plotQuantiles(x = N_emig_F[ ,t],
-                  at = t - diffSex,
-                  width = 0.18,
-                  col = colSex[1])
-
-    ##-- MALES
-    plotQuantiles(x = N_emig_M[ ,t],
-                  at = t + diffSex,
-                  width = 0.18,
-                  col = colSex[2])
-
-  }#t
-  box()
-
-  ##-- legend
-  par(xpd = TRUE)
-  xx <- c(1,2.5,4)
-  yy <- c(0.8*ymax,0.8*ymax,0.8*ymax)
-  labs <- c("Females", "Males", "Total")
-  polygon(x = c(min(xx)-0.5,max(xx)+1.5,max(xx)+1.5,min(xx)-0.5),
-          y = c(min(yy)-5,min(yy)-5,min(yy)+5,min(yy)+5),
-          col = adjustcolor("white", alpha.f = 0.9),
-          border = "gray60")
-
-  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = colSex)
-  text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
-
-  dev.off()
-
-
-
   ## ------   4.6. p0 ------
 
   message("## Plotting detectability...")
@@ -1660,304 +1273,6 @@ processRovquantOutput_wolverine <- function(
   
   
   
-  ## ---------------------------------------------------------------------------
-  # ## ------   4.7. DETECTABILITY ------
-  # 
-  # ## ------     4.7.1. SET-UP ------
-  # 
-  # ##-- Create 5km raster for extraction
-  # regions.r <- habitatRasterResolution$`5km`[["Regions"]]
-  # regions.r <- raster::crop(regions.r, habitat$habitat.r)
-  # 
-  # ##-- Set all habitat cells outside Norway to NA
-  # regions.r[regions.r[] < 23] <- NA
-  # 
-  # ##-- Identify habitat cells
-  # isHabitat <- which(!is.na(regions.r[]))
-  # 
-  # ##-- Get habitat cell coordinates
-  # regions.xy <- raster::coordinates(regions.r)[isHabitat, ]
-  # 
-  # ##-- Get region name for each habitat cell (format to run the C++ function)
-  # regionsNames <- sort(unique(na.omit(regions.r[])))
-  # regions.rgmx <- do.call(rbind, lapply(regionsNames, function(x)regions.r[] == x))
-  # regions.rgmx[is.na(regions.rgmx)] <- 0
-  # row.names(regions.rgmx) <- raster::factorValues(regions.r, regionsNames)[,1]
-  # regions.rgmx <- regions.rgmx[ ,isHabitat]
-  # 
-  # ##-- Get detectors coordinates (original and scaled)
-  # detectors.xy <- as.matrix(st_coordinates(detectors$main.detector.sp))
-  # 
-  # ##-- Load detectability calculation
-  # load(file.path(working.dir, "data/Detectability5km.RData"))
-  # 
-  # 
-  # 
-  # ## ------     4.7.2. PLOT DETECTABILITY MAPS -----
-  # 
-  # pdf(file = file.path(working.dir, "figures/Detectability_maps.pdf"),
-  #     width = 10, height = 6)
-  # grDevices::png(filename = file.path(working.dir, "figures/Detectability_maps.png"),
-  #     width = 10, height = 6, units = "in", pointsize = 12,
-  #     res = 300, bg = NA)
-  #
-  # ##-- Set color scale
-  # max <- max(c(unlist(lapply( DetectabilityRegionsM[[t]]$MeanCell,
-  #                             function(x) max(x[], na.rm = T))),
-  #              unlist(lapply( DetectabilityRegionsF[[t]]$MeanCell,
-  #                             function(x) max(x[], na.rm = T)))))
-  # cuts <- seq(0, max, length.out = 100) ##-- set breaks
-  # col <- rev(terrain.colors(100))
-  # 
-  # ##-- layout
-  # mx <- rbind(c(1,rep(1:5, each = 2)),
-  #             c(rep(1:5, each = 2), 5))
-  # mx <- rbind(mx, mx + 5)
-  # nf <- layout(mx,
-  #              widths = c(rep(1,ncol(mx))),
-  #              heights = rep(1,2))
-  # par(mar = c(0,0,0,0))
-  # 
-  # ##-- FEMALES
-  # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = NA, col = "gray80")
-  #   detectab.r <- regions.r
-  #   detectab.r[isHabitat] <- DetectabilityRegionsF[[t]]$MeanCell
-  #   image(detectab.r, add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])),
-  #        border = grey(0.4), col = NA, add = TRUE)
-  #   mtext(text = years[t], side = 1, -17, adj = 0.2, cex = 1.2, font = 2)
-  #   
-  #   if(t == n.years){
-  #     segments(x0 = 830000, x1 = 830000,
-  #              y0 = 6730000, y1 = 6730000 + 500000,
-  #              col = grey(0.3), lwd = 4, lend = 2)
-  #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 1.4)
-  #     plot( detectab.r,
-  #           legend.only = T,
-  #           breaks = cuts,
-  #           col = col,
-  #           legend.width = 2,
-  #           axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                            labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                            cex.axis = 1.2),
-  #           smallplot = c(0.95, 1.00, 0.2, 0.6),
-  #           legend.args = list(text = expression(paste("Individuals/100 km"^ 2)),
-  #                              side = 2, font = 1, line = 1, cex = 1))
-  #   }#if
-  # }#t
-  # 
-  # ##-- MALES
-  # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = NA, col = "gray80")
-  #   detectab.r <- regions.r
-  #   detectab.r[isHabitat] <- DetectabilityRegionsM[[t]]$MeanCell
-  #   image(detectab.r, add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])),
-  #        border = grey(0.4), col = NA, add = TRUE)
-  #   mtext(text = years[t], side = 1, -17, adj = 0.2, cex = 1.2, font = 2)
-  #   
-  #   if(t == n.years){
-  #     segments(x0 = 830000, x1 = 830000,
-  #              y0 = 6730000, y1 = 6730000 + 500000,
-  #              col = grey(0.3), lwd = 4, lend = 2)
-  #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 1.4)
-  #     plot( detectab.r,
-  #           legend.only = T,
-  #           breaks = cuts,
-  #           col = col,
-  #           legend.width = 2,
-  #           axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                            labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                            cex.axis = 1.2),
-  #           smallplot = c(0.95, 1.00, 0.2, 0.6),
-  #           legend.args = list(text = expression(paste("Individuals/100 km"^ 2)),
-  #                              side = 2, font = 1, line = 1, cex = 1))
-  #   }#if
-  # }#t
-  # dev.off()
-  # 
-  # 
-  # 
-  # ## ------   4.8. SEX-RATIO ------
-  # 
-  # ## ------     4.8.1. SEX-RATIO BARS ------
-  # 
-  # pdf(file = file.path(working.dir, "figures/SexRatio_bars.pdf"),
-  #     width = 12, height = 8.5)
-  # grDevices::png(filename = file.path(working.dir, "figures/SexRatio_bars.png"),
-  #     width = 12, height = 8.5, units = "in", pointsize = 12,
-  #     res = 300, bg = NA)
-  #
-  # par(mar = c(5,5,1,1))
-  # plot(-1000,
-  #      xlim = c(0.5, n.years + 0.5), ylim = c(0.2,0.8),
-  #      xlab = "", ylab = paste("% Female wolverines"), xaxt = "n", axes = F, cex.lab = 1.6)
-  # axis(1, at = c(1:n.years), labels = years, cex.axis = 1.6)
-  # axis(2, at = seq(0.2,0.8,0.1), labels = seq(0.2,0.8,0.1), cex.axis = 1.6)
-  # # abline(v = (0:n.years)+0.5, lty = 2)
-  # abline(h = 0.5, lty = 2, col = "gray60")
-  # for(t in 1:n.years){
-  #   plotQuantiles(x = colSums(ACdensityF[[t]]$PosteriorAllRegions)/
-  #                   colSums(ACdensity[[t]]$PosteriorAllRegions),
-  #                 at = t - diffSex,
-  #                 width = 0.18,
-  #                 col = colSex[3])
-  # }#t
-  # #box()
-  # dev.off()
-  # 
-  # 
-  # 
-  # ## ------     4.8.2. SEX-RATIO DISTANCE ------
-  # ###--- TBD
-  # 
-  # 
-  # 
-  # ## ------     4.8.3. SEX-RATIO MAPS ------
-  # 
-  # ##-- Convert densities from 25km2 (5*5 raster) to 100km2
-  # SexRatio <- list()
-  # for(t in 1:length(years)){
-  #   SexRatio[[t]] <- ACdensityF[[t]]$MeanCell/ACdensity[[t]]$MeanCell
-  # }
-  # 
-  # ##-- Crop density maps to Norway
-  # rrCombined <- rrRegions + rrNorway
-  # SexRatioMap <- list()
-  # for(t in 1:length(years)){
-  #   SexRatioMap[[t]] <- densityInputRegions$regions.r
-  #   SexRatioMap[[t]][] <- NA
-  #   SexRatioMap[[t]][!is.na(densityInputRegions$regions.r[])] <- SexRatio[[t]]
-  #   SexRatioMap[[t]][is.na(rrCombined[])] <- NA
-  #   
-  #   crs(SexRatioMap[[t]]) <- st_crs(habitat$habitat.poly)
-  # }#t
-  # 
-  # 
-  # # pdf(file = file.path(working.dir, "figures/SexRatio_Maps.pdf"),
-  # #    width = 12, height = 8)
-  # grDevices::png(filename = file.path(working.dir, "figures/SexRatio_Maps.png"), 
-  #     width = 12, height = 8, units = "in", pointsize = 12,
-  #     res = 300, bg = NA)
-  # 
-  # ##-- Set color scale
-  # max <- 1
-  # cuts <- seq(0, max, length.out = 100) ##-- set breaks
-  # colfunc <- colorRampPalette(c(colSex[2],"white", colSex[1]))
-  # col <- colfunc(100)
-  # 
-  # ##-- layout
-  # mx <- rbind(c(1,rep(1:5, each = 2)),
-  #             c(rep(1:5, each = 2), 5))
-  # mx <- rbind(mx, mx + 5)
-  # nf <- layout(mx,
-  #              widths = c(rep(1,ncol(mx))),
-  #              heights = rep(1,2))
-  # #layout.show(nf)
-  # par(mar = c(0,0,0,0))
-  # 
-  # ##-- Plot Sex-ratio maps
-  # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
-  #   image(SexRatioMap[[t]], add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = grey(0.4), col = NA, add = TRUE)
-  #   mtext(text = years[t], side = 1, -20, adj=0.2, cex=1.2)
-  #   
-  #   if(t == n.years){
-  #     segments(x0 = 830000, x1 = 830000,
-  #              y0 = 6730000, y1 = 6730000 + 500000,
-  #              col = grey(0.3), lwd = 4, lend = 2)
-  #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 1.4)
-  #     plot( SexRatioMap[[t]],
-  #           legend.only = T,
-  #           breaks = cuts,
-  #           col = col,
-  #           legend.width = 2,
-  #           axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                            labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                            cex.axis = 1.2),
-  #           smallplot = c(0.95, 1.00, 0.2, 0.6),
-  #           legend.args = list(text = "% Female wolverines",
-  #                              side = 2, font = 1, line = 1, cex = 1))
-  #   }#if
-  # }#t
-  # dev.off()
-  # 
-  # 
-  # 
-  # 
-  # ## ------     4.8.4. SEX-RATIO MAPS (SMOOTHED) ------
-  # 
-  # ##-- Set smoothing factor
-  # smoothingFactor <- c(3,7,11,21)
-  # for(SF in smoothingFactor){
-  #   
-  #   SexRatioMap.smooth <- list()
-  #   for(t in 1:length(years)){
-  #     SexRatioMap.smooth[[t]] <- densityInputRegions$regions.r
-  #     SexRatioMap.smooth[[t]][] <- NA
-  #     SexRatioMap.smooth[[t]][!is.na(densityInputRegions$regions.r[])] <- SexRatio[[t]]
-  #     SexRatioMap.smooth[[t]] <- terra::focal(terra::rast(SexRatioMap[[t]]), SF, "mean", na.rm=TRUE)
-  #     SexRatioMap.smooth[[t]][is.na(rrCombined[])] <- NA
-  #   }#t
-  #   
-  #   
-  # # pdf(file = file.path(working.dir, "figures", paste0("SexRatio_Maps_smooth_",SF,".pdf")), 
-  # #      width = 12, height = 8)
-  #   grDevices::png(filename = file.path(working.dir, "figures", paste0("SexRatio_Maps_smooth_",SF,".png")), 
-  #       width = 12, height = 8, units = "in", pointsize = 12,
-  #       res = 300, bg = NA)
-  #   
-  #   ##-- Set color scale
-  #   max <- 1
-  #   cuts <- seq(0, max, length.out = 100) ##-- set breaks
-  #   colfunc <- colorRampPalette(c(inferno(100)[1], inferno(100)[25], inferno(100)[50], inferno(100)[75], inferno(100)[100]))
-  #   col <- colfunc(100)
-  #   
-  #   
-  #   ##-- layout
-  #   mx <- rbind(c(1,rep(1:5, each = 2)),
-  #               c(rep(1:5, each = 2), 5))
-  #   mx <- rbind(mx, mx + 5)
-  #   nf <- layout(mx,
-  #                widths = c(rep(1,ncol(mx))),
-  #                heights = rep(1,2))
-  #   #layout.show(nf)
-  #   par(mar = c(0,0,0,0))
-  #   
-  #   ##-- Plot AC maps
-  #   for(t in 1:length(years)){
-  #     plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = NA, col = "gray80")
-  #     image( SexRatioMap.smooth[[t]], add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-  #     plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = grey(0.4), col = NA, add = TRUE)
-  #     mtext(text = years[t], side = 1, -20, adj=0.2, cex=1.2)
-  #     
-  #     if(t == n.years){
-  #       segments(x0 = 830000, x1 = 830000,
-  #                y0 = 6730000, y1 = 6730000 + 500000,
-  #                col = grey(0.3), lwd = 4, lend = 2)
-  #       text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 1.4)
-  #       plot( raster(SexRatioMap.smooth[[t]]),
-  #             legend.only = T,
-  #             breaks = cuts,
-  #             col = col,
-  #             legend.width = 2,
-  #             axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                              labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-  #                              cex.axis = 1.2),
-  #             smallplot = c(0.82, 0.84, 0.2, 0.6),
-  #             legend.args = list(text = "% Female wolverines",
-  #                                side = 2, font = 1, line = 0.2, cex = 1))
-  #     }#if
-  #   }#t
-  #   dev.off()
-  # }#SF
-  # 
-  # 
-  # 
-  # 
-  ## -----------------------------------------------------------------------------
   ## ------ 5. TABLES -----
   
   gc()
@@ -2355,6 +1670,571 @@ processRovquantOutput_wolverine <- function(
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
         file = file.path(working.dir, "tables/N_AllYearsPerSex_county.tex"))
+  
+  
+  
+  
+  ## ------         2.1.6.1. ALL YEARS, BOTH SEX ------
+  
+  idcounty <- row.names(ACdensity[[t]]$summary)
+  
+  ##-- REMOVE Finland, Norway, Russia, Sweden 
+  idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
+  ##-- GET NORWEGIAN VERSUS SWEDISH COUNTIES 
+  idcountyNOR <- idcounty[grep("Region",idcounty)]
+  idcountySWE <- sort(idcounty[-grep("Region",idcounty)])
+  idcountyTable <- c("Total","Norway", idcountyNOR, "Sweden" ,idcountySWE)
+  
+  CountyNorth <- unique(factorValues(rrRegions, rrRegions[rrRegionsSwe[] %in% 1], layer=1)[,1])
+  CountyMiddle <- unique(factorValues(rrRegions, rrRegions[rrRegionsSwe[] %in% 2], layer=1)[,1])
+  CountySouth <- unique(factorValues(rrRegions, rrRegions[rrRegionsSwe[] %in% 3], layer=1)[,1])
+  
+  idcountyTable <- c("Total","Norway",
+                     idcountyNOR,
+                     "Sweden" ,
+                     "Nordre",
+                     idcountySWE[idcountySWE%in%CountyNorth],
+                     "Midtre",
+                     idcountySWE[idcountySWE%in%CountyMiddle],
+                     "SÃ¸ndre",
+                     idcountySWE[idcountySWE%in%CountySouth])
+  
+  ##-- CREATE TABLE TO STORE ABUNDANCE AND CI
+  NCarRegionEstimates <- matrix("", ncol=n.years, nrow=length(idcountyTable))
+  row.names(NCarRegionEstimates) <- c(idcountyTable)
+  colnames(NCarRegionEstimates) <- unlist(lapply(YEARS ,function(x) x[2]))#
+  
+  ##-- FILL IN THE TABLE 
+  for(t in 1:n.years){
+    for( i in 1:length(idcountyTable)){
+      NCarRegionEstimates[idcountyTable[i],t] <- paste(round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+                                                       " (",round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+                                                       round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
+    }
+  }
+  
+  ##QUICK CHECK TO MAKE SURE VALUES SUMS UP 
+  tmp <- ACdensity[[t]]$summary[1:(nrow(ACdensity[[t]]$summary)),]
+  # SWE
+  row.names(ACdensity[[t]]$summary)
+  sum(tmp[idcountySWE,"mean"])
+  tmp["Sweden","mean"]
+  #NOR
+  sum(tmp[idcountyNOR,"mean"])
+  tmp["Norway","mean"]
+  #TOTAL
+  sum(tmp[c(idcountyNOR,idcountySWE),"mean"])
+  tmp["Total","mean"]
+  
+  
+  ## WRITE LATEX TABLE 
+  # ADJUST NAMES OF THE TABLE 
+  idcounty1 <- idcountyTable
+  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
+  idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
+  
+  ##-- NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
+  # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
+  # idcounty1 <- str_remove(idcounty1, "s ")
+  # idcounty1 <- str_remove(idcounty1, " ")
+  idcountySWE1 <- idcountySWE
+  idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "Norrbotten*"
+  idcountySWE1 <- sort(idcountySWE1)
+  # row.names(NCarRegionEstimates) <- idcounty1
+  # NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"),yearsNotSampled] <- paste(NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"), yearsNotSampled], "*", sep="")
+  
+  ##-- Export .csv
+  write.csv( NCarRegionEstimates,
+             file = file.path(working.dir, "tables", "NAllYears.csv"),
+             fileEncoding = "latin1")
+  
+  
+  idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten}"
+  row.names(NCarRegionEstimates) <- idcounty1
+  NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"),yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"), yearsNotSampled], "*","}", sep="")
+  NCarRegionEstimates["SWEDEN",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates["SWEDEN",yearsNotSampled], "**","}", sep="")
+  NCarRegionEstimates["TOTAL",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates["TOTAL",yearsNotSampled], "**","}", sep="")
+  NCarRegionEstimates["Nordre",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates["Nordre",yearsNotSampled], "**","}", sep="")
+  
+  row.names(NCarRegionEstimates) <- c("TOTAL",
+                                      paste0("\\hspace{0.25cm}", "NORWAY"),
+                                      paste0("\\hspace{0.5cm} ", idcountyNOR),
+                                      paste0("\\hspace{0.25cm}", "SWEDEN"),
+                                      paste0("\\hspace{0.5cm}", "Norra"),
+                                      paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth]),
+                                      paste0("\\hspace{0.5cm}", "Mellersta"),
+                                      paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle]),
+                                      paste0("\\hspace{0.5cm}", "Södra"),
+                                      paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth]))
+  
+  row.names(NCarRegionEstimates)[grep("VÃ¤straGÃ¶taland", row.names(NCarRegionEstimates))] <- paste0("\\hspace{0.75cm}", "VÃ¤stra GÃ¶taland")
+  
+  
+  print( xtable( NCarRegionEstimates,
+                 type = "latex",
+                 align = paste(c("l",rep("c",ncol(NCarRegionEstimates))), collapse = "")),
+         # scalebox=.8,
+         floating = FALSE, sanitize.text.function=function(x){x},
+         add.to.row = list(list(seq(1,nrow(NCarRegionEstimates),by=2)),"\\rowcolor[gray]{.96} "),
+         file = file.path(working.dir, "tables", "NCountiesCarnivoreRegions.tex"))
+  
+  
+  
+  ## ------         2.1.6.2. LAST YEAR N PER SEX PER COUNTY ------
+  
+  NCountyEstimatesLastRegions <- matrix("", ncol=3, nrow=length(idcountyTable))
+  row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
+  colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total")
+  
+  ## FILL IN TABLE 
+  ## FEMALES
+  for( i in 1:length(idcountyTable)){
+    NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <- paste0(
+      round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  }
+  
+  ## MALES 
+  for( i in 1:length(idcountyTable)){
+    NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <- paste0(
+      round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  }
+  
+  ## TOTAL 
+  for( i in 1:length(idcountyTable)){
+    NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <- paste0(
+      round(ACdensity[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  }
+  
+  ##-- Export .csv
+  write.csv( NCountyEstimatesLastRegions,
+             file = file.path(working.dir, "tables", "NLastYearPerSex.csv"),
+             fileEncoding = "latin1")
+  
+  ##-- ADJUST NAMES OF THE TABLE 
+  idcounty1 <- idcountyTable
+  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
+  idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
+  
+  idcountySWE1 <- idcountySWE
+  idcountySWE1 <- sort(idcountySWE1)
+  idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten*}"
+  
+  row.names(NCountyEstimatesLastRegions) <- idcounty1
+  NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"), ] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),], "*}", sep="")
+  NCountyEstimatesLastRegions["SWEDEN",] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["SWEDEN",], "**}", sep="")
+  NCountyEstimatesLastRegions["TOTAL",] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["TOTAL",], "**}", sep="")
+  NCountyEstimatesLastRegions["Nordre",] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["Nordre",], "**}", sep="")
+  
+  row.names(NCountyEstimatesLastRegions) <- c(
+    "TOTAL",
+    paste0("\\hspace{0.25cm}", "NORWAY"),
+    paste0("\\hspace{0.50cm}", idcountyNOR),
+    paste0("\\hspace{0.25cm}", "SWEDEN"),
+    paste0("\\hspace{0.50cm}", "Norra"),
+    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth]),
+    paste0("\\hspace{0.50cm}", "Mellersta"),
+    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle]),
+    paste0("\\hspace{0.50cm}", "Södra"),
+    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth]))
+  
+  row.names(NCountyEstimatesLastRegions)[grep("VÃ¤straGÃ¶taland", row.names(NCountyEstimatesLastRegions))] <- "\\hspace{0.75cm}VÃ¤stra GÃ¶taland"
+  ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
+  # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
+  # idcounty1 <- str_remove(idcounty1, "s ")
+  # idcounty1 <- str_remove(idcounty1, " ")
+  
+  ##-- Export .tex 
+  print(xtable( NCountyEstimatesLastRegions,
+                type = "latex",
+                align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions))), collapse = "")),
+        sanitize.text.function = function(x){x},
+        # scalebox=.8,
+        floating = FALSE,
+        add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions), by = 2)),
+                          "\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables","NCountiesSexLastYearRegions.tex"))
+  
+  
+  
+  ## ------         2.1.6.2. LAST YEAR N PER SEX PER COUNTY WITH PROPORTION OF AREA COVERED ------
+  
+  NCountyEstimatesLastRegions <- matrix("", ncol=4, nrow=length(idcountyTable))
+  row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
+  colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total","\\% Area")
+  
+  ## FILL IN TABLE 
+  ## FEMALES
+  for( i in 1:length(idcountyTable)){
+    NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <- paste0(
+      round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  }
+  
+  ## MALES 
+  for( i in 1:length(idcountyTable)){
+    NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <- paste0(
+      round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  }
+  
+  ## TOTAL
+  for( i in 1:length(idcountyTable)){
+    NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <- paste0(
+      round(ACdensity[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+  }
+  
+  NCountyEstimatesLastRegions[names(areaAllRegions),"\\% Area"] <- round(areaAllRegions*100,digits = 0)
+  NCountyEstimatesLastRegions[NCountyEstimatesLastRegions[,4] %in% c("98","99"),4] <- 100
+  #NCountyEstimatesLastRegions[names(AreaStudied/TotalArea[names(AreaStudied)]),"Area"] <- round(AreaStudied/TotalArea[names(AreaStudied)]*100,digits = 0)
+  
+  ##--  Export .tex
+  write.csv( NCountyEstimatesLastRegions,
+             file = file.path(working.dir, "tables", "NLastYearPerSexArea.csv"),
+             fileEncoding = "latin1")
+  
+  # ADJUST NAMES OF THE TABLE 
+  idcounty1 <- idcountyTable
+  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
+  idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
+  idcountySWE1 <- idcountySWE
+  idcountySWE1 <- sort(idcountySWE1)
+  # idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten*}"
+  
+  row.names(NCountyEstimatesLastRegions) <- idcounty1
+  # NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),1:3], "*}", sep="")
+  # NCountyEstimatesLastRegions["SWEDEN",1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["SWEDEN",1:3], "**}", sep="")
+  # NCountyEstimatesLastRegions["TOTAL",1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["TOTAL",1:3], "**}", sep="")
+  # NCountyEstimatesLastRegions["Nordre",1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["Nordre",1:3], "**}", sep="")
+  
+  
+  row.names(NCountyEstimatesLastRegions) <- c(
+    "TOTAL",
+    paste0("\\hspace{0.25cm}","NORWAY"),
+    paste0("\\hspace{0.5cm} ",
+           idcountyNOR,sep=""),
+    paste0("\\hspace{0.25cm}","SWEDEN"),
+    paste0("\\hspace{0.5cm}","Norra"),
+    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth], sep=""),
+    paste0("\\hspace{0.5cm}","Mellersta"),
+    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle], sep=""),
+    paste0("\\hspace{0.5cm}","Södra"),
+    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth], sep="")
+  )
+  
+  row.names(NCountyEstimatesLastRegions)[grep("VÃ¤straGÃ¶taland", row.names(NCountyEstimatesLastRegions))] <- paste("\\hspace{0.75cm}",
+                                                                                                                    "VÃ¤stra GÃ¶taland", sep="")
+  
+  ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
+  # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
+  # idcounty1 <- str_remove(idcounty1, "s ")
+  # idcounty1 <- str_remove(idcounty1, " ")
+  
+  
+  # WRITE LATEX 
+  print(xtable(NCountyEstimatesLastRegions, type = "latex",
+               align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions)-1),"||c"),collapse = "")),
+        sanitize.text.function=function(x){x},
+        # scalebox=.8,
+        floating = FALSE,
+        add.to.row=list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables",paste("NCountiesSexLastYearRegionsArea.tex")))
+  
+  
+  
+  
+  ## ------         2.1.6.3. MAKE A TABLE 2 last years  ------
+  
+  NCountyEstimatesLast2Regions <- matrix("", ncol = 6, nrow = length(idcountyTable))
+  row.names(NCountyEstimatesLast2Regions) <- c(idcountyTable)
+  colnames(NCountyEstimatesLast2Regions) <- c(paste("Females", years[n.years-1]),
+                                              paste("Males", years[n.years-1]),
+                                              paste("Total", years[n.years-1]),
+                                              paste("Females", years[n.years]),
+                                              paste("Males", years[n.years]),
+                                              paste("Total", years[n.years]))
+  
+  ##-- FILL IN TABLE 
+  for(t in (n.years-1):n.years){
+    ## FEMALES
+    for( i in 1:length(idcountyTable)){
+      NCountyEstimatesLast2Regions[idcountyTable[i],paste("Females",years[t])] <- paste0(
+        round(ACdensity_F[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensity_F[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensity_F[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+    }
+    
+    ## MALES 
+    for( i in 1:length(idcountyTable)){
+      NCountyEstimatesLast2Regions[idcountyTable[i],paste("Males",years[t])] <- paste0(
+        round(ACdensity_M[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensity_M[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensity_M[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+    }
+    
+    ## MALES 
+    for( i in 1:length(idcountyTable)){
+      NCountyEstimatesLast2Regions[idcountyTable[i],paste("Total",years[t])] <- paste0(
+        round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+    }
+  }
+  
+  
+  ##-- Adjust names of the table 
+  idcounty1 <- idcountyTable
+  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
+  idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
+  
+  ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
+  # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
+  # idcounty1 <- str_remove(idcounty1, "s ")
+  # idcounty1 <- str_remove(idcounty1, " ")
+  
+  ##-- Export .csv
+  write.csv( NCountyEstimatesLast2Regions,
+             file = file.path(working.dir, "tables/NLast2YearsPerSex.csv"),
+             fileEncoding="latin1")
+  
+  
+  ##-- Add a little start to Norrbotten
+  idcountySWE1 <- idcountySWE
+  idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "Norrbotten*"
+  idcountySWE1 <- sort(idcountySWE1)
+  row.names(NCountyEstimatesLast2Regions) <- idcounty1
+  NCountyEstimatesLast2Regions[which(idcounty1 %in% "Norrbotten"),] <- paste0(
+    NCountyEstimatesLast2Regions[which(idcounty1 %in% "Norrbotten"),], "*")
+  
+  row.names(NCountyEstimatesLast2Regions) <- c(
+    "TOTAL",
+    paste0("\\hspace{0.25cm}","NORWAY"),
+    paste0("\\hspace{0.5cm} ",idcountyNOR),
+    paste0("\\hspace{0.25cm}","SWEDEN"),
+    paste0("\\hspace{0.5cm}","Norra**"),
+    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth]),
+    paste0("\\hspace{0.5cm}","Mellersta"),
+    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle]),
+    paste0("\\hspace{0.5cm}","Södra"),
+    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth])
+  )
+  row.names(NCountyEstimatesLast2Regions)[grep("VÃ¤straGÃ¶taland", row.names(NCountyEstimatesLast2Regions))] <- paste("\\hspace{0.75cm}",
+                                                                                                                      "VÃ¤stra GÃ¶taland", sep="")
+  NCountyEstimatesLast2Regions <- rbind(c("F","M","Total","F","M","Total"), NCountyEstimatesLast2Regions)
+  
+  ##-- Export .tex 
+  addtorow <- list()
+  addtorow$pos <- list(c(0),0)
+  uniqueYEAR <- c(paste(unlist(YEARS[n.years-1]),collapse = "/"),paste(unlist(YEARS[n.years]),collapse = "/"))
+  addtorow$command <- c(paste0(paste0('& \\multicolumn{3}{c}{', uniqueYEAR,
+                                      '}', collapse=''), '\\\\'),
+                        rep("\\rowcolor[gray]{.95}",1))
+  print(xtable(NCountyEstimatesLast2Regions, type = "latex",
+               align = paste(c("l",rep("c",3),"|",rep("c",3)),collapse = "")),
+        sanitize.text.function=function(x){x},
+        # scalebox=.8,
+        floating = FALSE,
+        add.to.row = addtorow,
+        include.colnames = F,
+        file = file.path(working.dir, "tables","NCountiesSexLast2YearsRegions.tex"))
+  
+  
+  
+  ## ------         2.1.6.4. ALL YEARS N PER SEX PER COUNTY  ------
+  
+  NCountyEstimatesAllSexRegions <- matrix("", ncol = n.years*3, nrow = length(idcountyTable)+1)
+  row.names(NCountyEstimatesAllSexRegions) <- c("",idcountyTable)
+  colnames(NCountyEstimatesAllSexRegions) <- rep(unlist(lapply(YEARS ,function(x) x[2])),each=3)
+  NCountyEstimatesAllSexRegions[1,] <- rep(c("Females","Males","Total"),n.years)
+  
+  ##-- Fill in table 
+  for(t in 1:n.years){
+    ##-- FEMALES
+    cols <- which(colnames(NCountyEstimatesAllSexRegions) %in% unlist(lapply(YEARS ,function(x) x[2]))[t])
+    colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Females")
+    for( i in 1:length(idcountyTable)){
+      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
+        round(ACdensity_F[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensity_F[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensity_F[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+    }
+    
+    ##-- MALES 
+    colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Males")
+    for( i in 1:length(idcountyTable)){
+      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
+        round(ACdensity_M[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensity_M[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensity_M[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+    }
+    
+    ##-- TOTAL 
+    colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Total")
+    for( i in 1:length(idcountyTable)){
+      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
+        round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+    }
+  }
+  
+  ##--  Export .csv
+  write.csv( NCountyEstimatesAllSexRegions,
+             file = file.path(working.dir, "tables", "NAllYearsPerSex.csv"),
+             fileEncoding="latin1")
+  
+  # # ADJUST NAMES OF THE TABLE 
+  # idcounty1 <- idcountyTable
+  # idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  # idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
+  # idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
+  # 
+  # idcountySWE1 <- idcountySWE
+  # idcountySWE1 <- sort(idcountySWE1)
+  # 
+  # idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten*}"
+  # row.names(NCountyEstimatesLastRegions) <- idcounty1
+  # NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),], "*}", sep="")
+  # 
+  # 
+  # row.names(NCountyEstimatesLastRegions) <- c("TOTAL**",
+  #                                             paste("\\hspace{0.25cm}","NORWAY",sep=""),
+  #                                             paste("\\hspace{0.5cm} ",
+  #                                                   idcountyNOR,sep=""),
+  #                                             paste("\\hspace{0.25cm}","SWEDEN**",sep=""),
+  #                                             paste("\\hspace{0.5cm}", idcountySWE1, sep="")
+  # )
+  # 
+  # ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
+  # # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
+  # # idcounty1 <- str_remove(idcounty1, "s ")
+  # # idcounty1 <- str_remove(idcounty1, " ")
+  # 
+  # # WRITE LATEX 
+  # print(xtable(NCountyEstimatesLastRegions, type = "latex",
+  #              align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions))),collapse = "")),
+  #       sanitize.text.function=function(x){x},
+  #       # scalebox=.8,
+  #       floating = FALSE,
+  #       add.to.row=list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
+  #       file = file.path(working.dir, "tables","NCountiesSexLastYearRegions.tex"))
+  
+  
+  
+  ## ------         2.1.6.5. ALL YEARS, BOTH SEX COUNTIES NORWAY ------
+  
+  idcounty <- row.names(ACdensityNOR[[t]]$summary)
+  
+  ##-- REMOVE Finland, Norway, Russia, Sweden 
+  idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
+  
+  ##-- G|+T NORWEGIAN VERSUS SWEDISH COUNTIES 
+  idcountyNOR <- idcounty
+  idcountyTable <- c("Total", idcountyNOR)
+  
+  ##-- Create table to store abundance and CIs
+  NCarRegionEstimatesNOR <- matrix("", ncol=n.years, nrow=length(idcountyTable))
+  row.names(NCarRegionEstimatesNOR) <- c(idcountyTable)
+  colnames(NCarRegionEstimatesNOR) <- unlist(lapply(YEARS ,function(x) x[2]))#
+  
+  ##-- Fill in the table 
+  for(t in 1:n.years){
+    for(i in 1:length(idcountyTable)){
+      NCarRegionEstimatesNOR[idcountyTable[i],t] <- paste0(
+        round(ACdensityNOR[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensityNOR[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensityNOR[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+    }#i
+  }#t
+  
+  ## QUICK CHECK TO MAKE SURE VALUES SUMS UP 
+  tmp <- ACdensityNOR[[t]]$summary
+  
+  ##-- SWE
+  row.names(ACdensity[[t]]$summary)
+  
+  # sum(tmp[row.names(tmp) %in% idcountySWE,"mean"])
+  sum(tmp[row.names(tmp) %in% idcountyNOR,"mean"])
+  
+  # tmp["Sweden","mean"]
+  # #NOR
+  # sum(tmp[idcountyNOR,"mean"])
+  # tmp["Norway","mean"]
+  # #TOTAL
+  # sum(tmp[c(idcountyNOR,idcountySWE),"mean"])
+  # tmp["Total","mean"]
+  
+  
+  ## WRITE LATEX TABLE 
+  # ADJUST NAMES OF THE TABLE 
+  idcounty1 <- idcountyTable
+  idcounty1 <- gsub("Region ", "", idcountyTable)
+  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
+  idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
+  
+  ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
+  # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
+  # idcounty1 <- str_remove(idcounty1, "s ")
+  # idcounty1 <- str_remove(idcounty1, " ")
+  
+  # row.names(NCarRegionEstimates) <- idcounty1
+  # NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"),yearsNotSampled] <- paste(NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"), yearsNotSampled], "*", sep="")
+  row.names(NCarRegionEstimatesNOR) <- idcounty1
+  
+  # print csv
+  # NCarRegionEstimatesNOR <- data.frame(NCarRegionEstimatesNOR)
+  # NCarRegionEstimatesNOR$name <- row.names(NCarRegionEstimatesNOR)
+  # Encoding(NCarRegionEstimatesNOR[1,"name"]) <- "UTF-16"#"UTF-16"
+  #save(NCarRegionEstimatesNOR,file=file.path(working.dir, "tables",paste("NAllYearsNorwegianCounties.RData",sep="")))
+  write.csv( NCarRegionEstimatesNOR,
+             file = file.path(working.dir, "tables/NAllYearsNorwegianCounties.csv"),
+             fileEncoding = "latin1")
+  
+  # Encoding(NCarRegionEstimatesNOR[,"name"])[9] <- "ISO-8859-1"
+  # mb_convert_encoding($file, 'UTF-8', 'ISO-8859-1')
+  # write.csv2(NCarRegionEstimatesNOR,
+  #            file = file.path(working.dir, "tables",paste("NAllYearsNorwegianCounties.csv",sep="")),fileEncoding= "UTF-16LE")
+  # readr::write_excel_csv(NCarRegionEstimatesNOR,
+  #                         file = file.path(working.dir, "tables",paste("NAllYearsNorwegianCounties.csv",sep="")))
+  ## try to join to the Norwegian layer for Richard
+  # tmp <- data.frame(NCarRegionEstimatesNOR)
+  # tmp$NAME_1 <- row.names(tmp) 
+  # COUNTIES_1 <- merge(COUNTIES,tmp[,c("X2024","NAME_1")],by="NAME_1")
+  
+  
+  row.names(NCarRegionEstimatesNOR) <- c("NORWAY",
+                                         # paste("\\hspace{0.25cm}","NORWAY",sep=""),
+                                         paste("\\hspace{0.25cm} ",
+                                               idcountyNOR,sep="")#
+                                         # paste("\\hspace{0.25cm}","SWEDEN",sep=""),
+                                         # paste("\\hspace{0.5cm}","Norra",sep=""),
+                                         # paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth], sep=""),
+                                         # paste("\\hspace{0.5cm}","Mellersta",sep=""),
+                                         # paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle], sep=""),
+                                         # paste("\\hspace{0.5cm}","Södra",sep=""),
+                                         # paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth], sep="")
+  )
+  
+  print(xtable( NCarRegionEstimatesNOR, 
+                type = "latex",
+                align = paste(c("l",rep("c",ncol(NCarRegionEstimatesNOR))),collapse = "")),
+        # scalebox=.8,
+        floating = FALSE, sanitize.text.function=function(x){x},
+        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesNOR),by=2)),"\\rowcolor[gray]{.96} "),
+        file = file.path(working.dir, "tables", "NCountiesCarnivoreRegionsNorway.tex"))
   
   
   
