@@ -512,7 +512,7 @@ processRovquantOutput_bear <- function(
   
   ##-- Plot parameters
   diffSex <- 0.2
-  colSex <- adjustcolor(c("firebrick3", "deepskyblue2", "black"),0.5)
+  colSex <- c("firebrick2", "deepskyblue2", "black")
   colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
   
   
@@ -618,8 +618,9 @@ processRovquantOutput_bear <- function(
           col = adjustcolor("white", alpha.f = 0.9),
           border = "gray60")
   
-  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 1.5, col = colSex)
+  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 3.5, col =  adjustcolor(colSex,0.3))
+  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 1.5, col =  adjustcolor(colSex,0.7))
+  
   text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.2, pos = 4)
   
   polygon(x = c(xx[4]-0.3,xx[4]+0.1,xx[4]+0.1,xx[4]-0.3),
@@ -699,8 +700,8 @@ processRovquantOutput_bear <- function(
               col = adjustcolor("white", alpha.f = 0.9),
               border = "gray60")
 
-      points(x = xx, y = rep(yy,3),  pch = 15, cex = 3.5, col = colSex)
-      points(x = xx, y = rep(yy,3),  pch = 15, cex = 1.5, col = colSex)
+      points(x = xx, y = rep(yy,3),  pch = 15, cex = 3.5, col =  adjustcolor(colSex,0.3))
+      points(x = xx, y = rep(yy,3),  pch = 15, cex = 1.5, col =  adjustcolor(colSex,0.7))
       text(x = xx + 0.1, y = rep(yy,3), labels = labs, cex = 1.4, pos = 4)
     }
     box()
@@ -786,8 +787,8 @@ processRovquantOutput_bear <- function(
   ##-- LEGEND
   par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
   plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
-  points(c(4,4), c(4,3), pch = 15, cex = 5.5, col = colSex)
-  points(c(4,4), c(4,3), pch = 15, cex = 3, col = colSex)
+  points(c(4,4), c(4,3), pch = 15, cex = 5.5, col =  adjustcolor(colSex,0.3))
+  points(c(4,4), c(4,3), pch = 15, cex = 3, col =  adjustcolor(colSex,0.7))
   text(c(5.3,5.3), c(4,3), c("Females", "Males"), cex = 2, pos = 4)
   dev.off()
 
@@ -944,8 +945,8 @@ processRovquantOutput_bear <- function(
   ##-- LEGEND
   par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
   plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
-  points(c(4,4,4), c(4,3,2), pch = 15, cex = 5.5, col = colSex)
-  points(c(4,4,4), c(4,3,2), pch = 15, cex = 3, col = colSex)
+  points(c(4,4,4), c(4,3,2), pch = 15, cex = 5.5, col =  adjustcolor(colSex,0.3))
+  points(c(4,4,4), c(4,3,2), pch = 15, cex = 3, col =  adjustcolor(colSex,0.7))
   text(c(5.3,5.3,5.3), c(4,3,2),
        c("Females", "Males", "Total"), cex = 2, pos = 4)
 
@@ -1046,8 +1047,8 @@ processRovquantOutput_bear <- function(
           col = adjustcolor("white", alpha.f = 0.9),
           border = "gray60")
 
-  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = colSex)
+  points(x = xx, y = yy,  pch = 15, cex = 3.5, col =  adjustcolor(colSex,0.3))
+  points(x = xx, y = yy,  pch = 15, cex = 1.5, col =  adjustcolor(colSex,0.7))
   text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
 
   dev.off()
@@ -1105,8 +1106,8 @@ processRovquantOutput_bear <- function(
           col = adjustcolor("white", alpha.f = 0.9),
           border = "gray60")
 
-  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = colSex)
+  points(x = xx, y = yy,  pch = 15, cex = 3.5, col =  adjustcolor(colSex,0.3))
+  points(x = xx, y = yy,  pch = 15, cex = 1.5, col =  adjustcolor(colSex,0.7))
   text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
 
   dev.off()
@@ -1162,8 +1163,8 @@ processRovquantOutput_bear <- function(
           col = adjustcolor("white", alpha.f = 0.9),
           border = "gray60")
 
-  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = colSex)
+  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = adjustcolor(colSex,0.3))
+  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = adjustcolor(colSex,0.7))
   text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
 
   dev.off()
@@ -1221,8 +1222,8 @@ processRovquantOutput_bear <- function(
           col = adjustcolor("white", alpha.f = 0.9),
           border = "gray60")
 
-  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = colSex)
+  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = adjustcolor(colSex,0.3))
+  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = adjustcolor(colSex,0.7))
   text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
 
   dev.off()
@@ -1369,8 +1370,8 @@ processRovquantOutput_bear <- function(
           col = adjustcolor("white", alpha.f = 0.9),
           border = "gray60")
 
-  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = colSex)
+  points(x = xx, y = yy,  pch = 15, cex = 3.5, col = adjustcolor(colSex,0.3))
+  points(x = xx, y = yy,  pch = 15, cex = 1.5, col = adjustcolor(colSex,0.7))
   text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.4, pos = 4)
 
   dev.off()
@@ -1421,8 +1422,8 @@ processRovquantOutput_bear <- function(
               y = c(0.006,0.006,0.01,0.01),
               col = adjustcolor("white", alpha.f = 0.9),
               border = NA)
-      points(c(0.8,0.8), c(0.0077,0.0092), pch = 15, cex = 5.5, col = colSex)
-      points(c(0.8,0.8), c(0.0077,0.0092), pch = 15, cex = 3, col = colSex)
+      points(c(0.8,0.8), c(0.0077,0.0092), pch = 15, cex = 5.5, col = adjustcolor(colSex,0.3))
+      points(c(0.8,0.8), c(0.0077,0.0092), pch = 15, cex = 3, col = adjustcolor(colSex,0.7))
       text(c(1.2,1.2),c(0.0077,0.0092),  c("Females", "Males"), cex = 2, pos = 4)
     }
 
@@ -1517,8 +1518,8 @@ processRovquantOutput_bear <- function(
   ##-- LEGEND
   par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
   plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
-  points(c(4,4), c(4,3), pch = 15, cex = 5.5, col = colSex)
-  points(c(4,4), c(4,3), pch = 15, cex = 3, col = colSex)
+  points(c(4,4), c(4,3), pch = 15, cex = 5.5, col = adjustcolor(colSex,0.3))
+  points(c(4,4), c(4,3), pch = 15, cex = 3, col = adjustcolor(colSex,0.7))
   text(c(5.3,5.3), c(4,3),  c("Females", "Males"), cex = 1.5, pos = 4)
   dev.off()
 

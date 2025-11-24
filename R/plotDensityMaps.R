@@ -128,8 +128,8 @@ plotDensityMaps <- function(
                            heights = rep(1,2))
     
     ##-- legend coordinates
-    legend.x <- xLims[1] + 0.7 * xRange
-    legend.y <- yLims[1] + 0.4 * yRange
+    legend.x <- xLims[1] + 0.78 * xRange
+    legend.y <- yLims[1] + 0.3 * yRange
     
     ##-- Plot density maps
     graphics::par(mar = c(0,0,0,0))
@@ -154,19 +154,20 @@ plotDensityMaps <- function(
       if(t == length(density)){
         graphics::segments(
           x0 = legend.x, x1 = legend.x,
-          y0 = legend.y-250000, y1 = legend.y + 250000,
+          y0 = legend.y - 250000, y1 = legend.y + 250000,
           col = "grey30", lwd = 4, lend = 2)
         graphics::text(
-          x = legend.x - 0.05 * xRange,
+          x = legend.x - 0.04 * xRange,
           y = legend.y,
           labels = "500 km", srt = 90, cex = 1.4)
         raster::plot( density[[t]],
                       legend.only = T, breaks = cuts,
                       col = col, legend.width = 2,
-                      axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        cex.axis = 1.2),
-                      smallplot = c(0.8, 0.85, 0.2, 0.6), 
+                      axis.args = list( at = round(seq(0, max-0.04, length.out = 4), digits = 1),
+                                        labels = round(seq(0, max-0.04, length.out = 4), digits = 1),
+                                        cex.axis = 1,
+                                        line = 0),
+                      smallplot = c(0.81, 0.86, 0.1, 0.5), 
                       legend.args = list(text = paste0("Individuals/", unit, " km2"),
                                          side = 2, font = 1, line = 0, cex = 1))
         ######----- NEED TO FIX LEGEND TEXT 
@@ -177,7 +178,7 @@ plotDensityMaps <- function(
       if(export.raster){
         writeRaster( density[[t]],
                      file.path( path, "rasters",
-                                paste0( species, "_",
+                                paste0( name, "_",
                                         raster::res(input)[1]/1000, "km", 
                                         names(estimates)[t], ".tif")),
                      overwrite = TRUE)
@@ -191,7 +192,7 @@ plotDensityMaps <- function(
   ##-- Last year's density map
   if("last.year" %in% type){
     
-    grDevices::png(filename = file.path(path, paste0(name,"_LastYear.png")),
+    grDevices::png(filename = file.path(path, "figures", paste0(name,"_LastYear.png")),
                    width = 8, height = 8, units = "in", pointsize = 12,
                    res = 300, bg = NA)
     
@@ -211,7 +212,7 @@ plotDensityMaps <- function(
     }
     
     ##-- Add legend
-    legend.x <- xLims[1] + 0.9 * xRange
+    legend.x <- xLims[1] + 0.89 * xRange
     legend.y <- yLims[1] + 0.3 * yRange
     
     graphics::segments(
@@ -221,17 +222,17 @@ plotDensityMaps <- function(
     graphics::text(
       x = legend.x - 0.05 * xRange,
       y = legend.y,
-      labels = "500 km", srt = 90, cex = 1.4)
+      labels = "500 km", srt = 90, cex = 1.2)
     
     raster::plot( density[[t]],
                   legend.only = T, breaks = cuts,
-                  col = col, legend.width = 2,
+                  col = col, legend.width = 1.5,
                   axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                     labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                     cex.axis = 1.2),
-                  smallplot = c(0.85, 0.88, 0.2, 0.4),
+                  smallplot = c(0.88, 0.90, 0.2, 0.4),
                   legend.args = list(text = paste0("Individuals/", unit, " km2"),
-                                     side = 2, font = 1, line = 0, cex = 1))
+                                     side = 2, font = 1, line = 0, cex = 0.9))
     dev.off()
   }
   
@@ -245,7 +246,7 @@ plotDensityMaps <- function(
       ##-- Plot last year's density map
       # grDevices::pdf(file = file.path(path, paste0(name,"_Summary.pdf")),
       #                width = 8, height = 8, pointsize = 12)
-      grDevices::png(filename = file.path(path, paste0(name,"_Summary.png")),
+      grDevices::png(filename = file.path(path, "figures", paste0(name,"_Summary.png")),
                      width = 8, height = 8, units = "in", pointsize = 12,
                      res = 300, bg = NA)
       
@@ -274,7 +275,7 @@ plotDensityMaps <- function(
       addScale(x = 0.75, y = 0.25, size = 500000)
 
       ##-- Add species silhouette 
-      addPNG( x = 0.8, y = 0.5, name = species, size = 0.2)
+      addPNG( x = 0.8, y = 0.5, name = species, size = 0.15)
       
       ##-- Add flags 
       if(!is.null(labels)){addPopSize( x = x.labels, y = y.labels, labels = labels)}
@@ -282,7 +283,7 @@ plotDensityMaps <- function(
       ##-- Add caption
       if(is.null(caption)){
       mtext(text = paste0("Density map and estimated ", engSpecies,
-                          "\nabundance range estimated in ",
+                          "\nabundance range in ",
                           names(estimates)[length(density)]),
             side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
       } else {
@@ -302,7 +303,7 @@ plotDensityMaps <- function(
       ##-- Plot last year's density map
       # grDevices::pdf(file = file.path(path, paste0(name,"_Summary.pdf")),
       #                width = 8, height = 8, pointsize = 12)
-      grDevices::png(filename = file.path(path, paste0(name,"_Summary_NOR.png")),
+      grDevices::png(filename = file.path(path, "figures", paste0(name,"_Summary_NOR.png")),
                      width = 8, height = 8, units = "in", pointsize = 12,
                      res = 300, bg = NA)
       
@@ -332,7 +333,7 @@ plotDensityMaps <- function(
       addScale(x = 0.75, y = 0.25, size = 500000)
       
       ##-- Add species silhouette 
-      addPNG( x = 0.8, y = 0.5, name = species, size = 0.2)
+      addPNG( x = 0.8, y = 0.45, name = species, size = 0.15)
       
       ##-- Add flags 
       if(!is.null(labels)){addPopSize( x = x.labels, y = y.labels, labels = labels)}

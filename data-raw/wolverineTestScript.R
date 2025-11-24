@@ -44,7 +44,7 @@ library(nimbleSCR)
 ##------------------------------------------------------------------------------
 ## ------ I. SET-UP WORKING ENVIRONMENT ------
 
-##-- DATA DIRECTORY
+##-- DATA DIRECTORY 
 ##-- Directory containing the raw data necessary for the analysis
 ##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Data"

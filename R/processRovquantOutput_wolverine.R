@@ -444,7 +444,7 @@ processRovquantOutput_wolverine <- function(
                        densityInputCounties$regions.rgmx)
  
     
-    ## ------   2. AC-BASED DENSITY (5km) ------
+    ## ------   2. AC-BASED DENSITY ------
     
     ## ------     2.1. MALE & FEMALES -----
     
@@ -501,10 +501,10 @@ processRovquantOutput_wolverine <- function(
     
     
     
-    ## ------   3. UD-BASED DENSITY (5km) ------
+    ## ------   3. UD-BASED DENSITY ------
     
     ##-- Combine male and female sigma
-    sigma <- array(NA, c(n.iter, length(resultsSXYZ_MF$sims.list$sex), n.years))
+    sigma <- array(NA, c(length(iter), length(resultsSXYZ_MF$sims.list$sex), n.years))
     for(t in 1:n.years){
       for(i in 1:length(resultsSXYZ_MF$sims.list$sex)){
         sigma[ ,i,t] <- ifelse(resultsSXYZ_MF$sims.list$sex[i] == "M",
@@ -516,66 +516,25 @@ processRovquantOutput_wolverine <- function(
     ##-- Rescale sigma to the raster resolution
     sigma <- sigma/raster::res(rrRegions)[1]
     
-    
-    
-    ## ------     3.1. MALE -----
-    
-    IDMales <- which(resultsSXYZ_MF$sims.list$sex=="M")
-    
-    UDdensityM <- list()
-    for(t in 1:n.years){
-      UDdensityM[[t]] <- GetSpaceUse(
-        sx = densityInputRegions$sx[iter,IDMales,t],
-        sy = densityInputRegions$sy[iter,IDMales,t],
-        z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
-        sigma = sigma[ ,IDMalest],
-        habitatxy = densityInputRegions$habitat.xy,
-        aliveStates = alive.states,
-        regionID = regionID,
-        display_progress = T,
-        returnPosteriorCells = F)
-    }#t
-    names(UDdensityM) <- years
-    
-    
-    
-    ## ------     3.2. FEMALE -----
-    
-    IDFemales <- which(resultsSXYZ_MF$sims.list$sex=="F")
-    
-    UDdensityF <- list()
-    for(t in 1:n.years){
-      UDdensityF[[t]] <- GetSpaceUse(
-        sx = densityInputRegions$sx[iter,IDFemales,t],
-        sy = densityInputRegions$sy[iter,IDFemales,t],
-        z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
-        sigma = sigma[ ,IDFemales,t],
-        habitatxy = densityInputRegions$habitat.xy,
-        aliveStates = alive.states,
-        regionID = regionID,
-        display_progress = T,
-        returnPosteriorCells = F)
-    }#t
-    names(UDdensityF) <- years
-    
-    
-    
-    ## ------     3.3. MALE & FEMALES -----
-    
     UDdensity <- list()
     for(t in 1:n.years){
-      UDdensity[[t]] <- GetSpaceUse(
-        sx = densityInputRegions$sx[iter, ,t],
-        sy = densityInputRegions$sy[iter, ,t],
+      UDdensity[[t]] <- rovquantR::GetSpaceUse(
+        sx = densityInputCountries$sx[iter, ,t],
+        sy = densityInputCountries$sy[iter, ,t],
         z = resultsSXYZ_MF$sims.list$z[iter, ,t],
-        sigma = sigma[ , ,t],
-        habitatxy = densityInputRegions$habitat.xy,
+        sigma = sigma[,,t],
+        habitatxy = densityInputCountries$habitat.xy,
         aliveStates = alive.states,
-        regionID = regionID,
-        display_progress = T,
-        returnPosteriorCells = F)
+        regionID = densityInputCountries$regions.rgmx,
+        display_progress = TRUE,
+        returnPosteriorCells = FALSE)
+      
+      UDdensity[[t]]$MedianCell <- NULL
+      UDdensity[[t]]$CVCell <- NULL
+      UDdensity[[t]]$CILCell <- NULL
+      UDdensity[[t]]$CIHCell <- NULL
     }#t
-    names(UDdensity) <- years
+    names(UDdensity) <- years+1
     
     
     
@@ -586,8 +545,6 @@ processRovquantOutput_wolverine <- function(
           ACdensityF,
           ACdensityM,
           UDdensity,
-          UDdensityF,
-          UDdensityM,
           file = file.path( working.dir,"data",
                             paste0("Density_wolverine_",DATE,".RData")))
   } 
@@ -598,7 +555,8 @@ processRovquantOutput_wolverine <- function(
   
   ##-- Plot parameters
   diffSex <- 0.2
-  colSex <- adjustcolor( c("firebrick3", "deepskyblue2", "black"), 0.5)
+  colCountries <- c("firebrick2", "deepskyblue2", "black")
+  names(colCountries) <- c("Norway","Sweden", "Total")
   colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
   
   
@@ -634,10 +592,11 @@ processRovquantOutput_wolverine <- function(
     background = COUNTRIES,
     type = c("time.series", "last.year","summary","summary_NOR"),
     species = "wolverine",
-    labels = list("nor" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")],
-                  "swe" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")]),
-    x.labels = c(0.3,0.7),
-    y.labels = c(0.8,0.15),
+    labels = list("nor" = ACdensity[[n.years]]$summary["Norway",c("95%CILow","95%CIHigh")],
+                  "swe" = ACdensity[[n.years]]$summary["Sweden",c("95%CILow","95%CIHigh")],
+                  "both" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")]),
+    x.labels = c(0.3,0.75,0.7),
+    y.labels = c(0.8,0.7,0.05),
     path = working.dir,
     name = "UD_Density")
   
@@ -654,155 +613,179 @@ processRovquantOutput_wolverine <- function(
                  width = 12, height = 8.5, units = "in", pointsize = 12,
                  res = 300, bg = NA)
   
-  graphics::par(mar = c(5,5,1,1))
+  graphics::par(mar = c(5,8,3,1),
+                las = 1,
+                cex.lab = 2,
+                cex.axis = 1.3,
+                mgp = c(6, 2, 0),
+                xaxs = "i",
+                yaxs = "i")
   
-  n.detected <- apply(rbind( nimDataM$y.alive[ ,1, ],
-                             nimDataF$y.alive[ ,1, ]) > 0, 2, sum)
-  
-  ymax <- 10*(trunc(max(c(unlist(lapply(ACdensity, function(x)max(colSums(x$PosteriorAllRegions)))), n.detected))/10)+1)
+  ymax <- 100*(trunc(max(unlist(lapply(ACdensity, function(x)max(colSums(x$PosteriorAllRegions)))))/100)+1)
   
   plot(-1000,
-       xlim = c(0.5, n.years + 0.5),
+       xlim = c(0.5, n.years+0.5),
        ylim = c(0,ymax),
-       xlab = "", ylab = paste("Number of wolverines"),
+       xlab = "", ylab = paste("Estimated number of wolverines"),
        xaxt = "n", axes = F, cex.lab = 1.6)
-  graphics::axis(1, at = c(1:n.years), labels = years, cex.axis = 1.6)
-  graphics::axis(2, at = seq(0,ymax,20), labels = seq(0,ymax,20), cex.axis = 1.6)
-  graphics::abline(v = (0:n.years)+0.5, lty = 2)
-  graphics::abline(h = seq(0,ymax, by = 10), lty = 2, col = "gray90")
+  graphics::axis(1, at = c(1:(n.years)), labels = years+1, cex.axis = 1.5, padj = -1)
+  graphics::axis(2, at = seq(0,ymax,200), labels = seq(0,ymax,200), cex.axis = 1.5, hadj = 0.5)
+  graphics::abline(v = (1:n.years)+0.5, lty = 2)
+  graphics::abline(h = seq(0,ymax, by = 100), lty = 2, col = "gray90")
   
   for(t in 1:n.years){
-    ##-- FEMALES
-    plotQuantiles(x = colSums(ACdensityF[[t]]$PosteriorAllRegions),
-                  at = t - diffSex,
-                  width = 0.18,
-                  col = colSex[1])
-    
-    ##-- MALES
-    plotQuantiles(x = colSums(ACdensityM[[t]]$PosteriorAllRegions),
+    ##-- Norway
+    plotQuantiles(x = ACdensity[[t]]$PosteriorRegions["Norway", ],
                   at = t + diffSex,
-                  width = 0.18,
-                  col = colSex[2])
+                  width = 0.15,
+                  col = colCountries[1])
+    
+    ##-- Sweden 
+    add.star <- t %in% yearsNotSampled
+    plotQuantiles(x = ACdensity[[t]]$PosteriorRegions["Sweden", ],
+                  at = t - diffSex,
+                  width = 0.15,
+                  col = colCountries[2],
+                  add.star = add.star)
+    
     ##-- TOTAL
     plotQuantiles(x = colSums(ACdensity[[t]]$PosteriorAllRegions),
                   at = t,
-                  width = 0.4,
-                  col = colSex[3])
+                  width = 0.15,
+                  col = colCountries[3],
+                  add.star = add.star)
     
-    ##-- ADD NUMBER OF INDIVIDUALS DETECTED
-    xx <- c(t-0.25,t+0.25,t+0.25,t-0.25)
-    yy <- c(n.detected[t]-1,n.detected[t]-1,n.detected[t]+1,n.detected[t]+1)
-    polygon(xx, yy, border = NA, col = "goldenrod1")
+    # ##-- ADD NUMBER OF INDIVIDUALS DETECTED
+    # xx <- c(t-0.25,t+0.25,t+0.25,t-0.25)
+    # yy <- c(n.detected[t]-1,n.detected[t]-1,n.detected[t]+1,n.detected[t]+1)
+    # polygon(xx, yy, border = NA, col = "goldenrod1")
   }#t
   box()
   
   ##-- legend
   par(xpd = TRUE)
-  xx <- c(0.6*n.years,0.72*n.years,0.82*n.years,0.92*n.years)#c(6.1,7.6,8.8,10) 
-  yy <- c(5,5,5,5)
-  labs <- c("Females", "Males", "Total", "Detected")
-  polygon(x = c(0.58*n.years,1.05*n.years,1.05*n.years,0.58*n.years),
-          y = c(-2.5,-2.5,12.5,12.5),
+  xx <- c(0.11*n.years, 0.24*n.years, 0.37*n.years) 
+  yy <- c(200,200,200)
+  labs <- c("Norway", "Sweden", "Total")
+  polygon(x = c(0.08*n.years,0.46*n.years,0.46*n.years,0.08*n.years),
+          y = c(150,150,250,250),
           col = adjustcolor("white", alpha.f = 0.9),
-          border = "gray60")
-  
-  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 3.5, col = colSex)
-  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 1.5, col = colSex)
+          border = "gray90")
+  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 3.5, col = adjustcolor(colCountries,0.3))
+  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 1.5, col = adjustcolor(colCountries,0.7))
   text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.2, pos = 4)
   
-  polygon(x = c(xx[4]-0.3,xx[4]+0.1,xx[4]+0.1,xx[4]-0.3),
-          y = c(yy[4]-1,yy[4]-1,yy[4]+1,yy[4]+1),
-          col = "goldenrod1",
-          border = F)
-  
   dev.off()
-
+  
   ##-- Remove unnecessary objects from memory
-  rm(list = c("n.detected"))
   gc(verbose = FALSE)
   
   
   
-  ## ------   4.3. ABUNDANCE per REGION ------
-
-  regPlotNames <- c("Region 8","Region 7","Region 6","Region 5","Region 3")
-
-  grDevices::png(filename = file.path(working.dir,"figures/Abundance_Regions.png"),
-                 width = 8, height = 15, units = "in", pointsize = 12,
+  
+  ## ------   4.3. ABUNDANCE TIME SERIES BY SEX ------
+  
+  grDevices::png(filename = file.path(working.dir,"figures/Abundance_TimeSeries_bySex.png"),
+                 width = 18, height = 8, units = "in", pointsize = 12,
                  res = 300, bg = NA)
-
-  nf <- layout(rbind(c(1,2),
-                     c(3,4),
-                     c(5,6),
-                     c(7,8),
-                     c(9,10)),
-               widths = c(1,0.5),
-               heights = 1)
-
-  for(cc in regPlotNames){
-
-    ymax <- max(c(10*(trunc(max(ACdensity[[n.years]]$PosteriorRegions[cc, ])/10)+1),
-                60))
-
-    par(mar = c(2,5,2,0), tck = 0, mgp = c(2,0.2,0))
-    plot(-1000,
-         xlim = c(0.5, n.years + 0.5), ylim = c(0,ymax),
-         xlab = "", ylab = paste("Number of wolverines"),
-         xaxt = "n", axes = F, cex.lab = 1.6)
-    axis(1, at = c(1:n.years), labels = years, cex.axis = 1.15)
-    axis(2, at = seq(0,ymax,10), labels = seq(0,ymax,10),
-         cex.axis = 1.2, las = 1)
-    abline(v = (0:n.years)+0.5, lty = 2)
-    abline(h = seq(0,ymax, by = 10), lty = 2, col = "gray60")
-    mtext(text = cc, side = 3, font = 2, line = 0.5)
-
-    for(t in 1:n.years){
-      ##-- TOTAL
-      plotQuantiles(x = ACdensity[[t]]$PosteriorRegions[cc, ],
-                    at = t,
-                    width = 0.4,
-                    col = colSex[3])
-
-      ##-- FEMALES
-      plotQuantiles(x = ACdensityF[[t]]$PosteriorRegions[cc, ],
-                    at = t - diffSex,
-                    width = 0.18,
-                    col = colSex[1])
-
-      ##-- MALES
-      plotQuantiles(x = ACdensityM[[t]]$PosteriorRegions[cc, ],
-                    at = t + diffSex,
-                    width = 0.18,
-                    col = colSex[2])
-    }#t
-
-    ##-- legend
-    if(cc == "Region 3"){
-      par(xpd = TRUE)
-      xx <- c(1.1,3.2,5)
-      yy <- 0.9*ymax
-      labs <- c("Females", "Males", "Total")
-      polygon(x = c(0.6,6.4,6.4,0.6),
-              y = c(yy-5,yy-5,yy+5,yy+5),
-              col = adjustcolor("white", alpha.f = 0.9),
-              border = "gray60")
-
-      points(x = xx, y = rep(yy,3),  pch = 15, cex = 3.5, col = colSex)
-      points(x = xx, y = rep(yy,3),  pch = 15, cex = 1.5, col = colSex)
-      text(x = xx + 0.1, y = rep(yy,3), labels = labs, cex = 1.4, pos = 4)
-    }
-    box()
-
-    ##-- Map insert
-    par(mar = c(5,0,4,5))
-    plot(st_geometry(REGIONS), border = grey(0.5), col = grey(0.5), lwd = 0.1)
-    plot(st_geometry(REGIONS[REGIONS$region == cc, ]),
-         add = T, col = adjustcolor("red",0.5), border = "red")
-  }#c
+  
+  graphics::par( mfrow = c(1,2),
+                 mar = c(5,8,3,1),
+                 las = 1,
+                 cex.lab = 2,
+                 cex.axis = 1.3,
+                 mgp = c(6, 2, 0),
+                 xaxs = "i",
+                 yaxs = "i")
+  
+  ymax <- 800
+  
+  ##-- FEMALES 
+  plot(-1000,
+       xlim = c(0.5, n.years+0.5), ylim = c(0,ymax),
+       xlab = "", ylab = "Estimated number of females",
+       xaxt = "n", axes = F, cex.lab = 1.6)
+  graphics::axis(1, at = c(1:(n.years)), labels = years+1, cex.axis = 1.5, padj = -1)
+  graphics::axis(2, at = seq(0,ymax,200), labels = seq(0,ymax,200), cex.axis = 1.5, hadj = 0.5)
+  graphics::abline(v = (1:n.years)+0.5, lty = 2)
+  graphics::abline(h = seq(0,ymax, by = 100), lty = 2, col = "gray90")
+  
+  for(t in 1:n.years){
+    ##-- Norway
+    plotQuantiles(x = ACdensity_F[[t]]$PosteriorRegions["Norway", ],
+                  at = t + diffSex,
+                  width = 0.15,
+                  col = colCountries[1])
+    
+    ##-- Sweden 
+    add.star <- t %in% yearsNotSampled
+    plotQuantiles(x = ACdensity_F[[t]]$PosteriorRegions["Sweden", ],
+                  at = t - diffSex,
+                  width = 0.15,
+                  col = colCountries[2],
+                  add.star = add.star)
+    
+    ##-- TOTAL
+    plotQuantiles(x = colSums(ACdensity_F[[t]]$PosteriorAllRegions),
+                  at = t,
+                  width = 0.15,
+                  col = colCountries[3],
+                  add.star = add.star)
+  }#t
+  box()
+  
+  
+  ##-- LEGEND
+  par(xpd = TRUE)
+  xx <- c(0.11*n.years, 0.3*n.years, 0.48*n.years) 
+  yy <- c(100,100,100)
+  labs <- c("Norway", "Sweden", "Total")
+  polygon(x = c(0.08*n.years,0.6*n.years,0.6*n.years,0.08*n.years),
+          y = c(50,50,150,150),
+          col = adjustcolor("white", alpha.f = 0.9),
+          border = "gray90")
+  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 3.5, col = adjustcolor(colCountries,0.3))
+  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 1.5, col = adjustcolor(colCountries,0.7))
+  text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.2, pos = 4)
+  
+  
+  ##-- MALES 
+  plot(-1000,
+       xlim = c(0.5, n.years+0.5), ylim = c(0,ymax),
+       xlab = "", ylab = "Estimated number of males",
+       xaxt = "n", axes = F, cex.lab = 1.6)
+  graphics::axis(1, at = c(1:(n.years)), labels = years+1, cex.axis = 1.5, padj = -1)
+  graphics::axis(2, at = seq(0,ymax,200), labels = seq(0,ymax,200), cex.axis = 1.5, hadj = 0.5)
+  graphics::abline(v = (1:n.years)+0.5, lty = 2)
+  graphics::abline(h = seq(0,ymax, by = 100), lty = 2, col = "gray90")
+  
+  for(t in 1:n.years){
+    ##-- Norway
+    plotQuantiles(x = ACdensity_M[[t]]$PosteriorRegions["Norway", ],
+                  at = t + diffSex,
+                  width = 0.15,
+                  col = colCountries[1])
+    
+    ##-- Sweden 
+    add.star <- t %in% yearsNotSampled
+    plotQuantiles(x = ACdensity_M[[t]]$PosteriorRegions["Sweden", ],
+                  at = t - diffSex,
+                  width = 0.15,
+                  col = colCountries[2],
+                  add.star = add.star)
+    
+    ##-- TOTAL
+    plotQuantiles(x = colSums(ACdensity_M[[t]]$PosteriorAllRegions),
+                  at = t,
+                  width = 0.15,
+                  col = colCountries[3],
+                  add.star = add.star)
+  }#t
+  box()
   dev.off()
-
-
-
+  
+  
+  
   ## ------   4.4. VITAL RATES ------
 
   message("## Plotting vital rates...")

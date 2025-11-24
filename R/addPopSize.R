@@ -81,14 +81,14 @@ addPopSize <- function(x,y,labels){
       
       ##-- add flag(s) to plot
       graphics::rasterImage( flag,
-                             xleft = xPos - 0.5*xSize,
-                             xright = xPos + 0.5*xSize,
+                             xleft = xPos - 0.6*xSize,
+                             xright = xPos + 0.4*xSize,
                              ybottom = yPos - 0.5*ySize,
                              ytop = yPos + 0.5*ySize)
       if(!is.null(flag2)){
         graphics::rasterImage( flag2,
-                               xleft = xPos - 1.5*xSize,
-                               xright = xPos - 0.5*xSize,
+                               xleft = xPos - 1.6*xSize,
+                               xright = xPos - 0.6*xSize,
                                ybottom = yPos - 0.5*ySize,
                                ytop = yPos + 0.5*ySize)
       }
