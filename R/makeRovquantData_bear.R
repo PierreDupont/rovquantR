@@ -242,6 +242,26 @@ makeRovquantData_bear <- function(
   
   ## ------       1.2.2. NUMBER OF OBSERVATIONS ------
   
+  ##-- Load the last SkandObs data file
+  skandObs <- readMostRecent( 
+    path = file.path(data.dir, "Skandobs"),
+    extension = ".xlsx",
+    pattern = "Skandobs")
+  
+  ##-- Replace scandinavian characters
+  colnames(skandObs) <- translateForeignCharacters(data = colnames(skandObs))
+  
+  skandObs <- skandObs %>%
+    ##-- Extract important info (e.g. month, year)
+    dplyr::mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
+                   year = as.numeric(format(date,"%Y")),
+                   month = as.numeric(format(date,"%m")),
+                   species = stringi::stri_trans_general(species, "Latin-ASCII")) %>%
+    ##-- Turn into spatial points object
+    sf::st_as_sf(., coords = c("longitude","latitude")) %>%
+    sf::st_set_crs(. , value = "EPSG:4326") %>%
+    sf::st_transform(. ,sf::st_crs(COUNTIES))
+  
   ##-- Rasterize SkandObs bear observations at the habitat level
   rl <- raster::rasterize( x = skandObs[skandObs$species %in% "Bjorn",1],
                            y = habitat$habitat.r,
@@ -404,26 +424,6 @@ makeRovquantData_bear <- function(
   
   
   ## ------         2.2.3.1. SKANDOBS ------
-  
-  ##-- Load the last SkandObs data file
-  skandObs <- readMostRecent( 
-    path = file.path(data.dir, "Skandobs"),
-    extension = ".xlsx",
-    pattern = "Skandobs")
-  
-  ##-- Replace scandinavian characters
-  colnames(skandObs) <- translateForeignCharacters(data = colnames(skandObs))
-  
-  skandObs <- skandObs %>%
-    ##-- Extract important info (e.g. month, year)
-    dplyr::mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
-                   year = as.numeric(format(date,"%Y")),
-                   month = as.numeric(format(date,"%m")),
-                   species = stringi::stri_trans_general(species, "Latin-ASCII")) %>%
-    ##-- Turn into spatial points object
-    sf::st_as_sf(., coords = c("longitude","latitude")) %>%
-    sf::st_set_crs(. , value = "EPSG:4326") %>%
-    sf::st_transform(. ,sf::st_crs(COUNTIES))
   
   ##-- Subset SkandObs 
   skandObs <- skandObs %>%

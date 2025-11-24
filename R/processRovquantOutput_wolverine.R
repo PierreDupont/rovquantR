@@ -40,8 +40,8 @@ processRovquantOutput_wolverine <- function(
   data.dir = getwd(),
   working.dir = NULL,
   ##-- MCMC
-  nburnin = 0,
-  niter = 100,
+  nburnin = 10,
+  niter = 1000,
   ##-- Density 
   extraction.res = 5000,
   ##-- Miscellanious
@@ -122,7 +122,7 @@ processRovquantOutput_wolverine <- function(
         }}}}
   
   ##-- Extract years
-  years <- as.numeric(dimnames(detectors$covariates)[[3]])
+  years <- as.numeric(dimnames(nimDataF$z)[[2]])
   n.years <- length(years) 
   
   ##-- years not sampled in Norrbotten
@@ -132,8 +132,8 @@ processRovquantOutput_wolverine <- function(
   ##-- Polygons of Sweden & Norway
   COUNTRIES <- REGIONS %>%
     dplyr::filter(country %in% c("SWE","NOR")) %>%
-    group_by(country) %>%
-    summarize()
+    dplyr::group_by(country) %>%
+    dplyr::summarize()
   
   ##-- Polygons of counties in Sweden & Norway
   COUNTIES <- REGIONS %>%
@@ -142,7 +142,7 @@ processRovquantOutput_wolverine <- function(
   
   ##-- Merge counties for practical reasons
   COUNTIES_AGGREGATED <- REGIONS %>%
-    mutate(id = case_when(
+    dplyr::mutate(id = case_when(
       county %in% c("Norrbotten") ~ 1,
       county %in% c("Västerbotten") ~ 2,
       county %in% c("Blekinge","Dalarna","Gävleborg","Gotland","Halland","Jämtland",
@@ -156,9 +156,9 @@ processRovquantOutput_wolverine <- function(
       county %in% c("Finnmark") ~ 6,
       county %in% c("Nordland") ~ 7,
       county %in% c("Troms") ~ 8)) %>%
-    group_by(id) %>%
-    summarize() %>%
-    st_simplify( ., preserveTopology = T, dTolerance = 500)
+    dplyr::group_by(id) %>%
+    dplyr::summarize() %>%
+    sf::st_simplify( ., preserveTopology = T, dTolerance = 500)
 
   
   
@@ -199,7 +199,7 @@ processRovquantOutput_wolverine <- function(
     grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
     plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
     grDevices::dev.off()
-    
+
     ##-- Process MCMC output
     gc(verbose = FALSE)
     results_F <- processCodaOutput( nimOutput_F$samples,
@@ -309,7 +309,7 @@ processRovquantOutput_wolverine <- function(
   
   message("## Processing density outputs...")
   
-  ##-- Select niter iterations randomly
+  ##-- Reduce the size of the output to 'niter' MCMC samples
   if(n.mcmc >= niter) {
     iter <- round(seq(1, n.mcmc, length.out = niter))
   } else {
@@ -318,10 +318,10 @@ processRovquantOutput_wolverine <- function(
                     ".\nusing niter = ", n.mcmc, " instead."))
     iter <- 1:n.mcmc
   }
-
+  
   ##-- Remove buffer from the habitat
   habitat.rWthBuffer <- habitat$habitat.rWthBuffer
-  habitat.rWthBuffer[habitat.rWthBuffer %in% 0] <- NA
+  habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
   searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer), 
                                   as_points = FALSE, merge = TRUE)
   searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
@@ -332,12 +332,12 @@ processRovquantOutput_wolverine <- function(
   ##-- Create raster of countries for extraction
   rrCountries <- extraction.raster$Countries
   rrCountries[extraction.raster$Countries[] %in% c(1,3)] <- NA
-  areaCountriesTotal <- table(factorValues(rrCountries, rrCountries[]))*res(rrCountries)[1]*1e-6
+  areaCountriesTotal <- table(raster::factorValues(rrCountries, rrCountries[]))*raster::res(rrCountries)[1]*1e-6
   rrCountries <- raster::mask(rrCountries, searchedPolygon)
   rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
   #plot(rrCountries)
   ##-- Calculate studied area of each county
-  areaCountries <- table(factorValues(rrCountries, rrCountries[]))*res(rrCountries)[1]*1e-6 
+  areaCountries <- table(raster::factorValues(rrCountries, rrCountries[]))*raster::res(rrCountries)[1]*1e-6 
   percCountries <- round(areaCountries/areaCountriesTotal, 2)
   percTotal <- round(sum(areaCountries)/sum(areaCountriesTotal),2)
   
@@ -348,12 +348,12 @@ processRovquantOutput_wolverine <- function(
     "Västernorrland","Jämtland","Västerbotten")
   rrCounties <- extraction.raster$Counties
   rrCounties[extraction.raster$Countries[] %in% c(1,3)] <- NA
-  areaCountiesTotal <- table(factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
+  areaCountiesTotal <- table(raster::factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
   rrCounties <- raster::mask(rrCounties, searchedPolygon)
   rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
   #plot(rrCounties)
   ##-- Calculate studied area of each county
-  areaCounties <- table(factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
+  areaCounties <- table(raster::factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
   areaCountiesTotal <- areaCountiesTotal[names(areaCountiesTotal) %in% names(areaCounties)]
   percCounties <- round(areaCounties/areaCountiesTotal, 2)
   
@@ -403,7 +403,7 @@ processRovquantOutput_wolverine <- function(
       }
     }
   } 
-  
+
   
   if(densTest){
     
@@ -414,28 +414,28 @@ processRovquantOutput_wolverine <- function(
     
     ##-- Get the objects to run the density function
     ##-- COUNTRY
-    densityInputCountries <- getDensityInput(
+    densityInputCountries <- suppressWarnings(getDensityInput(
       regions = rrCountries, 
       habitat = habitatPolygon5km,
       s = resultsSXYZ_MF$sims.list$sxy,
-      plot.check = FALSE)
-    rownames(densityInputCountries$regions.rgmx)
+      plot.check = FALSE))
+   # rownames(densityInputCountries$regions.rgmx)
     
     ##-- COUNTIES
-    densityInputCounties <- getDensityInput( 
+    densityInputCounties <- suppressWarnings(getDensityInput( 
       regions = rrCounties, 
       habitat = habitatPolygon5km,
       s = resultsSXYZ_MF$sims.list$sxy,
-      plot.check = FALSE)
-    rownames(densityInputCounties$regions.rgmx)
+      plot.check = FALSE))
+    # rownames(densityInputCounties$regions.rgmx)
     
     ##-- REGIONS
-    densityInputRegions <- getDensityInput( 
+    densityInputRegions <- suppressWarnings(getDensityInput( 
       regions = rrRegions, 
       habitat = habitatPolygon5km,
       s = resultsSXYZ_MF$sims.list$sxy,
-      plot.check = FALSE)
-    rownames(densityInputRegions$regions.rgmx)
+      plot.check = FALSE))
+   # rownames(densityInputRegions$regions.rgmx)
     
     ##-- Merge country, county & region matrices to allow simultaneous estimation
     regionID <- rbind( densityInputCountries$regions.rgmx,
@@ -444,6 +444,15 @@ processRovquantOutput_wolverine <- function(
     row.names(regionID) <- c(row.names(densityInputCountries$regions.rgmx),
                              row.names(densityInputRegions$regions.rgmx),
                              row.names(densityInputCounties$regions.rgmx))
+    
+    ##-- Free up space
+    rm(list = c("densityInputCounties","densityInputCountries"))
+    sx_extract <- densityInputRegions$sx
+    sy_extract <- densityInputRegions$sy
+    z_extract <- resultsSXYZ_MF$sims.list$z
+    habitat.id_extract <- densityInputRegions$habitat.id
+    inputRaster <- densityInputRegions$regions.r
+    rm(list = c("densityInputRegions"))
     
     
     
@@ -454,10 +463,10 @@ processRovquantOutput_wolverine <- function(
     ACdensity <- list()
     for(t in 1:n.years){
       ACdensity[[t]] <- GetDensity(
-        sx = densityInputRegions$sx[ , ,t],
-        sy = densityInputRegions$sy[ , ,t],
-        z = resultsSXYZ_MF$sims.list$z[ , ,t],
-        IDmx = densityInputRegions$habitat.id,
+        sx = as.matrix(sx_extract[ , ,t]),
+        sy = as.matrix(sy_extract[ , ,t]),
+        z = as.matrix(z_extract[ , ,t]),
+        IDmx = habitat.id_extract,
         aliveStates = alive.states,
         regionID = regionID,
         returnPosteriorCells = F)
@@ -473,10 +482,10 @@ processRovquantOutput_wolverine <- function(
     ACdensityM <- list()
     for(t in 1:n.years){
       ACdensityM[[t]] <- GetDensity(
-        sx = densityInputRegions$sx[ ,IDMales,t],
-        sy =  densityInputRegions$sy[ ,IDMales,t],
-        z = resultsSXYZ_MF$sims.list$z[ ,IDMales,t],
-        IDmx = densityInputRegions$habitat.id,
+        sx = sx_extract[ ,IDMales,t],
+        sy = sy_extract[ ,IDMales,t],
+        z = z_extract[ ,IDMales,t],
+        IDmx = habitat.id_extract,
         aliveStates = alive.states,
         regionID = regionID,
         returnPosteriorCells = F)
@@ -492,17 +501,17 @@ processRovquantOutput_wolverine <- function(
     ACdensityF <- list()
     for(t in 1:n.years){
       ACdensityF[[t]] <- GetDensity(
-        sx = densityInputRegions$sx[ ,IDFemales,t],
-        sy = densityInputRegions$sy[ ,IDFemales,t],
-        z = resultsSXYZ_MF$sims.list$z[ ,IDFemales,t],
-        IDmx = densityInputRegions$habitat.id,
+        sx = sx_extract[ ,IDFemales,t],
+        sy = sy_extract[ ,IDFemales,t],
+        z = z_extract[ ,IDFemales,t],
+        IDmx = habitat.id_extract,
         aliveStates = alive.states,
         regionID = regionID,
         returnPosteriorCells = F)
     }
     names(ACdensityF) <- years+1
     
-    
+
     
     ## ------   3. UD-BASED DENSITY ------
     
@@ -522,16 +531,17 @@ processRovquantOutput_wolverine <- function(
     UDdensity <- list()
     for(t in 1:n.years){
       UDdensity[[t]] <- rovquantR::GetSpaceUse(
-        sx = densityInputCountries$sx[iter, ,t],
-        sy = densityInputCountries$sy[iter, ,t],
-        z = resultsSXYZ_MF$sims.list$z[iter, ,t],
+        sx = sx_extract[iter, ,t],
+        sy = sy_extract[iter, ,t],
+        z = z_extract[iter, ,t],
         sigma = sigma[,,t],
-        habitatxy = densityInputCountries$habitat.xy,
+        habitatxy = habitat.id_extract,
         aliveStates = alive.states,
-        regionID = densityInputCountries$regions.rgmx,
+        regionID = regionID[c("Norway","Sweden"), ], 
         display_progress = TRUE,
         returnPosteriorCells = FALSE)
       
+      ##-- Free up space
       UDdensity[[t]]$MedianCell <- NULL
       UDdensity[[t]]$CVCell <- NULL
       UDdensity[[t]]$CILCell <- NULL
@@ -542,7 +552,6 @@ processRovquantOutput_wolverine <- function(
     
     
     ## ------   4. SAVE DENSITY OBJECTS ------
-    inputRaster <- densityInputCountries$regions.r
     
     save( inputRaster,
           ACdensity,
