@@ -378,7 +378,7 @@ makeRovquantData_bear <- function(
   ## ------       2.2.2. EXTRACT DISTANCES TO ROADS -----
   
   ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster::raster(file.path(data.dir,"GIS/Roads/MinDistAllRoads1km.tif"))
+  DistAllRoads <- raster::raster(file.path(data.dir,"Roads/MinDistAllRoads1km.tif"))
   
   ##-- Fasterize to remove values that fall in the sea
   r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)

@@ -41,7 +41,7 @@ processRovquantOutput_wolverine <- function(
   working.dir = NULL,
   ##-- MCMC
   nburnin = 10,
-  niter = 1000,
+  niter = 100,
   ##-- Density 
   extraction.res = 5000,
   ##-- Miscellanious
