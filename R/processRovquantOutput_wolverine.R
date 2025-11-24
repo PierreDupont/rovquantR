@@ -322,14 +322,12 @@ processRovquantOutput_wolverine <- function(
   ##-- Remove buffer from the habitat
   habitat.rWthBuffer <- habitat$habitat.rWthBuffer
   habitat.rWthBuffer[habitat.rWthBuffer %in% 0] <- NA
-  searchedPolygon <- sf::st_as_sf( stars::st_as_stars(habitat.rWthBuffer), 
-                                   as_points = FALSE, 
-                                   merge = TRUE)
+  searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer), 
+                                  as_points = FALSE, merge = TRUE)
   searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
   
   ##-- Habitat raster with extent used in the model
-  habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
-                                     habitat$habitat.r)
+  habitatPolygon5km <- raster::crop(extraction.raster$Habitat, habitat$habitat.r)
   
   ##-- Create raster of countries for extraction
   rrCountries <- extraction.raster$Countries
@@ -341,6 +339,7 @@ processRovquantOutput_wolverine <- function(
   ##-- Calculate studied area of each county
   areaCountries <- table(factorValues(rrCountries, rrCountries[]))*res(rrCountries)[1]*1e-6 
   percCountries <- round(areaCountries/areaCountriesTotal, 2)
+  percTotal <- round(sum(areaCountries)/sum(areaCountriesTotal),2)
   
   ##-- Create raster of counties for extraction
   levels(extraction.raster$Counties)[[1]][c(4,5,6,10,12,13,14,15,17,18,19,20),2] <- c(
@@ -380,7 +379,8 @@ processRovquantOutput_wolverine <- function(
   percRegions <- round(areaRegions/areaRegionsTotal, 2)
   
   ##-- Merge the percentages
-  percAllRegions <- c(percCountries, percRegions, percCounties)
+  percAllRegions <- c(percTotal, percCountries, percRegions, percCounties)
+  names(percAllRegions)[1] <- "Total"
   
   
   ##-- Calculate density only if necessary
@@ -404,6 +404,7 @@ processRovquantOutput_wolverine <- function(
     }
   } 
   
+  
   if(densTest){
     
     message("## Extracting population density... \n## This might take a while...")
@@ -412,42 +413,44 @@ processRovquantOutput_wolverine <- function(
     ## ------   1. PREPARE DENSITY EXTRACTION ------
     
     ##-- Get the objects to run the density function
-    ##-- COUNTRIES
-    densityInputCountries <- suppressWarnings(getDensityInput(
+    ##-- COUNTRY
+    densityInputCountries <- getDensityInput(
       regions = rrCountries, 
       habitat = habitatPolygon5km,
       s = resultsSXYZ_MF$sims.list$sxy,
-      plot.check = FALSE))
+      plot.check = FALSE)
     rownames(densityInputCountries$regions.rgmx)
     
     ##-- COUNTIES
-    densityInputRegions <- suppressWarnings(getDensityInput( 
-      regions = rrRegions, 
-      habitat = habitatPolygon5km,
-      s = resultsSXYZ_MF$sims.list$sxy,
-      plot.check = FALSE))
-    rownames(densityInputRegions$regions.rgmx)
-    
-    ##-- REGIONS
-    densityInputCounties <- suppressWarnings(getDensityInput( 
+    densityInputCounties <- getDensityInput( 
       regions = rrCounties, 
       habitat = habitatPolygon5km,
       s = resultsSXYZ_MF$sims.list$sxy,
-      plot.check = FALSE))
-    rownames(densityInputRegionsSwe$regions.rgmx)
+      plot.check = FALSE)
+    rownames(densityInputCounties$regions.rgmx)
     
-    inputRaster <- densityInputRegions$regions.r
+    ##-- REGIONS
+    densityInputRegions <- getDensityInput( 
+      regions = rrRegions, 
+      habitat = habitatPolygon5km,
+      s = resultsSXYZ_MF$sims.list$sxy,
+      plot.check = FALSE)
+    rownames(densityInputRegions$regions.rgmx)
     
-    ##-- Merge region matrices to allow simultaneous extraction
+    ##-- Merge country, county & region matrices to allow simultaneous estimation
     regionID <- rbind( densityInputCountries$regions.rgmx,
                        densityInputRegions$regions.rgmx,
                        densityInputCounties$regions.rgmx)
- 
+    row.names(regionID) <- c(row.names(densityInputCountries$regions.rgmx),
+                             row.names(densityInputRegions$regions.rgmx),
+                             row.names(densityInputCounties$regions.rgmx))
+    
+    
     
     ## ------   2. AC-BASED DENSITY ------
+    ## ------     2.1. MALE & FEMALES ------
     
-    ## ------     2.1. MALE & FEMALES -----
-    
+    ##-- EXTRACT DENSITY 
     ACdensity <- list()
     for(t in 1:n.years){
       ACdensity[[t]] <- GetDensity(
@@ -459,7 +462,7 @@ processRovquantOutput_wolverine <- function(
         regionID = regionID,
         returnPosteriorCells = F)
     }#t
-    names(ACdensity) <- years
+    names(ACdensity) <- years+1
     
     
     
@@ -475,10 +478,10 @@ processRovquantOutput_wolverine <- function(
         z = resultsSXYZ_MF$sims.list$z[ ,IDMales,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = alive.states,
-        regionID = rbind(regionID,countyID),
+        regionID = regionID,
         returnPosteriorCells = F)
     }#t
-    names(ACdensityM) <- years
+    names(ACdensityM) <- years+1
     
     
     
@@ -494,10 +497,10 @@ processRovquantOutput_wolverine <- function(
         z = resultsSXYZ_MF$sims.list$z[ ,IDFemales,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = alive.states,
-        regionID = rbind(regionID,countyID),
+        regionID = regionID,
         returnPosteriorCells = F)
     }
-    names(ACdensityF) <- years
+    names(ACdensityF) <- years+1
     
     
     
@@ -539,14 +542,15 @@ processRovquantOutput_wolverine <- function(
     
     
     ## ------   4. SAVE DENSITY OBJECTS ------
+    inputRaster <- densityInputCountries$regions.r
     
     save( inputRaster,
           ACdensity,
           ACdensityF,
           ACdensityM,
           UDdensity,
-          file = file.path( working.dir,"data",
-                            paste0("Density_wolverine_",DATE,".RData")))
+          file = file.path( working.dir, "data",
+                            paste0("Density_wolverine.RData")))
   } 
   
   
@@ -712,21 +716,21 @@ processRovquantOutput_wolverine <- function(
   
   for(t in 1:n.years){
     ##-- Norway
-    plotQuantiles(x = ACdensity_F[[t]]$PosteriorRegions["Norway", ],
+    plotQuantiles(x = ACdensityF[[t]]$PosteriorRegions["Norway", ],
                   at = t + diffSex,
                   width = 0.15,
                   col = colCountries[1])
     
     ##-- Sweden 
     add.star <- t %in% yearsNotSampled
-    plotQuantiles(x = ACdensity_F[[t]]$PosteriorRegions["Sweden", ],
+    plotQuantiles(x = ACdensityF[[t]]$PosteriorRegions["Sweden", ],
                   at = t - diffSex,
                   width = 0.15,
                   col = colCountries[2],
                   add.star = add.star)
     
     ##-- TOTAL
-    plotQuantiles(x = colSums(ACdensity_F[[t]]$PosteriorAllRegions),
+    plotQuantiles(x = colSums(ACdensityF[[t]]$PosteriorAllRegions),
                   at = t,
                   width = 0.15,
                   col = colCountries[3],
@@ -761,21 +765,21 @@ processRovquantOutput_wolverine <- function(
   
   for(t in 1:n.years){
     ##-- Norway
-    plotQuantiles(x = ACdensity_M[[t]]$PosteriorRegions["Norway", ],
+    plotQuantiles(x = ACdensityM[[t]]$PosteriorRegions["Norway", ],
                   at = t + diffSex,
                   width = 0.15,
                   col = colCountries[1])
     
     ##-- Sweden 
     add.star <- t %in% yearsNotSampled
-    plotQuantiles(x = ACdensity_M[[t]]$PosteriorRegions["Sweden", ],
+    plotQuantiles(x = ACdensityM[[t]]$PosteriorRegions["Sweden", ],
                   at = t - diffSex,
                   width = 0.15,
                   col = colCountries[2],
                   add.star = add.star)
     
     ##-- TOTAL
-    plotQuantiles(x = colSums(ACdensity_M[[t]]$PosteriorAllRegions),
+    plotQuantiles(x = colSums(ACdensityM[[t]]$PosteriorAllRegions),
                   at = t,
                   width = 0.15,
                   col = colCountries[3],
@@ -1774,17 +1778,17 @@ processRovquantOutput_wolverine <- function(
   ## FEMALES
   for( i in 1:length(idcountyTable)){
     NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <- paste0(
-      round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
-      " (",round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-      round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      round(ACdensityF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
   
   ## MALES 
   for( i in 1:length(idcountyTable)){
     NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <- paste0(
-      round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
-      " (",round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-      round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      round(ACdensityM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
   
   ## TOTAL 
@@ -1857,17 +1861,17 @@ processRovquantOutput_wolverine <- function(
   ## FEMALES
   for( i in 1:length(idcountyTable)){
     NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <- paste0(
-      round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
-      " (",round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-      round(ACdensity_F[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      round(ACdensityF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
   
   ## MALES 
   for( i in 1:length(idcountyTable)){
     NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <- paste0(
-      round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
-      " (",round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-      round(ACdensity_M[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+      round(ACdensityM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
+      " (",round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+      round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
   }
   
   ## TOTAL
@@ -1954,17 +1958,17 @@ processRovquantOutput_wolverine <- function(
     ## FEMALES
     for( i in 1:length(idcountyTable)){
       NCountyEstimatesLast2Regions[idcountyTable[i],paste("Females",years[t])] <- paste0(
-        round(ACdensity_F[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensity_F[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensity_F[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+        round(ACdensityF[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
     }
     
     ## MALES 
     for( i in 1:length(idcountyTable)){
       NCountyEstimatesLast2Regions[idcountyTable[i],paste("Males",years[t])] <- paste0(
-        round(ACdensity_M[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensity_M[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensity_M[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+        round(ACdensityM[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
     }
     
     ## MALES 
@@ -2050,18 +2054,18 @@ processRovquantOutput_wolverine <- function(
     colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Females")
     for( i in 1:length(idcountyTable)){
       NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
-        round(ACdensity_F[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensity_F[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensity_F[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+        round(ACdensityF[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
     }
     
     ##-- MALES 
     colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Males")
     for( i in 1:length(idcountyTable)){
       NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
-        round(ACdensity_M[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensity_M[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensity_M[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
+        round(ACdensityM[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
+        " (",round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
+        round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
     }
     
     ##-- TOTAL 
