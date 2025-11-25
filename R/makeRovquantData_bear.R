@@ -557,7 +557,7 @@ makeRovquantData_bear <- function(
   detectors$covariates <- detCovs
   
   
-  ##-- Merge with the habitat grid
+  ##-- Merge with the detector grid
   detectors$grid <- dplyr::left_join(
     x = detectors$grid,
     y = detectors$detectors.df,

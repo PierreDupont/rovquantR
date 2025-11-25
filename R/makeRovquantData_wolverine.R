@@ -201,7 +201,7 @@ makeRovquantData_wolverine <- function(
   
   
   
-  ## ---------------------------------------------------------------------------
+  ##----------------------------------------------------------------------------
   
   ## ------ I. LOAD AND SELECT DATA ------
   
@@ -297,7 +297,7 @@ makeRovquantData_wolverine <- function(
   
   
   
-  ## ---------------------------------------------------------------------------
+  ##----------------------------------------------------------------------------
   
   ## ------ II. CREATE OPSCR DATA ------
   
@@ -351,7 +351,7 @@ makeRovquantData_wolverine <- function(
     filter(Habitat %in% 1)
   
   
-  
+
   ## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES ------
   
   ## ------       1.2.1. DEN COUNTS ------
@@ -371,17 +371,21 @@ makeRovquantData_wolverine <- function(
                               h = 30000,
                               grid = as(habitat$habitat.r, 'SpatialPixels'))))
   
-  # ##-- Plot check
-  # if(plot.check){
-  #   plot(DEN.r)
-  #   plot(st_geometry(myStudyArea), add = TRUE, border = "black")
-  # }
-  
   ##-- EXTRACT COVARIATES
   denCounts <- DEN.r[habitat$habitat.r[ ] == 1]
   denCounts <- as.vector(round(scale(denCounts), digits = 2))
   
+  ##-- Put into "nimble2SCR" format
+  habitat$habitat.df <- cbind.data.frame( habitat$habitat.df,
+                                          "den.counts" = denCounts)
   
+  ##-- Merge with the habitat grid
+  habitat$grid <- dplyr::left_join(
+    x = habitat$grid,
+    y = habitat$habitat.df,
+    by = "id")
+  
+
   
   ## ------   2. GENERATE DETECTORS -----
   
@@ -425,7 +429,6 @@ makeRovquantData_wolverine <- function(
   
   ##-- Extract numbers of detectors
   n.detectors <- detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
-
   
   ##-- Identify detectors in Norrbotten 
   COUNTIESAroundNorrbotten <- REGIONS %>%
@@ -470,28 +473,15 @@ makeRovquantData_wolverine <- function(
     st_distance(., COUNTIES_AGGREGATED, by_element = F) %>%
     apply(., 1, function(x) which.min(x))
   
+  ##-- Put into "nimble2SCR" shape
+  detectors$detectors.df$counties <- detCounties
+
   ##-- Create a toggle matrix to turn detection probability to 0 in Norrbotten 
   ##-- in years without sampling
   countyToggle <- matrix(1, nrow = max(detCounties), ncol = n.years)
   for(t in whichYearsNotSampled){
     countyToggle[1,t] <- 0
   }
-  
-  ##-- Plot check 
-  # if(plot.check){
-  #   myCol <- terrain.colors(nrow(COUNTIES_AGGREGATED))
-  #   plot(st_geometry(GLOBALMAP), col = "gray80", main = "Aggregated Counties")
-  #   plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  #   plot(st_geometry(COUNTRIES), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-  #   plot(st_geometry(detectors$main.detector.sp[detCounties %in% 5, ]),
-  #        col = myCol[detCounties], pch = 16, cex = 0.8, add = T)
-  #   plot(st_geometry(detectors$main.detector.sp),
-  #        col = myCol[detCounties], pch = 16, cex = 0.8, add = T)
-  #   plot(st_geometry(COUNTIES_AGGREGATED), add = TRUE)
-  #   plot(st_geometry(detectors$main.detector.sp[detCounties %in% 1, ]),
-  #        col = "red", pch = 16, cex = 0.8, add = T)
-  #   text(st_geometry(COUNTIES_AGGREGATED), labels = COUNTIES_AGGREGATED$id, col = "black")  
-  # }
   
   
   
@@ -509,6 +499,9 @@ makeRovquantData_wolverine <- function(
                           nrow = length(detCountries),
                           ncol = n.years)
   
+  ##-- Put into "nimble2SCR" format
+  detectors$detectors.df$countries <- detCountries
+  
   ##-- Add another category to detCountry if in Norrbotten, to turnoff detection to 0 there. 
   for(t in whichYearsNotSampled){
     detCountries[detCounties %in% 1,t] <- 3
@@ -519,18 +512,6 @@ makeRovquantData_wolverine <- function(
   for(t in whichYearsNotSampled){
     countryToggle[3,t] <- 0
   }
-  
-  ##-- Plot check 
-  # if(plot.check){
-  #   par(mfrow = c(1,1))
-  #   myCol <- c("blue4", "yellow1", "red")
-  #   plot( st_geometry(GLOBALMAP), col = "gray80", main = "Countries")
-  #   plot( st_geometry(myStudyArea),
-  #         col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  #   plot( st_geometry(detectors$main.detector.sp),
-  #         col = myCol[detCountries[,1]], pch = 16, cex = 0.8, add = T)
-  #   plot( st_geometry(COUNTRIES), add = TRUE)
-  # }
   
   
   
@@ -615,43 +596,7 @@ makeRovquantData_wolverine <- function(
     TRACKS.r[[t]][detectors$raster[] %in% 1] <- detTracks[ ,t]
     print(t)
   }#t
-  
-  
-  ##-- Plot check 
-  # if(plot.check){
-  #   max <- max(unlist(lapply(TRACKS.r, function(x) max(x[], na.rm = T))))
-  #   cuts <- seq(0, max,length.out = 100)   ## Set breaks
-  #   col <- rev(terrain.colors(100))
-  #   CountriesDetRes <- disaggregate(habitatRasters$Countries, fact = 2)
-  #   CountriesDetRes <- crop(CountriesDetRes, TRACKS.r[[1]])
-  #   country.colors <- c("goldenrod1","goldenrod3")
-  #   
-  #   pdf(file = file.path(working.dir, "figures/Tracks.pdf"))
-  #   NORTRACKS <- SWETRACKS <- 0
-  #   for(t in 1:n.years){
-  #     plot( TRACKS.r[[t]], main = years[t], breaks = cuts, col = col, legend = FALSE)
-  #     plot( st_geometry(habitat$habitat.poly), main = years[t], add = T)
-  #     plot( TRACKS.r[[t]],
-  #           legend.only = TRUE, breaks = cuts, col = col, legend.width = 2,
-  #           axis.args = list(at = round(seq(0, max, length.out = 5), digits = 1),
-  #                            labels = round(seq(0, max, length.out = 5), digits = 1),
-  #                            cex.axis = 0.6),
-  #           legend.args = list(text = '', side = 4, font = 2, line = 2.5, cex = 0.8))
-  #     ##-- Summary tracks
-  #     NORTRACKS[t] <- sum(TRACKS.r[[t]][CountriesDetRes[]%in% 2],na.rm = T )/1000
-  #     SWETRACKS[t] <- sum(TRACKS.r[[t]][CountriesDetRes[]%in% 4],na.rm = T )/1000
-  #   }#t
-  #   
-  #   years1 <- years + 1
-  #   plot(SWETRACKS ~ years1, col = country.colors[2],
-  #        lwd = 2, pch = 16, type = "b",
-  #        ylim = c(0,300000), ylab = "sum tracks km")
-  #   lines(NORTRACKS ~ years1, col = country.colors[1],
-  #         lwd = 2, pch = 16, type = "b")
-  #   legend("topright",c("N","S"), fill=country.colors)
-  #   dev.off()
-  # }
-  
+
   
   
   ## ------       2.2.4. EXTRACT DISTANCES TO ROADS ------
@@ -682,27 +627,16 @@ makeRovquantData_wolverine <- function(
                           fun = mean,
                           na.rm = T)
   detRoads[isna] <- tmp
-  
-  ##-- Plot check 
-  # if(plot.check){
-  #   par(mfrow = c(1,1))
-  #   plot( st_geometry(GLOBALMAP),
-  #         col = "gray80", main = "Distance to roads")
-  #   plot( st_geometry(myStudyArea),
-  #         col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add = T)
-  #   plot( st_geometry(COUNTRIES),
-  #         col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add = T)
-  #   plot( DistAllRoads, add = T)
-  #   plot( st_geometry(detectors$main.detector.sp),
-  #         cex = DoScale(detRoads), pch = 16, add = T)
-  # }
+
+  ##-- Put into "nimble2SCR" format
+  detectors$detectors.df$roads <- detRoads
   
   
   
   ## ------       2.2.5. EXTRACT DAYS OF SNOW ------
   
-  #[PD] NEW SNOW FILE FROM ASUN!
-  #SNOW <- stack(paste0(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
+  # [PD] NEW SNOW FILE FROM ASUN!
+  # SNOW <- stack(paste0(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
   SNOW <- stack(file.path(data.dir,"GIS/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
   
   ##-- RENAME THE LAYERS
@@ -723,12 +657,9 @@ makeRovquantData_wolverine <- function(
                           buffer = 15000, fun = mean, na.rm = T)
   detSnow[isna,1:n.years] <- tmp
   
-  ##-- Plot check
-  # if(plot.check){
-  #   plot( st_geometry(detectors$main.detector.sp),
-  #         cex = DoScale(detSnow[ ,6], l = 0, u = 0.5),
-  #         pch = 16)
-  # }
+  ##-- Put into "nimble2SCR" format
+  colnames(detSnow) <- paste0("snow.", years)
+  detectors$detectors.df <- cbind.data.frame(detectors$detectors.df, detSnow)
   
   
   
@@ -980,12 +911,13 @@ makeRovquantData_wolverine <- function(
   detOtherSamples <- matrix(0, nrow = n.detectors, ncol = n.years)
   detOtherSamples[ ,1:n.years] <- raster::extract( r.SkandObsRovbaseBinary,
                                                    detectors$main.detector.sp)
-  colSums(detOtherSamples)
+  colnames(detOtherSamples) <- paste0("detOtherSamples.", years)
+  detectors$detectors.df <- cbind.data.frame(detectors$detectors.df, detOtherSamples)
   
   
   
   ## ------       2.2.7. SCALE & ROUND DETECTOR-LEVEL COVARIATES ------
-  
+
   detSnow <- round(scale(detSnow), digits = 2)
   detRoads <- round(scale(detRoads), digits = 2)
   detTracks <- round(scale(detTracks), digits = 2)
@@ -993,54 +925,27 @@ makeRovquantData_wolverine <- function(
   detCovs <- array(NA, c(dim(detTracks)[1], dim(detTracks)[2], 2))
   detCovs[,,1] <- detTracks
   detCovs[,,2] <- detSnow
+  dimnames(detCovs) <- list( "detectors" = 1:n.detectors,
+                             "years" = years,
+                             "covariates" = c("tracks", "snow"))
   
   detCovsOth <- array(NA, c(dim(detTracks)[1],dim(detTracks)[2], 3))
   detCovsOth[,,1] <- detSnow
   detCovsOth[,,2] <- matrix(detRoads,length(detRoads),n.years)
   detCovsOth[,,3] <- detOtherSamples
+  dimnames(detCovsOth) <- list( "detectors" = 1:n.detectors,
+                                "years" = years,
+                                "covariates" = c("snow", "roads", "obs"))
   
-  ##-- Plot check
-  # if(plot.check){
-  #   tmp <- detectors$raster
-  #   par(mfrow=c(2,5),mar=c(0,0,0,0))
-  #   max <- max(detCovsOth[,,2])
-  #   cuts <- seq(0,max,length.out = 100) 
-  #   col <- rev(terrain.colors(100))
-  #   for(t in 1:n.years){
-  #     plot(detectors$raster, col=c(grey(0.2),grey(0.8)),axes=F,legend=F,box=F,)
-  #     tmp[!is.na(detectors$raster[ ])] <- detCovsOth[,t,2]
-  #     plot(tmp,axes=F,legend=F,box=F,breaks = cuts, col=col,add=T)
-  #   }
-  #   dev.off()
-  #   
-  #   pdf(file = file.path(working.dir, "figures/detections over space and time.pdf"))
-  #   for(t in 1:n.years){
-  #     ## NGS DETECTIONS TOTAL
-  #     tempTotal <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
-  #     NGS_TabTotal <- table(tempTotal$Country_sample)
-  #     ID_TabTotal <- apply(table(tempTotal$Id, tempTotal$Country_sample), 2, function(x) sum(x>0))
-  #     ## ALIVE DETECTIONS INSIDE STUDY AREA/SAMPLING PERIOD
-  #     tempIn <- myFullData.sp$alive[myFullData.sp$alive$Year == years[t], ]
-  #     NGS_TabIn <- table(tempIn$Country_sample)
-  #     ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sample), 2, function(x) sum(x>0))
-  #     ## PLOT NGS SAMPLES
-  #     plot(st_geometry(GLOBALMAP), col="gray80")
-  #     plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
-  #     plot(st_geometry(habitat$buffered.habitat.poly), col = rgb(34/250, 139/250, 34/250, alpha = 0.2), add=T)
-  #     points(tempTotal, pch = 21, bg = "darkred")
-  #     plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
-  #     ## ADD NUMBER OF NGS samples and IDs per COUNTRY
-  #     graphics::text(x = 100000, y = 7200000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="N"],"NGS"), cex = 1.1, col = "firebrick3", font = 2)
-  #     graphics::text(x = 100000, y = 7270000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)
-  #     graphics::text(x = 820000, y = 6780000, labels = paste(NGS_TabTotal[names(NGS_TabTotal)=="S"],"NGS"), cex = 1.1, col = "navyblue", font = 2)
-  #     graphics::text(x = 820000, y = 6850000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="S"], "IDs"), cex = 1.1, col = "navyblue", font = 2)
-  #     ## ADD OVERALL NUMBERS
-  #     mtext(text = years[t], side = 3, line = 1, cex = 1.5, font = 2)
-  #     mtext(text = paste(sum(NGS_TabIn), "NGS/", sum(ID_TabIn), "IDs IN"), side = 3, line = 0)
-  #     mtext(text = paste(sum(NGS_TabTotal)-sum(NGS_TabIn), "NGS/", sum(ID_TabTotal)-sum(ID_TabIn), "IDs OUT"), side = 3, line = -1)
-  #   }#t
-  #   dev.off()
-  # }
+  ##-- Store in the detector list                          
+  detectors$covariates <- detCovs
+  detectors$covariates.others <- detCovsOth
+  
+  ##-- Merge with the detector grid
+  detectors$grid <- dplyr::left_join(
+    x = detectors$grid,
+    y = detectors$detectors.df,
+    by = "id")
   
   
   

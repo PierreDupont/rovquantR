@@ -261,7 +261,7 @@ meanDist <- summarize( detDist,
 knitr::include_graphics(file.path(working.dir, "figures/NGS_TimeSeries.png"))
 ```
 
-A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. . These samples were associated with  `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. We did not include individuals with unknown sex in this analysis.
+A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. These samples were associated with  `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. We did not include individuals with unknown sex in this analysis.
 
 ```{r, ngs data1, echo = FALSE, collapse = TRUE}
 # NGSCountry_F <- NGSCountrySEX[-1,NGSCountrySEX[1, ]%in%c("F")]
@@ -376,18 +376,20 @@ numOther_M <- data.dead %>%
   filter(Sex == "male",
          !Legal) %>%
   nrow()
+
 ##-- legal
 numLegal <- data.dead %>% 
   filter(Legal) %>%
   nrow()
 numLegal_F <- data.dead %>% 
   filter(Sex == "female",
-         !Legal) %>%
+         Legal) %>%
   nrow()
 numLegal_M <- data.dead %>% 
   filter(Sex == "male",
-         !Legal) %>%
+         Legal) %>%
   nrow()
+
 ##-- Total
 numDead <- numLegal + numOther
 numDead_F <- numLegal_F + numOther_F
