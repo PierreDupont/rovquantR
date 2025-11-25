@@ -195,7 +195,7 @@ makeRovquantData_wolverine <- function(
                      resize.factor = resize.factor)
   
   ##-- Set up list of Data characteristics
-  data <- list( sex = sex,
+  DATA <- list( sex = sex,
                 aug.factor = aug.factor,
                 sampling.months = sampling.months)
   
@@ -223,7 +223,7 @@ makeRovquantData_wolverine <- function(
   
   ##-- Merge counties for practical reasons
   COUNTIES_AGGREGATED <- REGIONS %>%
-    mutate(id = case_when(
+    dplyr::mutate(id = case_when(
       county %in% c("Norrbotten") ~ 1,
       county %in% c("Västerbotten") ~ 2,
       county %in% c("Blekinge","Dalarna","Gävleborg","Gotland","Halland","Jämtland",
@@ -237,26 +237,22 @@ makeRovquantData_wolverine <- function(
       county %in% c("Finnmark") ~ 6,
       county %in% c("Nordland") ~ 7,
       county %in% c("Troms") ~ 8)) %>%
-    group_by(id) %>%
-    summarize() %>%
-    st_simplify( ., preserveTopology = T, dTolerance = 500)
+    dplyr::group_by(id) %>%
+    dplyr::summarize() %>%
+    sf::st_simplify( ., preserveTopology = T, dTolerance = 500)
   
   COUNTIES_AGGREGATED$id <- as.character(1:nrow(COUNTIES_AGGREGATED))
   
-  
-  
-  ## ------   2. STUDY AREA ------
-  
-  ##-- CREATE STUDY AREA POLYGON 
-  myStudyArea <- COUNTRIES %>%
-    filter(ISO %in% c("NOR","SWE")) %>%
-    mutate(id = 1) %>%
-    group_by(id) %>% 
-    summarize()
+  # ##-- CREATE STUDY AREA POLYGON 
+  # myStudyArea <- COUNTRIES %>%
+  #   filter(ISO %in% c("NOR","SWE")) %>%
+  #   mutate(id = 1) %>%
+  #   group_by(id) %>% 
+  #   summarize()
   
   
 
-  ## ------   3. NGS DATA -----
+  ## ------   2. NGS DATA -----
   
   ##-- Extract date from the last cleaned data file
   DATE <- getMostRecent( 
@@ -274,7 +270,7 @@ makeRovquantData_wolverine <- function(
     years <- sort(unique(c(myFullData.sp$alive$Year,
                            myFullData.sp$dead.recovery$Year)))
   }
-  data$years <- years
+  DATA$years <- years
   n.years <- length(years)
 
   ##-- list years with or without sampling in Norrbotten
@@ -311,9 +307,9 @@ makeRovquantData_wolverine <- function(
   ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
   studyArea <- myFullData.sp$alive %>%
     sf::st_buffer(., dist = habitat$buffer * 1.4) %>%
-    mutate(id = 1) %>%
-    group_by(id) %>% 
-    summarize() %>% 
+    dplyr::mutate(id = 1) %>%
+    dplyr::group_by(id) %>% 
+    dplyr::summarize() %>% 
     sf::st_intersection(., COUNTRIES) %>%
     sf::st_as_sf()
   
@@ -329,7 +325,7 @@ makeRovquantData_wolverine <- function(
   isHab <- habitat$habitat.r[] == 1
   n.habWindows <- habitat$n.habWindows <- sum(isHab)
   habitat$habitat.df <- cbind.data.frame(
-    "id" = 1:habitat$n.habWindows,
+    "id" = 1:n.habWindows,
     "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
     "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
   
@@ -337,18 +333,16 @@ makeRovquantData_wolverine <- function(
   habitat$grid <- sf::st_as_sf( stars::st_as_stars(habitat$habitat.r), 
                                 as_points = FALSE,
                                 merge = FALSE) %>%
-    filter( Habitat %in% 1) %>%
-    st_set_crs( .,value = sf::st_crs(habitat$buffered.habitat.poly)) %>%
-    mutate( id = 1:nrow(.),
-            x = st_coordinates(st_centroid(.))[ ,1],
-            y = st_coordinates(st_centroid(.))[ ,2]) 
-  
+    dplyr::filter( Habitat %in% 1) %>%
+    dplyr::mutate( id = 1:nrow(.)) %>%
+    sf::st_set_crs( .,value = sf::st_crs(habitat$buffered.habitat.poly))
+
   ##-- Study area grid from habitat raster
   habitat.rWthBufferPol <- sf::st_as_sf( 
     stars::st_as_stars(habitat$habitat.rWthBuffer), 
     as_points = FALSE,
     merge = TRUE) %>%
-    filter(Habitat %in% 1)
+    dplyr::filter(Habitat %in% 1)
   
   
 
@@ -361,9 +355,9 @@ makeRovquantData_wolverine <- function(
     path = data.dir,
     extension = ".csv",
     pattern = "DEN_COUNTS") %>%
-    st_as_sf(., coords = c("UTM33_X", "UTM33_Y")) %>%
-    st_set_crs(value = st_crs(myFullData.sp$alive)) %>%
-    mutate(id = 1)
+    sf::st_as_sf(., coords = c("UTM33_X", "UTM33_Y")) %>%
+    sf::st_set_crs(value = sf::st_crs(myFullData.sp$alive)) %>%
+    dplyr::mutate(id = 1)
   
   DEN.r <- raster::raster(
     adehabitatHR::estUDm2spixdf(
@@ -394,9 +388,9 @@ makeRovquantData_wolverine <- function(
   ## ------     2.1. GENERATE DETECTORS CHARACTERISTICS -----
   
   ##-- Generate NGS detectors based on the study area 
-  detectors$subdetectors.r <- disaggregate(
+  detectors$subdetectors.r <- raster::disaggregate(
     habitat$habitat.rWthBuffer,
-    fact = res(habitat$habitat.r)[1]/detectors$resolution.sub)
+    fact = raster::res(habitat$habitat.r)[1]/detectors$resolution.sub)
   
   ##-- Generate NGS detectors based on the raster of sub-detectors
   detectors <- makeSearchGrid( 
@@ -416,16 +410,14 @@ makeRovquantData_wolverine <- function(
   ##-- Generate detector raster 
   detectors$raster <- raster::rasterFromXYZ(
     cbind( detectors$detectors.df[ ,c("x","y")],
-           rep(1,nrow(detectors$main.detector.sp))))
+           Detector = rep(1,nrow(detectors$main.detector.sp))))
   
   ##-- Make a spatial grid from detector raster
   detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
     x = detectors$raster,
     fun = function(x){x>0})) %>%
-    sf::st_set_crs(.,value = st_crs(studyArea)) %>%
-    dplyr::mutate( id = 1:nrow(.),
-            x = st_coordinates(st_centroid(.))[ ,1],
-            y = st_coordinates(st_centroid(.))[ ,2]) 
+    sf::st_set_crs(.,value = sf::st_crs(studyArea)) %>%
+    dplyr::mutate( id = 1:nrow(.)) 
   
   ##-- Extract numbers of detectors
   n.detectors <- detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
@@ -438,29 +430,10 @@ makeRovquantData_wolverine <- function(
     sf::st_simplify( dTolerance = 500)
   
   ##-- Create an index of detectors in Norrbotten
-  distDetsCounties <- st_distance( detectors$main.detector.sp,
+  distDetsCounties <- sf::st_distance( detectors$main.detector.sp,
                                    COUNTIESAroundNorrbotten,
                                    byid = T)
   detsNorrbotten <- which(apply(distDetsCounties, 1, which.min) == 3)
-  
-  ##-- Plot check
-  # if(plot.check){
-  #   ##-- Plot detectors in Norrbotten
-  #   plot( st_geometry(COUNTIESAroundNorrbotten))
-  #   plot( st_geometry(detectors$main.detector.sp),
-  #         col = "black", pch = 16, cex = 0.3, add = T)
-  #   plot( st_geometry(detectors$main.detector.sp[detsNorrbotten, ]),
-  #         col = "red", pch = 16, cex = 0.5, add = T)
-  #   ##-- Plot NGS detectors
-  #   plot( st_geometry(habitat$buffered.habitat.poly),
-  #         main = paste(detectors$n.detectors, "Detectors"),
-  #         col = rgb(0.16,0.67,0.16, alpha = 0.3))  
-  #   plot( st_geometry(studyArea), add = TRUE,
-  #         col = rgb(0.16,0.67,0.16, alpha = 0.5))
-  #   plot( st_geometry(detectors$main.detector.sp),
-  #         col = "red", pch = 16, cex = 0.1, add = TRUE)
-  #   plot( st_geometry(COUNTRIES), add = TRUE)
-  # }
   
   
   
@@ -470,7 +443,7 @@ makeRovquantData_wolverine <- function(
   
   ##-- Extract closest county for each detector
   detCounties <- detectors$main.detector.sp %>%
-    st_distance(., COUNTIES_AGGREGATED, by_element = F) %>%
+    sf::st_distance(., COUNTIES_AGGREGATED, by_element = F) %>%
     apply(., 1, function(x) which.min(x))
   
   ##-- Put into "nimble2SCR" shape
@@ -489,7 +462,7 @@ makeRovquantData_wolverine <- function(
   
   ##-- Extract closest country for each detector
   detCountries <- detectors$main.detector.sp %>%
-    st_distance(., COUNTRIES, by_element = F) %>%
+    sf::st_distance(., COUNTRIES, by_element = F) %>%
     apply(., 1, function(x) which.min(x)) %>%
     as.factor(.) %>%
     as.numeric(.)
@@ -527,20 +500,20 @@ makeRovquantData_wolverine <- function(
   
   ##-- Combine all GPS tracks
   TRACKS <- rbind(
-    read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
-    read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>%
+    sf::read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
+    sf::read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>%
     ##-- Process dates
-    mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
-            Mth = as.numeric(format(Dato,"%m")),
-            Yr = as.numeric(format(Dato,"%Y")),
-            Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
+    dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
+                   Mth = as.numeric(format(Dato,"%m")),
+                   Yr = as.numeric(format(Dato,"%Y")),
+                   Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
     ##-- Filter out irrelevant tracks
-    filter( Helikopter == "0",      ## Remove helicopter tracks
-            Jerv == "1",            ## Keep Wolverine tracks only
-            Year %in% years & Mth %in% unlist(sampling.months)) %>% ## Keep tracks during sampling season only
+    dplyr::filter( Helikopter == "0",      ## Remove helicopter tracks
+                   Jerv == "1",            ## Keep Wolverine tracks only
+                   Year %in% years & Mth %in% unlist(sampling.months)) %>% ## Keep tracks during sampling season only
     ##-- Extract track lengths & centroids
-    mutate( Length = st_length(., byid = T),
-            Centroidx = st_coordinates(st_centroid(.))[ ,1]) 
+    dplyr::mutate( Length = sf::st_length(., byid = T),
+                   Centroidx = sf::st_coordinates(sf::st_centroid(.))[ ,1]) 
   
   ##-- Find & filter out duplicates based on person, distance and date.
   df <- data.frame( Dato = TRACKS$Dato,
@@ -589,8 +562,8 @@ makeRovquantData_wolverine <- function(
       sf::st_intersection(detectors$grid, .) %>%
       dplyr::mutate(LEN = st_length(.)) %>%
       sf::st_drop_geometry() %>%
-      group_by(id) %>%
-      summarise(transect_L = sum(LEN)) ##-- Get total length searched in each detector grid cell
+      dplyr::group_by(id) %>%
+      dplyr::summarise(transect_L = sum(LEN)) ##-- Get total length searched in each detector grid cell
     detTracks[intersection$id,t] <- as.numeric(intersection$transect_L)
     TRACKS.r[[t]] <- detectors$raster
     TRACKS.r[[t]][detectors$raster[] %in% 1] <- detTracks[ ,t]
@@ -608,7 +581,7 @@ makeRovquantData_wolverine <- function(
   r <- fasterize::fasterize(sf::st_as_sf(COUNTRIES), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
-  DistAllRoads <- crop(DistAllRoads, myStudyArea)
+  DistAllRoads <- raster::crop(DistAllRoads, studyArea)
   rm(list = c("r"))
   
   ##-- AGGREGATE TO MATCH THE DETECTORS RESOLUTION
@@ -758,7 +731,7 @@ makeRovquantData_wolverine <- function(
   
   ## ------         2.2.6.3. COMBINE ROVBASE & SKANDOBS ------
   
-  ##-- Rastertize at the detector level
+  ##-- Rasterize at the detector level
   r.list <- lapply(years, function(y){
     ##-- Rasterize Skandobs observations 
     sk.r <- raster::rasterize(
@@ -815,7 +788,7 @@ makeRovquantData_wolverine <- function(
   #   ##-- Maps
   #   par(mar = c(0,0,2,0))
   #   for(t in 1:n.years){
-  #     plot( st_geometry(myStudyArea), main = years[t])
+  #     plot( st_geometry(studyArea), main = years[t])
   #     plot( st_geometry(skandObs[skandObs$monitoring.season %in% years[t], ]),
   #           pch = 16, col = "red", cex = 0.1, add = T)
   #   }
@@ -1123,7 +1096,7 @@ makeRovquantData_wolverine <- function(
   #       filter( Year %in% years[t],
   #               !is.na(trackID),
   #               trackDist <= 500)
-  #     plot( st_geometry(myStudyArea), col = "gray60", main = "Structured with track")
+  #     plot( st_geometry(studyArea), col = "gray60", main = "Structured with track")
   #     plot( st_geometry(tmpTracks),
   #           pch = 21, col = "black",
   #           cex = 1, bg = "red", add = T)
@@ -1132,7 +1105,7 @@ makeRovquantData_wolverine <- function(
   #     tmpNoTracks <- tmp %>%
   #       filter( Year %in% years[t],
   #               is.na(trackID) | trackDist > 500)
-  #     plot( st_geometry(myStudyArea), col = "gray60", main = "Structured without track")
+  #     plot( st_geometry(studyArea), col = "gray60", main = "Structured without track")
   #     plot( st_geometry(tmpNoTracks),
   #           pch = 21, col = "black",
   #           cex = 1, bg = "blue", add = T)
@@ -1141,7 +1114,7 @@ makeRovquantData_wolverine <- function(
   #     tmpOpp <- data.alive %>%
   #       filter(!Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),
   #              Year%in% years[t])
-  #     plot( st_geometry(myStudyArea), col = "gray60", main = "Other samples")
+  #     plot( st_geometry(studyArea), col = "gray60", main = "Other samples")
   #     plot( st_geometry(tmpOpp),
   #           pch = 21, col = "black",
   #           cex = 1, bg = "green", add = T)
@@ -1157,7 +1130,7 @@ makeRovquantData_wolverine <- function(
   #   ##-- plot check
   #   pdf( file = file.path(working.dir, "figures/OverallDetectionsDeadRecoveries.pdf"))
   #   plot( st_geometry(GLOBALMAP))
-  #   plot( st_geometry(myStudyArea), add = T)
+  #   plot( st_geometry(studyArea), add = T)
   #   plot( st_geometry(myFullData.sp$alive),
   #         pch = 16, col = "red", cex = 0.3, add = T)
   #   plot( st_geometry(myFullData.sp$dead.recovery),
@@ -1198,7 +1171,7 @@ makeRovquantData_wolverine <- function(
   #   #   ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sf), 2, function(x) sum(x>0))
   #   #   ## PLOT NGS SAMPLES
   #   #   plot(st_geometry(GLOBALMAP), col="gray80")
-  #   #   plot(st_geometry(myStudyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
+  #   #   plot(st_geometry(studyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
   #   #   plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
   #   #   ## ADD NUMBER OF NGS samples and IDs per COUNTRY
   #   #   graphics::text(x = 100000, y = 7250000, labels = paste(ID_TabTotal[names(NGS_TabTotal)=="N"], "IDs"), cex = 1.1, col = "firebrick3", font = 2)

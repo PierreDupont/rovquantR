@@ -122,7 +122,7 @@ load(file.path( working.dir, "data",
                 paste0("Detectors_", engSpecies, "_", date, ".RData")))
 
 ##-- Identify number of detector covariates
-covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Habitat","id", "x","y","geometry")]
+covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Detector","id", "x","y","geometry")]
 L <- length(covNames)
 ```
 
@@ -136,14 +136,14 @@ In order to better capture the variation in detection probability throughout the
 
 ```{r, det grid, echo = FALSE, fig.align = "center", fig.cap = "Figure 2: Detector characteristics"}
 if(length(covNames) <= 0){
-  mapview( x = detectors$grid[ ,"Habitat"],
+  mapview( x = detectors$grid[ ,"id"],
            legend = FALSE,
            layer.name =  "Main detectors",        
            map.types = c( "OpenStreetMap.DE",
                           "OpenTopoMap",
                           "Esri.WorldShadedRelief")) 
 } else {
-  mapview( x = detectors$grid[ ,"Habitat"],
+  mapview( x = detectors$grid[ ,"id"],
            legend = FALSE,
            layer.name =  "Main detectors",        
            map.types = c( "OpenStreetMap.DE",

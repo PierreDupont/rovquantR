@@ -49,7 +49,7 @@ NULL
 #' @rdname makeRovquantData_bear
 #' @export
 makeRovquantData_bear <- function(
-    ##-- paths
+  ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
   
@@ -235,7 +235,6 @@ makeRovquantData_bear <- function(
   
   ##-- Put into "nimble2SCR" format
   habitat$habitat.df <- cbind.data.frame( habitat$habitat.df,
-                                          #"dead.reco" = habDens1,
                                           "dead.reco.trunc" = habDens2)
   
   
@@ -335,21 +334,22 @@ makeRovquantData_bear <- function(
   ##-- Extract numbers of detectors
   n.detectors <- detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
   
-  ##-- Format detector locations & number of trials per detector
-  n.trials <- as.vector(table(detectors$detector.sp$main.cell.id))
-  detectors$detectors.df <- cbind.data.frame(
-    "id" = 1:detectors$n.detectors,
-    "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
-    "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
-    "size" = n.trials)
-  
   ##-- make a spatial grid from polygon
   detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
     x = raster::aggregate( x = subdetectors.r,
                            fact = detectors$resolution/detectors$resolution.sub),
     fun = function(x){x>0})) %>%
-    mutate(id = 1:nrow(.))
+    mutate( id = 1:nrow(.)) %>%
+    rename( "Detector" = Habitat)
   
+  ##-- Format detector locations & number of trials per detector
+  n.trials <- as.vector(table(detectors$detector.sp$main.cell.id))
+  detectors$detectors.df <- cbind.data.frame(
+    "id" = 1:n.detectors,
+    "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
+    "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
+    "size" = n.trials)
+
   
   
   ## ------     2.2. GENERATE DETECTOR-LEVEL COVARIATES -----
@@ -568,7 +568,7 @@ makeRovquantData_bear <- function(
   ## ------       2.2.5. PLOTS -----
   
   ##-- Plot Carnivore observations maps
-  pdf(file = file.path(working.dir, "figures", "CarnivoreObs.pdf"),
+  pdf(file = file.path(working.dir, "figures/CarnivoreObs.pdf"),
       width = 18, height = 12)
   ##-- layout
   mx <- rbind(c(1,rep(1:5, each = 2)),
@@ -629,13 +629,6 @@ makeRovquantData_bear <- function(
   
   
   ## ------   4. CREATE LOCAL OBJECTS -----
-  
-  # ##-- Get local habitat windows
-  # habitat$localObjects <- getLocalObjects(
-  #   habitatMask = habitat$habitat.mx,
-  #   coords = habitat$scaledCoords,
-  #   dmax = habitat$maxDist/habitat$resolution,
-  #   plot.check = F)
   
   ##-- Get local detectors
   detectors$localObjects <- getLocalObjects(
@@ -1294,10 +1287,11 @@ makeRovquantData_bear <- function(
   
   
   ## ------   8. RETURN IMPORTANT INFOS FOR REPORT ------
-  return(list( SPECIES = "Brown bear",
+  out <- list( SPECIES = "Brown bear",
                engSpecies = "bear",
                YEARS = years,
                SEX = sex,
-               DATE = DATE))
+               DATE = DATE)
+  return(out)
 }
 
