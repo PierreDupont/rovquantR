@@ -122,7 +122,7 @@ makeRovquantData_bear <- function(
   
   ##-- Merge Norwegian counties for practical reasons
   COUNTIES <- COUNTIES %>%
-    mutate(id = case_when(
+    mutate(county = case_when(
       county %in% c("Trøndelag", "Nordland") ~ "Trøndelag",
       county %in% c("Troms", "Finnmark") ~ "Finnmark",
       county %in% c("Akershus","Agder", "Buskerud",
@@ -130,8 +130,8 @@ makeRovquantData_bear <- function(
                     "Møre og Romsdal","Oslo", "Oppland",
                     "Rogaland", "Vestland","Telemark",
                     "Vestfold","Østfold") ~ "Innlandet")) %>%
-    dplyr::filter( , id %in% c("Trøndelag","Innlandet","Finnmark")) %>%
-    dplyr::group_by(id) %>%
+    dplyr::filter( , county %in% c("Trøndelag","Innlandet","Finnmark")) %>%
+    dplyr::group_by(county) %>%
     dplyr::summarise() 
   
   COUNTIES$id <- as.character(1:nrow(COUNTIES))
