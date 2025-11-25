@@ -1229,9 +1229,6 @@ processRovquantOutput_wolverine <- function(
     }#if
   }#t
   dev.off()
-  
-  
-  
   # ##-- Plot Carnivore observations maps
   # pdf(file = file.path(working.dir, "figures", paste0("CarnivoreObs_maps_classic.pdf")),
   #     width = 18, height = 12)
@@ -1273,579 +1270,143 @@ processRovquantOutput_wolverine <- function(
   
   gc()
   
-  ## ------   5.1. ABUNDANCE -----
+  ## ------   5.1. ABUNDANCE ------
   
-  ## ------     5.1.1. ALL YEARS, BOTH SEX, PER REGION -----
+  ##-- Set-up names for tables
   
-  idregion <- row.names(ACdensity[[1]]$summary)
+  regionNames_NOR <- sort(row.names(ACdensity[[t]]$summary)[grep("Region",row.names(ACdensity[[t]]$summary))])
+  countyNames_NOR <- sort(unique(factorValues(rrCounties, rrCounties[rrRegions[] > 3], layer = 1)[,1]))
+  countyNames_North <- sort(unique(factorValues(rrCounties, rrCounties[rrRegions[] %in% 1], layer=1)[,1]))
+  countyNames_Middle <- sort(unique(factorValues(rrCounties, rrCounties[rrRegions[] %in% 2], layer=1)[,1]))
+  countyNames_South <- sort(unique(factorValues(rrCounties, rrCounties[rrRegions[] %in% 3], layer=1)[,1]))
   
-  ##-- Remove Finland, Norway, Russia, Sweden
-  idregion <- idregion[-which(idregion %in% c("Finland","Norway","Russia","Sweden","Total"))]
-  idregion <- sort(unique(idregion))
+  rownames_Table <- c("Total",
+                      "Norway", regionNames_NOR,
+                      "Sweden",
+                      "Nordre", countyNames_North,
+                      "Midtre", countyNames_Middle,
+                      "Söndre", countyNames_South)
   
-  ##-- Get names of Norwegian carnivore regions
-  idregionNOR <- idregion[grep("Region",idregion)]
-  idregionTable <- c(idregionNOR, "Total")
   
-  ##-- Create table to store N estimates (and CI)
-  NCarRegionEstimates <- NCountyMean <- matrix("", ncol = n.years, nrow = length(idregionTable))
-  row.names(NCarRegionEstimates) <- row.names(NCountyMean) <- c(idregionTable)
-  colnames(NCarRegionEstimates) <- colnames(NCountyMean) <- years
+  ##-- Fix names for .tex table and add grey color for Norrbotten
+  countyNames_North_tex <- countyNames_North
+  countyNames_North_tex[countyNames_North_tex %in% "Norrbotten"] <- "\\textcolor[gray]{.5}{Norrbotten}"
   
-  ##-- Fill-in the table
+  rownames_Table_tex1 <- c("TOTAL",
+                           "\\hspace{0.25cm}NORWAY",
+                           paste0("\\hspace{0.5cm}", regionNames_NOR),
+                           "\\hspace{0.25cm}SWEDEN",
+                           "\\hspace{0.5cm}Norra",
+                           paste0("\\hspace{0.75cm}", countyNames_North),
+                           "\\hspace{0.5cm}Mellersta",
+                           paste0("\\hspace{0.75cm}", countyNames_Middle),
+                           "\\hspace{0.5cm}Södra",
+                           paste0("\\hspace{0.75cm}", countyNames_South))
+  
+  rownames_Table_tex2 <- c("TOTAL",
+                           "\\hspace{0.25cm}NORWAY",
+                           paste0("\\hspace{0.5cm}", regionNames_NOR),
+                           "\\hspace{0.25cm}SWEDEN",
+                           "\\hspace{0.5cm}Norra",
+                           paste0("\\hspace{0.75cm}", countyNames_North_tex),
+                           "\\hspace{0.5cm}Mellersta",
+                           paste0("\\hspace{0.75cm}", countyNames_Middle),
+                           "\\hspace{0.5cm}Södra",
+                           paste0("\\hspace{0.75cm}", countyNames_South))
+  
+  
+  
+  ## ------     5.1.1. ALL YEARS, BOTH SEX COMBINED ------
+  
+  ##-- Create table to store abundance & CI
+  NCarRegionEstimates <- matrix("", ncol = n.years, nrow = length(rownames_Table))
+  row.names(NCarRegionEstimates) <- rownames_Table
+  colnames(NCarRegionEstimates) <- unlist(lapply(YEARS ,function(x) x[2]))
+  
+  ##-- Fill in the table 
   for(t in 1:n.years){
-    for(i in 1:length(idregionTable)){
-      NCarRegionEstimates[idregionTable[i],t] <-
-        paste0(round(ACdensity[[t]]$summary[idregionTable[i],"mean"],digits = 1), " (",
-               round(ACdensity[[t]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
-               round(ACdensity[[t]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
-      
-      NCountyMean[idregionTable[i],t] <- round(ACdensity[[t]]$summary[idregionTable[i],"mean"])
-    }#i
+    NCarRegionEstimates[rownames_Table,t] <- paste0(
+      round(ACdensity[[t]]$summary[rownames_Table,"mean"],digits = 1)," (",
+      round(ACdensity[[t]]$summary[rownames_Table,"95%CILow"],digits = 0),"-",
+      round(ACdensity[[t]]$summary[rownames_Table,"95%CIHigh"],digits = 0),")")
   }#t
   
-  ##-- Adjust names
-  idregion1 <- idregionTable
-  idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
-  row.names(NCarRegionEstimates) <- idregion1
-  
-  ##-- print .csv
-  write.csv(NCarRegionEstimates,
-            file = file.path(working.dir, "tables/N_AllYears_region.csv"))
-  
-  ##-- print .tex
-  row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
-  print(xtable::xtable( NCarRegionEstimates,
-                        type = "latex",
-                        align = paste(c("l",rep("c",ncol(NCarRegionEstimates))), collapse = "")),
-        floating = FALSE,
-        sanitize.text.function = function(x){x},
-        add.to.row = list(list(seq(1, nrow(NCarRegionEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables/N_AllYears_region.tex"))
-  
-  
-  
-  
-  ## ------     5.1.2. LAST YEAR, PER SEX, PER REGION -----
-  
-  NCarRegionEstimatesLast <- matrix("", ncol = 3, nrow = length(idregionTable))
-  row.names(NCarRegionEstimatesLast) <- c(idregionTable)
-  colnames(NCarRegionEstimatesLast) <- c("Females","Males","Total")
-  
-  for(i in 1:length(idregionTable)){
-    ##-- FEMALES
-    NCarRegionEstimatesLast[idregionTable[i],"Females"] <-
-      paste0(round(ACdensityF[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
-             round(ACdensityF[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
-             round(ACdensityF[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
-    
-    ##-- MALES
-    NCarRegionEstimatesLast[idregionTable[i],"Males"] <-
-      paste0(round(ACdensityM[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
-             round(ACdensityM[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
-             round(ACdensityM[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
-    
-    ##-- BOTH SEXES
-    NCarRegionEstimatesLast[idregionTable[i],"Total"] <-
-      paste0(round(ACdensity[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
-             round(ACdensity[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
-             round(ACdensity[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
-  }#i
-  
-  ##-- ADJUST NAMES
-  idregion1 <- idregionTable
-  idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
-  row.names(NCarRegionEstimates) <- idregion1
-  
-  ##-- print .csv
-  write.csv( NCarRegionEstimatesLast,
-             file = file.path(working.dir, "tables/N_LastYearPerSex_region.csv"))
-  
-  ##-- print .tex
-  row.names(NCarRegionEstimatesLast) <- c(paste0("\\hspace{0.1cm} ",idregionNOR),"TOTAL")
-  print(xtable::xtable(NCarRegionEstimatesLast, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCarRegionEstimatesLast))), collapse = "")),
-        sanitize.text.function=function(x){x},
-        floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_LastYearPerSex_region.tex"))
-  
-  
-  
-  ##-- UD-Density
-  NCarRegionEstimatesLast_UD <- matrix("", ncol = 3, nrow = length(idregionTable))
-  row.names(NCarRegionEstimatesLast_UD) <- c(idregionTable)
-  colnames(NCarRegionEstimatesLast_UD) <- c("Females","Males","Total")
-  
-  for(i in 1:length(idregionTable)){
-    ##-- FEMALES
-    NCarRegionEstimatesLast_UD[idregionTable[i],"Females"] <-
-      paste0(round(UDdensityF[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
-             round(UDdensityF[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
-             round(UDdensityF[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
-    
-    ##-- MALES
-    NCarRegionEstimatesLast_UD[idregionTable[i],"Males"] <-
-      paste0(round(UDdensityM[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
-             round(UDdensityM[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
-             round(UDdensityM[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
-    
-    ##-- BOTH SEXES
-    NCarRegionEstimatesLast_UD[idregionTable[i],"Total"] <-
-      paste0(round(UDdensity[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
-             round(UDdensity[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
-             round(UDdensity[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
-  }#i
-  
-  ##-- ADJUST NAMES
-  idregion1 <- idregionTable
-  idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
-  row.names(NCarRegionEstimates) <- idregion1
-  
-  ##-- print .csv
-  write.csv( NCarRegionEstimatesLast_UD,
-             file = file.path(working.dir, "tables/N_LastYearPerSex_region_UD.csv"))
-  
-  ##-- print .tex
-  row.names(NCarRegionEstimatesLast_UD) <- c(paste0("\\hspace{0.1cm} ",idregionNOR),"TOTAL")
-  print(xtable::xtable(NCarRegionEstimatesLast_UD, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCarRegionEstimatesLast_UD))), collapse = "")),
-        sanitize.text.function=function(x){x},
-        floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast_UD),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_LastYearPerSex_region_UD.tex"))
-  
-  
-  
-  ## ------     5.1.3. ALL YEARS, PER SEX, PER REGION ------
-  
-  NCarRegionEstimatesAllSex <- matrix("", ncol = n.years*3, nrow = length(idregionTable)+1)
-  row.names(NCarRegionEstimatesAllSex) <- c("", idregionTable)
-  colnames(NCarRegionEstimatesAllSex) <- rep(years, each = 3)
-  NCarRegionEstimatesAllSex[1, ] <- rep(c("Females","Males","Total"), n.years)
-  
-  ##-- Fill-in table
-  for(t in 1:n.years){
-    cols <- which(colnames(NCarRegionEstimatesAllSex) %in% years[t])
-    for( i in 1:length(idregionTable)){
-      ##-- FEMALES
-      colss <- which(NCarRegionEstimatesAllSex[1,cols] %in% "Females")
-      NCarRegionEstimatesAllSex[idregionTable[i],cols[colss]] <-
-        paste(round(ACdensityF[[t]]$summary[idregionTable[i],"mean"],digits = 1)," (",
-              round(ACdensityF[[t]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
-              round(ACdensityF[[t]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")",sep="")
-      
-      ##-- MALES
-      colss <-  which(NCarRegionEstimatesAllSex[1,cols] %in% "Males")
-      NCarRegionEstimatesAllSex[idregionTable[i],cols[colss]] <-
-        paste(round(ACdensityM[[t]]$summary[idregionTable[i],"mean"],digits = 1)," (",
-              round(ACdensityM[[t]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
-              round(ACdensityM[[t]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")",sep="")
-      
-      ##-- TOTAL
-      colss <-  which(NCarRegionEstimatesAllSex[1,cols] %in% "Total")
-      NCarRegionEstimatesAllSex[idregionTable[i],cols[colss]] <-
-        paste(round(ACdensity[[t]]$summary[idregionTable[i],"mean"],digits = 1)," (",
-              round(ACdensity[[t]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
-              round(ACdensity[[t]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")",sep="")
-    }#i
-  }#t
-  
-  ##-- ADJUST NAMES
-  idregion1 <- idregionTable
-  idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
-  row.names(NCarRegionEstimatesAllSex) <- c("", idregion1)
-  
-  ##-- print .csv
-  write.csv(NCarRegionEstimatesAllSex,
-            file = file.path(working.dir, "tables/N_AllYearsPerSex_region.csv"))
-  
-  
-  ##-- print .tex
-  row.names(NCarRegionEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
-  
-  print(xtable::xtable(NCarRegionEstimatesAllSex, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCarRegionEstimatesAllSex))),collapse = "")),
-        sanitize.text.function = function(x){x},
-        floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_AllYearsPerSex_region.tex"))
-  
-  
-  
-  ## ------     5.1.4. ALL YEARS, BOTH SEX, PER COUNTY -----
-  
-  idcounty <- row.names(ACdensity[[1]]$summary)
-  
-  ##-- Remove Finland, Norway, Russia, Sweden
-  idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
-  idcounty <- sort(unique(idcounty))
-  
-  ##-- Get names of Norwegian counties
-  idcountyNOR <- idcounty[-grep("Region",idcounty)]
-  idcountyTable <- c(idcountyNOR, "Total")
-  
-  ##-- Create table to store N estimates (and CI)
-  NCountyEstimates <- NCountyMean <- matrix("", ncol = n.years, nrow = length(idcountyTable))
-  row.names(NCountyEstimates) <- row.names(NCountyMean) <- c(idcountyTable)
-  colnames(NCountyEstimates) <- colnames(NCountyMean) <- years
-  
-  ##-- Fill-in the table
-  for(t in 1:n.years){
-    for(i in 1:length(idcountyTable)){
-      NCountyEstimates[idcountyTable[i],t] <-
-        paste0(round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1), " (",
-               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-               round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-      
-      NCountyMean[idcountyTable[i],t] <- round(ACdensity[[t]]$summary[idcountyTable[i],"mean"])
-    }#i
-  }#t
-  
-  ##-- Adjust names
-  idcounty1 <- idcountyTable
-  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  row.names(NCountyEstimates) <- idcounty1
-  
-  ##-- print .csv
-  write.csv(NCountyEstimates,
-            file = file.path(working.dir, "tables/N_AllYears_county.csv"))
-  
-  ##-- print .tex
-  row.names(NCountyEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
-  print(xtable::xtable( NCountyEstimates,
-                        type = "latex",
-                        align = paste(c("l",rep("c",ncol(NCountyEstimates))),collapse = "")),
-        floating = FALSE,
-        sanitize.text.function = function(x){x},
-        add.to.row = list(list(seq(1, nrow(NCountyEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables/N_AllYears_county.tex"))
-  
-  
-  
-  ## ------     5.1.5. LAST YEAR, PER SEX, PER COUNTY -----
-  
-  ##-- AC-Density
-  NCountyEstimatesLastRegions <- matrix("", ncol = 3, nrow = length(idcountyTable))
-  row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
-  colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total")
-  
-  for(i in 1:length(idcountyTable)){
-    ##-- FEMALES
-    NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <-
-      paste0(round(ACdensityF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    
-    ##-- MALES
-    NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <-
-      paste0(round(ACdensityM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    
-    ##-- BOTH SEXES
-    NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <-
-      paste0(round(ACdensity[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-             round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-             round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  }#i
-  
-  ##-- ADJUST NAMES
-  idcounty1 <- idcountyTable
-  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  row.names(NCountyEstimates) <- idcounty1
-  
-  ##-- print .csv
-  write.csv( NCountyEstimatesLastRegions,
-             file = file.path(working.dir, "tables/N_LastYearPerSex_county.csv"))
-  
-  ##-- print .tex
-  row.names(NCountyEstimatesLastRegions) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
-  print(xtable::xtable(NCountyEstimatesLastRegions, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions))), collapse = "")),
-        sanitize.text.function=function(x){x},
-        floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_LastYearPerSex_county.tex"))
-  
-  
-  # ##-- UD-Density
-  # NCountyEstimatesLastRegions_UD <- matrix("", ncol = 3, nrow = length(idcountyTable))
-  # row.names(NCountyEstimatesLastRegions_UD) <- c(idcountyTable)
-  # colnames(NCountyEstimatesLastRegions_UD) <- c("Females","Males","Total")
-  # 
-  # for(i in 1:length(idcountyTable)){
-  #   ##-- FEMALES
-  #   NCountyEstimatesLastRegions_UD[idcountyTable[i],"Females"] <-
-  #     paste0(round(UDdensityF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-  #            round(UDdensityF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-  #            round(UDdensityF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  #   
-  #   ##-- MALES
-  #   NCountyEstimatesLastRegions_UD[idcountyTable[i],"Males"] <-
-  #     paste0(round(UDdensityM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-  #            round(UDdensityM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-  #            round(UDdensityM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  #   
-  #   ##-- BOTH SEXES
-  #   NCountyEstimatesLastRegions_UD[idcountyTable[i],"Total"] <-
-  #     paste0(round(UDdensity[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-  #            round(UDdensity[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-  #            round(UDdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  # }#i
-  # 
-  # ##-- ADJUST NAMES
-  # idcounty1 <- idcountyTable
-  # idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  # row.names(NCountyEstimates) <- idcounty1
-  # 
-  # ##-- print .csv
-  # write.csv( NCountyEstimatesLastRegions_UD,
-  #            file = file.path(working.dir, "tables/N_LastYearPerSex_county_UD.csv"))
-  # 
-  # ##-- print .tex
-  # row.names(NCountyEstimatesLastRegions_UD) <- c(paste0("\\hspace{0.1cm} ",idcountyNOR),"TOTAL")
-  # print(xtable::xtable(NCountyEstimatesLastRegions_UD, type = "latex",
-  #                      align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions_UD))), collapse = "")),
-  #       sanitize.text.function=function(x){x},
-  #       floating = FALSE,
-  #       add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions_UD),by=2)),"\\rowcolor[gray]{.95} "),
-  #       file = file.path(working.dir, "tables/N_LastYearPerSex_county_UD.tex"))
-  
-  
-  
-  ## ------     5.1.6. ALL YEARS, PER SEX, PER COUNTY ------
-  
-  NCountyEstimatesAllSex <- matrix("", ncol = n.years*3, nrow = length(idcountyTable)+1)
-  row.names(NCountyEstimatesAllSex) <- c("", idcountyTable)
-  colnames(NCountyEstimatesAllSex) <- rep(years, each = 3)
-  NCountyEstimatesAllSex[1, ] <- rep(c("Females","Males","Total"), n.years)
-  
-  ##-- Fill-in table
-  for(t in 1:n.years){
-    cols <- which(colnames(NCountyEstimatesAllSex) %in% years[t])
-    for( i in 1:length(idcountyTable)){
-      ##-- FEMALES
-      colss <- which(NCountyEstimatesAllSex[1,cols] %in% "Females")
-      NCountyEstimatesAllSex[idcountyTable[i],cols[colss]] <-
-        paste(round(ACdensityF[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-              round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-              round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
-      
-      ##-- MALES
-      colss <- which(NCountyEstimatesAllSex[1,cols] %in% "Males")
-      NCountyEstimatesAllSex[idcountyTable[i],cols[colss]] <-
-        paste(round(ACdensityM[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-              round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-              round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
-      
-      ##-- TOTAL
-      colss <- which(NCountyEstimatesAllSex[1,cols] %in% "Total")
-      NCountyEstimatesAllSex[idcountyTable[i],cols[colss]] <-
-        paste(round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1)," (",
-              round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-              round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
-    }#i
-  }#t
-  
-  ##-- ADJUST NAMES
-  idcounty1 <- idcountyTable
-  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  row.names(NCountyEstimatesAllSex) <- c("", idcounty1)
-  
-  ##-- print .csv
-  write.csv(NCountyEstimatesAllSex,
-            file = file.path(working.dir, "tables/N_AllYearsPerSex_county.csv"))
-  
-  ##-- print .tex
-  row.names(NCountyEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
-  
-  print(xtable::xtable(NCountyEstimatesAllSex, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSex))),collapse = "")),
-        sanitize.text.function = function(x){x},
-        floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_AllYearsPerSex_county.tex"))
-  
-  
-  
-  
-  ## ------         2.1.6.1. ALL YEARS, BOTH SEX ------
-  
-  idcounty <- row.names(ACdensity[[t]]$summary)
-  
-  ##-- REMOVE Finland, Norway, Russia, Sweden 
-  idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
-  ##-- GET NORWEGIAN VERSUS SWEDISH COUNTIES 
-  idcountyNOR <- idcounty[grep("Region",idcounty)]
-  idcountySWE <- sort(idcounty[-grep("Region",idcounty)])
-  idcountyTable <- c("Total","Norway", idcountyNOR, "Sweden" ,idcountySWE)
-  
-  CountyNorth <- unique(factorValues(rrRegions, rrRegions[rrRegionsSwe[] %in% 1], layer=1)[,1])
-  CountyMiddle <- unique(factorValues(rrRegions, rrRegions[rrRegionsSwe[] %in% 2], layer=1)[,1])
-  CountySouth <- unique(factorValues(rrRegions, rrRegions[rrRegionsSwe[] %in% 3], layer=1)[,1])
-  
-  idcountyTable <- c("Total","Norway",
-                     idcountyNOR,
-                     "Sweden" ,
-                     "Nordre",
-                     idcountySWE[idcountySWE%in%CountyNorth],
-                     "Midtre",
-                     idcountySWE[idcountySWE%in%CountyMiddle],
-                     "SÃ¸ndre",
-                     idcountySWE[idcountySWE%in%CountySouth])
-  
-  ##-- CREATE TABLE TO STORE ABUNDANCE AND CI
-  NCarRegionEstimates <- matrix("", ncol=n.years, nrow=length(idcountyTable))
-  row.names(NCarRegionEstimates) <- c(idcountyTable)
-  colnames(NCarRegionEstimates) <- unlist(lapply(YEARS ,function(x) x[2]))#
-  
-  ##-- FILL IN THE TABLE 
-  for(t in 1:n.years){
-    for( i in 1:length(idcountyTable)){
-      NCarRegionEstimates[idcountyTable[i],t] <- paste(round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-                                                       " (",round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-                                                       round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")",sep="")
-    }
-  }
-  
-  ##QUICK CHECK TO MAKE SURE VALUES SUMS UP 
-  tmp <- ACdensity[[t]]$summary[1:(nrow(ACdensity[[t]]$summary)),]
-  # SWE
-  row.names(ACdensity[[t]]$summary)
-  sum(tmp[idcountySWE,"mean"])
-  tmp["Sweden","mean"]
-  #NOR
-  sum(tmp[idcountyNOR,"mean"])
-  tmp["Norway","mean"]
-  #TOTAL
-  sum(tmp[c(idcountyNOR,idcountySWE),"mean"])
-  tmp["Total","mean"]
-  
-  
-  ## WRITE LATEX TABLE 
-  # ADJUST NAMES OF THE TABLE 
-  idcounty1 <- idcountyTable
-  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
-  idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
-  
-  ##-- NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
-  # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
-  # idcounty1 <- str_remove(idcounty1, "s ")
-  # idcounty1 <- str_remove(idcounty1, " ")
-  idcountySWE1 <- idcountySWE
-  idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "Norrbotten*"
-  idcountySWE1 <- sort(idcountySWE1)
-  # row.names(NCarRegionEstimates) <- idcounty1
-  # NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"),yearsNotSampled] <- paste(NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"), yearsNotSampled], "*", sep="")
+  # ##-- Quick check to make sure values sums up 
+  # tmp <- ACdensity[[t]]$summary[1:(nrow(ACdensity[[t]]$summary)),]
+  # # SWE
+  # row.names(ACdensity[[t]]$summary)
+  # sum(tmp[countyNames_North,"mean"])+
+  #   sum(tmp[countyNames_Middle,"mean"])+
+  #   sum(tmp[countyNames_South,"mean"])
+  # sum(tmp[c("Nordre","Midtre","Söndre"),"mean"])
+  # tmp["Sweden","mean"]
+  # #NOR
+  # sum(tmp[regionNames_NOR,"mean"])
+  # tmp["Norway","mean"]
+  # #TOTAL
+  # tmp["Sweden","mean"]+tmp["Norway","mean"]
+  # tmp["Total","mean"]
   
   ##-- Export .csv
   write.csv( NCarRegionEstimates,
-             file = file.path(working.dir, "tables", "NAllYears.csv"),
+             file = file.path(working.dir, "tables/NAllYears.csv"),
              fileEncoding = "latin1")
   
+  ##-- Add grey color for years without sampling in Norrbotten
+  NCarRegionEstimates["Norrbotten",yearsNotSampled] <- paste0("\\textcolor[gray]{.5}{",NCarRegionEstimates["Norrbotten", yearsNotSampled], "*}")
+  NCarRegionEstimates["Nordre",yearsNotSampled] <- paste0("\\textcolor[gray]{.5}{",NCarRegionEstimates["Nordre",yearsNotSampled], "**}")
+  NCarRegionEstimates["Sweden",yearsNotSampled] <- paste0("\\textcolor[gray]{.5}{",NCarRegionEstimates["Sweden",yearsNotSampled], "**}")
+  NCarRegionEstimates["Total",yearsNotSampled] <- paste0("\\textcolor[gray]{.5}{",NCarRegionEstimates["Total",yearsNotSampled], "**}")
   
-  idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten}"
-  row.names(NCarRegionEstimates) <- idcounty1
-  NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"),yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"), yearsNotSampled], "*","}", sep="")
-  NCarRegionEstimates["SWEDEN",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates["SWEDEN",yearsNotSampled], "**","}", sep="")
-  NCarRegionEstimates["TOTAL",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates["TOTAL",yearsNotSampled], "**","}", sep="")
-  NCarRegionEstimates["Nordre",yearsNotSampled] <- paste("\\textcolor[gray]{.5}{",NCarRegionEstimates["Nordre",yearsNotSampled], "**","}", sep="")
+  ##-- Fix row names
+  row.names(NCarRegionEstimates) <- rownames_Table_tex2
   
-  row.names(NCarRegionEstimates) <- c("TOTAL",
-                                      paste0("\\hspace{0.25cm}", "NORWAY"),
-                                      paste0("\\hspace{0.5cm} ", idcountyNOR),
-                                      paste0("\\hspace{0.25cm}", "SWEDEN"),
-                                      paste0("\\hspace{0.5cm}", "Norra"),
-                                      paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth]),
-                                      paste0("\\hspace{0.5cm}", "Mellersta"),
-                                      paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle]),
-                                      paste0("\\hspace{0.5cm}", "Södra"),
-                                      paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth]))
-  
-  row.names(NCarRegionEstimates)[grep("VÃ¤straGÃ¶taland", row.names(NCarRegionEstimates))] <- paste0("\\hspace{0.75cm}", "VÃ¤stra GÃ¶taland")
-  
-  
+  ##-- Export .tex
   print( xtable( NCarRegionEstimates,
                  type = "latex",
                  align = paste(c("l",rep("c",ncol(NCarRegionEstimates))), collapse = "")),
          # scalebox=.8,
-         floating = FALSE, sanitize.text.function=function(x){x},
-         add.to.row = list(list(seq(1,nrow(NCarRegionEstimates),by=2)),"\\rowcolor[gray]{.96} "),
-         file = file.path(working.dir, "tables", "NCountiesCarnivoreRegions.tex"))
+         floating = FALSE,
+         sanitize.text.function = function(x){x},
+         add.to.row = list( list(seq(1,nrow(NCarRegionEstimates), by = 2)),
+                            "\\rowcolor[gray]{.96}"),
+         file = file.path(working.dir, "tables/NCountiesCarnivoreRegions.tex"))
   
   
   
-  ## ------         2.1.6.2. LAST YEAR N PER SEX PER COUNTY ------
+  ## ------     5.1.2. LAST YEAR, N PER SEX PER REGION ------
   
-  NCountyEstimatesLastRegions <- matrix("", ncol=3, nrow=length(idcountyTable))
-  row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
+  NCountyEstimatesLastRegions <- matrix("", ncol = 3, nrow = length(rownames_Table))
+  row.names(NCountyEstimatesLastRegions) <- rownames_Table
   colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total")
   
-  ## FILL IN TABLE 
-  ## FEMALES
-  for( i in 1:length(idcountyTable)){
-    NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <- paste0(
-      round(ACdensityF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
-      " (",round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-      round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  }
+  ##-- Fill in table 
+  ##-- FEMALES
+  NCountyEstimatesLastRegions[ ,"Females"] <- paste0(
+    round(ACdensity_F[[n.years]]$summary[rownames_Table,"mean"], digits = 1)," (",
+    round(ACdensity_F[[n.years]]$summary[rownames_Table,"95%CILow"], digits = 0),"-",
+    round(ACdensity_F[[n.years]]$summary[rownames_Table,"95%CIHigh"], digits = 0),")")
   
-  ## MALES 
-  for( i in 1:length(idcountyTable)){
-    NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <- paste0(
-      round(ACdensityM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
-      " (",round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-      round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  }
+  ##-- MALES 
+  NCountyEstimatesLastRegions[ ,"Males"] <- paste0(
+    round(ACdensity_M[[n.years]]$summary[rownames_Table,"mean"], digits = 1)," (",
+    round(ACdensity_M[[n.years]]$summary[rownames_Table,"95%CILow"], digits = 0),"-",
+    round(ACdensity_M[[n.years]]$summary[rownames_Table,"95%CIHigh"], digits = 0),")")
   
-  ## TOTAL 
-  for( i in 1:length(idcountyTable)){
-    NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <- paste0(
-      round(ACdensity[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
-      " (",round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-      round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  }
+  ##-- TOTAL 
+  NCountyEstimatesLastRegions[ ,"Total"] <- paste0(
+    round(ACdensity[[n.years]]$summary[rownames_Table,"mean"], digits = 1)," (",
+    round(ACdensity[[n.years]]$summary[rownames_Table,"95%CILow"], digits = 0),"-",
+    round(ACdensity[[n.years]]$summary[rownames_Table,"95%CIHigh"], digits = 0),")")
+  
   
   ##-- Export .csv
   write.csv( NCountyEstimatesLastRegions,
-             file = file.path(working.dir, "tables", "NLastYearPerSex.csv"),
+             file = file.path(working.dir, "tables/NLastYearPerSex.csv"),
              fileEncoding = "latin1")
   
-  ##-- ADJUST NAMES OF THE TABLE 
-  idcounty1 <- idcountyTable
-  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
-  idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
-  
-  idcountySWE1 <- idcountySWE
-  idcountySWE1 <- sort(idcountySWE1)
-  idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten*}"
-  
-  row.names(NCountyEstimatesLastRegions) <- idcounty1
-  NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"), ] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),], "*}", sep="")
-  NCountyEstimatesLastRegions["SWEDEN",] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["SWEDEN",], "**}", sep="")
-  NCountyEstimatesLastRegions["TOTAL",] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["TOTAL",], "**}", sep="")
-  NCountyEstimatesLastRegions["Nordre",] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["Nordre",], "**}", sep="")
-  
-  row.names(NCountyEstimatesLastRegions) <- c(
-    "TOTAL",
-    paste0("\\hspace{0.25cm}", "NORWAY"),
-    paste0("\\hspace{0.50cm}", idcountyNOR),
-    paste0("\\hspace{0.25cm}", "SWEDEN"),
-    paste0("\\hspace{0.50cm}", "Norra"),
-    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth]),
-    paste0("\\hspace{0.50cm}", "Mellersta"),
-    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle]),
-    paste0("\\hspace{0.50cm}", "Södra"),
-    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth]))
-  
-  row.names(NCountyEstimatesLastRegions)[grep("VÃ¤straGÃ¶taland", row.names(NCountyEstimatesLastRegions))] <- "\\hspace{0.75cm}VÃ¤stra GÃ¶taland"
-  ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
-  # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
-  # idcounty1 <- str_remove(idcounty1, "s ")
-  # idcounty1 <- str_remove(idcounty1, " ")
+  ##-- Fix row names
+  row.names(NCountyEstimatesLastRegions) <- rownames_Table_tex1
   
   ##-- Export .tex 
   print(xtable( NCountyEstimatesLastRegions,
@@ -1856,105 +1417,65 @@ processRovquantOutput_wolverine <- function(
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions), by = 2)),
                           "\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables","NCountiesSexLastYearRegions.tex"))
+        file = file.path(working.dir, "tables/NCountiesSexLastYearRegions.tex"))
   
   
   
-  ## ------         2.1.6.2. LAST YEAR N PER SEX PER COUNTY WITH PROPORTION OF AREA COVERED ------
+  ## ------     5.1.3. LAST YEAR, N PER SEX PER REGION WITH PROPORTION OF AREA COVERED ------
   
-  NCountyEstimatesLastRegions <- matrix("", ncol=4, nrow=length(idcountyTable))
-  row.names(NCountyEstimatesLastRegions) <- c(idcountyTable)
+  NCountyEstimatesLastRegions <- matrix("", ncol = 4, nrow = length(rownames_Table))
+  row.names(NCountyEstimatesLastRegions) <- rownames_Table
   colnames(NCountyEstimatesLastRegions) <- c("Females","Males","Total","\\% Area")
   
-  ## FILL IN TABLE 
-  ## FEMALES
-  for( i in 1:length(idcountyTable)){
-    NCountyEstimatesLastRegions[idcountyTable[i],"Females"] <- paste0(
-      round(ACdensityF[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
-      " (",round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-      round(ACdensityF[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  }
+  ##-- Fill in table 
+  ##-- FEMALES
+  NCountyEstimatesLastRegions[ ,"Females"] <- paste0(
+    round(ACdensity_F[[n.years]]$summary[rownames_Table,"mean"], digits = 1)," (",
+    round(ACdensity_F[[n.years]]$summary[rownames_Table,"95%CILow"], digits = 0),"-",
+    round(ACdensity_F[[n.years]]$summary[rownames_Table,"95%CIHigh"], digits = 0),")")
   
-  ## MALES 
-  for( i in 1:length(idcountyTable)){
-    NCountyEstimatesLastRegions[idcountyTable[i],"Males"] <- paste0(
-      round(ACdensityM[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
-      " (",round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-      round(ACdensityM[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  }
+  ##-- MALES 
+  NCountyEstimatesLastRegions[ ,"Males"] <- paste0(
+    round(ACdensity_M[[n.years]]$summary[rownames_Table,"mean"], digits = 1)," (",
+    round(ACdensity_M[[n.years]]$summary[rownames_Table,"95%CILow"], digits = 0),"-",
+    round(ACdensity_M[[n.years]]$summary[rownames_Table,"95%CIHigh"], digits = 0),")")
   
-  ## TOTAL
-  for( i in 1:length(idcountyTable)){
-    NCountyEstimatesLastRegions[idcountyTable[i],"Total"] <- paste0(
-      round(ACdensity[[n.years]]$summary[idcountyTable[i],"mean"],digits = 1),
-      " (",round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-      round(ACdensity[[n.years]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-  }
+  ##-- TOTAL 
+  NCountyEstimatesLastRegions[ ,"Total"] <- paste0(
+    round(ACdensity[[n.years]]$summary[rownames_Table,"mean"], digits = 1)," (",
+    round(ACdensity[[n.years]]$summary[rownames_Table,"95%CILow"], digits = 0),"-",
+    round(ACdensity[[n.years]]$summary[rownames_Table,"95%CIHigh"], digits = 0),")")
   
-  NCountyEstimatesLastRegions[names(areaAllRegions),"\\% Area"] <- round(areaAllRegions*100,digits = 0)
+  ##-- AREA
+  NCountyEstimatesLastRegions[ ,"\\% Area"] <- round(percAllRegions[rownames_Table]*100, digits = 0)
+  ##-- Round up
   NCountyEstimatesLastRegions[NCountyEstimatesLastRegions[,4] %in% c("98","99"),4] <- 100
-  #NCountyEstimatesLastRegions[names(AreaStudied/TotalArea[names(AreaStudied)]),"Area"] <- round(AreaStudied/TotalArea[names(AreaStudied)]*100,digits = 0)
   
-  ##--  Export .tex
+  ##--  Export .csv
   write.csv( NCountyEstimatesLastRegions,
              file = file.path(working.dir, "tables", "NLastYearPerSexArea.csv"),
              fileEncoding = "latin1")
   
-  # ADJUST NAMES OF THE TABLE 
-  idcounty1 <- idcountyTable
-  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
-  idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
-  idcountySWE1 <- idcountySWE
-  idcountySWE1 <- sort(idcountySWE1)
-  # idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten*}"
   
-  row.names(NCountyEstimatesLastRegions) <- idcounty1
-  # NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),1:3], "*}", sep="")
-  # NCountyEstimatesLastRegions["SWEDEN",1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["SWEDEN",1:3], "**}", sep="")
-  # NCountyEstimatesLastRegions["TOTAL",1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["TOTAL",1:3], "**}", sep="")
-  # NCountyEstimatesLastRegions["Nordre",1:3] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions["Nordre",1:3], "**}", sep="")
+  ##--  Export .tex
+  row.names(NCountyEstimatesLastRegions) <- rownames_Table_tex1
   
-  
-  row.names(NCountyEstimatesLastRegions) <- c(
-    "TOTAL",
-    paste0("\\hspace{0.25cm}","NORWAY"),
-    paste0("\\hspace{0.5cm} ",
-           idcountyNOR,sep=""),
-    paste0("\\hspace{0.25cm}","SWEDEN"),
-    paste0("\\hspace{0.5cm}","Norra"),
-    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth], sep=""),
-    paste0("\\hspace{0.5cm}","Mellersta"),
-    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle], sep=""),
-    paste0("\\hspace{0.5cm}","Södra"),
-    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth], sep="")
-  )
-  
-  row.names(NCountyEstimatesLastRegions)[grep("VÃ¤straGÃ¶taland", row.names(NCountyEstimatesLastRegions))] <- paste("\\hspace{0.75cm}",
-                                                                                                                    "VÃ¤stra GÃ¶taland", sep="")
-  
-  ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
-  # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
-  # idcounty1 <- str_remove(idcounty1, "s ")
-  # idcounty1 <- str_remove(idcounty1, " ")
-  
-  
-  # WRITE LATEX 
-  print(xtable(NCountyEstimatesLastRegions, type = "latex",
+  print(xtable(NCountyEstimatesLastRegions,
+               type = "latex",
                align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions)-1),"||c"),collapse = "")),
         sanitize.text.function=function(x){x},
         # scalebox=.8,
         floating = FALSE,
-        add.to.row=list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables",paste("NCountiesSexLastYearRegionsArea.tex")))
+        add.to.row = list( list(seq(1,nrow(NCountyEstimatesLastRegions), by = 2)),
+                           "\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables/NCountiesSexLastYearRegionsArea.tex"))
   
   
   
+  ## ------     5.1.4. 2 LAST YEARS, N PER SEX PER REGION ------
   
-  ## ------         2.1.6.3. MAKE A TABLE 2 last years  ------
-  
-  NCountyEstimatesLast2Regions <- matrix("", ncol = 6, nrow = length(idcountyTable))
-  row.names(NCountyEstimatesLast2Regions) <- c(idcountyTable)
+  NCountyEstimatesLast2Regions <- matrix("", ncol = 6, nrow = length(rownames_Table))
+  row.names(NCountyEstimatesLast2Regions) <- rownames_Table
   colnames(NCountyEstimatesLast2Regions) <- c(paste("Females", years[n.years-1]),
                                               paste("Males", years[n.years-1]),
                                               paste("Total", years[n.years-1]),
@@ -1964,277 +1485,161 @@ processRovquantOutput_wolverine <- function(
   
   ##-- FILL IN TABLE 
   for(t in (n.years-1):n.years){
-    ## FEMALES
-    for( i in 1:length(idcountyTable)){
-      NCountyEstimatesLast2Regions[idcountyTable[i],paste("Females",years[t])] <- paste0(
-        round(ACdensityF[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    }
+    ##-- FEMALES
+    NCountyEstimatesLast2Regions[ ,paste("Females", years[t])] <- paste0(
+      round(ACdensity_F[[t]]$summary[rownames_Table,"mean"], digits = 1)," (",
+      round(ACdensity_F[[t]]$summary[rownames_Table,"95%CILow"], digits = 0),"-",
+      round(ACdensity_F[[t]]$summary[rownames_Table,"95%CIHigh"], digits = 0),")")
     
-    ## MALES 
-    for( i in 1:length(idcountyTable)){
-      NCountyEstimatesLast2Regions[idcountyTable[i],paste("Males",years[t])] <- paste0(
-        round(ACdensityM[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    }
+    ##-- MALES 
+    NCountyEstimatesLast2Regions[ ,paste("Males", years[t])] <- paste0(
+      round(ACdensity_M[[t]]$summary[rownames_Table,"mean"], digits = 1)," (",
+      round(ACdensity_M[[t]]$summary[rownames_Table,"95%CILow"], digits = 0),"-",
+      round(ACdensity_M[[t]]$summary[rownames_Table,"95%CIHigh"], digits = 0),")")
     
-    ## MALES 
-    for( i in 1:length(idcountyTable)){
-      NCountyEstimatesLast2Regions[idcountyTable[i],paste("Total",years[t])] <- paste0(
-        round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    }
-  }
-  
-  
-  ##-- Adjust names of the table 
-  idcounty1 <- idcountyTable
-  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
-  idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
-  
-  ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
-  # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
-  # idcounty1 <- str_remove(idcounty1, "s ")
-  # idcounty1 <- str_remove(idcounty1, " ")
+    ##-- TOTAL 
+    NCountyEstimatesLast2Regions[ ,paste("Total", years[t])] <- paste0(
+      round(ACdensity[[t]]$summary[rownames_Table,"mean"], digits = 1)," (",
+      round(ACdensity[[t]]$summary[rownames_Table,"95%CILow"], digits = 0),"-",
+      round(ACdensity[[t]]$summary[rownames_Table,"95%CIHigh"], digits = 0),")")
+  }#t
   
   ##-- Export .csv
   write.csv( NCountyEstimatesLast2Regions,
              file = file.path(working.dir, "tables/NLast2YearsPerSex.csv"),
-             fileEncoding="latin1")
+             fileEncoding = "latin1")
   
   
-  ##-- Add a little start to Norrbotten
-  idcountySWE1 <- idcountySWE
-  idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "Norrbotten*"
-  idcountySWE1 <- sort(idcountySWE1)
-  row.names(NCountyEstimatesLast2Regions) <- idcounty1
-  NCountyEstimatesLast2Regions[which(idcounty1 %in% "Norrbotten"),] <- paste0(
-    NCountyEstimatesLast2Regions[which(idcounty1 %in% "Norrbotten"),], "*")
+  ##-- Fix row names
+  row.names(NCountyEstimatesLast2Regions) <- rownames_Table_tex2
   
-  row.names(NCountyEstimatesLast2Regions) <- c(
-    "TOTAL",
-    paste0("\\hspace{0.25cm}","NORWAY"),
-    paste0("\\hspace{0.5cm} ",idcountyNOR),
-    paste0("\\hspace{0.25cm}","SWEDEN"),
-    paste0("\\hspace{0.5cm}","Norra**"),
-    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth]),
-    paste0("\\hspace{0.5cm}","Mellersta"),
-    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle]),
-    paste0("\\hspace{0.5cm}","Södra"),
-    paste0("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth])
-  )
-  row.names(NCountyEstimatesLast2Regions)[grep("VÃ¤straGÃ¶taland", row.names(NCountyEstimatesLast2Regions))] <- paste("\\hspace{0.75cm}",
-                                                                                                                      "VÃ¤stra GÃ¶taland", sep="")
-  NCountyEstimatesLast2Regions <- rbind(c("F","M","Total","F","M","Total"), NCountyEstimatesLast2Regions)
+  ##-- Fix col names
+  NCountyEstimatesLast2Regions <- rbind( c("F","M","Total","F","M","Total"),
+                                         NCountyEstimatesLast2Regions)
   
   ##-- Export .tex 
   addtorow <- list()
   addtorow$pos <- list(c(0),0)
-  uniqueYEAR <- c(paste(unlist(YEARS[n.years-1]),collapse = "/"),paste(unlist(YEARS[n.years]),collapse = "/"))
+  uniqueYEAR <- c( paste(unlist(YEARS[n.years-1]),collapse = "/"),
+                   paste(unlist(YEARS[n.years]),collapse = "/"))
   addtorow$command <- c(paste0(paste0('& \\multicolumn{3}{c}{', uniqueYEAR,
                                       '}', collapse=''), '\\\\'),
                         rep("\\rowcolor[gray]{.95}",1))
-  print(xtable(NCountyEstimatesLast2Regions, type = "latex",
-               align = paste(c("l",rep("c",3),"|",rep("c",3)),collapse = "")),
+  print(xtable( NCountyEstimatesLast2Regions, 
+                type = "latex",
+                align = paste(c("l",rep("c",3),"|", rep("c",3)),collapse = "")),
         sanitize.text.function=function(x){x},
         # scalebox=.8,
         floating = FALSE,
         add.to.row = addtorow,
         include.colnames = F,
-        file = file.path(working.dir, "tables","NCountiesSexLast2YearsRegions.tex"))
+        file = file.path(working.dir, "tables/NCountiesSexLast2YearsRegions.tex"))
   
   
   
-  ## ------         2.1.6.4. ALL YEARS N PER SEX PER COUNTY  ------
+  ## ------     5.1.5. ALL YEARS, N PER SEX PER COUNTY ------
   
-  NCountyEstimatesAllSexRegions <- matrix("", ncol = n.years*3, nrow = length(idcountyTable)+1)
-  row.names(NCountyEstimatesAllSexRegions) <- c("",idcountyTable)
-  colnames(NCountyEstimatesAllSexRegions) <- rep(unlist(lapply(YEARS ,function(x) x[2])),each=3)
-  NCountyEstimatesAllSexRegions[1,] <- rep(c("Females","Males","Total"),n.years)
+  NCountyEstimatesAllSexRegions <- matrix("", ncol = n.years*3, nrow = length(rownames_Table)+1)
+  row.names(NCountyEstimatesAllSexRegions) <- c("",rownames_Table)
+  colnames(NCountyEstimatesAllSexRegions) <- rep(unlist(lapply(YEARS ,function(x) x[2])), each = 3)
+  NCountyEstimatesAllSexRegions[1, ] <- rep(c("Females","Males","Total"), n.years)
   
-  ##-- Fill in table 
+  ## FILL IN TABLE 
   for(t in 1:n.years){
-    ##-- FEMALES
+    ##-- Identify columns for that year
     cols <- which(colnames(NCountyEstimatesAllSexRegions) %in% unlist(lapply(YEARS ,function(x) x[2]))[t])
-    colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Females")
-    for( i in 1:length(idcountyTable)){
-      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
-        round(ACdensityF[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensityF[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    }
+    
+    #-- Identify the column for each sex that year
+    colsF <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Females")
+    colsM <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Males")
+    colsT <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Total")
+    
+    ##-- FEMALES
+    NCountyEstimatesAllSexRegions[rownames_Table,cols[colsF]] <- paste0(
+      round(ACdensity_F[[t]]$summary[rownames_Table,"mean"], digits = 1), " (",
+      round(ACdensity_F[[t]]$summary[rownames_Table,"95%CILow"], digits = 0),"-",
+      round(ACdensity_F[[t]]$summary[rownames_Table,"95%CIHigh"], digits = 0),")")
     
     ##-- MALES 
-    colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Males")
-    for( i in 1:length(idcountyTable)){
-      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
-        round(ACdensityM[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensityM[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    }
+    NCountyEstimatesAllSexRegions[rownames_Table,cols[colsM]] <- paste0(
+      round(ACdensity_M[[t]]$summary[rownames_Table,"mean"],digits = 1)," (",
+      round(ACdensity_M[[t]]$summary[rownames_Table,"95%CILow"],digits = 0),"-",
+      round(ACdensity_M[[t]]$summary[rownames_Table,"95%CIHigh"],digits = 0),")")
     
     ##-- TOTAL 
-    colss <- which(NCountyEstimatesAllSexRegions[1,cols] %in% "Total")
-    for( i in 1:length(idcountyTable)){
-      NCountyEstimatesAllSexRegions[idcountyTable[i],cols[colss]] <- paste0(
-        round(ACdensity[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensity[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensity[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    }
-  }
+    NCountyEstimatesAllSexRegions[rownames_Table,cols[colsT]] <- paste0(
+      round(ACdensity[[t]]$summary[rownames_Table,"mean"],digits = 1)," (",
+      round(ACdensity[[t]]$summary[rownames_Table,"95%CILow"],digits = 0),"-",
+      round(ACdensity[[t]]$summary[rownames_Table,"95%CIHigh"],digits = 0),")")
+  }#t
   
-  ##--  Export .csv
+  ##-- Export .csv
   write.csv( NCountyEstimatesAllSexRegions,
-             file = file.path(working.dir, "tables", "NAllYearsPerSex.csv"),
-             fileEncoding="latin1")
+             file = file.path(working.dir, "tables/NAllYearsPerSex.csv"),
+             fileEncoding = "latin1")
   
-  # # ADJUST NAMES OF THE TABLE 
-  # idcounty1 <- idcountyTable
-  # idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  # idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
-  # idcounty1[which(idcounty1 %in% "Sweden")] <- "SWEDEN"
-  # 
-  # idcountySWE1 <- idcountySWE
-  # idcountySWE1 <- sort(idcountySWE1)
-  # 
-  # idcountySWE1[which(idcountySWE %in% "Norrbotten")] <- "\\textcolor[gray]{.5}{Norrbotten*}"
-  # row.names(NCountyEstimatesLastRegions) <- idcounty1
-  # NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),] <- paste("\\textcolor[gray]{.5}{",NCountyEstimatesLastRegions[which(idcounty1 %in% "Norrbotten"),], "*}", sep="")
-  # 
-  # 
-  # row.names(NCountyEstimatesLastRegions) <- c("TOTAL**",
-  #                                             paste("\\hspace{0.25cm}","NORWAY",sep=""),
-  #                                             paste("\\hspace{0.5cm} ",
-  #                                                   idcountyNOR,sep=""),
-  #                                             paste("\\hspace{0.25cm}","SWEDEN**",sep=""),
-  #                                             paste("\\hspace{0.5cm}", idcountySWE1, sep="")
-  # )
-  # 
-  # ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
-  # # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
-  # # idcounty1 <- str_remove(idcounty1, "s ")
-  # # idcounty1 <- str_remove(idcounty1, " ")
-  # 
-  # # WRITE LATEX 
-  # print(xtable(NCountyEstimatesLastRegions, type = "latex",
-  #              align = paste(c("l",rep("c",ncol(NCountyEstimatesLastRegions))),collapse = "")),
-  #       sanitize.text.function=function(x){x},
-  #       # scalebox=.8,
-  #       floating = FALSE,
-  #       add.to.row=list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-  #       file = file.path(working.dir, "tables","NCountiesSexLastYearRegions.tex"))
+  ##-- Add grey color for years without sampling in Norrbotten
+  index <- which(colnames(NCountyEstimatesAllSexRegions) %in% (years[yearsNotSampled]+1))
+  NCountyEstimatesAllSexRegions["Norrbotten",index] <- paste0("\\textcolor[gray]{.5}{",NCountyEstimatesAllSexRegions["Norrbotten", index], "*}")
+  NCountyEstimatesAllSexRegions["Nordre",index] <- paste0("\\textcolor[gray]{.5}{",NCountyEstimatesAllSexRegions["Nordre",index], "**}")
+  NCountyEstimatesAllSexRegions["Sweden",index] <- paste0("\\textcolor[gray]{.5}{",NCountyEstimatesAllSexRegions["Sweden",index], "**}")
+  NCountyEstimatesAllSexRegions["Total",index] <- paste0("\\textcolor[gray]{.5}{",NCountyEstimatesAllSexRegions["Total",index], "**}")
+  
+  ##-- Fix row names
+  row.names(NCountyEstimatesAllSexRegions) <- c("", rownames_Table_tex2)
+  
+  ##-- Export .tex WRITE LATEX
+  print(xtable(NCountyEstimatesAllSexRegions,
+               type = "latex",
+               align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSexRegions))),collapse = "")),
+        sanitize.text.function=function(x){x},
+        # scalebox=.8,
+        floating = FALSE,
+        add.to.row=list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),
+                        "\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables/NAllYearsPerSex.tex"))
   
   
   
-  ## ------         2.1.6.5. ALL YEARS, BOTH SEX COUNTIES NORWAY ------
+  ## ------     5.1.6. ALL YEARS, BOTH SEX COMBINED NORWAY ------
   
-  idcounty <- row.names(ACdensityNOR[[t]]$summary)
-  
-  ##-- REMOVE Finland, Norway, Russia, Sweden 
-  idcounty <- idcounty[-which(idcounty %in% c("Finland","Norway","Russia","Sweden","Total"))]
-  
-  ##-- G|+T NORWEGIAN VERSUS SWEDISH COUNTIES 
-  idcountyNOR <- idcounty
-  idcountyTable <- c("Total", idcountyNOR)
+  rownames_Table_NOR <- c("Norway", countyNames_NOR)
   
   ##-- Create table to store abundance and CIs
-  NCarRegionEstimatesNOR <- matrix("", ncol=n.years, nrow=length(idcountyTable))
-  row.names(NCarRegionEstimatesNOR) <- c(idcountyTable)
-  colnames(NCarRegionEstimatesNOR) <- unlist(lapply(YEARS ,function(x) x[2]))#
+  NCarRegionEstimatesNOR <- matrix("", ncol = n.years, nrow = length(rownames_Table_NOR))
+  row.names(NCarRegionEstimatesNOR) <- rownames_Table_NOR
+  colnames(NCarRegionEstimatesNOR) <- unlist(lapply(YEARS ,function(x) x[2]))
   
   ##-- Fill in the table 
   for(t in 1:n.years){
-    for(i in 1:length(idcountyTable)){
-      NCarRegionEstimatesNOR[idcountyTable[i],t] <- paste0(
-        round(ACdensityNOR[[t]]$summary[idcountyTable[i],"mean"],digits = 1),
-        " (",round(ACdensityNOR[[t]]$summary[idcountyTable[i],"95%CILow"],digits = 0),"-",
-        round(ACdensityNOR[[t]]$summary[idcountyTable[i],"95%CIHigh"],digits = 0),")")
-    }#i
+    NCarRegionEstimatesNOR[rownames_Table_NOR,t] <- paste0(
+      round(ACdensity[[t]]$summary[rownames_Table_NOR,"mean"],digits = 1)," (",
+      round(ACdensity[[t]]$summary[rownames_Table_NOR,"95%CILow"],digits = 0),"-",
+      round(ACdensity[[t]]$summary[rownames_Table_NOR,"95%CIHigh"],digits = 0),")")
   }#t
   
-  ## QUICK CHECK TO MAKE SURE VALUES SUMS UP 
-  tmp <- ACdensityNOR[[t]]$summary
-  
-  ##-- SWE
-  row.names(ACdensity[[t]]$summary)
-  
-  # sum(tmp[row.names(tmp) %in% idcountySWE,"mean"])
-  sum(tmp[row.names(tmp) %in% idcountyNOR,"mean"])
-  
-  # tmp["Sweden","mean"]
-  # #NOR
-  # sum(tmp[idcountyNOR,"mean"])
-  # tmp["Norway","mean"]
-  # #TOTAL
-  # sum(tmp[c(idcountyNOR,idcountySWE),"mean"])
-  # tmp["Total","mean"]
-  
-  
-  ## WRITE LATEX TABLE 
-  # ADJUST NAMES OF THE TABLE 
-  idcounty1 <- idcountyTable
-  idcounty1 <- gsub("Region ", "", idcountyTable)
-  idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
-  idcounty1[which(idcounty1 %in% "Norway")] <- "NORWAY"
-  
-  ## NECESSARY WITH THE NEW COUNTY DEFINITION IN SWEDEN
-  # idcounty1 <- str_remove(idcounty1, "lÃ¤n")
-  # idcounty1 <- str_remove(idcounty1, "s ")
-  # idcounty1 <- str_remove(idcounty1, " ")
-  
-  # row.names(NCarRegionEstimates) <- idcounty1
-  # NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"),yearsNotSampled] <- paste(NCarRegionEstimates[which(idcounty1 %in% "Norrbotten"), yearsNotSampled], "*", sep="")
-  row.names(NCarRegionEstimatesNOR) <- idcounty1
-  
-  # print csv
-  # NCarRegionEstimatesNOR <- data.frame(NCarRegionEstimatesNOR)
-  # NCarRegionEstimatesNOR$name <- row.names(NCarRegionEstimatesNOR)
-  # Encoding(NCarRegionEstimatesNOR[1,"name"]) <- "UTF-16"#"UTF-16"
-  #save(NCarRegionEstimatesNOR,file=file.path(working.dir, "tables",paste("NAllYearsNorwegianCounties.RData",sep="")))
+  ##-- Export .csv
+  row.names(NCarRegionEstimatesNOR) <- c("TOTAL", countyNames_NOR)
   write.csv( NCarRegionEstimatesNOR,
              file = file.path(working.dir, "tables/NAllYearsNorwegianCounties.csv"),
              fileEncoding = "latin1")
   
-  # Encoding(NCarRegionEstimatesNOR[,"name"])[9] <- "ISO-8859-1"
-  # mb_convert_encoding($file, 'UTF-8', 'ISO-8859-1')
-  # write.csv2(NCarRegionEstimatesNOR,
-  #            file = file.path(working.dir, "tables",paste("NAllYearsNorwegianCounties.csv",sep="")),fileEncoding= "UTF-16LE")
-  # readr::write_excel_csv(NCarRegionEstimatesNOR,
-  #                         file = file.path(working.dir, "tables",paste("NAllYearsNorwegianCounties.csv",sep="")))
-  ## try to join to the Norwegian layer for Richard
-  # tmp <- data.frame(NCarRegionEstimatesNOR)
-  # tmp$NAME_1 <- row.names(tmp) 
-  # COUNTIES_1 <- merge(COUNTIES,tmp[,c("X2024","NAME_1")],by="NAME_1")
-  
-  
-  row.names(NCarRegionEstimatesNOR) <- c("NORWAY",
-                                         # paste("\\hspace{0.25cm}","NORWAY",sep=""),
-                                         paste("\\hspace{0.25cm} ",
-                                               idcountyNOR,sep="")#
-                                         # paste("\\hspace{0.25cm}","SWEDEN",sep=""),
-                                         # paste("\\hspace{0.5cm}","Norra",sep=""),
-                                         # paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyNorth], sep=""),
-                                         # paste("\\hspace{0.5cm}","Mellersta",sep=""),
-                                         # paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountyMiddle], sep=""),
-                                         # paste("\\hspace{0.5cm}","Södra",sep=""),
-                                         # paste("\\hspace{0.75cm}", idcountySWE1[idcountySWE%in%CountySouth], sep="")
-  )
-  
+  ##-- Export .tex
+  row.names(NCarRegionEstimatesNOR) <- c("TOTAL", paste0("\\hspace{0.25cm} ", countyNames_NOR))
   print(xtable( NCarRegionEstimatesNOR, 
                 type = "latex",
                 align = paste(c("l",rep("c",ncol(NCarRegionEstimatesNOR))),collapse = "")),
         # scalebox=.8,
-        floating = FALSE, sanitize.text.function=function(x){x},
-        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesNOR),by=2)),"\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables", "NCountiesCarnivoreRegionsNorway.tex"))
+        floating = FALSE,
+        sanitize.text.function=function(x){x},
+        add.to.row = list( list(seq(1,nrow(NCarRegionEstimatesNOR), by = 2)),
+                           "\\rowcolor[gray]{.96} "),
+        file = file.path(working.dir, "tables/NAllYearsNorwegianCounties.tex"))
   
   
   
-  ## ------   5.2. NUMBER OF NGS SAMPLES, IDs & DEAD RECOVERIES ------
+  
+  ## ------   5.2. DATA SUMMARY ------
 
   ##-- SOME TALLIES TO CHECK THINGS
   ##-- NGS
@@ -2613,6 +2018,567 @@ processRovquantOutput_wolverine <- function(
               "isDetected"))
   gc(verbose = FALSE)  
   
+  
+  
+  
+  ##----------------------------------------------------------------------------
+  ## ------   2.1. OVERALL NUMBERS ------
+  
+  ##-- SOME TALLIES TO CHECK THINGS
+  ##-- NGS
+  NGS <- myFilteredData.sp$alive #rbind(myFilteredData.spF$alive, myFilteredData.spM$alive)
+  NGSStructured <- myData.aliveStruc$myData.sp #rbind( myFilteredData.spStructuredF, myFilteredData.spStructuredM)
+  NGSOther <- myData.aliveOthers$myData.sp #rbind( myFilteredData.spOthersF, myFilteredData.spOthersM)
+  
+  ##-- FOR REPORT SUMMARY
+  length(NGS$Id)                                ## Number of NGS samples
+  length(NGS$Id[NGS$Sex == "Hunn"])             ## Number of Female NGS samples
+  length(NGS$Id[NGS$Sex == "Hann"])             ## Number of Male NGS samples
+  length(NGS$Id[NGS$Country == "S"])/nrow(NGS)  ## Proportion of samples in Sweden
+  
+  length(unique(NGS$Id))                        ## Number of individuals
+  length(unique(NGS$Id[NGS$Sex == "Hunn"]))     ## Number of Female individuals
+  length(unique(NGS$Id[NGS$Sex == "Hann"]))     ## Number of Male individuals
+  
+  ## Last year
+  length(NGS$Id[NGS$Year %in% tail(years, n = 1)])                     ## Number of NGS in the last year
+  length(NGS$Id[NGS$Sex == "Hunn" & NGS$Year %in% tail(years, n = 1)]) ## Number of female NGS in the last year
+  length(NGS$Id[NGS$Sex == "Hann" & NGS$Year %in% tail(years, n = 1)]) ## Number of Male NGS in the last year
+  
+  ## NGS structured
+  length(NGSStructured$Id)                            ## Number of structured NGS samples
+  length(NGSStructured$Id[NGSStructured$Sex=="Hunn"]) ## Number of structured Female NGS samples
+  length(NGSStructured$Id[NGSStructured$Sex=="Hann"]) ## Number of structured Male NGS samples
+  
+  ## NGS Other
+  length(NGSOther$Id)                           ## Number of other NGS samples
+  length(NGSOther$Id[NGSOther$Sex=="Hunn"])     ## Number of other Female NGS samples
+  length(NGSOther$Id[NGSOther$Sex=="Hann"])     ## Number of other Male NGS samples
+  
+  
+  ##-- DEAD RECOVERY
+  dead <- myFullData.sp$dead.recovery #rbind(myFullData.sp$dead.recovery, myFullData.spM$dead.recovery)
+  table(dead$Year)
+  length(dead$Id)                               ## Number of individuals
+  length(unique(dead$Id[dead$Sex=="Hunn"]))     ## Number of Female individuals
+  length(unique(dead$Id[dead$Sex=="Hann"]))     ## Number of Male individuals
+  
+  # tmpdead <- dead[dead$Year %in% c(2018:2023),]
+  # tmpdead <- tmpdead[!duplicated(tmpdead$DNAID), ]
+  # table(tmpdead$Year,tmpdead$Sex)
+  # table(tmpdead$Year,tmpdead$Month)
+  # table(tmpdead$Year)
+  # nrow(table(tmpdead$Year))
+  # duplicated(tmpdead$DNAID)
+  # mapview::mapview(tmpdead)
+  # 
+  # tmpNGS <- NGS[NGS$Year %in% c(2018:2023), ]
+  # table(tmpNGS$Year,tmpNGS$Sex)
+  # table(tmpNGS$Year,tmpNGS$Month)
+  # table(tmpNGS$Year)
+  # 
+  # ###HENRIK CHECK WITH PUBLIC SAMPLES
+  # idPublic <- c(
+  # 'D555438',
+  # 'D556590',
+  # 'D553322',
+  # 'D555239',
+  # 'D554783',
+  # 'D558440',
+  # 'D555845',
+  # 'D555412',
+  # 'D556343',
+  # 'D556344',
+  # 'D556347',
+  # 'D558235',
+  # 'D557101')
+  # 
+  # which(NGSStructured$DNAID%in%idPublic)
+  # 
+  # # # NGSStructured[which(NGSStructured$DNAID%in%idPublic),]@data
+  # # # NGSOther[which(NGSOther$DNAID%in%idPublic),]@data
+  # # 
+  # # idPublic1 <- c('D555438')
+  # # NGSStructured[which(NGSStructured$DNAID%in%idPublic1),]@data
+  # # NGSOther[which(NGSOther$DNAID%in%idPublic1),]
+  # # 
+  # # mapview(
+  # # list(as(st_geometry(TRACKS_YEAR[[t]][TRACKS_YEAR[[t]]$RovbaseID %in% "T477952",]),"Spatial"),
+  # #         NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]),
+  # # layer.name = c("Franconian districts", "Franconian breweries")
+  # # )
+  # #         
+  # # mapview(as(st_geometry(TRACKS_YEAR[[t]][TRACKS_YEAR[[t]]$RovbaseID %in% "T477952",]),"Spatial"))+
+  # #   NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]
+  # # 
+  # # mapview(as(st_geometry(TRACKS[TRACKS$RovbaseID %in% "T477952",]),"Spatial"))+
+  # #   NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]
+  # # 
+  # # st_distance(st_geometry(TRACKS[TRACKS$RovbaseID %in% "T477952",]),
+  # #             st_as_sf(NGSOther[which(NGSOther$DNAID%in%idPublic),][1,]))
+  # # 
+  # # plot(TRACKS_YEAR[[9]][TRACKS_YEAR[[9]]$RovbaseID %in% "T471191",]$geometry)
+  # # plot(TRACKSSimple_sf[[9]][TRACKSSimple_sf[[9]]$RovbaseID %in% "T471191",]$geometry)
+  # # plot(TRACKS[TRACKS$RovbaseID %in% "T471191",]$geometry,col="red",add=T)
+  # # points(NGSStructured[which(NGSStructured$DNAID%in%idPublic),],pch=16)
+  
+  
+  
+  ## ------   2.2. TABLE 1 NGS SAMPLES YEAR/COUNTRIES/SEX ------
+  
+  ## ------     2.2.1. ALL ------
+  
+  NGSCountrySEX <- matrix("", ncol = n.years*2, nrow = 4)
+  row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")
+  colnames(NGSCountrySEX) <- unlist(lapply(YEARS, function(x) c(x[2],x[2])))
+  #colnames(NGSCountrySEX) <- unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) ))
+  
+  NGSCountrySEX[1, ] <- rep(c("F","M"), n.years)
+  sex <- c("Hunn","Hann")
+  sex1 <- c(0,1)
+  ye <- seq(1, n.years*2, by = 2)
+  for(s in 1:2){
+    for(t in 1:n.years){
+      temp <- NGS[NGS$Year == years[t] & NGS$Sex==sex[s], ]
+      NGSCountrySEX["Norway",ye[t] + sex1[s] ] <- nrow(temp[temp$Country %in% "N", ])
+      NGSCountrySEX["Sweden",ye[t] + sex1[s]] <- nrow(temp[temp$Country %in% "S", ])
+      NGSCountrySEX["Total",ye[t] + sex1[s]] <- nrow(temp[temp$Country %in% "S" | temp$Country %in% "N" , ])
+    }#t
+  }
+  
+  ##-- Export .tex table
+  addtorow <- list()
+  addtorow$pos <- list(c(0),0)
+  addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGSCountrySEX))),
+                                      '}', collapse=''), '\\\\'),
+                        rep("\\rowcolor[gray]{.95}",1))
+  colnames(NGSCountrySEX) <- rep("", ncol(NGSCountrySEX))
+  print(xtable(NGSCountrySEX, type = "latex",
+               align = paste(c("l",rep("c",ncol(NGSCountrySEX))), collapse = "")),
+        #scalebox = .8,
+        floating = FALSE,include.colnames=F,
+        add.to.row = addtorow,
+        file = file.path(working.dir, "tables","NGSCountrySEX.tex"))
+  
+  ##-- Export .csv table
+  write.csv( NGSCountrySEX, 
+             file = file.path(working.dir, "tables", "NGSCountrySEX.csv"))
+  
+  # ##-- Checks
+  # sum(as.numeric(NGSCountrySEX["Total",]))
+  # sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "F"]))
+  # sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "M"]))
+  
+  
+  
+  ## ------     2.2.2. PER OBSERVATION PROCESS ------
+  
+  NGSCountrySEXoBS <- matrix("", ncol = n.years*2+1, nrow = 7)
+  NGSCountrySEXoBS[1, ] <- c("", rep(c("F","M"), n.years))
+  NGSCountrySEXoBS[ ,1] <- c("", rep(c("Structured","Unstructured"), 3))
+  row.names(NGSCountrySEXoBS) <- c("", rep(c("Norway","Sweden","Total"), each = 2))
+  colnames(NGSCountrySEXoBS) <- c("", unlist(lapply(YEARS, function(x) c(x[2],x[2]))))
+  
+  sex <- c("Hunn","Hann")
+  sex1 <- c(0,1)
+  ye <- seq(2, n.years*2, by = 2)
+  for(s in 1:2){
+    for(t in 1:n.years){
+      ##-- Structured
+      tempStruc <- NGSStructured[NGSStructured$Year == years[t] & NGSStructured$Sex == sex[s], ]
+      NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[1],ye[t]+sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "N", ])
+      NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[1],ye[t]+sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "S", ])
+      NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[1], ye[t]+sex1[s]] <- nrow(tempStruc[tempStruc$Country %in% "S" | tempStruc$Country %in% "N", ])
+      
+      ##-- Other
+      tempOther <- NGSOther[NGSOther$Year == years[t] & NGSOther$Sex == sex[s], ]
+      NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[2],ye[t]+sex1[s]] <- nrow(tempOther[tempOther$Country %in% "N", ])
+      NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[2],ye[t]+sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S", ])
+      NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[2], ye[t]+sex1[s]] <- nrow(tempOther[tempOther$Country %in% "S" | tempOther$Country %in% "N", ])
+    }#t
+  }#s
+  
+  ##-- Export .tex table
+  addtorow <- list()
+  addtorow$pos <- list(c(0),0)
+  addtorow$command <- c(paste0('& \\multicolumn{2}{c}{}',
+                               paste0(' & \\multicolumn{2}{c}{',
+                                      sort(unique(colnames(NGSCountrySEXoBS)[2:ncol(NGSCountrySEXoBS)])),
+                                      '}', collapse = ""),
+                               '\\\\'),
+                        rep("\\rowcolor[gray]{.95}",1))
+  colnames(NGSCountrySEXoBS) <- rep("", ncol(NGSCountrySEXoBS))
+  multirow <- paste0( paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Norway","Sweden","Total"), "}}"))
+  multirowadd <- matrix(c("",multirow[1],"",multirow[2],"",multirow[3],""), ncol = 1)
+  NGSCountrySEXoBS <- data.frame(cbind(multirowadd,NGSCountrySEXoBS))
+  colnames(NGSCountrySEXoBS) <- c("",unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),
+                                                                       paste(x,collapse = "/")))))
+  print(xtable( NGSCountrySEXoBS,
+                type = "latex",
+                align = paste(c("l",rep("c",ncol(NGSCountrySEXoBS))), collapse = "")),
+        #scalebox = .7, 
+        floating = FALSE,
+        add.to.row = addtorow,
+        include.colnames = F,
+        include.rownames = FALSE,
+        sanitize.text.function = function(x){x},
+        file = file.path(working.dir, "tables","NGSCountrySEXperObs.tex"))
+  
+  # ##-- Checks
+  # sum(as.numeric(NGSCountrySEX["Total",]))
+  # sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "F"]))
+  # sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "M"]))
+  # 
+  # #PLOT CHECK 
+  # plot(habitat$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
+  # plot(st_geometry(NGSOther),pch=21,col="black",cex=0.5,bg="red",add=T)
+  # plot(st_geometry(NGSStructured),pch=21,col="black",cex=0.5,bg="red",add=T)
+  # 
+  # par(mfrow=c(1,2),mar=c(0,0,0,0))
+  # plot(habitat$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
+  # plot(st_geometry(NGSStructured),pch=21,col="black",cex=0.5,bg="#E69F00",add=T)
+  # plot(habitat$habitat.r,axes=F,legend=F,box=F,col=c(grey(0.99),grey(0.8)))
+  # plot(st_geometry(NGSOther),pch=21,col="black",cex=0.5,bg="#009E73",add=T)
+  # 
+  # dev.off()
+  # 
+  # NGSStructured$Year1 <- NGSStructured$Year+1
+  # NGSOther$Year1 <- NGSOther$Year+1
+  # 
+  # barplot(rbind(table(NGSStructured$Year1),table(NGSOther$Year1)),
+  #         col=c("#E69F00","#009E73"))
+  # legend("topleft",fill=c("#E69F00","#009E73"),legend=c("Structured","Other") )
+  
+  ##-- GIVE FILE TO HENRIK ([PD] for what????)
+  tmp <- NGSOther[NGSOther$Year %in% c(2019,2020,2021), ]
+  #tmp
+  write.csv(tmp, file = file.path(working.dir, "tables", "Unstructured2020_2022.csv"))
+  
+  
+  
+  ## ------   2.3. TABLE 2 NGS ID YEAR/COUNTRIES/SEX ------
+  
+  ## ------     2.3.1. ALL ------
+  
+  NGSidCountrySEX <- matrix("", ncol = n.years*2, nrow = 4)
+  row.names(NGSidCountrySEX) <- c("","Norway","Sweden","Total")
+  colnames(NGSidCountrySEX) <- c(unlist(lapply(YEARS, function(x)c(x[2],x[2]))))
+  #colnames(NGSidCountrySEX) <- unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) ))
+  
+  NGSidCountrySEX[1,] <- rep(c("F","M"), n.years)
+  sex <- c("Hunn","Hann")
+  sex1 <- c(0,1)
+  ye <- seq(1, n.years*2, by = 2)
+  for(s in 1:2){
+    for(t in 1:n.years){
+      temp <- NGS[NGS$Year == years[t] & NGS$Sex == sex[s], ]
+      NGSidCountrySEX["Norway",ye[t] + sex1[s] ] <- length(unique(temp$Id[temp$Country %in% "N"]))
+      NGSidCountrySEX["Sweden",ye[t] + sex1[s]] <- length(unique(temp$Id[temp$Country %in% "S"]))
+      NGSidCountrySEX["Total",ye[t] + sex1[s]] <- length(unique(temp$Id))
+    }#t
+  }#s
+  
+  ##-- Export .tex
+  addtorow <- list()
+  addtorow$pos <- list(c(0),0)
+  addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGSidCountrySEX))),
+                                      '}', collapse=''), '\\\\'),rep("\\rowcolor[gray]{.95}",1))
+  colnames(NGSidCountrySEX) <- rep("", ncol(NGSidCountrySEX))
+  
+  print(xtable( NGSidCountrySEX,
+                type = "latex",
+                align = paste(c("l",rep("c",ncol(NGSidCountrySEX))), collapse = "")),
+        #scalebox = .8, 
+        floating = FALSE,
+        include.colnames = F,
+        add.to.row = addtorow,
+        file = file.path(working.dir, "tables","NGSidCountrySEX.tex"))
+  
+  ##-- Export .csv
+  write.csv( NGSidCountrySEX,
+             file = file.path(working.dir, "tables", "NGSidCountrySEX.csv"))
+  
+  
+  ##-- Export .csv TABLE WITH THE NUMBER OF TOTAL IDS PER YEAR
+  NGSidCountryTotal <- matrix(0, ncol = n.years, nrow = 1)
+  row.names(NGSidCountryTotal) <- c("Total")
+  colnames(NGSidCountryTotal) <- c(unlist(lapply(YEARS, function(x) c(x[2]))))
+  #colnames(NGSidCountryTotal) <- unlist(lapply(YEARS,function(x) paste(x,collapse = "/") ))
+  
+  for(t in 1:n.years){
+    temp <- NGS[NGS$Year == years[t] , ]
+    NGSidCountryTotal["Total", t] <- length(unique(temp$Id))
+  }#t
+  write.csv( NGSidCountryTotal,
+             file = file.path(working.dir, "tables","TotalIdDetected.csv"))
+  
+  ### PRINT A CSV TABLE WITH THE NUMBER OF TOTAL IDS PER YEAR PER SEX
+  
+  
+  
+  ## ------     2.3.2. PER OBSERVATION PROCESS ------
+  
+  NGSCountrySEXoBSid <- matrix("", ncol = n.years*2+1, nrow = 7)
+  row.names(NGSCountrySEXoBSid) <- c("",rep(c("Norway","Sweden","Total"),each=2))
+  colnames(NGSCountrySEXoBSid) <- c("",unlist(lapply(YEARS, function(x) c(x[2],x[2]))))
+  
+  NGSCountrySEXoBSid[1,] <- c("", rep(c("F","M"), n.years))
+  NGSCountrySEXoBSid[,1] <- c("", rep(c("Structured","Unstructured"), 3))
+  
+  sex <- c("Hunn","Hann")
+  sex1 <- c(0,1)
+  ye <- seq(2,n.years*2,by=2)
+  for(s in 1:2){
+    for(t in 1:n.years){
+      ## structured
+      tempStruc <- NGSStructured[NGSStructured$Year == years[t] & NGSStructured$Sex==sex[s], ]
+      
+      NGSCountrySEXoBSid[which(row.names(NGSCountrySEXoBSid) %in% "Norway")[1], ye[t] + sex1[s] ] <- length(unique(tempStruc$Id[tempStruc$Country %in% "N" ])) 
+      NGSCountrySEXoBSid[which(row.names(NGSCountrySEXoBSid) %in% "Sweden")[1], ye[t] + sex1[s]] <- length(unique(tempStruc$Id[tempStruc$Country %in% "S" ]))
+      NGSCountrySEXoBSid[which(row.names(NGSCountrySEXoBSid) %in% "Total")[1], ye[t] + sex1[s]] <- length(unique(tempStruc$Id))
+      
+      ## Other
+      tempOther <- NGSOther[NGSOther$Year == years[t] & NGSOther$Sex==sex[s], ]
+      
+      NGSCountrySEXoBSid[which(row.names(NGSCountrySEXoBSid) %in% "Norway")[2], ye[t] + sex1[s] ] <- length(unique(tempOther$Id[tempOther$Country %in% "N" ])) 
+      NGSCountrySEXoBSid[which(row.names(NGSCountrySEXoBSid) %in% "Sweden")[2], ye[t] + sex1[s]] <- length(unique(tempOther$Id[tempOther$Country %in% "S" ]))
+      NGSCountrySEXoBSid[which(row.names(NGSCountrySEXoBSid) %in% "Total")[2], ye[t] + sex1[s]] <- length(unique(tempOther$Id))
+      
+      ###TOTAL 
+      
+      
+    }#t
+  }#s
+  
+  
+  ##-- Export .tex
+  addtorow <- list()
+  addtorow$pos <- list(c(0),0)
+  addtorow$command <- c(paste0("& \\multicolumn{1}{c}{}",paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGSCountrySEXoBSid)[2:ncol(NGSCountrySEXoBSid)])),
+                                                                '}', collapse=''), '\\\\'),
+                        rep("\\rowcolor[gray]{.95}",1))
+  colnames(NGSCountrySEXoBSid) <- rep("", ncol(NGSCountrySEXoBSid))
+  multirow <- paste0( paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Norway","Sweden","Total"), "}}"))
+  multirowadd <- matrix(c("",multirow[1],"",multirow[2],"",multirow[3],""),ncol=1)
+  NGSCountrySEXoBSid <- data.frame(cbind(multirowadd, NGSCountrySEXoBSid))
+  colnames(NGSCountrySEXoBSid) <- c(unlist(lapply(YEARS, function(x) c(x[2]))))
+  
+  print(xtable(NGSCountrySEXoBSid, type = "latex",
+               align = paste(c("l",rep("c",ncol(NGSCountrySEXoBSid))),collapse = "")),
+        #scalebox = .7, 
+        floating = FALSE,
+        add.to.row = addtorow,
+        include.colnames = F,
+        include.rownames = FALSE,
+        sanitize.text.function = function(x){x},
+        file = file.path(working.dir, "tables", "NGSCountrySEXperObsid.tex"))
+  
+  
+  
+  ## ------   2.4. TABLE 3 DEAD CAUSE ID YEAR/COUNTRIES/SEX ------
+  
+  DeadidCountrySEX <- matrix(0, ncol = n.years*2+1, nrow = 6)
+  row.names(DeadidCountrySEX) <- c("","other","other","legal culling","legal culling","")
+  colnames(DeadidCountrySEX) <- c("",unlist(lapply(YEARS, function(x) c(x[2],x[2]))))
+  #colnames(DeadidCountrySEX) <- c("", unlist(lapply(YEARS, function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")))))
+  DeadidCountrySEX[1,] <- c("",rep(c("F","M"),n.years))
+  DeadidCountrySEX[,1] <- c("","Norway","Sweden","Norway","Sweden","Total")
+  sex <- c("Hunn","Hann")
+  sex1 <- c(0,1)
+  ye <- seq(1, n.years*2, by = 2)
+  
+  ##-- Identify legal mortality causes
+  MortalityNames <- unique(as.character(dead$DeathCause))
+  table(as.character(dead$DeathCause))
+  legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
+  legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
+  legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
+  legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
+  legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
+  legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("9", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("23", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("28", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("Rifle", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("18", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("17", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Uspesifisert", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Fellefangst", MortalityNames)])
+  # legalCauses <- c(legalCauses, MortalityNames[grep("Jakt - Hagle", MortalityNames)])
+  
+  
+  ##-- SEPARATE MORTALITIES
+  cause <- c("other","legal culling")
+  for(t in 1:n.years){
+    for(s in 1:2){
+      for(d in 1:2){
+        if(d == 1){
+          temp <- dead[dead$Year == years[t] & dead$Sex == sex[s] & !(dead$DeathCause %in% legalCauses), ]
+        } else {
+          temp <- dead[dead$Year == years[t] & dead$Sex == sex[s] & dead$DeathCause %in% legalCauses, ]
+        }
+        row <- which(rownames(DeadidCountrySEX) == cause[d] & DeadidCountrySEX[,1] == "Norway" )
+        DeadidCountrySEX[row,ye[t]+sex1[s]+1] <- length(unique(temp$Id[temp$Country %in% "N"]))
+        
+        row <- which(rownames(DeadidCountrySEX) == cause[d] & DeadidCountrySEX[,1] == "Sweden" )
+        DeadidCountrySEX[row,ye[t]+sex1[s]+1] <- length(unique(temp$Id[temp$Country %in% "S"]))
+      }#d
+      DeadidCountrySEX[6,ye[t]+sex1[s]+1] <- sum(as.numeric(DeadidCountrySEX[2:6,ye[t]+sex1[s]+1]))
+    }#s
+  }#t
+  
+  
+  ##-- summary
+  ###-- Other causes
+  sum(as.numeric(DeadidCountrySEX[2:3,2:ncol(DeadidCountrySEX)]))
+  sum(as.numeric(DeadidCountrySEX[2:3,which(DeadidCountrySEX[1,]=="F")]))
+  sum(as.numeric(DeadidCountrySEX[2:3,which(DeadidCountrySEX[1,]=="M")]))
+  ##-- legal
+  sum(as.numeric(DeadidCountrySEX[4:5,2:ncol(DeadidCountrySEX)]))
+  sum(as.numeric(DeadidCountrySEX[4:5,which(DeadidCountrySEX[1,]=="F")]))
+  sum(as.numeric(DeadidCountrySEX[4:5,which(DeadidCountrySEX[1,]=="M")]))
+  sum(as.numeric(DeadidCountrySEX[c(2,3),2:ncol(DeadidCountrySEX)]))/
+    sum(as.numeric(DeadidCountrySEX[c(2:5),2:ncol(DeadidCountrySEX)]))
+  
+  ##-- %of dead reco (legal) in Norway
+  sum(as.numeric(DeadidCountrySEX[4,2:ncol(DeadidCountrySEX)]))/
+    sum(as.numeric(DeadidCountrySEX[c(4,5),2:ncol(DeadidCountrySEX)]))
+  
+  ##-- ?? 
+  sum(as.numeric(DeadidCountrySEX[c(3,5),2:ncol(DeadidCountrySEX)]))/
+    sum(as.numeric(DeadidCountrySEX[c(2:5),2:ncol(DeadidCountrySEX)]))
+  
+  ##-- ??
+  sum(as.numeric(DeadidCountrySEX[6,which(DeadidCountrySEX[1,]=="M")]))
+  sum(as.numeric(DeadidCountrySEX[6,which(DeadidCountrySEX[1,]=="F")]))
+  sum(as.numeric(DeadidCountrySEX[6,which(DeadidCountrySEX[1,] %in% c("F","M"))]))
+  
+  ##-- Export. tex
+  addtorow <- list()
+  addtorow$pos <- list(c(0),0)
+  uniqueYEAR <- sort(unique(colnames(DeadidCountrySEX)))
+  uniqueYEAR <- uniqueYEAR[2:length(uniqueYEAR)]
+  addtorow$command <- c(paste0("& \\multicolumn{1}{c}{Country}",paste0('& \\multicolumn{2}{c}{', uniqueYEAR,
+                                                                       '}', collapse=''), '\\\\'),
+                        rep("\\rowcolor[gray]{.95}",1))
+  ##-- REMOVE ROWS WHERE PARAMETERS ARE NOT STATE SPECIFIC
+  multirow <- paste0("\\multirow{", 2, "}{*}{\\textbf{", c("Other","Legal culling"), "}}")
+  multirowadd <- matrix(c("",multirow[1],"",multirow[2],"","{\\textbf{Total}}"),ncol=1)
+  DeadidCountrySEX <- data.frame(cbind(multirowadd,DeadidCountrySEX))
+  
+  print(xtable(DeadidCountrySEX, type = "latex",
+               align = paste(rep("c", ncol(DeadidCountrySEX)+1), collapse = "")),
+        #scalebox = .7, 
+        floating = FALSE,
+        add.to.row = addtorow,
+        include.colnames = F,
+        include.rownames = FALSE,
+        sanitize.text.function = function(x){x},
+        file = file.path(working.dir, "tables", "DeadidCountrySEX.tex"))
+  
+  # check 
+  # tmp <- dead[dead$Year == 2019 & 
+  #               !dead$DeathCause %in% legalCauses &
+  #               dead$Country %in% "N" & 
+  #               dead$Sex %in% "Hunn", ]
+  # length(unique(tmp$Id))
+  # unique(tmp$Id)
+  # DeadidCountrySEX[,"X2022"]
+  # DeadidCountrySEX[,"X2022.1"]
+  # dead[dead$Id %in% "JI416817 Ind7303 +",]$Sex
+  # plot(COUNTRIES$geometry)
+  # plot(tmp$geometry,add=T,col="red",pch=16)
+  
+  
+  
+  ## ------   2.5. GET THE DETECTED INDIVIDUALS ------
+  
+  n.detected <- read.csv(file.path(working.dir, "tables", "TotalIdDetected.csv"))
+  n.detected <- n.detected[1,2:ncol(n.detected)]
+  
+  
+  
+  ## ------   2.6. SUMMARY DETECTED INDIVIDUALS PER COUNTIES ------
+  
+  # myFilteredData.sp$alive$COUNTIES  <- st_intersects(myFilteredData.sp$alive[,1], COUNTIES_AGGREGATED[,1])
+  # myFilteredData.sp$alive$COUNTIES <- as.numeric(myFilteredData.sp$alive$COUNTIES)
+  # 
+  # 
+  # myFilteredData.sp$alive$COUNTIES <- apply(st_intersects(COUNTIES_AGGREGATED, myFilteredData.sp$alive, sparse = FALSE), 2, 
+  #       function(col) {which(col)})
+  # myFilteredData.sp$alive$counties1 <- 0
+  # for(i in 1:nrow(myFilteredData.sp$alive)){
+  #   if(length(myFilteredData.sp$alive$COUNTIES[[i]])>0){
+  #   myFilteredData.sp$alive$counties1[i] <- myFilteredData.sp$alive$COUNTIES[[i]][1]
+  #   }else{
+  #     myFilteredData.sp$alive$counties1[[i]] <- 0
+  #   }
+  # }
+  # 
+  # par(mar=c(0,0,0,0))
+  # plot(COUNTIES_AGGREGATED$geometry,border="white",col=grey(0.5))
+  # text(st_coordinates(st_centroid(COUNTIES_AGGREGATED$geometry))[,1],
+  #      st_coordinates(st_centroid(COUNTIES_AGGREGATED$geometry))[,2],
+  #      COUNTIES_AGGREGATED$id,col="red",font=2)
+  #
+  # ## NSAMPLES
+  # summa <- myFilteredData.sp$alive %>%
+  #   group_by(counties1,Year) %>%
+  #   summarise(n=n()) %>%
+  #   st_drop_geometry()
+  # summa <- summa[summa$counties1>0,]
+  # ##-- 2023
+  # tmp <- summa[summa$Year %in% 2023,]
+  # COUNTIES_AGGREGATED$nSampl2023 <- tmp$n#[1:8,"n"]
+  # #2022
+  # tmp1 <- summa[summa$Year %in% 2022,]
+  # COUNTIES_AGGREGATED$nSampl2022 <- tmp1$n#[1:8,"n"]
+  # 
+  # ##
+  # tmppp<- st_drop_geometry(COUNTIES_AGGREGATED[,c("id","nSampl2022","nSampl2023")])
+  # bar <- t(as.matrix(tmppp[c(5,7,8),2:3]))
+  # colnames(bar) <- c(5,7,8)
+  # barplo <- barplot(bar,beside=T,ylab="N samples")
+  # legend("topright",fill=c(grey(0.3),grey(0.6)),legend=c(2023,2024))
+  # 
+  # ## NdetectionsPerID 
+  # #COUNT NUMBER IDS 
+  # summa$n1 <- summa$NID <- 0
+  # dpt <- unique(unlist(summa$counties1))
+  # yearsss <- c(2022,2023)
+  # for(t in 1:length(yearsss)){
+  #   for(i in 1:length(dpt)){
+  #     tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$counties1 %in% dpt[i] & myFilteredData.sp$alive$Year %in% yearsss[t],]
+  #     summa[summa$counties1 %in% dpt[i] & summa$Year %in% yearsss[t], ]$n1 <- nrow(tmp)
+  #     summa[summa$counties1 %in% dpt[i] & summa$Year %in% yearsss[t], ]$NID <-  length(unique(tmp$Id))
+  #   }
+  # }
+  # 
+  # summa$NdetPerIDDet <- summa$n1/summa$NID
+  # 
+  # ##-- 2023
+  # tmp <- summa[summa$Year %in% 2023,]
+  # COUNTIES_AGGREGATED$detPerID2023 <- tmp$NdetPerIDDet#[1:8,"n"]
+  # #2022
+  # tmp1 <- summa[summa$Year %in% 2022,]
+  # COUNTIES_AGGREGATED$detPerID2022 <- tmp1$NdetPerIDDet#[1:8,"n"]
+  # 
+  # tmppp<- st_drop_geometry(COUNTIES_AGGREGATED[,c("detPerID2022","detPerID2023")])
+  # bar <- t(as.matrix(tmppp[c(5,7,8),]))
+  # colnames(bar) <- c(5,7,8)
+  # 
+  # par(mfrow=c(1,2))
+  # par(mar=c(0,0,0,0))
+  # plot(COUNTIES_AGGREGATED$geometry,border="white",col=grey(0.5))
+  # text(st_coordinates(st_centroid(COUNTIES_AGGREGATED$geometry))[,1],
+  #      st_coordinates(st_centroid(COUNTIES_AGGREGATED$geometry))[,2],
+  #      COUNTIES_AGGREGATED$id,col="red",font=2)
+  # par(mar=c(4,5,1,1))
+  # barplo <- barplot(bar,beside=T,ylab="average Dets per IDS")
+  # legend("topright",fill=c(grey(0.3),grey(0.6)),legend=c(2023,2024))
+  
+  
+  ##----------------------------------------------------------------------------
   
   
   ## ------   5.3. VITAL RATES ------

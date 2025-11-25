@@ -97,7 +97,7 @@ makeRovquantData_bear <- function(
                      maxDist = max.det.dist)
   
   ##-- Set up list of Data characteristics
-  data <- list( sex = sex,
+  DATA <- list( sex = sex,
                 aug.factor = aug.factor,
                 sampling.months = sampling.months)
   
@@ -130,8 +130,8 @@ makeRovquantData_bear <- function(
                     "Møre og Romsdal","Oslo", "Oppland",
                     "Rogaland", "Vestland","Telemark",
                     "Vestfold","Østfold") ~ "Innlandet")) %>%
-    dplyr::filter( , county %in% c("Trøndelag","Innlandet","Finnmark")) %>%
-    dplyr::group_by(county) %>%
+    dplyr::filter( , id %in% c("Trøndelag","Innlandet","Finnmark")) %>%
+    dplyr::group_by(id) %>%
     dplyr::summarise() 
   
   COUNTIES$id <- as.character(1:nrow(COUNTIES))
@@ -140,7 +140,7 @@ makeRovquantData_bear <- function(
   
   ## ------   2. NGS DATA -----
   
-  ##-- Extract date from the last cleaned data file
+  ##-- Extract date from the last cleaned DATA file
   DATE <- getMostRecent( 
     path = file.path(working.dir,"data"),
     pattern = "CleanData_bear")
@@ -156,7 +156,7 @@ makeRovquantData_bear <- function(
     years <- sort(unique(c(myFullData.sp$alive$Year,
                            myFullData.sp$dead.recovery$Year)))
   }
-  data$years <- years
+  DATA$years <- years
   n.years <- length(years)
   
   
@@ -434,7 +434,7 @@ makeRovquantData_bear <- function(
       !is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
   
   # ##-- Rasterize at the detector level
-  # r.list <- lapply(data$years, function(y){
+  # r.list <- lapply(DATA$years, function(y){
   #   if(y %in% skandObs$year){
   #     rl <- raster::rasterize(skandObs[skandObs$year %in% y, 1],
   #                         r.detector,
@@ -513,7 +513,7 @@ makeRovquantData_bear <- function(
   ##-- Smooth binary map
   ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.02 
   habOwin <- spatstat.geom::as.owin(as.vector(raster::extent(r.detector)))
-  ds.list <- lapply( data$years, function(y){
+  ds.list <- lapply( DATA$years, function(y){
     ##-- ROVBASE DATA 
     pts <- sf::st_coordinates(rovbaseObs)[rovbaseObs$year %in% y, ]
     ##-- SKANDOBS
@@ -864,12 +864,12 @@ makeRovquantData_bear <- function(
     
     y.alive <- makeAugmentation( 
       y = y.ar.ALIVE,
-      aug.factor = data$aug.factor,
+      aug.factor = DATA$aug.factor,
       replace.value = 0)
     
     y.dead.ar <- makeAugmentation( 
       y = y.ar.DEAD,
-      aug.factor = data$aug.factor,
+      aug.factor = DATA$aug.factor,
       replace.value = 0)
     
     
@@ -1050,7 +1050,7 @@ makeRovquantData_bear <- function(
     
     ##-- Augment zMonths
     zMonths <- makeAugmentation( y = zMonths,
-                                 aug.factor = data$aug.factor,
+                                 aug.factor = DATA$aug.factor,
                                  replace.value = NA)
     
     ##-- Compress back to yearly z
