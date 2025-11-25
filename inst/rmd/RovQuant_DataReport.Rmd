@@ -123,6 +123,7 @@ load(file.path( working.dir, "data",
 
 ##-- Identify number of detector covariates
 covNames <- names(detectors$grid)[!names(detectors$grid) %in% c("Detector","id", "x","y","geometry")]
+covNames <- covNames[-3]
 L <- length(covNames)
 ```
 

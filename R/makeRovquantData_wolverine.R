@@ -467,13 +467,13 @@ makeRovquantData_wolverine <- function(
     as.factor(.) %>%
     as.numeric(.)
   
+  ##-- Put into "nimble2SCR" format
+  detectors$detectors.df$countries <- detCountries
+  
   ##-- Turn into a matrix with years in columns
   detCountries <- matrix( detCountries,
                           nrow = length(detCountries),
                           ncol = n.years)
-  
-  ##-- Put into "nimble2SCR" format
-  detectors$detectors.df$countries <- detCountries
   
   ##-- Add another category to detCountry if in Norrbotten, to turnoff detection to 0 there. 
   for(t in whichYearsNotSampled){
