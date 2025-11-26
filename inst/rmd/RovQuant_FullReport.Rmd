@@ -4,7 +4,7 @@ params:
   years: !r 2012:2024
   date: !r Sys.Date()   
   working.dir: !r getwd()
-  out: !r list()
+  sampling.months: NULL
 title: "`r paste('Estimates of', params$species, 'density, abundance, and population dynamics in Scandinavia,', params$years[1], '-', params$years[length(params$years)]')`"
 output:
   pdf_document: default

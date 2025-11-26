@@ -139,8 +139,7 @@ processRovquantOutput <- function(
       params = list( species = out$SPECIES,
                      years = out$YEARS,
                      date = out$DATE,
-                     working.dir = working.dir, 
-                     out = out),
+                     working.dir = working.dir),
       output_dir = output.dir,
       output_file = paste0("Results_", out$engSpecies, "_", out$DATE,".html"))
   }
