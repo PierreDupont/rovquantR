@@ -618,8 +618,7 @@ processRovquantOutput_wolverine <- function(
     y.labels = c(0.8,0.7,0.05),
     path = working.dir,
     name = "UD_Density")
-  dev.off()
-  
+
   
   
   ## ------   4.2. ABUNDANCE TIME SERIES ------
