@@ -212,7 +212,7 @@ knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png
 
 ```{r, propDetected1, echo = FALSE, collapse = TRUE}
 
-propDet <- read.csv(file.path( working.dir, "tables/PropDetectedNorway.csv"), check.names = F, row.names = 1)
+propDet <- read.csv(file.path( working.dir, "tables/PropDetected.csv"), check.names = F, row.names = 1)
 
 ##-- Extract proportion detected for the last year
 CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', propDet["Total",n.years]), "-")[[1]])

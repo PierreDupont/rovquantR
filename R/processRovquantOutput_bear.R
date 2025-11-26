@@ -2540,7 +2540,7 @@ processRovquantOutput_bear <- function(
 
   ##-- print .csv
   write.csv(prop,
-            file = file.path(working.dir, "tables/PropDetectedNorway.csv"))
+            file = file.path(working.dir, "tables/PropDetected.csv"))
   
   if(n.years > 8){
     ##-- Print .tex (split in two tables to print in the overleaf document)
@@ -2573,7 +2573,7 @@ processRovquantOutput_bear <- function(
         include.rownames = FALSE,
         hline.after = c(0,1,4,5, nrow(splitProp)),
         add.to.row = addtorow,
-        file = file.path(working.dir, "tables/PropDetectedNorway.tex"))
+        file = file.path(working.dir, "tables/PropDetected.tex"))
   } else {
     
     ##-- Print  a single .tex 
@@ -2587,7 +2587,7 @@ processRovquantOutput_bear <- function(
           sanitize.text.function = function(x){x},
           hline.after = c(-1,0, nrow(prop)),
           add.to.row = addtorow,
-          file = file.path(working.dir, "tables/PropDetectedNorway.tex"))
+          file = file.path(working.dir, "tables/PropDetected.tex"))
   }
     
 
