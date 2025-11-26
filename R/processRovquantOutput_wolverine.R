@@ -1356,8 +1356,8 @@ processRovquantOutput_wolverine <- function(
   
   ##-- Export .csv
   write.csv( NCarRegionEstimates,
-             file = file.path(working.dir, "tables/NAllYears.csv"),
-             fileEncoding = "latin1")
+             file = file.path(working.dir, "tables/NAllYears.csv"))
+             #fileEncoding = "latin1")
   
   ##-- Add grey color for years without sampling in Norrbotten
   NCarRegionEstimates["Norrbotten",yearsNotSampled] <- paste0("\\textcolor[gray]{.5}{",NCarRegionEstimates["Norrbotten", yearsNotSampled], "*}")
@@ -1409,8 +1409,8 @@ processRovquantOutput_wolverine <- function(
   
   ##-- Export .csv
   write.csv( NCountyEstimatesLastRegions,
-             file = file.path(working.dir, "tables/N_LastYearPerSex_region.csv"),
-             fileEncoding = "latin1")
+             file = file.path(working.dir, "tables/N_LastYearPerSex_region.csv"))
+             #,fileEncoding = "latin1")
   
   ##-- Fix row names
   row.names(NCountyEstimatesLastRegions) <- rownames_Table_tex1
@@ -1460,8 +1460,8 @@ processRovquantOutput_wolverine <- function(
   
   ##--  Export .csv
   write.csv( NCountyEstimatesLastRegions,
-             file = file.path(working.dir, "tables", "NLastYearPerSexArea.csv"),
-             fileEncoding = "latin1")
+             file = file.path(working.dir, "tables", "NLastYearPerSexArea.csv"))
+             #,fileEncoding = "latin1")
   
   
   ##--  Export .tex
@@ -1582,8 +1582,8 @@ processRovquantOutput_wolverine <- function(
   
   ##-- Export .csv
   write.csv( NCountyEstimatesAllSexRegions,
-             file = file.path(working.dir, "tables/NAllYearsPerSex.csv"),
-             fileEncoding = "latin1")
+             file = file.path(working.dir, "tables/NAllYearsPerSex.csv"))
+             #fileEncoding = "latin1")
   
   ##-- Add grey color for years without sampling in Norrbotten
   index <- which(colnames(NCountyEstimatesAllSexRegions) %in% (years[yearsNotSampled]+1))
@@ -1628,8 +1628,8 @@ processRovquantOutput_wolverine <- function(
   ##-- Export .csv
   row.names(NCarRegionEstimatesNOR) <- c("TOTAL", countyNames_NOR)
   write.csv( NCarRegionEstimatesNOR,
-             file = file.path(working.dir, "tables/NAllYearsNorwegianCounties.csv"),
-             fileEncoding = "latin1")
+             file = file.path(working.dir, "tables/NAllYearsNorwegianCounties.csv"))
+             #fileEncoding = "latin1")
   
   ##-- Export .tex
   row.names(NCarRegionEstimatesNOR) <- c("TOTAL", paste0("\\hspace{0.25cm} ", countyNames_NOR))
@@ -1843,7 +1843,7 @@ processRovquantOutput_wolverine <- function(
   ##-- Calculate % of the wolverine population detected 
   prop <- matrix(NA,3,n.years)
   dimnames(prop) <- list("% individuals" = c("F","M","Total"),
-                         "Years" = c(years))
+                         "Years" = c(years+1))
   for(t in 1:n.years){
     prop_F <- prop_M <- prop_tot <- rep(NA,n.mcmc)
     for(iter in 1:n.mcmc){
