@@ -40,7 +40,7 @@ processRovquantOutput_wolverine <- function(
   data.dir = getwd(),
   working.dir = NULL,
   ##-- MCMC
-  nburnin = 10,
+  nburnin = 0,
   niter = 100,
   ##-- Density 
   extraction.res = 5000,
@@ -294,7 +294,7 @@ processRovquantOutput_wolverine <- function(
                                         c(dim(resultsSXYZ_M$sims.list$sxy)[2],
                                           dim(resultsSXYZ_F$sims.list$sxy)[2]))
     
-    ##-- SAVE AND LOAD DATA
+    ##-- SAVE & LOAD DATA
     save( results_F, results_M, resultsSXYZ_MF,
           file = file.path( working.dir, "data",
                             paste0("MCMC_wolverine_", DATE, ".RData")))
@@ -302,6 +302,7 @@ processRovquantOutput_wolverine <- function(
 
   ##-- Number of activity center posterior samples
   n.mcmc <- dim(resultsSXYZ_MF$sims.list$z)[1]
+  gc(verbose = FALSE)
   
   
   
@@ -516,15 +517,17 @@ processRovquantOutput_wolverine <- function(
     ## ------   3. UD-BASED DENSITY ------
     
     ##-- Combine male and female sigma
-    sigma <- array(NA, c(length(iter), length(resultsSXYZ_MF$sims.list$sex), n.years))
-    for(t in 1:n.years){
-      for(i in 1:length(resultsSXYZ_MF$sims.list$sex)){
-        sigma[ ,i,t] <- ifelse(resultsSXYZ_MF$sims.list$sex[i] == "M",
-                               resultsSXYZ_MF$sims.list$sigma[iter,t,"M"],
-                               resultsSXYZ_MF$sims.list$sigma[iter,t,"F"])
-      }#i
-    }#t
-    
+    sigma <- array(NA, c( dim(sx_extract)[1],
+                          length(resultsSXYZ_MF$sims.list$sex),
+                          dim(sx_extract)[3]))
+    for(i in 1:length(resultsSXYZ_MF$sims.list$sex)){
+      if(resultsSXYZ_MF$sims.list$sex[i] == "M"){
+        sigma[ ,i, ] <- resultsSXYZ_MF$sims.list$sigma[ , ,"M"]
+      } else {
+        sigma[ ,i, ] <- resultsSXYZ_MF$sims.list$sigma[ , ,"F"]
+      }
+    }#i
+
     ##-- Rescale sigma to the raster resolution
     sigma <- sigma/raster::res(rrRegions)[1]
     
@@ -534,7 +537,7 @@ processRovquantOutput_wolverine <- function(
         sx = sx_extract[iter, ,t],
         sy = sy_extract[iter, ,t],
         z = z_extract[iter, ,t],
-        sigma = sigma[,,t],
+        sigma = sigma[iter,,t],
         habitatxy = habitat.id_extract,
         aliveStates = alive.states,
         regionID = regionID[c("Norway","Sweden"), ], 
@@ -1268,7 +1271,7 @@ processRovquantOutput_wolverine <- function(
   
   ## ------ 5. TABLES -----
   
-  gc()
+  gc(verbose = FALSE)
   
   ## ------   5.1. ABUNDANCE ------
   

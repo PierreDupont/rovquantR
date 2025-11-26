@@ -959,8 +959,8 @@ processRovquantOutput_bear <- function(
   # 
   # message("## Plotting population fluxes...")
   # 
-  # norRaster <- habitatRasterResolution$`5km`[["Countries"]]
-  # norRaster[norRaster[] != 2] <- NA
+  norRaster <- habitatRasterResolution$`5km`[["Countries"]]
+  norRaster[norRaster[] != 2] <- NA
   # 
   # ##-- Calculate number of individuals
   # N_surv <- N_surv_F <- N_surv_M <- matrix(NA,n.mcmc,n.years-1)
@@ -1528,50 +1528,50 @@ processRovquantOutput_bear <- function(
   # 
   # 
   # ## ------   4.7. NGS, Dead recoveries & Carnivore obs ------
-  # 
-  # ##-- Plot NGS & Dead recovery maps
-  # # pdf(file = file.path(working.dir, "figures", "NGS_DR_maps.pdf"),
-  # #     width = 18, height = 12)
-  # grDevices::png(filename = file.path(working.dir, "figures/NGS_DR_maps.png"),
-  #                width = 18, height = 12, units = "in", pointsize = 12,
-  #                res = 300, bg = NA)
-  # 
-  # ##-- layout
-  # mx <- rbind(c(1,rep(1:5, each = 2)),
-  #             c(rep(1:5, each = 2), 5))
-  # mx <- rbind(mx, mx + 5)
-  # nf <- layout(mx,
-  #              widths = c(rep(1,ncol(mx))),
-  #              heights = rep(1,2))
-  # par(mar = c(0,0,0,0))
-  # for(t in 1:length(years)){
-  #   plot(sf::st_geometry(COUNTIES_s), border = NA, col = "gray80")
-  #   points(data.alive$data.sp[data.alive$data.sp$Year == years[t], ],
-  #          pch = 3, col = "orange", lwd = 0.7)
-  #   points(data.dead[data.dead$Year == years[t], ],
-  #          pch = 3, col = "slateblue", lwd = 0.7)
-  #   mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
-  #   
-  #   if(t == n.years){
-  #     ##-- LEGEND
-  #     xLeg <- 830000
-  #     yLeg <- 6730000
-  #     segments(x0 = xLeg, x1 = xLeg,
-  #              y0 = yLeg, y1 = yLeg + 500000,
-  #              col = grey(0.3), lwd = 4, lend = 2)
-  #     text(xLeg-80000, yLeg+500000/2, labels = "500 km", srt = 90, cex = 2)
-  #     
-  #     points(x = c(xLeg-200000,xLeg-200000),
-  #            y = c(yLeg-100000,yLeg-180000),
-  #            pch = 3, lwd = 1.5, cex = 3,
-  #            col = c("orange","slateblue"))
-  #     text(x = c(xLeg-150000,xLeg-150000),
-  #          y = c(yLeg-100000,yLeg-180000),
-  #          c("NGS samples", "Dead recoveries"), cex = 2, pos = 4)
-  #   }#if
-  # }#t
-  # dev.off()
-  # 
+
+  ##-- Plot NGS & Dead recovery maps
+  # pdf(file = file.path(working.dir, "figures", "NGS_DR_maps.pdf"),
+  #     width = 18, height = 12)
+  grDevices::png(filename = file.path(working.dir, "figures/NGS_DR_maps.png"),
+                 width = 18, height = 12, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+
+  ##-- layout
+  mx <- rbind(c(1,rep(1:5, each = 2)),
+              c(rep(1:5, each = 2), 5))
+  mx <- rbind(mx, mx + 5)
+  nf <- layout(mx,
+               widths = c(rep(1,ncol(mx))),
+               heights = rep(1,2))
+  par(mar = c(0,0,0,0))
+  for(t in 1:length(years)){
+    plot(sf::st_geometry(COUNTIES_s), border = NA, col = "gray80")
+    points(data.alive$data.sp[data.alive$data.sp$Year == years[t], ],
+           pch = 3, col = "orange", lwd = 0.7)
+    points(data.dead[data.dead$Year == years[t], ],
+           pch = 3, col = "slateblue", lwd = 0.7)
+    mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
+
+    if(t == n.years){
+      ##-- LEGEND
+      xLeg <- 830000
+      yLeg <- 6730000
+      segments(x0 = xLeg, x1 = xLeg,
+               y0 = yLeg, y1 = yLeg + 500000,
+               col = grey(0.3), lwd = 4, lend = 2)
+      text(xLeg-80000, yLeg+500000/2, labels = "500 km", srt = 90, cex = 2)
+
+      points(x = c(xLeg-200000,xLeg-200000),
+             y = c(yLeg-100000,yLeg-180000),
+             pch = 3, lwd = 1.5, cex = 3,
+             col = c("orange","slateblue"))
+      text(x = c(xLeg-150000,xLeg-150000),
+           y = c(yLeg-100000,yLeg-180000),
+           c("NGS samples", "Dead recoveries"), cex = 2, pos = 4)
+    }#if
+  }#t
+  dev.off()
+
   # 
   # 
   # # ##-- Plot Carnivore observations maps
