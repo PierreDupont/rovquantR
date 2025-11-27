@@ -1214,7 +1214,7 @@ processRovquantOutput_wolverine <- function(
            pch = 3, col = "orange", lwd = 0.7)
     points(data.dead[data.dead$Year == years[t], ],
            pch = 3, col = "slateblue", lwd = 0.7)
-    mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
+    mtext(text = years[t]+1, side = 1, -25, adj=0.2, cex=1.8, font = 2)
     
     if(t == n.years){
       ##-- LEGEND
