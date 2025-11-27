@@ -36,8 +36,7 @@ if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, igno
   SPECIES <- "Brown bear"
   species <- "brown bear"
   latSpecies <- "Ursus arctos"
-  
-}else{
+} else {
   if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
     engSpecies <- "wolf"
     engSpeciess <- "wolves"
