@@ -546,11 +546,11 @@ processRovquantOutput_bear <- function(
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES[1, ],
-    type = c("time.series", "last.year","summary","summary_NOR"),
-    species = "bear",
-    labels = list("nor" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")]),
-    x.labels = 0.3,
-    y.labels = 0.8,
+    type = c("time.series", "last.year"),#"summary","summary_NOR"),
+    #species = "bear",
+    #labels = list("nor" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")]),
+    #x.labels = 0.3,
+    #y.labels = 0.8,
     path = working.dir,
     name = "UD_Density")
   

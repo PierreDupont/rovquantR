@@ -24,7 +24,9 @@ makeDirectories <- function( path = NULL,
     split <- unlist(strsplit(path, split = "/"))
     message(paste0("A folder named '", split[length(split)], "' already exists in the specified directory:"))
     message(paste(split[-length(split)], collapse = "/"))
-    } 
+  } else {
+    dir.create(path, showWarnings = F, recursive = T)
+    }
 
   ##-- Set-up directory structure
   if (!is.null(subFolders)) {

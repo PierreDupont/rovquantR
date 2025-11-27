@@ -179,13 +179,24 @@ knitr::include_graphics(file.path(working.dir, "figures/NGS_DR_maps.png"))
 We estimated that, within its primary range (`r round(detectors$n.detectors*(detectors$resolution/1000)^2)` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males.
 
 ```{r, Tab1, echo = FALSE, collapse = TRUE}
+
+whichBold <- which(rownames(N_LastYear) %in% c("Total","Sweden","Norway"))
+whichInd0 <- which(rownames(N_LastYear) %in% c("Total"))
+whichInd1 <- which(rownames(N_LastYear) %in% c("Sweden","Norway"))
+whichInd2 <- c( grep("Region",rownames(N_LastYear)), which(rownames(N_LastYear) %in% c("Nordre","Söndre","Midtre")))
+whichInd3 <- which(!1:nrow(N_LastYear) %in% c(whichInd0,whichInd1,whichInd2))
+  
 N_LastYear %>%
   kable( format = "html",
          align = "ccc",
          table.attr = "style='width:80%;'",
          caption = paste0("Table 1. ", SPECIES, " population size estimates in ", years[n.years]," within the study area by sex and large carnivore management region. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
   kable_classic(full_width = T, html_font = "Cambria") %>%
-    row_spec(row = c(0,nrow(N_LastYear)), bold = T)
+  row_spec(row = c(0,whichBold), bold = T) %>%
+  add_indent(positions = whichInd1, level_of_indent = 1)  %>%
+  add_indent(positions = whichInd2, level_of_indent = 2)  %>%
+  add_indent(positions = whichInd3, level_of_indent = 3)
+
 ```
 
 ```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 2: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is available as a geo-referenced raster in the 'raster' folder of the working directory"), echo = FALSE}
