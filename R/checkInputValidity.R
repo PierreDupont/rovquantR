@@ -10,14 +10,31 @@
 #' @param subDetectors Optional; a \code{list} of sf objects containing the subdetectors locations (for PAB models only)
 #' @param radius a \code{numeric} value denoting the maximum radius to consider for detector assignment. 
 #' Any detection further than \code{radius}m from any detector will not be assigned to any detector. Instead it will get a 'NA'.
+#'    id = NULL,
+#' @param s array of activity center coordinates.
+#' @param y detection histories.
+#' @param z matrix of individual states.
+#' @param lowerHabCoords lower coordinates of habitat grid cells.
+#' @param upperHabCoords upper coordinates of habitat grid cells.
+#' @param localHabWindowIndices matrix of IDs of the local habitat grid cells.
+#' @param numLocalHabWindows vector of numbers of local habitat grid cells.
+#' @param trapCoords matrix of detector coordinates
+#' @param localTrapsIndices matrix of IDs of the local detectors.
+#' @param localTrapsNum vector of numbers of local detectors.
+#' @param resizeFactor default value= 1.
+#' @param habitatGrid matrix of habitat grid cell IDs.
+#' @param habitatGridLocal matrix of resized habitat grid cell IDs.
+#' @param silent Logical; whether to print out outputs or not
+#' @param printReport Logical; whether to print out a .pdf report or not
+#' @param pathReport (optional) path to print the report
 #'
-#' @return A \code{sf} object with the x and y locations of the
-#'  different detections with associated detector's Id 
+#' @return A \code{.pdf} report with potentially problematic individual detections and/or movements. 
 #'
 #' @importFrom sf st_geometry st_multipolygon st_polygon
 #' @importFrom grDevices pdf hcl.colors
 #' @importFrom graphics points arrows
-#'
+#' 
+NULL
 #' @rdname checkInputValidity
 #' @export
 checkInputValidity <- function(

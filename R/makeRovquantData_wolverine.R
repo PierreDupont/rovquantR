@@ -22,8 +22,6 @@
 #' @param subdetector.res A \code{Numeric}.
 #' @param max.det.dist A \code{Numeric}.  
 #' @param resize.factor A \code{Numeric}.
-#' @param plot.check A \code{Logical}.
-#' @param print.report A \code{Logical}.
 #' 
 #' 
 #' @return 

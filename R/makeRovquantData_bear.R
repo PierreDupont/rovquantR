@@ -728,7 +728,8 @@ makeRovquantData_bear <- function(
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
     try(
-      plot( sf::st_geometry(data.alive$data.sp[data.alive$data.sp$Year == years[t], ]), add = TRUE, col = "orange", pch = 3),
+      plot( sf::st_geometry(data.alive$data.sp[data.alive$data.sp$Year == years[t], ]),
+            add = TRUE, col = "orange", pch = 3, cex = 1.2),
       silent = TRUE)
     plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
     
@@ -764,7 +765,8 @@ makeRovquantData_bear <- function(
                                         data.dead$Legal, ]), add = TRUE, col = "slateblue1", pch = 3),
       silent = TRUE)
     try(
-      plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]), add = TRUE, col = "slateblue4", pch = 3),
+      plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]),
+            add = TRUE, col = "slateblue4", pch = 3, cex = 1.2),
       silent = TRUE)
     plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
     
