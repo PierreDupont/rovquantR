@@ -4,6 +4,7 @@ params:
   years: !r 2012:2024
   date: !r Sys.Date()   
   working.dir: !r getwd()
+  sampling.months: NULL
 title: "`r paste('Estimates of', params$species, 'density, abundance, and population dynamics in Scandinavia,', params$years[1], '-', params$years[length(params$years)]')`"
 output:
   pdf_document: default
@@ -13,9 +14,9 @@ output:
     toc: yes
     toc_float: yes
     df_print: kable
-    #css: bootstrap.css
+    # css: bootstrap.css
     highlight: zenburn
-    #fig_caption: true
+    # fig_caption: true
   word_document: default
 bibliography: references.bib
 ---
@@ -87,7 +88,7 @@ CI_M <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Mal
 
 **Background** The Scandinavian `r species` (*`r latSpecies`*) population is monitored annually using non-invasive genetic sampling (NGS) and recovery of dead individuals. DNA extracted from faeces, urine, hair, and tissue is used to identify the species, sex and individual from which each sample originated. These data are compiled annually in the Scandinavian large carnivore database [Rovbase 3.0](https://www.rovbase.no/).
 
-**Approach** Using the Bayesian open-population spatial capture-recapture (OPSCR) model developed by [RovQuant] (<https://www.nmbu.no/en/research/projects/rovquant>), we estimated the status and dynamics of the Scandinavian `r engSpecies` population between `r years[1]` to `r years[length(years)]`. We provide annual density maps, as well as estimates of jurisdiction-specific population sizes, cause-specific survival, recruitment, and detection probabilities. Associated uncertainties are reported with all estimates.
+**Approach** Using the Bayesian open-population spatial capture-recapture (OPSCR) model developed by [RovQuant](https://www.nmbu.no/en/research/projects/rovquant), we estimated the status and dynamics of the Scandinavian `r engSpecies` population between `r years[1]` to `r years[length(years)]`. We provide annual density maps, as well as estimates of jurisdiction-specific population sizes, cause-specific survival, recruitment, and detection probabilities. Associated uncertainties are reported with all estimates.
 
 **Results** We estimated that, within its primary range (`r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$), the Norwegian brown bear population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males. Each year, a large proportion of the population is detected during annual large carnivore monitoring. Specifically, in `r years[length(years)]`, between `r XXX`% and `r XXX`% of the population were detected during non-invasive genetic sampling.
 
@@ -205,6 +206,39 @@ The different model components and data sources for covariates are described in 
 
 A total of 20 171 (8 828 female; 11 343 male) genotyped `r engSpecies` genetic samples were included in the analysis, of which 76% originated from Sweden. These samples were associated with 1 838 (846 female; 992 male) individuals. We did not include individuals with unknown sex in this analysis. Among all genotyped samples, 8 803 (3660 female; 5143 male) were assigned to the structured sampling and 11 368 (5168 female; 6200 male) to the unstructured sampling. We also used 721 (324 female; 397 male) dead recoveries of wolves in the OPSCR model, of which 601 (267 female; 334 male) were due to legal culling and 120 (57 female; 63 male) due to other causes of mortality. The majority of dead recoveries (68%) originated from Sweden. Annual total and country-specific tallies of NGS samples and associated individuals, as well as dead recoveries included in the analysis are provided in the Appendices (NGS samples: Table A.2 and Table A.1, NGS individuals: Table A.3, dead recoveries: Table A.4)
 
+```{r, ngs data, echo = FALSE, collapse = TRUE}
+ngs <- data.alive$data.sp
+
+##-- Number of NGS samples collected per sex and per year 
+numDet_sexYear <- table(ngs$Sex,ngs$Year)
+if(length(dim(numDet_sexYear)) > 1){
+  numDet_sexYear <- cbind(numDet_sexYear,rowSums(numDet_sexYear))
+  colnames(numDet_sexYear) <- c(years,"Total")
+  numDet_sexYear <- rbind(numDet_sexYear,colSums(numDet_sexYear))
+  rownames(numDet_sexYear) <- c("female","male","Total")
+}
+
+##-- Number of NGS samples collected per country
+percCountry <- table(data.alive$data.sp$Country_sample)
+percCountry <- round(percCountry[1]/sum(percCountry)*100)
+
+##-- Number of individuals detected per sex and per year
+numId_sexYear <- apply(table(ngs$Id,ngs$Sex,ngs$Year) > 0, c(2,3), sum)
+if(length(dim(numId_sexYear)) > 1){
+  numId_sexYear <- cbind(numId_sexYear,colSums(table(ngs$Id,ngs$Sex) > 0))
+  colnames(numId_sexYear) <- c(years,"Total")
+  numId_sexYear <- rbind(numId_sexYear,colSums(numId_sexYear))
+  rownames(numId_sexYear) <- c("female","male","Total")
+}
+```
+
+A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Norway . These samples were associated with `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. We did not include individuals with unknown sex in this analysis.
+
+```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: Annual distribution of ", engSpecies, " non-invasive genetic samples (NGS, yellow crosses) and dead recoveries (purple crosses) between ", years[1], " and ", years[n.years], " and included in the OPSCR analyses. We included only samples collected within the study area during the primary monitoring period."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/NGS_DR_maps.png"))
+```
+
+
 ## Density and abundance
 
 
@@ -212,11 +246,9 @@ Within its primary range (`r detectors$n.detectors*(detectors$resolution/1000)^2
 
 `r EngSpecies` abundance for the entire study area (`r detectors$n.detectors*(detectors$resolution/1000)^2` $km^{2}$, excluding the buffer area) was likely (95% credible interval) between  `r CI[1]` and `r CI[2]` individuals in `r years[n.years]` (Table 1, Figure 1). Estimates refer to the status of the population at the start of the annual sampling period (Oct. 1). The proportion of females in the Scandinavian `r engSpecies` population was likely between 48% and 54% in 2023/2024. Based on the model-predicted location of ACs, we estimated that in 2023/2024, between 353 to 403 individuals could be attributed to Sweden and 56 to 73 to Norway (Table 1). See Table 1 for total and sex-specific abundance estimates for each country and management area. See Table A.5 for annual `r engSpecies` abundance estimates for all of Scandinavia and by region between 2014/2015 and 2023/2024. During the past three years, the `r engSpecies` population experienced a steady decrease from 494-525 in 2021/2022 to 414-470 in 2023/2024 (Figure 2, Table A.5). Note that estimates for different years (Figure 2) shown here differ slightly from those provided in Bischof et al. (2020), Milleret et al. (2021), Milleret et al. (2022c), and Milleret et al. (2023). This is due to the use of an updated OPSCR model and the inclusion of additional years of data. The analysis yielded annual density maps, which illustrate changes in the distribution of wolves over time (Figure A.3).
 
-Table 1: Wolf population size estimates in 2023/2024 within the study area by sex at several spatial scales: the entire study area, by country, by management unit (carnivore management regions in Norway and "Rovdjursförvaltningsområden" in Sweden), and counties (“Län” in Sweden); see also Figure A.2. Only counties and management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses, as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated activity center locations of wolves. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions. Note that the numbers reported here are predictions from a statistical model which always represents an oversimplification of reality and is based on available data (NGS and dead recoveries). As a consequence, especially at the local scale, the model-estimated number of wolves based on DNA sampling can deviate from the number of wolves inferred from ancillary observations (e.g., camera traps).
-
-# ```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background).", echo = FALSE}
-# knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
-# ```
+```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background).", echo = FALSE} 
+knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
+```
 
 ```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = "Figure 2: Wolf population size estimates within the study area by country (blue: Sweden, red: Norway), and total (black) between 2014/2015 and 2023/2024. Darker and lighter bars show the 50% and 95% credible intervals, respectively. Credible intervals indicate uncertainty in estimates given the model and data used to generate the estimates. Light grey bars in the background show the total number of individuals detected within the entire study area. Changes in the model and the data can result in different estimates and associated uncertainty compared with estimates provided in previous reports by RovQuant. Note the higher precision (lower uncertainty) in the three monitoring seasons (2016/17, 2017/18, 2019/20) with higher sampling intensity in Sweden.", echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
@@ -226,13 +258,44 @@ knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png
 knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
 ```
 
+We estimated that, within its primary range (`r round(detectors$n.detectors*(detectors$resolution/1000)^2)` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males. Each year, a large proportion of the population is detected during annual large carnivore monitoring. Specifically, in `r years[length(years)]`, between XXX% and XXX% of the population were detected during non-invasive genetic sampling.
+
+```{r, Tab1, echo = FALSE, collapse = TRUE}
+N_LastYear %>%
+  kable( format = "html",
+         align = "ccc",
+         table.attr = "style='width:80%;'",
+         caption = paste0("Table 1. ", SPECIES, " population size estimates in ", years[n.years]," within the study area by sex and large carnivore management region. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
+  kable_classic(full_width = T, html_font = "Cambria") %>%
+    row_spec(c(0,nrow(N_All)), bold = T)
+```
+
+```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 2: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is freely available as a geo-referenced raster file from the GitHub repository of project RovQuant https://github.com/richbi/RovQuantPublic"), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
+```
+
+```{r, Fig3, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " population size estimates within the study area between ", years[1], " and ", years[length(years)], ". Darker and lighter bars show the 50% and 95% credible intervals, respectively. Credible intervals indicate uncertainty in estimates given the model and data used to generate the estimates. Light grey bars in the background show the total number of individuals detected within the entire study area."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
+```
+
+
+
+
+
+
 ## Vital rates
 
-The OPSCR model produced annual estimates of legal hunting mortality, mortality associated with all other causes, and per capita recruitment rates (Figure 3; Table A.7). There was temporal variation in mortality rates, with the risk of mortality from causes other than culling generally higher than the risk of mortality from culling. Overall, scent-marking adult individuals had a higher survival compared to other individuals, with no pronounced systematic difference between sexes (Figure A.4).
+The OPSCR model produced annual estimates of legal hunting mortality, mortality associated with all other causes (Fig.4), and per capita recruitment rates (Fig.5; Table A.7). There was temporal variation in mortality rates, with the risk of mortality from causes other than culling generally higher than the risk of mortality from culling. Overall, scent-marking adult individuals had a higher survival compared to other individuals, with no pronounced systematic difference between sexes (Figure A.4).
 
-Figure 3: Mortality probabilities due to legal culling (light green) and all other causes (dark green) for female and male wolves. Darker and lighter bars show the 50% and 95% credible intervals, respectively. Shown are overall estimates throughout the study area. Estimates refer to deaths occurring between the start of one sampling season and the start of the next.
+```{r, Fig4, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 4: Mortality probabilities due to legal culling and all other causes for female and male ", engSpeciess, ". Darker and lighter bars show the 50% and 95% credible intervals, respectively. Shown are overall estimates throughout the study area. Estimates refer to deaths occurring between the start of one sampling season and the start of the next."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/Mortality.png"))
+```
 
-Figure 4: Estimated annual number of recruits for female and male wolves. Recruitment represents the number of new individuals present in the population on Oct 1 (i.e., individuals that were born between the two consecutive monitoring seasons and survived to Oct 1 or that immigrated in the study area). Darker and lighter bars show the 50% and 95% credible intervals, respectively.
+```{r, Fig5, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 5: Estimated annual number of recruits for female and male ", engSpeciess, ". Recruitment represents the number of new individuals present in the population on ", firstMonth, " 1 (i.e., individuals that were born between the two consecutive monitoring seasons and survived to ", firstMonth, " 1, or that immigrated in the study area). Darker and lighter bars show the 50% and 95% credible intervals, respectively.."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/NumRecruitTotal.png"))
+```
+
+
 
 ## Detection probability
 
@@ -270,6 +333,26 @@ Data, R code to reproduce the analysis, as well as figures, tables, and raster m
 
 ::: {#refs}
 :::
+
+------------------------------------------------------------------------
+
+# Appendices
+
+```{r, TabS1, echo = FALSE, collapse = TRUE}
+N_All %>%
+  kable( format = "html",
+         escape = F,
+         align = paste0(c(rep("c",length(years)))),
+         caption =  paste0("Table 2. Annual ", engSpecies, " abundance estimates by large carnivore management region. Estimates are based on activity center locations estimated by the open-population spatial capture-recapture (OPSCR) model. Credible intervals (95%) are shown in parentheses. Small deviations between the total estimate and the sum of abundance estimates from the constituent subregions may arise due to rounding.")) %>%
+  kable_classic(full_width = T, html_font = "Cambria") %>%
+  kable_styling(font_size = 8) %>%
+  row_spec(c(0,nrow(N_All)), bold = T)
+```
+
+```{r, FigS1, fig.align = "center", fig.cap = paste0("Figure 4: ", species, " density between ", years[1], " and ", years[length(years)], "."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/UD_Density_TimeSeries.png"))
+```
+
 
 ------------------------------------------------------------------------
 

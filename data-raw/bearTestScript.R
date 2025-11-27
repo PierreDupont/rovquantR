@@ -21,7 +21,7 @@
 ##------------------------------------------------------------------------------
 ##
 ## Notes: 
-## This is based on 'rovquantR' beta version 0.2
+## This is based on 'rovquantR' beta version 0.1
 ##   
 ##------------------------------------------------------------------------------
 
@@ -34,8 +34,7 @@ gc()
 ## ------ INSTALL 'rovquantR' FROM GITHUB ------
 
 ## Ctrl + Shift + F10 (to restart R session)
-devtools::install_github("PierreDupont/rovquantR")
-
+devtools::install_github("PierreDupont/rovquantR@devel")
 
 
 ## ------ LOAD REQUIRED LIBRARIES ------
@@ -50,10 +49,10 @@ library(nimbleSCR)
 ##-- DATA DIRECTORY
 ##-- Directory containing the raw data necessary for the analysis
 ##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
-data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/Data"
+data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/workshop material/Bear/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/temp"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/workshop material/Bear/Analysis"
 
 
 ##------------------------------------------------------------------------------
@@ -61,7 +60,7 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/t
 
 cleanRovbaseData( 
   species = "bear",
-  years = 2020:2025,
+  years = 2015:2024,
   data.dir = data.dir,
   working.dir = working.dir,
   two.sex = TRUE,

@@ -1,6 +1,6 @@
 #' @title Create initial values for individual states
 #'
-#' @description \code{MakeZfromScratch} creates a sequence of states for each individual
+#' @description \code{makeZfromScratch} creates a sequence of states for each individual
 #' that is compatile with its detection history, i.e. "unborn" before the first detection,
 #' "alive" between the first and last detection and "dead" after that.
 #'  the dimensions of an object along
@@ -11,11 +11,11 @@
 #' 
 #' @return A \code{Matrix} containing the set of initial states z.
 #'
-#' @examples \dontrun{MakeZfromScratch()}
+#' @examples \dontrun{makeZfromScratch()}
 #' 
-#' @rdname MakeZfromScratch
+#' @rdname makeZfromScratch
 #' @export
-MakeZfromScratch <- function(
+makeZfromScratch <- function(
     data.alive,
     data.dead = NULL, 
     samplingMonths = 1:12)

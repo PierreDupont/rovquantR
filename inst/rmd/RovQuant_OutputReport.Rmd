@@ -36,8 +36,7 @@ if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, igno
   SPECIES <- "Brown bear"
   species <- "brown bear"
   latSpecies <- "Ursus arctos"
-  
-}else{
+} else {
   if(sum(grep("wolf", species, ignore.case = T))>0|sum(grep("ulv", species, ignore.case = T))>0){
     engSpecies <- "wolf"
     engSpeciess <- "wolves"
@@ -53,7 +52,6 @@ if(sum(grep("bear", species, ignore.case = T))>0|sum(grep("bjorn", species, igno
     } else {
       engSpecies <- engSpeciess <- SPECIES <- latSpecies <- species 
     }}}
-
 
 
 ##-- Sampling months
@@ -119,7 +117,7 @@ CI_M <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Mal
 
 Non-invasive genetic sampling (NGS) and dead recoveries are a centerpiece of national and regional large carnivore monitoring in Norway and Sweden. The Scandinavian `r species` (*`r latSpecies`*) population is monitored annually using non-invasive genetic sampling (NGS) and recovery of dead individuals and both countries have collected an extensive individual-based data set publicly available and stored in the Scandinavian large carnivore database Rovbase ([rovbase.no](https://www.rovbase.no/), [rovbase.se](https://www.rovbase.se/)).
 
-Since 2017, project [RovQuant](https://www.nmbu.no/en/projects/rovquant), from the Norwegian University of Life Sciences (NMBU), has been developing statistical methods to exploit the potential of this database and allow a comprehensive assessment of the population status and dynamics of three large carnivore species, namely the brown bear (*Ursus arctos*), wolf (*Canis lupus*), and wolverine (*Gulo gulo*).
+Since 2017, project [RovQuant](https://www.nmbu.no/en/research/projects/rovquant), from the Norwegian University of Life Sciences (NMBU), has been developing statistical methods to exploit the potential of this database and allow a comprehensive assessment of the population status and dynamics of three large carnivore species, namely the brown bear (*Ursus arctos*), wolf (*Canis lupus*), and wolverine (*Gulo gulo*).
 
 At the core of this analytical framework [@bischof2019rovquant; @bischof2020estimating] are Bayesian spatial capture-recapture (SCR) and open-population spatial capture-recapture (OPSCR) models [@ergon2014separating; @bischof2016; @chandler2018characterizing; @dupont2021deadreco]. These models use the spatial and temporal information contained in the repeated genetic detections of individuals to estimate various population parameters, including spatially explicit abundance and vital rates. In addition, OPSCR models use the temporal information contained in data collected over multiple years to also estimate recruitment and survival probabilities, as well as inter-annual movements. Importantly, the approach accounts for imperfect detection during sampling (i.e., the fact that some individuals are not detected at all) and animal movement (i.e., the fact that individuals may use and be detected in multiple management units or countries). The OPSCR method brings along several advantages, including the ability to map density, derive jurisdiction-specific abundance, estimate survival and recruitment (which are needed for making population projections), and yield tractable measures of uncertainty [@bischof2019rovquant; @bischof2020estimating].
 
@@ -177,16 +175,27 @@ knitr::include_graphics(file.path(working.dir, "figures/NGS_DR_maps.png"))
 
 ## Density and abundance
 
-We estimated that, within its primary range (`r round(detectors$n.detectors*(detectors$resolution/1000)^2)` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males. Each year, a large proportion of the population is detected during annual large carnivore monitoring. Specifically, in `r years[length(years)]`, between XXX% and XXX% of the population were detected during non-invasive genetic sampling.
+We estimated that, within its primary range (`r round(detectors$n.detectors*(detectors$resolution/1000)^2)` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males.
 
 ```{r, Tab1, echo = FALSE, collapse = TRUE}
+
+whichBold <- which(rownames(N_LastYear) %in% c("Total","Sweden","Norway"))
+whichInd0 <- which(rownames(N_LastYear) %in% c("Total"))
+whichInd1 <- which(rownames(N_LastYear) %in% c("Sweden","Norway"))
+whichInd2 <- c( grep("Region",rownames(N_LastYear)), which(rownames(N_LastYear) %in% c("Nordre","Söndre","Midtre")))
+whichInd3 <- which(!1:nrow(N_LastYear) %in% c(whichInd0,whichInd1,whichInd2))
+  
 N_LastYear %>%
   kable( format = "html",
          align = "ccc",
          table.attr = "style='width:80%;'",
          caption = paste0("Table 1. ", SPECIES, " population size estimates in ", years[n.years]," within the study area by sex and large carnivore management region. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
   kable_classic(full_width = T, html_font = "Cambria") %>%
-    row_spec(row = c(0,nrow(N_LastYear)), bold = T)
+  row_spec(row = c(0,whichBold), bold = T) %>%
+  add_indent(positions = whichInd1, level_of_indent = 1)  %>%
+  add_indent(positions = whichInd2, level_of_indent = 2)  %>%
+  add_indent(positions = whichInd3, level_of_indent = 3)
+
 ```
 
 ```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 2: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is available as a geo-referenced raster in the 'raster' folder of the working directory"), echo = FALSE}
@@ -213,13 +222,13 @@ knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png
 
 ```{r, propDetected1, echo = FALSE, collapse = TRUE}
 
-propDet <- read.csv(file.path( working.dir, "tables/PropDetectedNorway.csv"), check.names = F, row.names = 1)
+propDet <- read.csv(file.path( working.dir, "tables/PropDetected.csv"), check.names = F, row.names = 1)
 
 ##-- Extract proportion detected for the last year
 CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', propDet["Total",n.years]), "-")[[1]])
 ```
 
-The overall proportion of detected individuals in the study area was likely between `r round(CI[1]*100)`% and `r round(CI[2]*100)`% in `r years[n.years]`.
+Each year, a large proportion of the population is detected during annual large carnivore monitoring. Specifically, in `r years[length(years)]`, between `r round(CI[1]*100)`% and `r round(CI[2]*100)`% of the population were detected in the study area during non-invasive genetic sampling. 
 
 ```{r, Tab2, echo = FALSE, collapse = TRUE}
 propDet %>%
@@ -228,7 +237,7 @@ propDet %>%
          align = paste0(c(rep("c",length(years)))),
          caption = paste0("Table 2. Annual ", engSpecies, " proportion of individuals detected in the population. Estimates are based on activity center locations estimated by the open-population spatial capture-recapture (OPSCR) model. Credible intervals (95%) are shown in parentheses.")) %>%
   kable_classic(full_width = T, html_font = "Cambria") %>%
-  kable_styling(font_size = 8) %>%
+  kable_styling(font_size = 10) %>%
   row_spec(row = 0, bold = T) %>%
   column_spec(column = 1, bold = T) 
 ```

@@ -9,7 +9,7 @@
 #'  \item{removing samples flagged as unusable by RovData/Mike}
 #' }
 #'  
-#' Additionally, it can produce a \code{html} report describing the content of the data in terms of number of samples, individuals, etc... 
+#' Additionally, it can produce a \code{.html} report describing the content of the data in terms of number of samples, individuals, etc... 
 #'
 #' @name cleanRovbaseData
 #' 
@@ -88,7 +88,7 @@ cleanRovbaseData <- function(
   
   ##-- Species
   if(length(species) > 1) {
-    stop('This function can only deal with one species at a time... \nPlease, use one of "bear", "wolf", or "wolverine" for the n target species.')
+    stop('This function can only deal with one species at a time... \nPlease, use one of "bear", "wolf", or "wolverine" for the target species.')
   }
   if(sum(grep("bear", species, ignore.case = T)) > 0|
      sum(grep("bjørn", species, ignore.case = T)) > 0|
@@ -289,12 +289,17 @@ cleanRovbaseData <- function(
                                           pattern = "DNA")) %>%
     ##-- Rename columns to facilitate manipulation
     dplyr::rename(., any_of(rename.list)) %>%
-    ##-- Filter to the focal species
-    dplyr::filter(., Species %in% norSpecies) %>%
-    ##-- Remove any duplicates
-    dplyr::distinct(., .keep_all = TRUE) %>%
     ##-- Turn potential factors into characters 
     dplyr::mutate(across(where(is.factor), as.character)) %>%
+    ##-- Initial filters
+    dplyr::filter(
+      ##-- Filter to the focal species
+      Species %in% norSpecies,
+      ##-- Filter dead recoveries (HB for the last wolverine analysis)
+      !substr(RovbaseID_sample,1,1) %in% "M"
+    ) %>%
+    ##-- Remove any duplicates
+    dplyr::distinct(., .keep_all = TRUE) %>%
     ##-- Add some columns
     dplyr::mutate( 
       ##-- Add "Country" column
@@ -308,7 +313,7 @@ cleanRovbaseData <- function(
       ##-- Extract sampling season
       ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
       ##-- Set all months in given sampling period to the same year)
-      Season = ifelse( Month < unlist(sampling.months)[1],
+      Year = ifelse( Month < unlist(sampling.months)[1],
                        Year-1,
                        Year),
       ##-- Fix unknown "Id"
@@ -319,8 +324,7 @@ cleanRovbaseData <- function(
       Sex = ifelse(Sex %in% "Hunn", "female", Sex),
       Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
     ##-- Filter to the focal years
-    dplyr::filter(., Year %in% years) 
-  
+    dplyr::filter(., Year %in% years)
   
   ##-- Number of NGS samples
   NGS_samples <- table(DNA$Sex, DNA$Year, useNA = "ifany")
@@ -353,8 +357,10 @@ cleanRovbaseData <- function(
                                          pattern = "dead")) %>%
     ##-- Rename columns to facilitate manipulation
     dplyr::rename(., any_of(rename.list)) %>%
-    ##-- Filter to the focal species
-    dplyr::filter(., Species %in% norSpecies) %>%
+    ##-- Initial filters
+    dplyr::filter(
+      ##-- Filter to the focal species
+      Species %in% norSpecies) %>%
     ##-- Remove any duplicates
     dplyr::distinct(., .keep_all = TRUE) %>%
     ##-- Turn potential factors into characters 
@@ -372,7 +378,7 @@ cleanRovbaseData <- function(
       ##-- Extract sampling season
       ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
       ##-- Set all months in given sampling period to the same year)
-      Season = ifelse( Month < unlist(sampling.months)[1],
+      Year = ifelse( Month < unlist(sampling.months)[1],
                        Year-1,
                        Year), 
       ##-- Fix unknown "Id"
@@ -385,8 +391,8 @@ cleanRovbaseData <- function(
       ##-- Identify legal deaths
       Legal = grepl(paste(legal.dead, collapse="|"),Death_cause)) %>%
     ##-- Filter to the focal years
-    dplyr::filter(., Year %in% years) 
-  
+    dplyr::filter(., Year %in% years)
+ 
   ##-- Number of DR samples
   DR_samples <- table(DR$Sex, DR$Year, useNA = "ifany")
   DR_samples <- rbind(DR_samples, "Total" = colSums(DR_samples))
@@ -464,9 +470,9 @@ cleanRovbaseData <- function(
   dupId_DR <- NULL
   if(numDupId_DR > 0){
     ##-- Identify duplicated dead recoveries
-    dupId_DR <- DR[DR$Id == DR$Id[duplicated(DR$Id)], c("DNAID", "RovbaseID", "Id")]
+    dupId_DR <- DR[DR$Id %in% DR$Id[duplicated(DR$Id)], c("DNAID", "RovbaseID", "Id")]
     ##-- Remove duplicated individuals (keeping the last occurrence)
-    DR <- dplyr::filter(DR, !duplicated(Id, fromLast = T))
+    #DR <- dplyr::filter(DR, !duplicated(Id, fromLast = T))
   }
   
   # inDNA_notinDR <- NULL
@@ -476,27 +482,23 @@ cleanRovbaseData <- function(
   #   inDNA_notinDR <- tmp[!tmp$DNAID %in% DR$DNAID, c("DNAID", "RovbaseID", "Id")]
   # } 
   
-
   ##-- Check which data is duplicated
   duplicateData <- dplyr::inner_join( DNA, DR,
                                       by = c("Id","RovbaseID","DNAID","Species","Sex",
-                                             "Date","Year","Month","Season",
+                                             "Date","Year","Month",
                                              "East_UTM33","North_UTM33",
                                              "County","Country_sample"))
   numDupData <- nrow(duplicateData)
+  if(numDupData > 0){
   write.csv( duplicateData,
              file = file.path( working.dir, "tables",
                                paste0( engSpecies, "_DR in DNA_",
                                        years[1]," to ", years[length(years)],
                                        ".csv")))
-  
-  
-  ##-- Remove duplicated data in DNA before merging 
-  DNA <- DNA[!DNA$DNAID %in% duplicateData$DNAID, ]
-  # test <- DNA[DNA$DNAID %in% DR$DNAID, ]
-  # dupData$Id.x[dupData$Id.x != dupData$Id.y]
-  # dupData$Id.y[dupData$Id.x != dupData$Id.y]
-  
+    ##-- Remove duplicated data in DNA before merging 
+   # DNA <- DNA[!DNA$DNAID %in% duplicateData$DNAID, ]
+  }
+
   
   
   ##-----   2.4. MERGE -----
@@ -505,7 +507,7 @@ cleanRovbaseData <- function(
   # DATA <- full_join(DNA, DR, by = names(DNA)[names(DNA) %in% names(DR)]) 
   DATA <- merge( DR, DNA,
                  by = c("Id","RovbaseID","DNAID","Species","Sex",
-                        "Date","Year","Month","Season",
+                        "Date","Year","Month",
                         "East_UTM33","North_UTM33",
                         "County","Country_sample"),
                  all = TRUE)
@@ -515,11 +517,11 @@ cleanRovbaseData <- function(
   ##-----   2.5. AGE -----
   
   ##-- Determine Death and Birth Years
-  DATA$Age <- suppressWarnings(as.numeric(as.character(DATA$Age))) 
-  DATA$Death <- NA
-  DATA$Death[substr(DATA$RovbaseID,1,1) %in% "M"] <- DATA$Year[substr(DATA$RovbaseID,1,1) %in% "M"]
-  DATA$Birth <- DATA$Death - DATA$Age
-  
+  DATA <- DATA %>%
+    dplyr::mutate(
+      Age = suppressWarnings(as.numeric(as.character(Age))),
+      Death = ifelse(substr(RovbaseID,1,1) %in% "M", Year, NA),
+      Birth = Death - Age)
   
   
   ##-----   2.6. SEX ASSIGNMENT -----
@@ -548,16 +550,21 @@ cleanRovbaseData <- function(
       IdDoubleSex[counter] <- ID[i]
       counter <- counter + 1
     }
-    # ##-- If only one of "female" or "male" registered
-    # if(length(tab) == 1){DATA$Sex[DATA$Id == ID[i]] <- names(tab)}
-    # ##-- If anything else registered : "unknown"
-    # if(length(tab) == 0){DATA$Sex[DATA$Id == ID[i]] <- "unknown"}
+    
+    ##-- If only one of "female" or "male" registered
+    if(length(tab) == 1){DATA$Sex[DATA$Id == ID[i]] <- names(tab)}
+    
+    ##-- If anything else registered : "unknown"
+    if(length(tab) == 0){DATA$Sex[DATA$Id == ID[i]] <- "unknown"}
+    
+    ##-- Track number of sexes assigned for this individual 
+    ##-- (0 == "unknown", 2 == "both sexes)
     doubleSexID[i] <- length(tab)
   }#i
   
   
   
-  ##-----   3.2. WOLF -----
+  ##-----   2.7. WOLF -----
   
   if(engSpecies == "wolf"){
     
@@ -686,7 +693,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   2.6. SPLIT DATA -----
+  ##-----   2.8. SPLIT DATA -----
   
   ##-- Split DATA into alive and dead.recovery datasets
   alive <- DATA[is.na(DATA$Death), ]
@@ -716,28 +723,34 @@ cleanRovbaseData <- function(
   ##-----   3.1. WOLVERINE -----
   
   if(engSpecies == "wolverine"){
-    ##-- Remove un-verified dead recoveries [HB] 
-    ##-- ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
-    dead.recovery <- dead.recovery[!grepl(pattern = "Påskutt",
-                                          x = as.character(dead.recovery$Outcome)), ]
-    
+
     ##-- Remove suspect NGS samples according to Henrik
     SUSPECT_NGS_SAMPLES <- readMostRecent(
       path = data.dir,
-      extension = ".xls",
-      pattern = "Remove ngs samples list wolverine")
-    alive$DNAID <- as.character(alive$DNAID)
-    alive <- alive[!(alive$DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB)), ]
+      extension = ".xlsx",
+      pattern = "Remove ngs")
+    
+    alive <- alive %>%
+      dplyr::filter(!DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB))
     
     ##-- Remove suspect dead recoveries according to Henrik
     SUSPECT_DeadRecoSAMPLES <- readMostRecent(
       path = data.dir,
-      extension = ".xls",
-      pattern = "Remove dead recoveries list wolverine")
-    dead.recovery$DNAID <- as.character(dead.recovery$DNAID)
-    dead.recovery <- dead.recovery[!(dead.recovery$RovbaseID %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID)), ]
+      extension = ".xlsx",
+      pattern = "Remove dead")
     
+    dead.recovery <- dead.recovery %>%
+      dplyr::filter(!RovbaseID %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID))
     
+    ##-- Remove un-verified dead recoveries 
+    ##-- ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
+    dead.recovery <- dead.recovery %>%
+      dplyr::filter(!grepl(pattern = "Påskutt", x = Outcome))
+
+    ##-- Reemove additional dead recoveries flagged by Henrik Brøseth (email from the 18/12/2024)
+    dead.recovery <- dead.recovery %>% 
+      dplyr::filter(!RovbaseID %in% c("M495994","M524051","M524052","M524053"))
+
     ##-- Remove pups killed before recruitment based on weight (cf. Henrik)
     ##-- 1) remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
     youngDeads <- which(dead.recovery$Age_class %in% "Unge" &
@@ -747,21 +760,14 @@ cleanRovbaseData <- function(
       dead.recovery <- dead.recovery[-youngDeads, ]
     }
     
-    
-    ##-- 2) remove individuals with 0 <= weight < 4kg between March and November 
+    ##-- 2) remove individuals with 0 < weight < 4kg between March and November 
     ##-- Format the weight correctly 
-    dead.recovery$Weight_total <- as.character(dead.recovery$Weight_total)
-    dead.recovery$Weight_slaughter <- as.character(dead.recovery$Weight_slaughter)
-    ##-- Convert to decimals
-    dead.recovery$Weight_total <- as.numeric(gsub(",", ".", dead.recovery$Weight_total))
-    dead.recovery$Weight_slaughter <- as.numeric(gsub(",", ".", dead.recovery$Weight_slaughter))
-    ##-- Get the two weight columns together.
-    dead.recovery$weight <- ifelse(!is.na(dead.recovery$Weight_total),
-                                   dead.recovery$Weight_total,
-                                   dead.recovery$Weight_slaughter)
-    ##-- Assign negative values to nas to avoid issues
-    dead.recovery$weight[is.na(dead.recovery$weight)] <- -999
-    
+    dead.recovery <- dead.recovery %>%
+      dplyr::mutate(
+        Weight_total = as.numeric(gsub(",", ".", as.character(Weight_total))),
+        Weight_slaughter =  as.numeric(gsub(",", ".", as.character(Weight_slaughter))),
+        weight = ifelse(!is.na(Weight_total), Weight_total, Weight_slaughter),
+        weight = ifelse(is.na(weight), -999, weight))
     
     ##-- Check with Henrik (this step does not remove dead recoveries on id with weight==0 should it?)
     ##-- Check how many dead reco we remove and remove if more than 0
@@ -775,11 +781,19 @@ cleanRovbaseData <- function(
     zeroWeightDeads <- which(dead.recovery$Age %in% 0 &
                                dead.recovery$Month > 2 &
                                dead.recovery$Month < 12)
+    
+    ##-- Identify samples collected by hair traps
+    HairTrapSamples <- readMostRecent(
+      path = data.dir,
+      extension = ".xlsx",
+      pattern = "hairtrap")
+    alive <- alive %>%
+      mutate(hairTrap = DNAID %in% HairTrapSamples$DNAID)
   }
   
   
   
-  ##-----   3.3. BEAR -----
+  ##-----   3.2. BEAR -----
   
   if(engSpecies == "bear"){
     ##-- Load most recent "flagged" file from HB
@@ -822,15 +836,16 @@ cleanRovbaseData <- function(
   # }#i
   
   ##-- Remove individuals that died more than once
-  dead.recovery$Id <- as.character(dead.recovery$Id)
   IdDoubleDead <- dead.recovery$Id[duplicated(dead.recovery$Id)]
   duplicatedDeath <- NULL
-  for(i in IdDoubleDead){
-    tmp <- which(dead.recovery$Id == i & is.na(dead.recovery$Death_cause))
-    if(length(tmp)==0){tmp  <- which(dead.recovery$Id == i)[-1]}
-    duplicatedDeath <- c(duplicatedDeath, tmp)
-  }#i  
-  dead.recovery <- dead.recovery[-duplicatedDeath, ]
+  if(length(IdDoubleDead) > 0){
+    for(i in IdDoubleDead){
+      tmp <- which(dead.recovery$Id == i & is.na(dead.recovery$Death_cause))
+      if(length(tmp)==0){tmp  <- which(dead.recovery$Id == i)[-1]}
+      duplicatedDeath <- c(duplicatedDeath, tmp)
+    }#i  
+    dead.recovery <- dead.recovery[-duplicatedDeath, ]
+  }#if
   
   
   
@@ -868,10 +883,8 @@ cleanRovbaseData <- function(
     sf::st_set_crs(., sf::st_crs(32633)) 
   
   ##-- Intersect and extract country name
-  # alive$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(alive, COUNTRIES))]
   alive$Country_sf[!is.na(as.numeric(sf::st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
   alive$Country_sf[!is.na(as.numeric(sf::st_intersects(alive, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
-  
   
   ##-- Turn into sf points dataframe
   dead.recovery <- sf::st_as_sf( x = dead.recovery,
@@ -879,7 +892,6 @@ cleanRovbaseData <- function(
     sf::st_set_crs(.,sf::st_crs(32633))
   
   ##-- Intersect and extract country name
-  # dead.recovery$Country_sf <- COUNTRIES$ISO[as.numeric(sf::st_intersects(dead.recovery, COUNTRIES))]
   dead.recovery$Country_sf[!is.na(as.numeric(sf::st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "NOR", ])))] <- "(N)"
   dead.recovery$Country_sf[!is.na(as.numeric(sf::st_intersects(dead.recovery, COUNTRIES[COUNTRIES$ISO %in% "SWE", ])))] <- "(S)"
   
@@ -1166,13 +1178,19 @@ cleanRovbaseData <- function(
     info.ls$DNAID_inDNA_notinDR <- DNAID_inDNA_notinDR
     info.ls$numDupData <- numDupData
     info.ls$samples.to.remove <- samples.to.remove
+
     if (engSpecies == "bear") {
       info.ls$remove.alive <- remove.alive
       info.ls$remove.dead <- remove.dead
     }
-    if (engSpecies == "wolf") {}
-    if (engSpecies == "wolverine") {}
     
+    if (engSpecies == "wolverine") {
+      info.ls$youngDeads <- youngDeads
+      info.ls$lowWeightDeads <- lowWeightDeads
+      info.ls$zeroWeightDeads <- zeroWeightDeads
+    }
+    
+    if (engSpecies == "wolf") {}
     
     ##-- Find the .rmd template for the report
     if(is.null(Rmd.template)) {

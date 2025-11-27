@@ -69,7 +69,7 @@ makeRovquantData_bear <- function(
   subdetector.res = 1000,
   max.det.dist = 60000,
   resize.factor = 1 
-  ){
+){
   ## ---------------------------------------------------------------------------
   
   ## ------ 0. BASIC SET-UP ------
@@ -97,7 +97,7 @@ makeRovquantData_bear <- function(
                      maxDist = max.det.dist)
   
   ##-- Set up list of Data characteristics
-  data <- list( sex = sex,
+  DATA <- list( sex = sex,
                 aug.factor = aug.factor,
                 sampling.months = sampling.months)
   
@@ -115,30 +115,21 @@ makeRovquantData_bear <- function(
   data(habitatRasters, envir = environment()) 
   data(GLOBALMAP, envir = environment()) 
   
-  
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
     x = habitatRasters[["Habitat"]],
     fact = raster::res(habitatRasters[["Habitat"]])/habitat.res)
   
   ##-- Merge Norwegian counties for practical reasons
-  COUNTIES$county[COUNTIES$county %in% c("Trøndelag",
-                                         "Nordland")] <- "Trøndelag"
-  
-  COUNTIES$county[COUNTIES$county %in% c("Troms",
-                                         "Finnmark")] <- "Finnmark"
-  
-  COUNTIES$county[COUNTIES$county %in% c( "Akershus","Agder",
-                                          "Buskerud",
-                                          "Innlandet", "Hordaland",
-                                          "Møre og Romsdal",
-                                          "Oslo", "Oppland",
-                                          "Rogaland",
-                                          "Vestland",
-                                          "Telemark",
-                                          "Vestfold",
-                                          "Østfold" )] <- "Innlandet"
   COUNTIES <- COUNTIES %>%
+    mutate(county = case_when(
+      county %in% c("Trøndelag", "Nordland") ~ "Trøndelag",
+      county %in% c("Troms", "Finnmark") ~ "Finnmark",
+      county %in% c("Akershus","Agder", "Buskerud",
+                    "Innlandet", "Hordaland",
+                    "Møre og Romsdal","Oslo", "Oppland",
+                    "Rogaland", "Vestland","Telemark",
+                    "Vestfold","Østfold") ~ "Innlandet")) %>%
     dplyr::filter( , county %in% c("Trøndelag","Innlandet","Finnmark")) %>%
     dplyr::group_by(county) %>%
     dplyr::summarise() 
@@ -147,71 +138,9 @@ makeRovquantData_bear <- function(
   
   
   
-  ## ------   2. DETECTORS DATA ----- 
+  ## ------   2. NGS DATA -----
   
-  ## ------     2.1. DISTANCE TO ROADS -----
-  
-  ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster::raster(file.path(data.dir,"GIS/Roads/MinDistAllRoads1km.tif"))
-  
-  ##-- Fasterize to remove values that fall in the sea
-  r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)
-  r[!is.na(r)] <- DistAllRoads[!is.na(r)]
-  DistAllRoads <- r
-  
-  
-  
-  ## ------     2.2. SKANDOBS ------
-  
-  ##-- Load the last SkandObs data file
-  skandObs <- readMostRecent( 
-    path = file.path(data.dir, "Skandobs"),
-    extension = ".xlsx",
-    pattern = "Skandobs")
-  
-  ##-- Replace scandinavian characters
-  colnames(skandObs) <- translateForeignCharacters(data = colnames(skandObs))
-  
-  skandObs <- skandObs %>%
-    ##-- Extract important info (e.g. month, year)
-    dplyr::mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
-                   year = as.numeric(format(date,"%Y")),
-                   month = as.numeric(format(date,"%m")),
-                   species = stringi::stri_trans_general(species, "Latin-ASCII")) %>%
-    ##-- Turn into spatial points object
-    sf::st_as_sf(., coords = c("longitude","latitude")) %>%
-    sf::st_set_crs(. , value = "EPSG:4326") %>%
-    sf::st_transform(. ,sf::st_crs(COUNTIES))
-  
-  
-  
-  ## ------     2.3. ROVBASE OBS ------
-  
-  ##-- GET ALL SAMPLES COLLECTED (all species)
-  rovbaseObs <- readMostRecent( path = data.dir,
-                                extension = ".xls",
-                                pattern = "all_samples") %>%
-    ##-- Deal with Scandinavian characters
-    dplyr::mutate(Species = stringi::stri_trans_general(Species, "Latin-ASCII")) %>%
-    ##-- Filter out samples without coordinates
-    dplyr::filter( !is.na(East_UTM33),
-                   Species %in% c("Bjorn","Fjellrev","Gaupe","Hund","Jerv","Rodrev","Ulv"),
-                   Sample_type %in% c("Ekskrement","Har","Urin","Valpeekskrement (Ulv)",
-                                      "Sekret (Jerv)","Saliv/Spytt")) %>%
-    ##-- Extract important info (e.g. month, year, country of collection)
-    dplyr::mutate( Sample_type = translateForeignCharacters(data = Sample_type),
-                   Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
-                   year = as.numeric(format(Date,"%Y")),
-                   month = as.numeric(format(Date,"%m")),
-                   country = substrRight(County,3)) %>%
-    ##-- Turn into spatial points object
-    sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
-    sf::st_set_crs(. , sf::st_crs(COUNTIES))
-  
-  
-  
-  ## ------   3. NGS DATA -----
-  ##-- Extract date from the last cleaned data file
+  ##-- Extract date from the last cleaned DATA file
   DATE <- getMostRecent( 
     path = file.path(working.dir,"data"),
     pattern = "CleanData_bear")
@@ -227,7 +156,7 @@ makeRovquantData_bear <- function(
     years <- sort(unique(c(myFullData.sp$alive$Year,
                            myFullData.sp$dead.recovery$Year)))
   }
-  data$years <- years
+  DATA$years <- years
   n.years <- length(years)
   
   
@@ -251,7 +180,7 @@ makeRovquantData_bear <- function(
     sf::st_as_sf()
   
   ##-- Make habitat from predefined Scandinavian raster of suitable habitat
-  habitat <- MakeHabitatFromRaster(
+  habitat <- makeHabitatFromRaster(
     poly = studyArea,
     habitat.r = habRaster,
     buffer = habitat$buffer,
@@ -272,24 +201,27 @@ makeRovquantData_bear <- function(
     "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
   
   ##-- Make a spatial grid from polygon
-  habitat$grid <- sf::st_as_sf(raster::rasterToPolygons(habitat$habitat.r,
-                                                        fun = function(x){x>0}))
-  habitat$grid$id <- 1:nrow(habitat$grid)
-  sf::st_crs(habitat$grid) <- sf::st_crs(habitat$buffered.habitat.poly)
+  habitat$grid <- sf::st_as_sf( stars::st_as_stars(habitat$habitat.r), 
+                                as_points = FALSE,
+                                merge = FALSE) %>%
+    filter( Habitat %in% 1) %>%
+    mutate( id = 1:nrow(.)) %>%
+    st_set_crs( ., value = sf::st_crs(habitat$buffered.habitat.poly))
   
   
   
-  ## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES -----
+  ## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES ------
   
-  ## ------       1.2.1. DEAD RECOVERIES (ALL YEARS) -----
+  ## ------       1.2.1. DEAD RECOVERIES (ALL YEARS) ------
   
   kern <- sf::st_coordinates(myFullData.sp$dead.recovery) %>%
-    sp::SpatialPoints(.,  
-                      proj4string = sp::CRS(raster::proj4string(habitat$habitat.r)),
-                      bbox = NULL) %>%
+    sp::SpatialPoints( .,  
+                       proj4string = sp::CRS(raster::proj4string(habitat$habitat.r)),
+                       bbox = NULL) %>%
     adehabitatHR::kernelUD( .,
                             h = 60000,
-                            grid = as(habitat$habitat.r, 'SpatialPixels')) %>%
+                            grid = as( habitat$habitat.r,
+                                       'SpatialPixels')) %>%
     raster::raster(.)
   
   ##-- Truncate to max value observed in Norway
@@ -303,12 +235,31 @@ makeRovquantData_bear <- function(
   
   ##-- Put into "nimble2SCR" format
   habitat$habitat.df <- cbind.data.frame( habitat$habitat.df,
-                                          #"dead.reco" = habDens1,
                                           "dead.reco.trunc" = habDens2)
   
   
   
   ## ------       1.2.2. NUMBER OF OBSERVATIONS ------
+  
+  ##-- Load the last SkandObs data file
+  skandObs <- readMostRecent( 
+    path = file.path(data.dir, "Skandobs"),
+    extension = ".xlsx",
+    pattern = "Skandobs")
+  
+  ##-- Replace scandinavian characters
+  colnames(skandObs) <- translateForeignCharacters(data = colnames(skandObs))
+  
+  skandObs <- skandObs %>%
+    ##-- Extract important info (e.g. month, year)
+    dplyr::mutate( date = as.POSIXct(strptime(date, "%Y-%m-%d")),
+                   year = as.numeric(format(date,"%Y")),
+                   month = as.numeric(format(date,"%m")),
+                   species = stringi::stri_trans_general(species, "Latin-ASCII")) %>%
+    ##-- Turn into spatial points object
+    sf::st_as_sf(., coords = c("longitude","latitude")) %>%
+    sf::st_set_crs(. , value = "EPSG:4326") %>%
+    sf::st_transform(. ,sf::st_crs(COUNTIES))
   
   ##-- Rasterize SkandObs bear observations at the habitat level
   rl <- raster::rasterize( x = skandObs[skandObs$species %in% "Bjorn",1],
@@ -357,7 +308,9 @@ makeRovquantData_bear <- function(
   
   ## ------       1.2.3. PLOTS -----
   
- 
+  ##-- [PD]: NEED TO ADD PLOTS OF HABITAT COVARIATES
+  
+  
   
   ## ------   2. GENERATE DETECTORS -----
   
@@ -371,7 +324,7 @@ makeRovquantData_bear <- function(
     fact = raster::res(habitat$habitat.r)[1]/detectors$resolution.sub)
   
   ##-- Generate NGS detectors based on the raster of sub-detectors
-  detectors <- MakeSearchGrid( 
+  detectors <- makeSearchGrid( 
     data = subdetectors.r,
     resolution = detectors$detResolution,
     div = (detectors$resolution/detectors$resolution.sub)^2,
@@ -381,21 +334,22 @@ makeRovquantData_bear <- function(
   ##-- Extract numbers of detectors
   n.detectors <- detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
   
-  ##-- Format detector locations & number of trials per detector
-  n.trials <- as.vector(table(detectors$detector.sp$main.cell.id))
-  detectors$detectors.df <- cbind.data.frame(
-    "id" = 1:detectors$n.detectors,
-    "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
-    "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
-    "size" = n.trials)
-  
-  ##-- Make a spatial grid from polygon
+  ##-- make a spatial grid from polygon
   detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
     x = raster::aggregate( x = subdetectors.r,
                            fact = detectors$resolution/detectors$resolution.sub),
-    fun = function(x){x>0}))
-  detectors$grid$id <- 1:nrow(detectors$grid)
+    fun = function(x){x>0})) %>%
+    mutate( id = 1:nrow(.)) %>%
+    rename( "Detector" = Habitat)
   
+  ##-- Format detector locations & number of trials per detector
+  n.trials <- as.vector(table(detectors$detector.sp$main.cell.id))
+  detectors$detectors.df <- cbind.data.frame(
+    "id" = 1:n.detectors,
+    "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
+    "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
+    "size" = n.trials)
+
   
   
   ## ------     2.2. GENERATE DETECTOR-LEVEL COVARIATES -----
@@ -422,6 +376,14 @@ makeRovquantData_bear <- function(
   
   
   ## ------       2.2.2. EXTRACT DISTANCES TO ROADS -----
+  
+  ##-- Load map of distance to roads (1km resolution)
+  DistAllRoads <- raster::raster(file.path(data.dir,"Roads/MinDistAllRoads1km.tif"))
+  
+  ##-- Fasterize to remove values that fall in the sea
+  r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)
+  r[!is.na(r)] <- DistAllRoads[!is.na(r)]
+  DistAllRoads <- r
   
   ##-- AGGREGATE TO MATCH THE DETECTORS RESOLUTION
   DistAllRoads <- raster::aggregate( 
@@ -454,11 +416,14 @@ makeRovquantData_bear <- function(
                  as_points = FALSE,
                  merge = TRUE) %>%
     dplyr::filter(Habitat %in% 1)
-  #detArea <- aggregate(rasterToPolygons(myHabitat$habitat.rWthBuffer,function(x) x==1))
-  
+
   r.detector <- raster::aggregate( 
     subdetectors.r,
     fact = (detectors$resolution/detectors$resolution.sub))
+  
+  
+  
+  ## ------         2.2.3.1. SKANDOBS ------
   
   ##-- Subset SkandObs 
   skandObs <- skandObs %>%
@@ -469,7 +434,7 @@ makeRovquantData_bear <- function(
       !is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
   
   # ##-- Rasterize at the detector level
-  # r.list <- lapply(data$years, function(y){
+  # r.list <- lapply(DATA$years, function(y){
   #   if(y %in% skandObs$year){
   #     rl <- raster::rasterize(skandObs[skandObs$year %in% y, 1],
   #                         r.detector,
@@ -486,6 +451,31 @@ makeRovquantData_bear <- function(
   # })
   # r.skandObsSamplesBinary <- brick(lapply(r.list,function(x) x[[1]]))
   # r.skandObsSamplesContinuous <- brick(lapply(r.list,function(x) x[[2]]))
+  
+  
+  
+  ## ------         2.2.3.2. ROVBASE ------
+  
+  ##-- Get all samples collected (all species)
+  rovbaseObs <- readMostRecent( path = data.dir,
+                                extension = ".xls",
+                                pattern = "all_samples") %>%
+    ##-- Deal with Scandinavian characters
+    dplyr::mutate(Species = stringi::stri_trans_general(Species, "Latin-ASCII")) %>%
+    ##-- Filter out samples without coordinates
+    dplyr::filter( !is.na(East_UTM33),
+                   Species %in% c("Bjorn","Fjellrev","Gaupe","Hund","Jerv","Rodrev","Ulv"),
+                   Sample_type %in% c("Ekskrement","Har","Urin","Valpeekskrement (Ulv)",
+                                      "Sekret (Jerv)","Saliv/Spytt")) %>%
+    ##-- Extract important info (e.g. month, year, country of collection)
+    dplyr::mutate( Sample_type = translateForeignCharacters(data = Sample_type),
+                   Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
+                   year = as.numeric(format(Date,"%Y")),
+                   month = as.numeric(format(Date,"%m")),
+                   country = substrRight(County,3)) %>%
+    ##-- Turn into spatial points object
+    sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
+    sf::st_set_crs(. , sf::st_crs(COUNTIES))
   
   
   ##-- Subset RovbaseObs 
@@ -517,10 +507,13 @@ makeRovquantData_bear <- function(
   # }
   
   
+  
+  ## ------         2.2.3.3. COMBINE ROVBASE & SKANDOBS ------
+  
   ##-- Smooth binary map
   ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.02 
   habOwin <- spatstat.geom::as.owin(as.vector(raster::extent(r.detector)))
-  ds.list <- lapply( data$years, function(y){
+  ds.list <- lapply( DATA$years, function(y){
     ##-- ROVBASE DATA 
     pts <- sf::st_coordinates(rovbaseObs)[rovbaseObs$year %in% y, ]
     ##-- SKANDOBS
@@ -564,18 +557,18 @@ makeRovquantData_bear <- function(
   detectors$covariates <- detCovs
   
   
-  ##-- Merge with the habitat grid
+  ##-- Merge with the detector grid
   detectors$grid <- dplyr::left_join(
     x = detectors$grid,
     y = detectors$detectors.df,
     by = "id")
   
-
-    
+  
+  
   ## ------       2.2.5. PLOTS -----
-
+  
   ##-- Plot Carnivore observations maps
-  pdf(file = file.path(working.dir, "figures", "CarnivoreObs.pdf"),
+  pdf(file = file.path(working.dir, "figures/CarnivoreObs.pdf"),
       width = 18, height = 12)
   ##-- layout
   mx <- rbind(c(1,rep(1:5, each = 2)),
@@ -637,24 +630,18 @@ makeRovquantData_bear <- function(
   
   ## ------   4. CREATE LOCAL OBJECTS -----
   
-  # ##-- Get local habitat windows
-  # habitat$localObjects <- getLocalObjects(
-  #   habitatMask = habitat$habitat.mx,
-  #   coords = habitat$scaledCoords,
-  #   dmax = habitat$maxDist/habitat$resolution,
-  #   plot.check = F)
-  
   ##-- Get local detectors
   detectors$localObjects <- getLocalObjects(
     habitatMask = habitat$habitat.mx,
     coords = detectors$scaledCoords,
     dmax = detectors$maxDist/habitat$resolution,
+    resizeFactor = resize.factor,
     plot.check = F)
   
   
   
   ## ------   5. SAVE STATE-SPACE CHARACTERISTICS -----
-
+  
   save( habitat,
         file = file.path( working.dir, "data",
                           paste0("Habitat_bear_", DATE, ".RData")))
@@ -706,7 +693,7 @@ makeRovquantData_bear <- function(
       data = .,
       detectors = detectors$main.detector.sp,
       radius = detectors$resolution)
-
+  
   
   ## ------     6.3. PLOT NGS and DEAD RECOVERY MAPS ----- 
   
@@ -748,12 +735,12 @@ makeRovquantData_bear <- function(
     
     ##-- Add year
     graphics::mtext(text = years[t],
-          side = 1, line = -18,
-          adj = 0.18, cex = 1.2)
+                    side = 1, line = -18,
+                    adj = 0.18, cex = 1.2)
   }#t
   dev.off()
   
-
+  
   ##-- Dead recoveries maps
   grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
                  width = ncols*2, height = nrows*4,
@@ -775,9 +762,8 @@ makeRovquantData_bear <- function(
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
     try(
       plot( sf::st_geometry(data.dead[data.dead$Year == years[t] & 
-                                        data.dead$Legal, ]),
-            add = TRUE, col = "slateblue1", pch = 3, cex = 1.2),
-        silent = TRUE)
+                                        data.dead$Legal, ]), add = TRUE, col = "slateblue1", pch = 3),
+      silent = TRUE)
     try(
       plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]),
             add = TRUE, col = "slateblue4", pch = 3, cex = 1.2),
@@ -786,15 +772,15 @@ makeRovquantData_bear <- function(
     
     ##-- Add year
     graphics::mtext(text = years[t],
-          side = 1, line = -18,
-          adj = 0.18, cex = 1.2)
+                    side = 1, line = -18,
+                    adj = 0.18, cex = 1.2)
   }#t
   dev.off()
   
   
   
   ## ------     6.3. SAVE FILTERED DATA ----- 
-
+  
   save( data.alive, data.dead,
         file = file.path( working.dir, "data",
                           paste0("FilteredData_bear_", DATE, ".RData")))
@@ -822,11 +808,11 @@ makeRovquantData_bear <- function(
     
     ## ------     7.2. GENERATE DETECTION HISTORY ARRAYS -----
     
-    y.ar <- MakeY( myData = data.alive$data.sp,
-                   myDetectors = detectors$main.detector.sp,
+    y.ar <- makeY( data = data.alive$data.sp,
+                   detectors = detectors$main.detector.sp,
                    method = "Binomial",
-                   myData2 = data.dead,
-                   myDetectors2 = detectors$main.detector.sp,
+                   data2 = data.dead,
+                   detectors2 = detectors$main.detector.sp,
                    returnIdvector = TRUE)
     y.ar.ALIVE <- y.ar$y.ar
     dimnames(y.ar.ALIVE) <- dimnames(y.ar$y.ar)
@@ -855,7 +841,7 @@ makeRovquantData_bear <- function(
     for(t in 1:n.years){
       
       ##-- Identify detections further then maxDist
-      distances[[t]] <- CheckDistanceDetections(
+      distances[[t]] <- checkDistanceDetections(
         y = y.ar.ALIVE[,,t], 
         detector.xy = detectors$detectors.df[ ,c("x","y")], 
         max.distance = detectors$maxDist,
@@ -871,14 +857,14 @@ makeRovquantData_bear <- function(
     
     ## ------     7.4. AUGMENT DETECTION HISTORIES -----
     
-    y.alive <- MakeAugmentation( 
+    y.alive <- makeAugmentation( 
       y = y.ar.ALIVE,
-      aug.factor = data$aug.factor,
+      aug.factor = DATA$aug.factor,
       replace.value = 0)
     
-    y.dead.ar <- MakeAugmentation( 
+    y.dead.ar <- makeAugmentation( 
       y = y.ar.DEAD,
-      aug.factor = data$aug.factor,
+      aug.factor = DATA$aug.factor,
       replace.value = 0)
     
     
@@ -1046,7 +1032,7 @@ makeRovquantData_bear <- function(
     ## ------     3.1. RECONSTRUCT z -----
     
     ##-- Reconstruct monthly z based on ALL detections and dead recoveries
-    zMonths <- MakeZfromScratch( 
+    zMonths <- makeZfromScratch( 
       data.alive = myFullData.sp$alive,
       data.dead = myFullData.sp$dead.recovery,
       samplingMonths = unlist(sampling.months))
@@ -1058,8 +1044,8 @@ makeRovquantData_bear <- function(
     zMonths <- zMonths[dimnames(zMonths)[[1]] %in% dimnames(y.alive)[[1]], , ]
     
     ##-- Augment zMonths
-    zMonths <- MakeAugmentation( y = zMonths,
-                                 aug.factor = data$aug.factor,
+    zMonths <- makeAugmentation( y = zMonths,
+                                 aug.factor = DATA$aug.factor,
                                  replace.value = NA)
     
     ##-- Compress back to yearly z
@@ -1070,7 +1056,7 @@ makeRovquantData_bear <- function(
         if(any(x[1:length(unlist(sampling.months))] >= 2, na.rm = T)){
           5 }
         else {NA}}})
-
+    
     z.data <- zYears
     allDead <- apply(z.data, 1, function(x)all(x==5))
     z.data[allDead, ] <- 1
@@ -1106,7 +1092,7 @@ makeRovquantData_bear <- function(
     
     ##-- Set all known states to NA in the inits
     z.init[!is.na(z.data)] <- NA
-
+    
     
     
     ## ------     3.3. GENERATE y.dead -----
@@ -1146,7 +1132,7 @@ makeRovquantData_bear <- function(
     z.data[] <- ifelse(y.dead.legal == 1, 3, z.data)
     z.data[] <- ifelse(y.dead.other == 1, 4, z.data)
     
-
+    
     
     ## ------     3.4. GENERATE sxy & sxy.init ARRAYS -----
     
@@ -1268,7 +1254,7 @@ makeRovquantData_bear <- function(
     
     ## ------   6. CHECK INPUT VALIDITY ------
     
-
+    
     
     ## ------   7. SAVE INPUTS ----- 
     
@@ -1301,12 +1287,13 @@ makeRovquantData_bear <- function(
   }#thisSex
   
   
-
+  
   ## ------   8. RETURN IMPORTANT INFOS FOR REPORT ------
-  return(list( SPECIES = "Brown bear",
+  out <- list( SPECIES = "Brown bear",
                engSpecies = "bear",
                YEARS = years,
                SEX = sex,
-               DATE = DATE))
+               DATE = DATE)
+  return(out)
 }
 

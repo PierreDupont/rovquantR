@@ -10,14 +10,14 @@
 #' @keywords datasets
 #' 
 #' @format ## `COUNTIES`
-#' A simple feature collection with 40 features and 1 field#' 
+#' A simple feature collection with 40 features and 1 field
 #' @source <https://www.nmbu.no/en/research/projects/rovquant>
 #' @examples
 #' data(COUNTIES)
 "COUNTIES"
 NULL
 
-#' COUNTIES
+#' REGIONS
 #' 
 #' @description
 #' These data sets describe Scandinavian counties.
@@ -29,7 +29,7 @@ NULL
 #' @keywords datasets
 #' 
 #' @format ## `REGIONS`
-#' A simple feature collection with 38 features and 4 fielsd#' 
+#' A simple feature collection with 38 features and 4 fields
 #' @source <https://www.nmbu.no/en/research/projects/rovquant>
 #' @examples
 #' data(REGIONS)

@@ -53,7 +53,8 @@ processRovquantOutput <- function(
   print.report = TRUE,
   Rmd.template = NULL,
   output.dir = NULL,
-  overwrite = FALSE
+  overwrite = FALSE, 
+  full.report = FALSE
 ) {
   
   ##---- 1. BROWN BEAR RESULTS PROCESSING -----
@@ -114,10 +115,17 @@ processRovquantOutput <- function(
     
     ##-- Find the .rmd template for the report.
     if(is.null(Rmd.template)){
-      Rmd.template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
-      if(!file.exists(Rmd.template)) {
-        stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
-      } 
+      if(full.report){
+        Rmd.template <- system.file("rmd", "RovQuant_FullReport.Rmd", package = "rovquantR")
+        if(!file.exists(Rmd.template)) {
+          stop('Can not find a .rmd template called "RovQuant_FullReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
+        } 
+      } else {
+        Rmd.template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
+        if(!file.exists(Rmd.template)) {
+          stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
+        } 
+      }
     }
     
     ##-- Find the directory to print the report.

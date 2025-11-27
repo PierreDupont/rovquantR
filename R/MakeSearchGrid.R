@@ -1,11 +1,11 @@
-#' @title Function to create detectors
+#' @title Function to create a detector grid
 #' 
 #' @description
-#' \code{MakeSearchGrid} creates  detectors within a defined area (data) and 
-#' resolution between detectors. Division precises if subspatial division should
-#'  be performed (Following PAB model).  
+#' \code{makeSearchGrid} creates equally spaced detectors within a defined area (data) using 
+#' a given resolution (i.e. distance between two detectors).
+#' If specified, each detector grid can be divived into multiple equally spaced sub-detectors (e.g. for use in the PAB model).  
 #' 
-#' @param data A \code{sp} object. can be a \code{SpatialPolygons} or \code{SpatialPoints} or \code{SpatialLines} or \code{raster}. Spatial Lines objects takes time to compute
+#' @param data A \code{sf} object. can be a \code{SpatialPolygons} or \code{SpatialPoints} or \code{SpatialLines} or \code{raster}. Spatial Lines objects takes time to compute
 #' @param resolution Numeric variable denoting the size of grid cells in units of (\code{polygon}).
 #' @param div Numeric variable denoting the number of equally-sized subplots grid cell is to be divided into.
 #' @param center Logical variable denoting whether nodes of the resulting search grid are to be centered within their respective subplots.
@@ -20,50 +20,30 @@
 #' @importFrom stars st_as_stars
 #' @importFrom methods as
 #'    
-#' @rdname MakeSearchGrid 
+#' @rdname makeSearchGrid 
 #' @export
-MakeSearchGrid <- function(
-    data = data,
-    resolution = resolution,
+makeSearchGrid <- function(
+    data,
+    resolution,
     div = 1,
     center = T,
     plot = TRUE)
-{
+  {
   
   ##-- if the data is already a raster   
   subdetector.r <- data
-  
-  ##-- Obtain the resolution of the subdetectors 
-  res1 <- resolution/sqrt(div)  
-  
-  ##-- Convert other data types to easier simpler format (no dataframe). 
-  if(inherits(data,"SpatialPolygonsDataFrame")){data <- as(data,"SpatialPolygons")}
-  if(inherits(data,"SpatialPointsDataFrame")){data <- as(data,"SpatialPoints")}
-  if(inherits(data,"SpatialLinesDataFrame")){data <- as(data,"SpatialLines")}
-  
-  ##-- CREATE THE SUBDETECTORS  
-  ##-- if SPATIALLINES
-  if(inherits(data,"SpatialLines")){
-    stop("SpatialLines not available; data should be a raster")
-  }
-  
-  ##--if SPATIALPOINTS 
-  if(inherits(data,"SpatialPoints")){
-    stop("SpatialPoints not available; data should be a raster")
-  }
-  
-  ##-- if SPATIALPOLYGONS
-  if(inherits(data,"SpatialPolygons")){
-    stop("SpatialPolygons not available; data should be a raster")
-    detector.r1 <- raster::raster( extent(data),
-                                   resolution = res1,
-                                   crs = proj4string(data))
+
+  ##-- Check that 'data' is a raster  
+  if(!inherits(data,"Raster")){
+    stop("Data must be a raster")
   }
   
   ##-- AGGREGATE TO MAIN DETECTORS
-  if(sqrt(div)>1){
-    maindetector.r <- raster::aggregate(subdetector.r, fact = sqrt(div), fun = sum)
-  }else{
+  if(sqrt(div) > 1){
+    maindetector.r <- raster::aggregate( subdetector.r,
+                                         fact = sqrt(div), 
+                                         fun = sum)
+  } else {
     maindetector.r <- subdetector.r
   }
   
@@ -78,7 +58,6 @@ MakeSearchGrid <- function(
   ##-- Sub-detectors
   temp.r <- subdetector.r
   temp.r[] <- 1:length(temp.r)
-  
   subdetector.poly <- sf::st_as_sf(stars::st_as_stars(temp.r), 
                                    as_points = FALSE, merge = TRUE)
   

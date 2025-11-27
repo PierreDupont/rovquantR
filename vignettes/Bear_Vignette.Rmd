@@ -44,7 +44,7 @@ The different goals of this international research project are to:
 4.  **Collaborate with managers.** The project results are published annually in technical reports [@milleret2024wolverine; @milleret2025wolf; @dupontNorBear2023].
     In addition, members from the project's team regularly attend meetings and workshops to ensure that RovQuant remains up-to-date on current and emerging challenges in large carnivore monitoring and management.
 
-The methods developed by the RovQuant team are based on the Spatial Capture-Recapture (SCR) methodology and involve large-scale analysis of individual-based datasets in a Bayesian framework [@bischof2020estimating; @wei2022; @turek2021efficient].
+The methods developed by the RovQuant team are based on the Spatial Capture-Recapture (SCR) methodology and involve large-scale analysis of individual-based datasets in a Bayesian framework [ @bischof2020estimating; @wei2022; @turek2021efficient].
 Spatial Capture-Recapture (SCR) methods use the spatial information contained in individual detections, for example DNA samples left behind by wildlife, to estimate the location of activity centers of all individuals in the population, including those never detected.
 SCR models thus produce density estimates and density surfaces, while accounting for the fact that not all individuals are detected.
 Furthermore, abundance estimates produced by SCR models take into account that animals move across the landscape and may be detected in multiple locations – for example, a bear living near the Swedish-Norwegian border may contribute partially to population size estimates in both countries.
@@ -87,23 +87,20 @@ library(nimbleSCR)
 ```
 
 Now, we can install the `rovquantR` package.
-Because it is not yet available on CRAN, we have to install it from the **.tar.gz** file that was provided.
-This is easily done using the `install.packages()` function.
-
-*Don't forget to change the path to point to the location on your computer where you stored the **.tar.gz** archive file.*
-
-```{r tarInstall, eval = FALSE}
-install.packages( "C:/Users/BrownBear/rovquantR_0.1.tar.gz", 
-                  repos = NULL,
-                  type = "source") 
-```
-
-Alternatively, we can install it from the GitHub repository using the `devtools` package:
+Because it is not yet available on CRAN, we have to install it from the GitHub repository using the `devtools` package.
 
 ```{r gitInstall, eval = FALSE}
 install.packages("devtools")
 library(devtools)
 install_github("PierreDupont/rovquantR")
+```
+
+Alternatively, we can install it from the **.tar.gz** file that was provided:
+
+```{r tarInstall, eval = FALSE}
+install.packages( "C:/My_documents/rovquantR/rovquantR_0.1.tar.gz",
+                  repos = NULL,
+                  type = "source") 
 ```
 
 Finally, we can load the `rovquantR` package and start the analysis:
@@ -119,12 +116,9 @@ library(rovquantR)
 ## Working environment
 
 The first step of the analysis consists in setting-up the working environment.
-For this, we need to set-up two paths.
-The first one corresponds to the location on your computer where all the data required for the analysis is stored; this is where to put all the data provided in the [![](https://res.public.onecdn.static.microsoft/assets/mail/file-icon/png/zip_16x16.png){alt=""}Data.zip](https://eduumb-my.sharepoint.com/:u:/g/personal/pierre_dupont_nmbu_no/Ef_-IPNmIK5FrZkhI699g7kBmJZN5il1CDcrThGy6zAkQw?e=0PTGVb "Original URL: https://eduumb-my.sharepoint.com/:u:/g/personal/pierre_dupont_nmbu_no/Ef_-IPNmIK5FrZkhI699g7kBmJZN5il1CDcrThGy6zAkQw?e=0PTGVb. Click or tap if you trust this link.") file.
-The second path corresponds to the location on your computer where all the materials associated with the analysis such as prepared data files, tables, figures, ...
-, will be stored.
+For this, we need to set-up two paths:
 
-1.  **`data.dir`**: the path to the repository containing the raw data.
+1.  `data.dir`: a path to the repository containing the raw data.
     It contains the different files necessary for the OPSCR analysis:
 
     -   an excel file of all the brown bear DNA samples available from Rovbase
@@ -135,20 +129,21 @@ The second path corresponds to the location on your computer where all the mater
 
     -   multiple spatial covariates (*e.g.* snow cover, distance to roads, .... , in the 'GIS' folder)
 
-    *Note that this is **NOT the working directory**. For all intent and purposes, it should be treated as a 'read-only' directory.*
+    Note that this is NOT the working directory.
+    For all intent and purposes, it should be treated as a 'read-only' directory.
 
 ```{r set-up1.1, eval = FALSE, echo = TRUE}
-data.dir <- "C:/Users/BrownBear/Data"  
+data.dir <- "./Data"  
 ```
 
 ```{r set-up1.2, eval = TRUE, echo = FALSE}
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/Data"
 ```
 
-2.  **`working.dir`**: the repository that will be used to store all the files and outputs from the analysis.
+2.  `working.dir`: the repository that will be used to store all the files and outputs from the analysis.
 
 ```{r set-up2.1, eval = FALSE, echo = TRUE}
-working.dir <- "C:/Users/BrownBear/BearVignette"
+working.dir <- "./BearVignette"
 ```
 
 ```{r set-up2.2, eval = TRUE, echo = FALSE}
@@ -201,8 +196,7 @@ makeRovquantData(
 The next step is to fit the OPSCR model to the prepared bear data using NIMBLE.
 In this example, as in most cases in the [**RovQuant**](https://www.nmbu.no/en/research/projects/rovquant) project, we fit sex-specific models.
 
-When fitting a statistical model using NIMBLE, you first need to create a model object, containing the model code, the constants/dimensions, data and initial values for the model.
-Here, we load the first input file we created, corresponding to one MCMC chain.
+When fitting a statistical model using NIMBLE, you first need to create a model object, containing the model code, the constants/dimensions, data and initial values for the model. Here, we load the first input file we created, corresponding to one MCMC chain.
 
 ```{r run_females2, eval = FALSE}
 ##-- List all prepared input files
@@ -366,6 +360,7 @@ knitr::include_graphics(file.path(working.dir, "figures/NGS_DR_maps.png"))
 ## Density and abundance
 
 We estimated that, within its primary range (`r round(detectors$n.detectors*(detectors$resolution/1000)^2)` $km^{2}$), the brown bear population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males.
+
 
 ```{r, Tab1, echo = FALSE, collapse = TRUE}
 N_LastYear %>%

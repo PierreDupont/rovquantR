@@ -33,17 +33,19 @@
 #' @rdname getInits.s
 #' @export
 
-getInits.s <- function( y,
-                        trapCoords,
-                        lowerCoords,
-                        upperCoords,
-                        habitatGrid,
-                        known.s = NULL,
-                        baseIntensities = NULL,
-                        sd = 2,
-                        detNums = NULL,
-                        detIndices = NULL,
-                        radius = 10){
+getInits.s <- function( 
+    y,
+    trapCoords,
+    lowerCoords,
+    upperCoords,
+    habitatGrid,
+    known.s = NULL,
+    baseIntensities = NULL,
+    sd = 2,
+    detNums = NULL,
+    detIndices = NULL,
+    radius = 10)
+{
   
   ## ----- 1. Function set-up -----
   
@@ -122,8 +124,8 @@ getInits.s <- function( y,
     })
     for(t in which(sapply(detected.t, function(x)i %in% x))){ 
       s[i, ,t] <- centroids.t[[t]] 
-      }#t
-  
+    }#t
+    
     
     ## -----    2.2. Before first detection ... -----
     
@@ -224,7 +226,7 @@ getInits.s <- function( y,
         }#g
       }#if
     }#if
-
+    
   }#i
   
   

@@ -1,7 +1,7 @@
 #' @title Check individual distances between all detections of an individual and the centroid of its detections
 #'
 #' @description
-#' \code{CheckDistanceDetections} returns a \code{list} object with the distances between detections and centroid of detections and which detection from which id is outside the max.distance if specified 
+#' \code{checkDistanceDetections} returns a \code{list} object with the distances between detections and centroid of detections and which detection from which id is outside the max.distance if specified 
 #'
 #' @param y A \code{matrix} or \code{array} of detections 
 #' @param detector.xy A \code{matrix} object with xy coordinates of detectors. 
@@ -16,16 +16,15 @@
 #' @importFrom graphics plot lines box 
 #' @importFrom utils combn 
 #'
-#' @rdname CheckDistanceDetections
+#' @rdname checkDistanceDetections
 #' @export
-CheckDistanceDetections <- function(  
+checkDistanceDetections <- function(  
     y = y,
     detector.xy = detector.xy,
     max.distance = NULL,
     method = "pairwise",
     plot.check = FALSE,
-    verbose = FALSE)
-{
+    verbose = FALSE){
   
   ##-- MAKE CONTAINER FOR FLAGS
   y.flagged <- y.distance <- y

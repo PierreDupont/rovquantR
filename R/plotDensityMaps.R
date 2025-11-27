@@ -26,7 +26,6 @@
 #' @importFrom graphics plot layout par segments mtext text rasterImage
 #' @importFrom sf st_geometry 
 #' @importFrom grDevices png colorRampPalette
-#' @importFrom png readPNG
 #'
 #' @rdname plotDensityMaps
 #' @export
@@ -39,7 +38,10 @@ plotDensityMaps <- function(
     type = c("time.series", "last.year", "summary"),
     path = getwd(),
     species = NULL,
-    q95 = NULL,
+    labels = NULL,
+    x.labels = NULL,
+    y.labels = NULL,
+    caption = NULL,
     export.raster = TRUE,
     name = "UD_Density")
 {
@@ -50,18 +52,30 @@ plotDensityMaps <- function(
   if(is.null(background)){background <- COUNTRIES}
   if(sum(grep("bear", species, ignore.case = T)) > 0|
      sum(grep("bjørn", species, ignore.case = T)) > 0|
-     sum(grep("bjorn", species, ignore.case = T)) > 0) { species <- "bear" }
+     sum(grep("bjorn", species, ignore.case = T)) > 0) { 
+    species <- "bear" 
+    engSpecies <- "brown bear"
+    norSpecies <- "brunbjørn"
+    }
   if(sum(grep("wolf", species, ignore.case = T)) > 0|
      sum(grep("wolves", species, ignore.case = T)) > 0|
-     sum(grep("ulv", species, ignore.case = T)) > 0) { species <- "wolf" }
-  if (sum(grep("wolverine", species, ignore.case = T))>0|
-      sum(grep("jerv", species, ignore.case = T))>0|
-      sum(grep("järv", species, ignore.case = T))>0) { species <- "wolverine" }
+     sum(grep("ulv", species, ignore.case = T)) > 0) {
+    species <- "wolf" 
+    engSpecies <- "wolf" 
+    norSpecies <- "ulven"
+    }
+  if(sum(grep("wolverine", species, ignore.case = T))>0|
+     sum(grep("jerv", species, ignore.case = T))>0|
+     sum(grep("järv", species, ignore.case = T))>0) {
+    species <- "wolverine" 
+    engSpecies <- "wolverine" 
+    norSpecies <- "jerv"
+    }
   
   
   ##-- Convert densities to the desired density unit (usually inds.100km-2)
   conversionFactor <- unit/( raster::res(input)[1]/1000)^2
-
+  
   
   ##-- Rasterize and mask density maps 
   density <- list()
@@ -118,8 +132,8 @@ plotDensityMaps <- function(
                            heights = rep(1,2))
     
     ##-- legend coordinates
-    legend.x <- xLims[1] + 0.7 * xRange
-    legend.y <- yLims[1] + 0.40 * yRange
+    legend.x <- xLims[1] + 0.78 * xRange
+    legend.y <- yLims[1] + 0.3 * yRange
     
     ##-- Plot density maps
     graphics::par(mar = c(0,0,0,0))
@@ -136,38 +150,39 @@ plotDensityMaps <- function(
       ##-- Add year if available
       if(!is.null(names(estimates))){
         graphics::mtext(text = names(estimates)[t],
-              side = 1, line =  -20,
-              adj = 0.2, cex = 1.2)
+                        side = 1, line =  -20,
+                        adj = 0.2, cex = 1.2)
       }
       
       ##-- Add legend
       if(t == length(density)){
         graphics::segments(
           x0 = legend.x, x1 = legend.x,
-          y0 = legend.y-250000, y1 = legend.y + 250000,
+          y0 = legend.y - 250000, y1 = legend.y + 250000,
           col = "grey30", lwd = 4, lend = 2)
         graphics::text(
-          x = legend.x - 0.05 * xRange,
+          x = legend.x - 0.04 * xRange,
           y = legend.y,
           labels = "500 km", srt = 90, cex = 1.4)
         raster::plot( density[[t]],
                       legend.only = T, breaks = cuts,
                       col = col, legend.width = 2,
-                      axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        cex.axis = 1.2),
-                      smallplot = c(0.8, 0.85, 0.2, 0.6), 
+                      axis.args = list( at = round(seq(0, max-0.04, length.out = 4), digits = 1),
+                                        labels = round(seq(0, max-0.04, length.out = 4), digits = 1),
+                                        cex.axis = 1,
+                                        line = 0),
+                      smallplot = c(0.81, 0.86, 0.1, 0.5), 
                       legend.args = list(text = paste0("Individuals/", unit, " km2"),
                                          side = 2, font = 1, line = 0, cex = 1))
         ######----- NEED TO FIX LEGEND TEXT 
         ######----- expression("Individuals/100 km"^ 2)
       }#if
-
+      
       ##-- Export rasters
       if(export.raster){
         writeRaster( density[[t]],
                      file.path( path, "rasters",
-                                paste0( species, "_",
+                                paste0( name, "_",
                                         raster::res(input)[1]/1000, "km", 
                                         names(estimates)[t], ".tif")),
                      overwrite = TRUE)
@@ -181,10 +196,9 @@ plotDensityMaps <- function(
   ##-- Last year's density map
   if("last.year" %in% type){
     
-    grDevices::png(filename = file.path( path, "figures",
-                                        paste0(name,"_LastYear.png")),
-        width = 8, height = 8, units = "in", pointsize = 12,
-        res = 300, bg = NA)
+    grDevices::png(filename = file.path(path, "figures", paste0(name,"_LastYear.png")),
+                   width = 8, height = 8, units = "in", pointsize = 12,
+                   res = 300, bg = NA)
     
     graphics::par(mar = c(0,0,0,0))
     plot(sf::st_geometry(background), border = NA, col = "gray80")
@@ -202,7 +216,7 @@ plotDensityMaps <- function(
     }
     
     ##-- Add legend
-    legend.x <- xLims[1] + 0.9 * xRange
+    legend.x <- xLims[1] + 0.89 * xRange
     legend.y <- yLims[1] + 0.3 * yRange
     
     graphics::segments(
@@ -212,32 +226,31 @@ plotDensityMaps <- function(
     graphics::text(
       x = legend.x - 0.05 * xRange,
       y = legend.y,
-      labels = "500 km", srt = 90, cex = 1.4)
+      labels = "500 km", srt = 90, cex = 1.2)
     
     raster::plot( density[[t]],
                   legend.only = T, breaks = cuts,
-                  col = col, legend.width = 2,
+                  col = col, legend.width = 1.5,
                   axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                     labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                     cex.axis = 1.2),
-                  smallplot = c(0.85, 0.88, 0.2, 0.4),
+                  smallplot = c(0.88, 0.90, 0.2, 0.4),
                   legend.args = list(text = paste0("Individuals/", unit, " km2"),
-                                     side = 2, font = 1, line = 0, cex = 1))
+                                     side = 2, font = 1, line = 0, cex = 0.9))
     dev.off()
   }
   
   
   ##-- Summary density map
   if("summary" %in% type){
-
+    
     if(is.null(species)){
       message("You must provide one of 'bear', 'wolf' or 'wolverine' as the 'species' argument to be able plot the density map summary figure!")
     } else {
       ##-- Plot last year's density map
       # grDevices::pdf(file = file.path(path, paste0(name,"_Summary.pdf")),
       #                width = 8, height = 8, pointsize = 12)
-      grDevices::png(filename = file.path( path, "figures",
-                                          paste0(name,"_Summary.png")),
+      grDevices::png(filename = file.path(path, "figures", paste0(name,"_Summary.png")),
                      width = 8, height = 8, units = "in", pointsize = 12,
                      res = 300, bg = NA)
       
@@ -249,143 +262,43 @@ plotDensityMaps <- function(
       plot( sf::st_geometry(background),
             border = "gray40", col = NA, add = TRUE)
       
+      ##-- Add colour scale 
+      raster::plot( density[[t]],
+                    legend.only = T,
+                    breaks = cuts,
+                    col = col,
+                    legend.width = 2,
+                    axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
+                                      labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
+                                      cex.axis = 1.2),
+                    smallplot = c(0.80, 0.83, 0.25, 0.45),
+                    legend.args = list(text = paste0("Individuals/", unit, " km2"),
+                                       side = 2, font = 1, line = 0, cex = 1))
       
-      ##-- Option 1: brown bear
-      if(species == "bear") {
-        
-        ##-- Add km scale 
-        legend.x <- xLims[1] + 0.65 * xRange
-        legend.y <- yLims[1] + 0.2 * yRange
-        graphics::segments(
-          x0 = legend.x, x1 = legend.x,
-          y0 = legend.y-250000, y1 = legend.y + 250000,
-          col = "gray30", lwd = 4, lend = 2)
-        graphics::text(
-          x = legend.x - 0.05 * xRange,
-          y = legend.y,
-          labels = "500 km", srt = 90, cex = 1.4)
+      ##-- Add km scale 
+      addScale(x = 0.75, y = 0.25, size = 500000)
+
+      ##-- Add species silhouette 
+      addPNG( x = 0.8, y = 0.5, name = species, size = 0.15)
       
-        ##-- Add colour scale 
-        raster::plot( density[[t]],
-                      legend.only = T, breaks = cuts,
-                      col = col, legend.width = 2,
-                      axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        cex.axis = 1.2),
-                      smallplot = c(0.65, 0.68, 0.2, 0.4),
-                      legend.args = list(text = paste0("Individuals/", unit, " km2"),
-                                         side = 2, font = 1, line = 0, cex = 1))
-        
-        ##-- Add bear silhouette 
-        picSpecies <- png::readPNG( system.file("images", "bear.png", package = "rovquantR"))
-        picSize <- dim(picSpecies)
-        xPos <- legend.x + 0.01 * xRange
-        xSize <- 0.25 * xRange
-        yPos <- legend.y + 250000 + 0.02 * yRange
-        ySize <- xSize*picSize[1]/picSize[2]
-        rasterImage( picSpecies,
-                     xleft = xPos,
-                     xright = xPos + xSize,
-                     ybottom = yPos,
-                     ytop = yPos + ySize)
-        
-        ##-- Add Norwegian flag 
-        norFlag <- png::readPNG( system.file("images", "nor.png", package = "rovquantR"))
-        norSize <- dim(norFlag)
-        xPos <- xLims[1] + 0.05 * xRange
-        xSize <- 0.1 * xRange
-        yPos <- yLims[1] + 0.8 * yRange
-        ySize <- xSize*picSize[1]/picSize[2]
-        rasterImage( norFlag,
-                     xleft = xPos,
-                     xright = xPos + xSize,
-                     ybottom = yPos,
-                     ytop = yPos + ySize)
-        
-        ##-- Add abundance estimate
-        text(x = xPos + xSize + 0.1 * xRange,
-             y = yPos + ySize/2, 
-             labels = paste0(round(q95[1]), "-", round(q95[2])),
-              cex = 1.2, font = 2)
-        
-        ##-- Add caption
-        mtext(text = paste0("Density map and ranges of abundance \nestimated for brown bears in Norway in ",
-                            names(estimates)[length(density)]),
-              side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
-        
+      ##-- Add flags 
+      if(!is.null(labels)){addPopSize( x = x.labels, y = y.labels, labels = labels)}
+      
+      ##-- Add caption
+      if(is.null(caption)){
+      mtext(text = paste0("Density map and estimated ", engSpecies,
+                          "\nabundance range in ",
+                          names(estimates)[length(density)]),
+            side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
       } else {
-        
-        ##-- Add km scale 
-        legend.x <- xLims[1] + 0.65 * xRange
-        legend.y <- yLims[1] + 0.2 * yRange
-        graphics::segments(
-          x0 = legend.x, x1 = legend.x,
-          y0 = legend.y-250000, y1 = legend.y + 250000,
-          col = "gray30", lwd = 4, lend = 2)
-        graphics::text(
-          x = legend.x - 0.05 * xRange,
-          y = legend.y,
-          labels = "500 km", srt = 90, cex = 1.4)
-        
-        ##-- Add colour scale 
-        raster::plot( density[[t]],
-                      legend.only = T, breaks = cuts,
-                      col = col, legend.width = 2,
-                      axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        cex.axis = 1.2),
-                      smallplot = c(0.6, 0.63, 0.2, 0.4),
-                      legend.args = list(text = paste0("Individuals/", unit, " km2"),
-                                         side = 2, font = 1, line = 0, cex = 1))
-        
-        ##-- Add bear silhouette 
-        picSpecies <- png::readPNG( system.file("images", "bear.png", package = "rovquantR"))
-        picSize <- dim(picSpecies)
-        xPos <- legend.x + 0.02 * xRange
-        xSize <- 0.25 * xRange
-        yPos <- legend.y + 250000 + 0.02 * yRange
-        ySize <- xSize*picSize[1]/picSize[2]
-        rasterImage( picSpecies,
-                     xleft = xPos,
-                     xright = xPos + xSize,
-                     ybottom = yPos,
-                     ytop = yPos + ySize)
-        
-        ##-- Add Norwegian flag 
-        norFlag <- png::readPNG( system.file("images", "nor.png", package = "rovquantR"))
-        #norFlag <- png::readPNG( "C:/My_documents/rovquantR/inst/images/nor.png")
-        
-        norSize <- dim(norFlag)
-        xPos <- xLims[1] + 0.05 * xRange
-        xSize <- 0.1 * xRange
-        yPos <- yLims[1] + 0.8 * yRange
-        ySize <- xSize*picSize[1]/picSize[2]
-        rasterImage( norFlag,
-                     xleft = xPos,
-                     xright = xPos + xSize,
-                     ybottom = yPos,
-                     ytop = yPos + ySize)
-        
-        ##-- Add abundance estimate
-        text(x = xPos + xSize + 0.05 * xRange,
-             y = yPos + ySize/2, 
-             labels = paste0(round(estimates[[length(estimates)]]$summary["Total","95%CILow"]), "-",
-                             round(estimates[[length(estimates)]]$summary["Total","95%CIHigh"])),
-             cex = 1.2, font = 2)
-        
-        ##-- Add caption
-        mtext(text = paste0("Density map and ranges of abundance \nestimated for brown bears in Norway in ",
-                            names(estimates)[length(density)]),
-              side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
+        mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
       }
-      
-      
-    dev.off()
+      dev.off()
     }
   }
   
   
-  ##-- Summary density map
+  ##-- Summary density map (Norwegian)
   if("summary_NOR" %in% type){
     
     if(is.null(species)){
@@ -394,8 +307,7 @@ plotDensityMaps <- function(
       ##-- Plot last year's density map
       # grDevices::pdf(file = file.path(path, paste0(name,"_Summary.pdf")),
       #                width = 8, height = 8, pointsize = 12)
-      grDevices::png(filename = file.path( path, "figures",
-                                           paste0(name,"_Summary_NOR.png")),
+      grDevices::png(filename = file.path(path, "figures", paste0(name,"_Summary_NOR.png")),
                      width = 8, height = 8, units = "in", pointsize = 12,
                      res = 300, bg = NA)
       
@@ -407,139 +319,40 @@ plotDensityMaps <- function(
       plot( sf::st_geometry(background),
             border = "gray40", col = NA, add = TRUE)
       
+
+      ##-- Add colour scale 
+      raster::plot( density[[t]],
+                    legend.only = T,
+                    breaks = cuts,
+                    col = col,
+                    legend.width = 2,
+                    axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
+                                      labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
+                                      cex.axis = 1.2),
+                    smallplot = c(0.80, 0.83, 0.25, 0.45),
+                    legend.args = list(text = paste0("Individer/", unit, " km2"),
+                                       side = 2, font = 1, line = 0, cex = 1))
       
-      ##-- Option 1: brown bear
-      if(sum(grep("bear", species, ignore.case = T)) > 0|
-         sum(grep("bjørn", species, ignore.case = T)) > 0|
-         sum(grep("bjorn", species, ignore.case = T)) > 0) {
-        
-        ##-- Add km scale 
-        legend.x <- xLims[1] + 0.65 * xRange
-        legend.y <- yLims[1] + 0.2 * yRange
-        graphics::segments(
-          x0 = legend.x, x1 = legend.x,
-          y0 = legend.y-250000, y1 = legend.y + 250000,
-          col = "gray30", lwd = 4, lend = 2)
-        graphics::text(
-          x = legend.x - 0.05 * xRange,
-          y = legend.y,
-          labels = "500 km", srt = 90, cex = 1.4)
-        
-        ##-- Add colour scale 
-        raster::plot( density[[t]],
-                      legend.only = T, breaks = cuts,
-                      col = col, legend.width = 2,
-                      axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        cex.axis = 1.2),
-                      smallplot = c(0.65, 0.68, 0.2, 0.4),
-                      legend.args = list(text = paste0("Individer/", unit, " km2"),
-                                         side = 2, font = 1, line = 0, cex = 1))
-        
-        ##-- Add bear silhouette 
-        picSpecies <- png::readPNG( system.file("images", "bear.png", package = "rovquantR"))
-        picSize <- dim(picSpecies)
-        xPos <- legend.x + 0.01 * xRange
-        xSize <- 0.25 * xRange
-        yPos <- legend.y + 250000 + 0.02 * yRange
-        ySize <- xSize*picSize[1]/picSize[2]
-        rasterImage( picSpecies,
-                     xleft = xPos,
-                     xright = xPos + xSize,
-                     ybottom = yPos,
-                     ytop = yPos + ySize)
-        
-        ##-- Add Norwegian flag 
-        norFlag <- png::readPNG( system.file("images", "nor.png", package = "rovquantR"))
-        norSize <- dim(norFlag)
-        xPos <- xLims[1] + 0.05 * xRange
-        xSize <- 0.1 * xRange
-        yPos <- yLims[1] + 0.8 * yRange
-        ySize <- xSize*picSize[1]/picSize[2]
-        rasterImage( norFlag,
-                     xleft = xPos,
-                     xright = xPos + xSize,
-                     ybottom = yPos,
-                     ytop = yPos + ySize)
-        
-        ##-- Add abundance estimate
-        text(x = xPos + xSize + 0.1 * xRange,
-             y = yPos + ySize/2, 
-             labels = paste0(round(q95[1]), "-", round(q95[2])),
-             cex = 1.2, font = 2)
-        
-        ##-- Add caption
-        mtext(text = paste0("Kart som viser tetthet av brunbjørn med \nintervaller for estimert antall brunbjørn i ",
-                            names(estimates)[length(density)]),
-              side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
-        
-      } else {
-        
-        ##-- Add km scale 
-        legend.x <- xLims[1] + 0.65 * xRange
-        legend.y <- yLims[1] + 0.2 * yRange
-        graphics::segments(
-          x0 = legend.x, x1 = legend.x,
-          y0 = legend.y-250000, y1 = legend.y + 250000,
-          col = "gray30", lwd = 4, lend = 2)
-        graphics::text(
-          x = legend.x - 0.05 * xRange,
-          y = legend.y,
-          labels = "500 km", srt = 90, cex = 1.4)
-        
-        ##-- Add colour scale 
-        raster::plot( density[[t]],
-                      legend.only = T, breaks = cuts,
-                      col = col, legend.width = 2,
-                      axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                        cex.axis = 1.2),
-                      smallplot = c(0.6, 0.63, 0.2, 0.4),
-                      legend.args = list(text = paste0("Individuals/", unit, " km2"),
-                                         side = 2, font = 1, line = 0, cex = 1))
-        
-        ##-- Add bear silhouette 
-        picSpecies <- png::readPNG( system.file("images", "bear.png", package = "rovquantR"))
-        picSize <- dim(picSpecies)
-        xPos <- legend.x + 0.02 * xRange
-        xSize <- 0.25 * xRange
-        yPos <- legend.y + 250000 + 0.02 * yRange
-        ySize <- xSize*picSize[1]/picSize[2]
-        rasterImage( picSpecies,
-                     xleft = xPos,
-                     xright = xPos + xSize,
-                     ybottom = yPos,
-                     ytop = yPos + ySize)
-        
-        ##-- Add Norwegian flag 
-        norFlag <- png::readPNG( system.file("images", "nor.png", package = "rovquantR"))
-        #norFlag <- png::readPNG( "C:/My_documents/rovquantR/inst/images/nor.png")
-        
-        norSize <- dim(norFlag)
-        xPos <- xLims[1] + 0.05 * xRange
-        xSize <- 0.1 * xRange
-        yPos <- yLims[1] + 0.8 * yRange
-        ySize <- xSize*picSize[1]/picSize[2]
-        rasterImage( norFlag,
-                     xleft = xPos,
-                     xright = xPos + xSize,
-                     ybottom = yPos,
-                     ytop = yPos + ySize)
-        
-        ##-- Add abundance estimate
-        text(x = xPos + xSize + 0.05 * xRange,
-             y = yPos + ySize/2, 
-             labels = paste0(round(estimates[[length(estimates)]]$summary["Total","95%CILow"]), "-",
-                             round(estimates[[length(estimates)]]$summary["Total","95%CIHigh"])),
-             cex = 1.2, font = 2)
-        
-        ##-- Add caption
-        mtext(text = paste0("Kart som viser tetthet av ulv med \nintervaller for estimert antall brunbjørn i ",
-                            names(estimates)[length(density)]),
-              side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
-      }
+      ##-- Add km scale 
+      addScale(x = 0.75, y = 0.25, size = 500000)
+      
+      ##-- Add species silhouette 
+      addPNG( x = 0.8, y = 0.45, name = species, size = 0.15)
+      
+      ##-- Add flags 
+      if(!is.null(labels)){addPopSize( x = x.labels, y = y.labels, labels = labels)}
+      
+      ##-- Add caption
+      if(is.null(caption)){
+      mtext(text = paste0("Kart som viser tetthet av ", norSpecies,
+                          " med \nintervall for estimert antall ", norSpecies,
+                          " i ", names(estimates)[length(density)]),
+            side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
+        } else {
+          mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
+        }
       dev.off()
     }
   }
-
+  
 }

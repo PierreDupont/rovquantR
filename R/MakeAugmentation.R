@@ -1,6 +1,6 @@
-#' @title MakeAugmentation function
+#' @title makeAugmentation function
 #'
-#' @description \code{MakeAugmentation} increases the dimensions of an object along
+#' @description \code{makeAugmentation} increases the dimensions of an object along
 #'  the individual and/or the year dimension. It returns a \code{Vector}, \code{Matrix} 
 #'  or \code{Array} object with the expanded object.
 #'
@@ -11,15 +11,16 @@
 #' 
 #' @return A \code{Vector}, \code{Matrix} or \code{Array} object containing the augmented y.
 #'
-#' @examples \dontrun{MakeAugmentation()}
+#' @examples \dontrun{makeAugmentation()}
 #' 
-#' @rdname MakeAugmentation
+#' @rdname makeAugmentation
 #' @export
-MakeAugmentation <- function( y,
-                              aug.factor= NULL,
-                              aug.years = NULL,
-                              replace.value = NA)
-  {
+makeAugmentation <- function( 
+    y,
+    aug.factor= NULL,
+    aug.years = NULL,
+    replace.value = NA)
+{
   
   ## Vector Data augmentation
   if(is.vector(y)){

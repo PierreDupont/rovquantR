@@ -14,14 +14,12 @@
 #'
 #' @rdname translateForeignCharacters
 #' @export
-translateForeignCharacters <- function( data,
-                                        dir.translation = NULL) 
+translateForeignCharacters <- function(
+    data,
+    dir.translation = NULL) 
 {
   ##-- Load .RData file with special characters
   if(!is.null(dir.translation)){
-   # data(fromto, envir = environment()) 
-    #load(system.file("extdata", "CharacterTranslation.RData", package = "rovquantR"))
-  #} else {
     load(dir.translation)
   }
   

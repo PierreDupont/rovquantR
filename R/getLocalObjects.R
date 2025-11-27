@@ -35,15 +35,16 @@
 #' 
 #' habitatMask <- matrix(rbinom(colNum*rowNum, 1, 0.8), ncol = colNum, nrow = rowNum)
 #' 
-#' localObject.list <- getLocalObjects(habitatMask, coords,  dmax = 7,resizeFactor = 1)
+#' localObject.list <- getLocalObjects(habitatMask, coords,  dmax = 7,resizeFactor = 10)
 #'
 #' @export
-getLocalObjects <- function( habitatMask,
-                             coords,
-                             dmax,
-                             resizeFactor = 1,
-                             plot.check = TRUE
-){
+getLocalObjects <- function( 
+    habitatMask,
+    coords,
+    dmax,
+    resizeFactor = 1,
+    plot.check = TRUE)
+{
   ## STORE THE COORDINATES OF THE ORIGINAL HABITAT CELLS
   oldCoords <- which(habitatMask > 0, arr.ind = T) - 0.5
   oldCoords <- cbind(oldCoords[,2], oldCoords[,1])
@@ -72,7 +73,7 @@ getLocalObjects <- function( habitatMask,
   isIn <- unlist(lapply(1:dim(habUpCoords)[1], function(c){
     sum((habLoCoords[c,1] <= oldCoords[ ,1]) *
           (habLoCoords[c,2] <= oldCoords[ ,2]) *
-          (habUpCoords[c, 1] > oldCoords[ ,1]) *
+          (habUpCoords[c,1] > oldCoords[ ,1]) *
           (habUpCoords[c,2] > oldCoords[ ,2])) > 0
   })) 
   
@@ -80,45 +81,46 @@ getLocalObjects <- function( habitatMask,
   habitatCoords <- habitatCoords[isIn, ]
   
   ## CREATE AN EMPTY MATRIX OF NEW HABITAT CELL IDs
-  habitatID <- matrix(0, nrow = length(yCoords), ncol = length(xCoords))
+  habitatGrid <- matrix(0, nrow = length(yCoords), ncol = length(xCoords))
   for(c in 1:dim(habitatCoords)[1]){
-    habitatID[trunc(habitatCoords[c,2]/resizeFactor)+1,
+    habitatGrid[trunc(habitatCoords[c,2]/resizeFactor)+1,
               trunc(habitatCoords[c,1]/resizeFactor)+1] <- c
   }
   
   ## DETERMINE WHICH POINTS ARE WITHIN dmax OF THE CENTER OF EACH NEW HABITAT CELL
-  localIndices  <- apply(habitatCoords, 1, function(x){
+  localIndices.ls <- apply(habitatCoords, 1, function(x){
     D <- sqrt((x[1] - coords[,1])^2 + (x[2] - coords[,2])^2) 
     which(D < dmax)
   })
   
   ## MAKE SURE IT ALWAYS RETURN A LIST
-  if(inherits(localIndices,"matrix")){
-    localIndices <- lapply(1:dim(localIndices)[2], function(x) localIndices[ ,x])
+  if(inherits(localIndices.ls,"matrix")){
+    localIndices.ls <- lapply(1:dim(localIndices.ls)[2], function(x) localIndices.ls[ ,x])
   }
   
   ## GET NUMBER OF DETECTORS WITHIN dmax OF EACH NEW HABITAT CELL
-  numLocalIndices <- unlist(lapply(localIndices, function(x) length(x)))
+  numLocalIndices <- unlist(lapply(localIndices.ls, function(x) length(x)))
   maxLocalIndices <- max(numLocalIndices)
   
   ## FOR ALL HABITAT GRIDS, THE LOCAL EVALUATION SHOULD BE LARGE ENOUGH TO OVERLAP WITH > 0 TRAP
   if(any(numLocalIndices %in% 0)){
-     warning("dmax value too small. All habitat grid cells should have at least one local object within a radius of dmax.")
-   }
+    warning("dmax value too small. All habitat grid cells should have at least one local object within a radius of dmax.")
+  }
   
-  ## STORE LOCAL INDICES IN A MATRIX 
-  Index <- matrix(-1, nrow = length(localIndices), ncol = maxLocalIndices)
-  for(j in 1:length(localIndices)){
-    if(length(localIndices[[j]])!=0){
-      Index[j, 1:numLocalIndices[j]] <- localIndices[[j]]
+  ## STORE LOCAL  INDICES IN A MATRIX 
+  localIndices <- matrix(-1, nrow = length(localIndices.ls), ncol = maxLocalIndices)
+  for(j in 1:length(localIndices.ls)){
+    if(length(localIndices.ls[[j]])!=0){
+      localIndices[j, 1:numLocalIndices[j]] <- localIndices.ls[[j]]
     }
   }
   
   ## PLOT CHECK 
   if(plot.check){
     SXY <- as.numeric(habitatCoords[sample(1:dim(habitatCoords)[1], size = 1), ])
-    sxyID <- habitatID[trunc(SXY[2]/resizeFactor)+1, trunc(SXY[1]/resizeFactor)+1]
-    index <- Index[sxyID, 1:numLocalIndices[sxyID]]
+    sxyID <- habitatGrid[trunc(SXY[2]/resizeFactor)+1, trunc(SXY[1]/resizeFactor)+1]
+    index <- localIndices[sxyID, 1:numLocalIndices[sxyID]]
+    
     plot(habitatCoords[ ,2] ~ habitatCoords[ ,1], pch = 16, cex = 0.1)
     points(habitatCoords[sxyID,2] ~ habitatCoords[sxyID,1], pch = 16, cex = 0.4, col = "orange")
     points(coords[ ,2] ~ coords[ ,1], pch = 16, cex = 0.2, col = "red")
@@ -127,8 +129,8 @@ getLocalObjects <- function( habitatMask,
   }
   
   ## OUTPUT LIST
-  output <- list( habitatGrid = habitatID,
-                  localIndices = Index,
+  output <- list( habitatGrid = habitatGrid,
+                  localIndices = localIndices,
                   numLocalIndices = numLocalIndices,
                   numLocalIndicesMax = maxLocalIndices,
                   resizeFactor = resizeFactor)

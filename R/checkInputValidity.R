@@ -1,9 +1,9 @@
-#' @title Detectors Assignment Function
-#'
-#' @description
-#' \code{checkInputValidity} tests the validity of the input data.
+#' @title Input checking function
 #'
 #' @name checkInputValidity
+#' 
+#' @description
+#' \code{checkInputValidity} checks the validity of the nimbleSCR input for OPSCR models.
 #'
 #' @param data A \code{sf} object containing the detection data
 #' @param detectors A \code{list} of sf objects containing the detector locations
@@ -61,7 +61,7 @@ checkInputValidity <- function(
   n.years <- dim(s)[3]
   lengthYCombined <- dim(y)[2]
   nMaxDetectors <- (lengthYCombined-1)/2
-  myCol <- grDevices:hcl.colors(n.years)
+  myCol <- grDevices::hcl.colors(n.years)
   
   if (printReport) {
     silent <- TRUE 
@@ -194,9 +194,6 @@ checkInputValidity <- function(
       }
     }#if
     
-    
-    
-    
     ##----- 2. Check individual detections -----
     report <- NULL
     
@@ -326,6 +323,7 @@ checkInputValidity <- function(
   }
 }
 
+
 NULL
 #' @rdname checkInputValidity
 #' @export
@@ -441,6 +439,4 @@ checkInputValidity_lite <- function(
       }
     }#t
   }#i
-  
-  
 }
