@@ -1597,164 +1597,330 @@ makeRovquantData_wolverine <- function(
     ## ------ IV. MODEL SETTING ------- 
     
     ## ------   1. NIMBLE MODEL DEFINITION ------
-    
     modelCode <- nimbleCode({
       
-      ##------ SPATIAL PROCESS ------## 
-      
+      ##-----------------------------## 
+      ##------ SPATIAL PROCESS ------##  
+      ##-----------------------------##  
       dmean ~ dunif(0,100)
       lambda <- 1/dmean
-      
       betaDens ~ dnorm(0.0,0.01)
-      habIntensity[1:n.habWindows] <- exp(betaDens * denCounts[1:n.habWindows])
-      sumHabIntensity <- sum(habIntensity[1:n.habWindows])
-      logHabIntensity[1:n.habWindows] <- log(habIntensity[1:n.habWindows])
+      ##
+      habIntensity[1:numHabWindows] <- exp(betaDens * denCounts[1:numHabWindows,1])
+      sumHabIntensity <- sum(habIntensity[1:numHabWindows])
+      logHabIntensity[1:numHabWindows] <- log(habIntensity[1:numHabWindows])
       logSumHabIntensity <- log(sumHabIntensity)
       
       for(i in 1:n.individuals){
-        sxy[i,1:2,1] ~ dbernppAC(
-          lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
-          upperCoords = upperHabCoords[1:n.habWindows,1:2],
-          logIntensities = logHabIntensity[1:n.habWindows],
+        sxy[i, 1:2, 1] ~ dbernppAC(
+          lowerCoords = lowerHabCoords[1:numHabWindows, 1:2],
+          upperCoords = upperHabCoords[1:numHabWindows, 1:2],
+          logIntensities = logHabIntensity[1:numHabWindows],
           logSumIntensity = logSumHabIntensity,
           habitatGrid = habitatGrid[1:y.max,1:x.max],
-          numGridRows = y.max,
+          numGridRows =  y.max,
           numGridCols = x.max)
-        
-        for(t in 2:n.years){
-          sxy[i,1:2,t] ~ dbernppACmovement_exp(
-            lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
-            upperCoords = upperHabCoords[1:n.habWindows,1:2],
-            s = sxy[i,1:2,t-1],
+      }#i
+      
+      for(t in 2:n.years){
+        for(i in 1:n.individuals){
+          sxy[i, 1:2, t] ~ dbernppACmovement_exp(
+            lowerCoords = lowerHabCoords[1:numHabWindows, 1:2],
+            upperCoords = upperHabCoords[1:numHabWindows, 1:2],
+            s = sxy[i, 1:2, t-1],
             lambda = lambda,
-            baseIntensities = habIntensity[1:n.habWindows],
-            habitatGrid = habitatGrid[1:y.max,1:x.max],
+            baseIntensities = habIntensity[1:numHabWindows],
+            habitatGrid =  habitatGrid[1:y.max,1:x.max],
             numGridRows = y.max,
             numGridCols = x.max,
-            numWindows = n.habWindows)
+            numWindows= numHabWindows)
         }#i  
       }#t
       
       
-      
+      ##-------------------------------## 
       ##----- DEMOGRAPHIC PROCESS -----## 
-      
+      ##-------------------------------##    
       omeg1[1:2] ~ ddirch(alpha[1:2])   
       
-      for(t in 1:(n.years-1)){
-        ## PRIORS 
+      for(t in 1:n.years1){
+        # PRIORS 
         gamma[t] ~ dunif(0,1)
         phi[t] ~ dunif(0,1)
         
-        ## TRANSITION MATRIX
-        omega[1,1:3,t] <- c(1-gamma[t],gamma[t],0)
-        omega[2,1:3,t] <- c(0,phi[t],1-phi[t])
-        omega[3,1:3,t] <- c(0,0,1)
+        # "UNBORN"
+        omega[1,1,t] <- 1-gamma[t]
+        omega[1,2,t] <- gamma[t]
+        omega[1,3,t] <- 0
+        # "Alive"
+        omega[2,1,t] <- 0
+        omega[2,2,t] <- phi[t]
+        omega[2,3,t] <- 1-phi[t]
+        # "Dead"
+        omega[3,1,t] <- 0
+        omega[3,2,t] <- 0
+        omega[3,3,t] <- 1
       }#t
       
       
+      pResponse ~ dunif(0, 1)
+      
       for(i in 1:n.individuals){ 
+        detResponse[i,1] ~ dbern(pResponse)
+        
         z[i,1] ~ dcat(omeg1[1:2]) 
-        for(t in 1:(n.years-1)){
+        for(t in 1:n.years1){
           z[i,t+1] ~ dcat(omega[z[i,t],1:3,t]) 
         }#i 								
       }#t 
       
       
-      
+      ##-----------------------------##
       ##----- DETECTION PROCESS -----## 
-      
+      ##-----------------------------##
       for(t in 1:n.years){
-        
         sigma[t] ~ dunif(0,4)
-        
-        ## Systematic sampling
-        betaResponse[t] ~ dunif(-5,5)
         for(c in 1:n.covs){
           betaCovs[c,t] ~ dunif(-5,5)
-        }#c 
-        for(c in 1:n.counties){
-          p01[c,t] ~ dunif(0,1)
-          p0[c,t] <- p01[c,t] * countyToggle[c,t]## toggle counties
-        }#c  
+        }
         
-        ## Opportunistic sampling
-        betaResponseOth[t] ~ dunif(-5,5)
-        for(c in 1:n.covs.Oth){
+        for(c in 1:n.covsOth){
           betaCovsOth[c,t] ~ dunif(-5,5)
-        }#c 
-        for(c in 1:n.countries){
+        }
+        
+        betaResponse[t] ~ dunif(-5,5)
+        betaResponseOth[t] ~ dunif(-5,5)
+      }
+      
+      for(c in 1:n.counties){
+        for(t in 1:n.years){
+          p01[c,t] ~ dunif(0,1)
+          p0[c,t] <- p01[c,t] *countyToggle[c,t]## toggle counties
+        }#t
+      }#c  
+      
+      for(c in 1:n.countries){
+        for(t in 1:n.years){
           p01Oth[c,t] ~ dunif(0,1)
-          p0Oth[c,t] <- p01Oth[c,t] * countryToggle[c,t]## toggle countries
-        }#c  
-      }#t
+          p0Oth[c,t] <- p01Oth[c,t] *countyToggleOth[c,t]## toggle countries
+        }#t
+      }#c  
       
-      ## Individual response
-      pResponse ~ dunif(0, 1)
-      for(i in 1:n.individuals){ 
-        detResponse[i,1] ~ dbern(pResponse)
-      }#i
-      
-      ## Individual detection histories
       for(t in 1:n.years){
         for(i in 1:n.individuals){
-          
-          y[i,1:maxDetNums,t] ~ dbinomLocal_normalCovsResponse2( 
-            detNums = detNums[i,t],
-            detIndices = detIndices[i,1:maxDetNums,t],
-            size = size[1:n.detectors],
-            p0State = p0[1:n.counties,t],
+          y.alive[i,1:nMaxDetectors,t] ~ dbin_LESS_Cached_MultipleCovResponse( 
+            sxy = sxy[i,1:2,t],
             sigma = sigma[t],
-            s = sxy[i,1:2,t],
-            trapCoords = detector.xy[1:n.detectors,1:2],
-            localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-            localTrapsNum = localDetNum[1:n.habWindows],
-            resizeFactor = resizeFactor,
-            habitatGrid = habitatGrid[1:y.max,1:x.max],
+            nbDetections[i,t],
+            yDets = yDets[i,1:nMaxDetectors,t],
+            detector.xy =  detector.xy[1:n.detectors,1:2],
+            trials = trials[1:n.detectors],
+            detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
+            nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
+            ResizeFactor = ResizeFactor,
+            maxNBDets = maxNBDets,
+            habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
             indicator = isAlive[i,t],
-            lengthYCombined = lengthYCombined,
-            trapCountries = detCounties[1:n.detectors],
-            trapCovs = detCovs[1:n.detectors,t,1:n.covs],
-            trapBetas = betaCovs[1:n.covs,t],
-            responseCovs = detResponse[i,t],
-            responseBetas = betaResponse[t])
+            p0[1:n.counties,t],
+            detCounties[1:n.detectors],
+            detCov = detCovs[1:n.detectors,t,1:n.covs],
+            betaCov = betaCovs[1:n.covs,t],
+            BetaResponse = betaResponse[t],
+            detResponse = detResponse[i,t])
           
-          y.Oth[i,1:maxDetNumsOth,t] ~ dbinomLocal_normalCovsResponse2( 
-            detNums = detNumsOth[i,t],
-            detIndices = detIndicesOth[i,1:maxDetNumsOth,t],
-            size = size[1:n.detectors],
-            p0State = p0Oth[1:n.counties,t],
+          y.aliveOth[i,1:nMaxDetectorsOth,t] ~ dbin_LESS_Cached_MultipleCovResponse(
+            sxy = sxy[i,1:2,t],
             sigma = sigma[t],
-            s = sxy[i,1:2,t],
-            trapCoords = detector.xy[1:n.detectors,1:2],
-            localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-            localTrapsNum = localDetNum[1:n.habWindows],
-            resizeFactor = resizeFactor,
-            lengthYCombined = lengthYCombined.Oth,
-            habitatGrid = habitatGrid[1:y.max,1:x.max],
+            nbDetectionsOth[i,t],
+            yDets = yDetsOth[i,1:nMaxDetectorsOth,t],
+            detector.xy = detector.xy[1:n.detectors,1:2],
+            trials = trials[1:n.detectors],
+            detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
+            nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
+            ResizeFactor = ResizeFactor,
+            maxNBDets = maxNBDets,
+            habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
             indicator = isAlive[i,t],
-            trapCountries = detCountries[1:n.detectors,t],
-            trapCovs = detCovsOth[1:n.detectors,t,1:n.covs.Oth],
-            trapBetas = betaCovsOth[1:n.covs.Oth,t],
-            responseCovs = detResponse[i,t],
-            responseBetas = betaResponseOth[t])
-          
-          # y.dead.legal[i,t] ~ dbern(z[i,t] == 3) 
-          # y.dead.other[i,t] ~ dbern(z[i,t] == 4) 
+            p0Oth[1:n.countries,t],
+            detCountries[1:n.detectors,t],
+            detCov = detCovsOth[1:n.detectors,t,1:n.covsOth],
+            betaCov = betaCovsOth[1:n.covsOth,t],
+            BetaResponse = betaResponseOth[t],
+            detResponse = detResponse[i,t])
         }#i
       }#t
       
       
+      ##----------------------------------------## 
       ##---------- DERIVED PARAMETERS ----------##
-      
+      ##----------------------------------------##
+      for(i in 1:n.individuals){ 
+        isAlive[i,1] <- (z[i,1] == 2) 
+        for(t in 1:n.years1){
+          isAlive[i,t+1] <- (z[i,t+1] == 2) 
+        }
+      }
       for(t in 1:n.years){
-        for(i in 1:n.individuals){ 
-          isAlive[i,t] <- (z[i,t] == 2) 
-        }#i
         N[t] <- sum(isAlive[1:n.individuals,t])
       }#t
-      
     })
+    # modelCode <- nimbleCode({
+    #   
+    #   ##------ SPATIAL PROCESS ------## 
+    #   
+    #   dmean ~ dunif(0,100)
+    #   lambda <- 1/dmean
+    #   
+    #   betaDens ~ dnorm(0.0,0.01)
+    #   habIntensity[1:n.habWindows] <- exp(betaDens * denCounts[1:n.habWindows])
+    #   sumHabIntensity <- sum(habIntensity[1:n.habWindows])
+    #   logHabIntensity[1:n.habWindows] <- log(habIntensity[1:n.habWindows])
+    #   logSumHabIntensity <- log(sumHabIntensity)
+    #   
+    #   for(i in 1:n.individuals){
+    #     sxy[i,1:2,1] ~ dbernppAC(
+    #       lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
+    #       upperCoords = upperHabCoords[1:n.habWindows,1:2],
+    #       logIntensities = logHabIntensity[1:n.habWindows],
+    #       logSumIntensity = logSumHabIntensity,
+    #       habitatGrid = habitatGrid[1:y.max,1:x.max],
+    #       numGridRows = y.max,
+    #       numGridCols = x.max)
+    #     
+    #     for(t in 2:n.years){
+    #       sxy[i,1:2,t] ~ dbernppACmovement_exp(
+    #         lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
+    #         upperCoords = upperHabCoords[1:n.habWindows,1:2],
+    #         s = sxy[i,1:2,t-1],
+    #         lambda = lambda,
+    #         baseIntensities = habIntensity[1:n.habWindows],
+    #         habitatGrid = habitatGrid[1:y.max,1:x.max],
+    #         numGridRows = y.max,
+    #         numGridCols = x.max,
+    #         numWindows = n.habWindows)
+    #     }#i  
+    #   }#t
+    #   
+    #   
+    #   
+    #   ##----- DEMOGRAPHIC PROCESS -----## 
+    #   
+    #   omeg1[1:2] ~ ddirch(alpha[1:2])   
+    #   
+    #   for(t in 1:(n.years-1)){
+    #     ## PRIORS 
+    #     gamma[t] ~ dunif(0,1)
+    #     phi[t] ~ dunif(0,1)
+    #     
+    #     ## TRANSITION MATRIX
+    #     omega[1,1:3,t] <- c(1-gamma[t],gamma[t],0)
+    #     omega[2,1:3,t] <- c(0,phi[t],1-phi[t])
+    #     omega[3,1:3,t] <- c(0,0,1)
+    #   }#t
+    #   
+    #   
+    #   for(i in 1:n.individuals){ 
+    #     z[i,1] ~ dcat(omeg1[1:2]) 
+    #     for(t in 1:(n.years-1)){
+    #       z[i,t+1] ~ dcat(omega[z[i,t],1:3,t]) 
+    #     }#i 								
+    #   }#t 
+    #   
+    #   
+    #   
+    #   ##----- DETECTION PROCESS -----## 
+    #   
+    #   for(t in 1:n.years){
+    #     
+    #     sigma[t] ~ dunif(0,4)
+    #     
+    #     ## Systematic sampling
+    #     betaResponse[t] ~ dunif(-5,5)
+    #     for(c in 1:n.covs){
+    #       betaCovs[c,t] ~ dunif(-5,5)
+    #     }#c 
+    #     for(c in 1:n.counties){
+    #       p01[c,t] ~ dunif(0,1)
+    #       p0[c,t] <- p01[c,t] * countyToggle[c,t]## toggle counties
+    #     }#c  
+    #     
+    #     ## Opportunistic sampling
+    #     betaResponseOth[t] ~ dunif(-5,5)
+    #     for(c in 1:n.covs.Oth){
+    #       betaCovsOth[c,t] ~ dunif(-5,5)
+    #     }#c 
+    #     for(c in 1:n.countries){
+    #       p01Oth[c,t] ~ dunif(0,1)
+    #       p0Oth[c,t] <- p01Oth[c,t] * countryToggle[c,t]## toggle countries
+    #     }#c  
+    #   }#t
+    #   
+    #   ## Individual response
+    #   pResponse ~ dunif(0, 1)
+    #   for(i in 1:n.individuals){ 
+    #     detResponse[i,1] ~ dbern(pResponse)
+    #   }#i
+    #   
+    #   ## Individual detection histories
+    #   for(t in 1:n.years){
+    #     for(i in 1:n.individuals){
+    #       
+    #       y[i,1:maxDetNums,t] ~ dbinomLocal_normalCovsResponse2( 
+    #         detNums = detNums[i,t],
+    #         detIndices = detIndices[i,1:maxDetNums,t],
+    #         size = size[1:n.detectors],
+    #         p0State = p0[1:n.counties,t],
+    #         sigma = sigma[t],
+    #         s = sxy[i,1:2,t],
+    #         trapCoords = detector.xy[1:n.detectors,1:2],
+    #         localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
+    #         localTrapsNum = localDetNum[1:n.habWindows],
+    #         resizeFactor = resizeFactor,
+    #         habitatGrid = habitatGrid[1:y.max,1:x.max],
+    #         indicator = isAlive[i,t],
+    #         lengthYCombined = lengthYCombined,
+    #         trapCountries = detCounties[1:n.detectors],
+    #         trapCovs = detCovs[1:n.detectors,t,1:n.covs],
+    #         trapBetas = betaCovs[1:n.covs,t],
+    #         responseCovs = detResponse[i,t],
+    #         responseBetas = betaResponse[t])
+    #       
+    #       y.Oth[i,1:maxDetNumsOth,t] ~ dbinomLocal_normalCovsResponse2( 
+    #         detNums = detNumsOth[i,t],
+    #         detIndices = detIndicesOth[i,1:maxDetNumsOth,t],
+    #         size = size[1:n.detectors],
+    #         p0State = p0Oth[1:n.counties,t],
+    #         sigma = sigma[t],
+    #         s = sxy[i,1:2,t],
+    #         trapCoords = detector.xy[1:n.detectors,1:2],
+    #         localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
+    #         localTrapsNum = localDetNum[1:n.habWindows],
+    #         resizeFactor = resizeFactor,
+    #         lengthYCombined = lengthYCombined.Oth,
+    #         habitatGrid = habitatGrid[1:y.max,1:x.max],
+    #         indicator = isAlive[i,t],
+    #         trapCountries = detCountries[1:n.detectors,t],
+    #         trapCovs = detCovsOth[1:n.detectors,t,1:n.covs.Oth],
+    #         trapBetas = betaCovsOth[1:n.covs.Oth,t],
+    #         responseCovs = detResponse[i,t],
+    #         responseBetas = betaResponseOth[t])
+    #       
+    #       # y.dead.legal[i,t] ~ dbern(z[i,t] == 3) 
+    #       # y.dead.other[i,t] ~ dbern(z[i,t] == 4) 
+    #     }#i
+    #   }#t
+    #   
+    #   
+    #   ##---------- DERIVED PARAMETERS ----------##
+    #   
+    #   for(t in 1:n.years){
+    #     for(i in 1:n.individuals){ 
+    #       isAlive[i,t] <- (z[i,t] == 2) 
+    #     }#i
+    #     N[t] <- sum(isAlive[1:n.individuals,t])
+    #   }#t
+    #   
+    # })
     
     
     

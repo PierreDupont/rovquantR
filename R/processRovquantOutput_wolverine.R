@@ -142,7 +142,7 @@ processRovquantOutput_wolverine <- function(
   
   ##-- Merge counties for practical reasons
   COUNTIES_AGGREGATED <- REGIONS %>%
-    dplyr::mutate(id = case_when(
+    dplyr::mutate(id = dplyr::case_when(
       county %in% c("Norrbotten") ~ 1,
       county %in% c("Västerbotten") ~ 2,
       county %in% c("Blekinge","Dalarna","Gävleborg","Gotland","Halland","Jämtland",
@@ -1667,10 +1667,6 @@ processRovquantOutput_wolverine <- function(
   row.names(dataSummary) <- c("N_NGS", "N_DR", "N_IDs")
   ##-- print .csv
   write.csv(dataSummary, file = file.path(working.dir, "tables/dataSummary.csv"))
-
-  
-  ##-- Prepare raster of countries
-  countryRaster <- habitatRasterResolution$`5km`[["Countries"]]
   
   
   
@@ -1796,8 +1792,8 @@ processRovquantOutput_wolverine <- function(
   ## ------     5.2.3. PROPORTION OF INDIVIDUALS DETECTED OVERALL ------
   
   ##-- Get the number of individuals detected each year
-  n.detected_F <- apply(nimDataF$detNums+nimDataF$detNumsOth, 2, function(x)sum(x>0))
-  n.detected_M <- apply(nimDataM$detNums+nimDataM$detNumsOth, 2, function(x)sum(x>0))
+  n.detected_F <- apply(nimDataF$nbDetections + nimDataF$nbDetectionsOth, 2, function(x)sum(x>0))
+  n.detected_M <- apply(nimDataM$nbDetections + nimDataM$nbDetectionsOth, 2, function(x)sum(x>0))
 
   propDetected <- matrix("", ncol = n.years, nrow = 3)
   row.names(propDetected) <- c("F","M","Total")
@@ -1829,8 +1825,8 @@ processRovquantOutput_wolverine <- function(
   ## ------     5.2.4. PROPORTION OF THE POPULATION DETECTED ------
   
   ##-- Extract number of individuals detected
-  isDetected <- rbind(nimDataM$detNums+nimDataM$detNumsOth,
-                      nimDataF$detNums+nimDataF$detNumsOth) > 0
+  isDetected <- rbind(nimDataM$nbDetections + nimDataM$nbDetectionsOth,
+                      nimDataF$nbDetections + nimDataF$nbDetectionsOth) > 0
   
   ##-- Identify individual sex
   isFemale <- resultsSXYZ_MF$sims.list$sex == "F"
