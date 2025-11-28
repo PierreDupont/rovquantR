@@ -145,7 +145,7 @@ Cmcmc <- compiledList$mcmc
 ##-- RUN NIMBLE MCMC IN SUCCESSIVE BITES
 system.time(runMCMCbites( mcmc = Cmcmc,
                           bite.size = 100,
-                          bite.number = 5,
+                          bite.number = 10,
                           path = file.path(working.dir,"nimbleOutfiles/female")))
 
 
@@ -168,7 +168,7 @@ model <- nimbleModel( code = modelCode,
                       calculate = FALSE) 
 model$calculate()
 
-åcmodel <- compileNimble(model)
+cmodel <- compileNimble(model)
 conf <- configureMCMC(model,
                       monitors = nimParams,
                       thin = 1,
@@ -183,8 +183,8 @@ Cmcmc <- compiledList$mcmc
 ##-- RUN NIMBLE MCMC IN SUCCESSIVE BITES
 system.time(runMCMCbites( mcmc = Cmcmc,
                           bite.size = 100,
-                          bite.number = 5,
-                          path = file.path(working.dir,"nimbleOutfiles/Hann")))
+                          bite.number = 10,
+                          path = file.path(working.dir,"nimbleOutfiles/male")))
 
 
 
@@ -202,7 +202,7 @@ processRovquantOutput(
   ,
   nburnin = 0
   ,
-  niter = 500
+  niter = 100
   ,
   extraction.res = 5000
   ,

@@ -5,17 +5,16 @@
 #' and processes MCMC outputs from NIMBLE models and produces figures,
 #' tables and rasters of interest (e.g. population density maps)
 #' 
-#' @param data.dir A \code{path}
-#' @param working.dir A \code{path}
-#' @param nburnin An \code{integer} denoting the number of iterations to be removed from each MCMC as burnin.
+#' @param data.dir A \code{path} to the directory containing the clean Rovbase data, as prepared by \code{cleanRovBaseData}.
+#' @param working.dir A \code{path} to the directory for this analysis containing the \code{nimbleInputFiles} folder to store the prepared data. 
+#' @param nburnin An \code{integer} denoting the number of MCMC bites to be removed from each MCMC chain as burnin.
 #' @param niter An \code{integer} denoting the number of MCMC iterations to be used for density extraction.
 #' @param extraction.res A \code{integer} denoting the raster resolution for density extraction.
+#' @param overwrite A \code{logical} Whether to overwrite (TRUE) or ask before overwriting potentially existing output files (FALSE).
 #' 
 #' @return 
-#' A \code{.RData} file with the clean NGS and dead recovery data objects
-#' for the species and period specified.
-#' A \code{html} report summarizing the data cleaning process
-#' Additional \code{.png} images that can be reused somewhere else.
+#' Multiple \code{.RData} files with the processed MCMC outputs and density outputs.
+#' Additional \code{.png} images and \code{.csv} that can be reused somewhere else.
 #'
 #' @author Pierre Dupont
 #' 
@@ -36,7 +35,7 @@
 #' @rdname processRovquantOutput_bear
 #' @export
 processRovquantOutput_bear <- function(
-    ##-- paths
+  ##-- paths
   data.dir = getwd(),
   working.dir = NULL,
   ##-- MCMC
@@ -370,6 +369,7 @@ processRovquantOutput_bear <- function(
         z = resultsSXYZ_MF$sims.list$z[ , ,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }#t
@@ -389,6 +389,7 @@ processRovquantOutput_bear <- function(
         z = resultsSXYZ_MF$sims.list$z[ ,IDMales,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }#t
@@ -408,6 +409,7 @@ processRovquantOutput_bear <- function(
         z = resultsSXYZ_MF$sims.list$z[ ,IDFemales,t],
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = rbind(regionID,countyID),
         returnPosteriorCells = F)
     }
@@ -445,9 +447,9 @@ processRovquantOutput_bear <- function(
         sigma = sigma[ ,IDMales],
         habitatxy = densityInputRegions$habitat.xy,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = regionID,
-        display_progress = T,
-        returnPosteriorCells = F)
+        returnPosteriorCells = FALSE)
     }#t
     names(UDdensityM) <- years
     
@@ -466,9 +468,9 @@ processRovquantOutput_bear <- function(
         sigma = sigma[ ,IDFemales],
         habitatxy = densityInputRegions$habitat.xy,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = regionID,
-        display_progress = T,
-        returnPosteriorCells = F)
+        returnPosteriorCells = FALSE)
     }#t
     names(UDdensityF) <- years
     
@@ -485,9 +487,9 @@ processRovquantOutput_bear <- function(
         sigma = sigma,
         habitatxy = densityInputRegions$habitat.xy,
         aliveStates = 2,
+        display_progress = FALSE,
         regionID = regionID,
-        display_progress = T,
-        returnPosteriorCells = F)
+        returnPosteriorCells = FALSE)
     }#t
     names(UDdensity) <- years
     
@@ -539,7 +541,7 @@ processRovquantOutput_bear <- function(
     path = working.dir,
     name = "AC_Density")
   
-  ##-- UD-density maps
+  ##-- UD-density maps 
   plotDensityMaps( 
     input = inputRaster,
     estimates = UDdensity,
@@ -1948,19 +1950,19 @@ processRovquantOutput_bear <- function(
   idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
   row.names(NCarRegionEstimates) <- idregion1
   
-  ##-- print .csv
-  write.csv(NCarRegionEstimates,
-            file = file.path(working.dir, "tables/N_AllYears_region.csv"))
-  
-  ##-- print .tex
-  row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
-  print(xtable::xtable( NCarRegionEstimates,
-                        type = "latex",
-                        align = paste(c("l",rep("c",ncol(NCarRegionEstimates))), collapse = "")),
-        floating = FALSE,
-        sanitize.text.function = function(x){x},
-        add.to.row = list(list(seq(1, nrow(NCarRegionEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables/N_AllYears_region.tex"))
+  # ##-- print .csv
+  # write.csv(NCarRegionEstimates,
+  #           file = file.path(working.dir, "tables/N_AllYears_region.csv"))
+  # 
+  # ##-- print .tex
+  # row.names(NCarRegionEstimates) <- c(paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
+  # print(xtable::xtable( NCarRegionEstimates,
+  #                       type = "latex",
+  #                       align = paste(c("l",rep("c",ncol(NCarRegionEstimates))), collapse = "")),
+  #       floating = FALSE,
+  #       sanitize.text.function = function(x){x},
+  #       add.to.row = list(list(seq(1, nrow(NCarRegionEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
+  #       file = file.path(working.dir, "tables/N_AllYears_region.tex"))
   
   
   
@@ -2095,20 +2097,20 @@ processRovquantOutput_bear <- function(
   idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
   row.names(NCarRegionEstimatesAllSex) <- c("", idregion1)
   
-  ##-- print .csv
-  write.csv(NCarRegionEstimatesAllSex,
-            file = file.path(working.dir, "tables/N_AllYearsPerSex_region.csv"))
-  
-  
-  ##-- print .tex
-  row.names(NCarRegionEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
-  
-  print(xtable::xtable(NCarRegionEstimatesAllSex, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCarRegionEstimatesAllSex))),collapse = "")),
-        sanitize.text.function = function(x){x},
-        floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_AllYearsPerSex_region.tex"))
+  # ##-- print .csv
+  # write.csv(NCarRegionEstimatesAllSex,
+  #           file = file.path(working.dir, "tables/N_AllYearsPerSex_region.csv"))
+  # 
+  # 
+  # ##-- print .tex
+  # row.names(NCarRegionEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
+  # 
+  # print(xtable::xtable(NCarRegionEstimatesAllSex, type = "latex",
+  #                      align = paste(c("l",rep("c",ncol(NCarRegionEstimatesAllSex))),collapse = "")),
+  #       sanitize.text.function = function(x){x},
+  #       floating = FALSE,
+  #       add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
+  #       file = file.path(working.dir, "tables/N_AllYearsPerSex_region.tex"))
   
   
   
@@ -2147,18 +2149,18 @@ processRovquantOutput_bear <- function(
   row.names(NCountyEstimates) <- idcounty1
   
   ##-- print .csv
-  write.csv(NCountyEstimates,
-            file = file.path(working.dir, "tables/N_AllYears_county.csv"))
-  
-  ##-- print .tex
-  row.names(NCountyEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
-  print(xtable::xtable( NCountyEstimates,
-                        type = "latex",
-                        align = paste(c("l",rep("c",ncol(NCountyEstimates))),collapse = "")),
-        floating = FALSE,
-        sanitize.text.function = function(x){x},
-        add.to.row = list(list(seq(1, nrow(NCountyEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables/N_AllYears_county.tex"))
+  # write.csv(NCountyEstimates,
+  #           file = file.path(working.dir, "tables/N_AllYears_county.csv"))
+  #  
+  # ##-- print .tex
+  # row.names(NCountyEstimates) <- c(paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
+  # print(xtable::xtable( NCountyEstimates,
+  #                       type = "latex",
+  #                       align = paste(c("l",rep("c",ncol(NCountyEstimates))),collapse = "")),
+  #       floating = FALSE,
+  #       sanitize.text.function = function(x){x},
+  #       add.to.row = list(list(seq(1, nrow(NCountyEstimates), by = 2)), "\\rowcolor[gray]{.96} "),
+  #       file = file.path(working.dir, "tables/N_AllYears_county.tex"))
   
   
   
@@ -2292,19 +2294,19 @@ processRovquantOutput_bear <- function(
   idcounty1[which(idcounty1 %in% "Total")] <- "TOTAL"
   row.names(NCountyEstimatesAllSex) <- c("", idcounty1)
   
-  ##-- print .csv
-  write.csv(NCountyEstimatesAllSex,
-            file = file.path(working.dir, "tables/N_AllYearsPerSex_county.csv"))
-  
-  ##-- print .tex
-  row.names(NCountyEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
-  
-  print(xtable::xtable(NCountyEstimatesAllSex, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSex))),collapse = "")),
-        sanitize.text.function = function(x){x},
-        floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_AllYearsPerSex_county.tex"))
+  # ##-- print .csv
+  # write.csv(NCountyEstimatesAllSex,
+  #           file = file.path(working.dir, "tables/N_AllYearsPerSex_county.csv"))
+  # 
+  # ##-- print .tex
+  # row.names(NCountyEstimatesAllSex) <- c("", paste0("\\hspace{0.1cm} ", idcountyNOR), "TOTAL")
+  # 
+  # print(xtable::xtable(NCountyEstimatesAllSex, type = "latex",
+  #                      align = paste(c("l",rep("c",ncol(NCountyEstimatesAllSex))),collapse = "")),
+  #       sanitize.text.function = function(x){x},
+  #       floating = FALSE,
+  #       add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions),by=2)),"\\rowcolor[gray]{.95} "),
+  #       file = file.path(working.dir, "tables/N_AllYearsPerSex_county.tex"))
   
   
   
@@ -2501,6 +2503,8 @@ processRovquantOutput_bear <- function(
   isAvail <- resultsSXYZ_MF$sims.list$z == 1 
   isAlive <- resultsSXYZ_MF$sims.list$z == 2 
   
+  norRaster <- extraction.raster[["Countries"]]
+  norRaster[norRaster[] != 2] <- NA
   
   ##-- Calculate % of the Norwegian bear population detected 
   prop <- matrix(NA,3,n.years)

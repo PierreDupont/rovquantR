@@ -10,7 +10,7 @@
 #' @param tracks A \code{sf} object containing the search tracks 
 #' @param progress.bar a \code{logical}, whether to display a progress bar or not. 
 #' 
-#' @return A \code{sf} object with the x and y locations of the different detections with associated tracks Id 
+#' @return A \code{sf} object with the x and y locations of the different detections with associated tracks ID. 
 #'
 #' @author Pierre Dupont
 #' 

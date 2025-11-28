@@ -19,16 +19,29 @@ using namespace Rcpp;
 //' The \code{GetDetectability_normal} function calculates detectability, i.e. the probability for an individual to be detected at least once for a set of grid cells based on posterior baseline detection probabilities and scale parameters. This function assumes a half-normal detection function.
 //' The \code{GetDetectability_mean} function is a fast alternative of the \code{GetDetectability_normal} based on the posterior means of the parameters instead of the full posterior MCMC.
 //' 
-//' @param sx A numeric vector whose sample quantiles are wanted.
-//' @param sy A logical, whether to remove NA values before calculation or not.
-//' @param z A logical, whether to remove NA values before calculation or not.
-//' @param sigma A logical, whether to remove NA values before calculation or not.
-//' @param habitatxy A logical, whether to remove NA values before calculation or not.
-//' @param aliveStates A logical, whether to remove NA values before calculation or not.
-//' @param regionID A logical, whether to remove NA values before calculation or not.
-//' @param probs A logical, whether to remove NA values before calculation or not.
-//' @param display_progress A logical, whether to remove NA values before calculation or not.
-//' @param returnPosteriorCells A logical, whether to remove NA values before calculation or not.
+//' @param sx A numeric matrix containing posterior samples of individual activity center's x-coordinates.
+//' @param sy A numeric matrix containing posterior samples of individual activity center's x-coordinates.
+//' @param z A numeric matrix containing posterior samples of individual states.
+//' @param sigma A numeric matrix containing posterior samples of individual sigma values.
+//' @param p0 A numeric matrix containing posterior samples of individual baseline detection probabilities.
+//' @param IDmx A numeric matrix containing the IDs of the habitat cells.
+//' @param habitatxy A numeric matrix containing the coordinates of all habitat cells.
+//' @param detectorxy A numeric matrix containing the coordinates of all detectors.
+//' @param aliveStates A numeric vector of the alive states.
+//' @param regionID  A binary matrix with dimensions (number of regions)*(number of habitat cells), denoting whether a given cell belongs the region (1) or not (0).
+//' @param probs numeric vector with the values of the quantiles to be returned for the confidence interval.
+//' @param display_progress A logical, whether to display progress bar or not.
+//' @param returnPosteriorCells A logical, whether to return posterior values for each cell or not.
+//' @param x A numeric vector whose sample quantiles (\code{quantileCpp}) or mode (\code{fastIntMode}) are wanted.
+//' @param q A numeric vector with the values of the quantiles to be returned.
+//' @param narm A logical, whether to remove NA values before calculation or not.
+//' @param matrix A numeric matrix
+//' @param values A numeric vector
+//' @param localDist A numeric value
+//' @param sx1,sx2,sy1,sy2 Numeric matrices of posterior x- and y-coordinates.
+//' @param z1,z2 Numeric matrices of posterior x- and y-coordinates.
+//' @param stateFrom,stateTo departure and arrival states.
+//' @param rgmx A numeric matrix
 //' 
 //' @return Return_Description
 //' 
@@ -105,7 +118,7 @@ NumericMatrix createTransitionMatrix(NumericVector values){
 //' @rdname GetDensity
 //' @export
 // [[Rcpp::export]]
-List GetDensity(NumericMatrix sx,             // X COORDINATES
+List GetDensity(NumericMatrix sx,                 // X COORDINATES
                  NumericMatrix sy,                // Y COORDINATES 
                  NumericMatrix z,                 // Z STATE 
                  NumericMatrix IDmx,              // MATRIX OF CELL IDS
@@ -439,7 +452,7 @@ List GetSpaceUse(NumericMatrix sx,             // X COORDINATES
 //' @rdname GetDensity
 //' @export
 // [[Rcpp::export]]
-List GetDetectability_normal( NumericMatrix p0,                 // detector-specific values of p0   
+List GetDetectability_normal( NumericMatrix p0,                  // detector-specific values of p0   
                                NumericVector sigma,              // SIGMA VALUES 
                                NumericMatrix habitatxy,          // HABITAT COORDINATES
                                NumericMatrix detectorxy,         // DETECTOR COORDINATES
