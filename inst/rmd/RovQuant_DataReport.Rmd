@@ -280,39 +280,6 @@ kable( numId_sexYear,
 
 The number of detections per individual varied from 1 to `r max(df$freq)`, with a mean number of NGS detections of `r round(mu$grp.mean[1],2)` for females and `r round(mu$grp.mean[2],2)` for males.
 
-<!-- The distances to the centroid of an individual's detections each year were on average `r round(meanDist$mean[1],2)`km and `r round(meanDist$mean[2],2)`km for females and males, respectively. The corresponding maximum distances were `r round(meanDist$max[1],2)`km and `r round(meanDist$max[2],2)`km for females and males, respectively. -->
-
-<!-- ```{r, ngs data3, echo = FALSE, collapse = TRUE,  fig.cap = paste0("Figure 4: A) Number of ", species, " NGS detections, and B) distance to the centroid of an individual's detections, per individual, year and sex. Colored dash lines represent the mean for each sex."), fig.height = 6, fig.width = 12} -->
-<!-- ##-- Histogram of number of samples per individual per year -->
-<!-- plot1 <- ggplot(df, aes(x = freq, fill = Sex)) + -->
-<!--   geom_histogram( position = "dodge",  -->
-<!--                   alpha = 0.9, binwidth = 1)+ -->
-<!--   geom_vline( data = mu, -->
-<!--               aes( xintercept = grp.mean, color = Sex), -->
-<!--               linetype = "dashed") + -->
-<!--   labs( tag = "A", -->
-<!--         x = "Number of NGS samples, per individual, per year", -->
-<!--         y = "Number of individuals") + -->
-<!--   theme_classic( ) + -->
-<!--   theme(legend.position = 'none') -->
-
-
-<!-- ##-- Histogram of distances between the centroid and all detections in a year -->
-<!-- plot2 <- ggplot(detDist, aes(x = dist, fill = sex)) + -->
-<!--   geom_histogram( position = "dodge",  -->
-<!--                   alpha = 0.9, binwidth = 1) + -->
-<!--   geom_vline( data = meanDist, -->
-<!--               aes( xintercept = mean, color = sex), -->
-<!--               linetype = "dashed") + -->
-<!--   labs( tag = "B", -->
-<!--         x = "Distance to the detection centroid (km)", -->
-<!--         y = "Number of individuals") + -->
-<!--   theme_classic() -->
-
-<!-- ##-- plots side by side -->
-<!-- plot1 + plot2 -->
-<!-- ``` -->
-
 ## Dead recovery data
 
 ```{r, dead data1, echo = FALSE, collapse = TRUE}
