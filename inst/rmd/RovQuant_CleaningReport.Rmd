@@ -268,9 +268,9 @@ After these initial checks several unusable samples were filtered out:
 
 `r if(engSpecies == "wolf"){paste0("-   overwriting sex assignment using info from Micke (N = ", info.ls$numOverwiteSex," individuals)")}`
 
-`r if(engSpecies == "bear"){paste0("-   DNA samples flagged by H.Brøseth (N = ",``sum(!info.ls$remove.alive), ")"``)}`
+`r if(engSpecies == "bear"){paste0("-   DNA samples flagged by H.Brøseth (N = ", sum(!info.ls$remove.alive), ")")}`
 
-`r if(engSpecies == "bear"){paste0("-``dead recoveries flagged by H.Brøseth (N =``", sum(!info.ls$remove.dead), ")``")}`
+`r if(engSpecies == "bear"){paste0("-   dead recoveries flagged by H.Brøseth (N = ", sum(!info.ls$remove.dead), ")")}`
 
 ## Other issues
 
