@@ -13,7 +13,10 @@ plotDensityMaps(
   type = c("time.series", "last.year", "summary"),
   path = getwd(),
   species = NULL,
-  q95 = NULL,
+  labels = NULL,
+  x.labels = NULL,
+  y.labels = NULL,
+  caption = NULL,
   export.raster = TRUE,
   name = "UD_Density"
 )
@@ -35,7 +38,13 @@ Note that the extent and resolution of this raster must match the extent and res
 
 \item{path}{A \code{path} denoting where to save the density maps.}
 
+\item{species}{(optional) A \code{character} string with the name of the species to be displayed (only used with \code{type = "summary"}).}
+
+\item{export.raster}{A \code{logical}; whether to save density rasters as .tif files or not.}
+
 \item{name}{A \code{character} string with the name to be used when saving .png and .tif files.}
+
+\item{q95}{(optional) A \code{numeric} vector with the boundaries of the 95% credible interval for the population size estimates to be displayed (only used with \code{type = "summary"}).}
 }
 \value{
 This function prints out \code{.png} image of density maps in the specified folder.

@@ -43,6 +43,38 @@ checkInputValidity_lite(
 )
 }
 \arguments{
+\item{s}{array of activity center coordinates.}
+
+\item{y}{detection histories.}
+
+\item{z}{matrix of individual states.}
+
+\item{lowerHabCoords}{lower coordinates of habitat grid cells.}
+
+\item{upperHabCoords}{upper coordinates of habitat grid cells.}
+
+\item{localHabWindowIndices}{matrix of IDs of the local habitat grid cells.}
+
+\item{numLocalHabWindows}{vector of numbers of local habitat grid cells.}
+
+\item{trapCoords}{matrix of detector coordinates}
+
+\item{localTrapsIndices}{matrix of IDs of the local detectors.}
+
+\item{localTrapsNum}{vector of numbers of local detectors.}
+
+\item{resizeFactor}{default value= 1.}
+
+\item{habitatGrid}{matrix of habitat grid cell IDs.}
+
+\item{habitatGridLocal}{matrix of resized habitat grid cell IDs.}
+
+\item{silent}{Logical; whether to print out outputs or not}
+
+\item{printReport}{Logical; whether to print out a .pdf report or not}
+
+\item{pathReport}{(optional) path to print the report}
+
 \item{data}{A \code{sf} object containing the detection data}
 
 \item{detectors}{A \code{list} of sf objects containing the detector locations}
@@ -50,12 +82,12 @@ checkInputValidity_lite(
 \item{subDetectors}{Optional; a \code{list} of sf objects containing the subdetectors locations (for PAB models only)}
 
 \item{radius}{a \code{numeric} value denoting the maximum radius to consider for detector assignment. 
-Any detection further than \code{radius}m from any detector will not be assigned to any detector. Instead it will get a 'NA'.}
+Any detection further than \code{radius}m from any detector will not be assigned to any detector. Instead it will get a 'NA'.
+   id = NULL,}
 }
 \value{
-A \code{sf} object with the x and y locations of the
- different detections with associated detector's Id
+A \code{.pdf} report with potentially problematic individual detections and/or movements.
 }
 \description{
-\code{checkInputValidity} checks the validity of the nimbleSCR input fro OPSCR models.
+\code{checkInputValidity} checks the validity of the nimbleSCR input for OPSCR models.
 }

@@ -45,7 +45,7 @@ coords <- expand.grid(list(x = seq(0.5, colNum, 1),
 
 habitatMask <- matrix(rbinom(colNum*rowNum, 1, 0.8), ncol = colNum, nrow = rowNum)
 
-localObject.list <- getLocalObjects(habitatMask, coords,  dmax = 7,resizeFactor = 1)
+localObject.list <- getLocalObjects(habitatMask, coords,  dmax = 7,resizeFactor = 10)
 
 }
 \author{

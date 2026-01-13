@@ -3,10 +3,10 @@
 \docType{data}
 \name{REGIONS}
 \alias{REGIONS}
-\title{COUNTIES}
+\title{REGIONS}
 \format{
 ## `REGIONS`
-A simple feature collection with 38 features and 4 fielsd#'
+A simple feature collection with 38 features and 4 fields
 }
 \source{
 <https://www.nmbu.no/en/research/projects/rovquant>

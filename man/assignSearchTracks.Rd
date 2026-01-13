@@ -14,7 +14,7 @@ assignSearchTracks(data, tracks, progress.bar = T)
 \item{progress.bar}{a \code{logical}, whether to display a progress bar or not.}
 }
 \value{
-A \code{sf} object with the x and y locations of the different detections with associated tracks Id
+A \code{sf} object with the x and y locations of the different detections with associated tracks ID.
 }
 \description{
 the \code{assignSearchtTracks} function is a R function used to match RovBase

@@ -10,7 +10,8 @@ plotQuantiles(
   width = 0.15,
   quantiles = c(0.0275, 0.975),
   quantiles2 = c(0.25, 0.75),
-  col = adjustcolor("firebrick3", 0.5)
+  col = adjustcolor("firebrick3", 0.5),
+  add.star = FALSE
 )
 }
 \arguments{
@@ -31,6 +32,12 @@ This function plots quantile bars with the specified characteristics.
 }
 \description{
 R utility function to plot the quantiles of a distribution of samples as a bar.
+}
+\examples{
+  
+plot(1, xlim = c(0, 2), ylim = c(0,100), type = "n")
+plotQuantiles(x = rnorm(1000, 60, sd = 12), at = 1, width = 0.18, quantiles2 = c(0.25,0.75))
+
 }
 \author{
 Pierre Dupont

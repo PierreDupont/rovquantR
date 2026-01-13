@@ -19,6 +19,7 @@ makeRovquantData(
   subdetector.res = NULL,
   max.det.dist = NULL,
   resize.factor = NULL,
+  rename.list = NULL,
   print.report = TRUE,
   Rmd.template = NULL,
   output.dir = NULL,

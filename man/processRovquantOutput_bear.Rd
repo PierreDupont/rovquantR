@@ -14,21 +14,21 @@ processRovquantOutput_bear(
 )
 }
 \arguments{
-\item{data.dir}{A \code{path}}
+\item{data.dir}{A \code{path} to the directory containing the clean Rovbase data, as prepared by \code{cleanRovBaseData}.}
 
-\item{working.dir}{A \code{path}}
+\item{working.dir}{A \code{path} to the directory for this analysis containing the \code{nimbleInputFiles} folder to store the prepared data.}
 
-\item{nburnin}{An \code{integer} denoting the number of iterations to be removed from each MCMC as burnin.}
+\item{nburnin}{An \code{integer} denoting the number of MCMC bites to be removed from each MCMC chain as burnin.}
 
 \item{niter}{An \code{integer} denoting the number of MCMC iterations to be used for density extraction.}
 
 \item{extraction.res}{A \code{integer} denoting the raster resolution for density extraction.}
+
+\item{overwrite}{A \code{logical} Whether to overwrite (TRUE) or ask before overwriting potentially existing output files (FALSE).}
 }
 \value{
-A \code{.RData} file with the clean NGS and dead recovery data objects
-for the species and period specified.
-A \code{html} report summarizing the data cleaning process
-Additional \code{.png} images that can be reused somewhere else.
+Multiple \code{.RData} files with the processed MCMC outputs and density outputs.
+Additional \code{.png} images and \code{.csv} that can be reused somewhere else.
 }
 \description{
 \code{processRovquantOutput_bear} calls a custom Rmarkdown template that combines 

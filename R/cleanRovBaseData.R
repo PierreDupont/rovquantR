@@ -389,7 +389,7 @@ cleanRovbaseData <- function(
       Sex = ifelse(Sex %in% "Hunn", "female", Sex),
       Sex = ifelse(Sex %in% "Hann", "male", Sex),
       ##-- Identify legal deaths
-      Legal = grepl(paste(legal.dead, collapse="|"),Death_cause)) %>%
+      Legal = grepl(paste(legal.dead, collapse = "|"), Death_cause)) %>%
     ##-- Filter to the focal years
     dplyr::filter(., Year %in% years)
  

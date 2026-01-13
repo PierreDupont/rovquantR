@@ -22,6 +22,10 @@ R utility function to print summary metrics from a vector of posterior samples.
 \details{
 The \code{getCleanEstimates} function is used to print the posterior mean (or median) of a vector of posterior MCMC samples, together with the credible interval of the specified width (in parentheses).
 }
+\examples{
+getCleanEstimates(rnorm(1000), "mean", quantiles = c(0.025,0.975))
+
+}
 \author{
 Pierre Dupont
 }

@@ -8,16 +8,17 @@ makeRovquantData_wolverine(
   data.dir = getwd(),
   working.dir = getwd(),
   years = NULL,
-  sex = c("Hann", "Hunn"),
+  sex = c("female", "male"),
   aug.factor = 0.8,
-  samplingMonths = list(12, 1:6),
+  sampling.months = list(12, 1:6),
   habitat.res = 20000,
   buffer.size = 60000,
   max.move.dist = 250000,
   detector.res = 10000,
   subdetector.res = 2000,
   max.det.dist = 84000,
-  resize.factor = 1
+  resize.factor = 1,
+  rename.list = NULL
 )
 }
 \arguments{
@@ -30,6 +31,8 @@ makeRovquantData_wolverine(
 \item{sex}{A \code{character}.}
 
 \item{aug.factor}{A \code{Numeric}.}
+
+\item{sampling.months}{A \code{list}.}
 
 \item{habitat.res}{A \code{Numeric}.}
 
@@ -44,19 +47,13 @@ makeRovquantData_wolverine(
 \item{max.det.dist}{A \code{Numeric}.}
 
 \item{resize.factor}{A \code{Numeric}.}
-
-\item{sampling.months}{A \code{list}.}
-
-\item{plot.check}{A \code{Logical}.}
-
-\item{print.report}{A \code{Logical}.}
 }
 \value{
 A \code{html} report summarizing the data preparation process
 Additional \code{.png} images that can be reused somewhere else.
 }
 \description{
-\code{makeRovquantData_wolverine} formats the available bear data for the OPSCR analysis using nimble and nimbleSCR.
+\code{makeRovquantData_wolverine} formats the available wolverine data for the OPSCR analysis using nimble and nimbleSCR.
 The data preparation process is composed of three main steps:
  - defining and formatting habitat characteristics
  - defining and formatting detectors characteristics

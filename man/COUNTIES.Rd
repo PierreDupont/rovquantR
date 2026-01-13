@@ -6,7 +6,7 @@
 \title{COUNTIES}
 \format{
 ## `COUNTIES`
-A simple feature collection with 40 features and 1 field#'
+A simple feature collection with 40 features and 1 field
 }
 \source{
 <https://www.nmbu.no/en/research/projects/rovquant>

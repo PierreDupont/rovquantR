@@ -80,25 +80,51 @@ GetTransitions(
 )
 }
 \arguments{
-\item{sx}{A numeric vector whose sample quantiles are wanted.}
+\item{x}{A numeric vector whose sample quantiles (\code{quantileCpp}) or mode (\code{fastIntMode}) are wanted.}
 
-\item{sy}{A logical, whether to remove NA values before calculation or not.}
+\item{q}{A numeric vector with the values of the quantiles to be returned.}
 
-\item{z}{A logical, whether to remove NA values before calculation or not.}
+\item{narm}{A logical, whether to remove NA values before calculation or not.}
 
-\item{aliveStates}{A logical, whether to remove NA values before calculation or not.}
+\item{matrix}{A numeric matrix}
 
-\item{regionID}{A logical, whether to remove NA values before calculation or not.}
+\item{values}{A numeric vector}
 
-\item{probs}{A logical, whether to remove NA values before calculation or not.}
+\item{sx}{A numeric matrix containing posterior samples of individual activity center's x-coordinates.}
 
-\item{display_progress}{A logical, whether to remove NA values before calculation or not.}
+\item{sy}{A numeric matrix containing posterior samples of individual activity center's x-coordinates.}
 
-\item{returnPosteriorCells}{A logical, whether to remove NA values before calculation or not.}
+\item{z}{A numeric matrix containing posterior samples of individual states.}
 
-\item{sigma}{A logical, whether to remove NA values before calculation or not.}
+\item{IDmx}{A numeric matrix containing the IDs of the habitat cells.}
 
-\item{habitatxy}{A logical, whether to remove NA values before calculation or not.}
+\item{aliveStates}{A numeric vector of the alive states.}
+
+\item{regionID}{A binary matrix with dimensions (number of regions)*(number of habitat cells), denoting whether a given cell belongs the region (1) or not (0).}
+
+\item{probs}{numeric vector with the values of the quantiles to be returned for the confidence interval.}
+
+\item{display_progress}{A logical, whether to display progress bar or not.}
+
+\item{returnPosteriorCells}{A logical, whether to return posterior values for each cell or not.}
+
+\item{sigma}{A numeric matrix containing posterior samples of individual sigma values.}
+
+\item{habitatxy}{A numeric matrix containing the coordinates of all habitat cells.}
+
+\item{p0}{A numeric matrix containing posterior samples of individual baseline detection probabilities.}
+
+\item{detectorxy}{A numeric matrix containing the coordinates of all detectors.}
+
+\item{localDist}{A numeric value}
+
+\item{sx1, sx2, sy1, sy2}{Numeric matrices of posterior x- and y-coordinates.}
+
+\item{z1, z2}{Numeric matrices of posterior x- and y-coordinates.}
+
+\item{stateFrom, stateTo}{departure and arrival states.}
+
+\item{rgmx}{A numeric matrix}
 }
 \value{
 Return_Description

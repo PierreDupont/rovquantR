@@ -35,6 +35,8 @@ restartMCMCbites(
 collectMCMCbites(
   path,
   burnin = 0,
+  thin = NULL,
+  thin2 = NULL,
   pattern = "mcmcSamples",
   param.omit = NULL,
   progress.bar = T
@@ -74,6 +76,8 @@ the MCMC sampling process if necessary using \code{restartMCMCbites}.}
 
 \item{burnin}{an \code{integer} denoting the number of MCMC bites to be removed 
 as burn-in.}
+
+\item{thin, thin2}{(optional) \code{integers} denoting the thinning rates to be used when collecting MCMC bites.}
 
 \item{pattern}{a \code{character string} denoting the name of the object containing
 MCMC samples in each .R Data bite file.}

@@ -36,6 +36,8 @@ Only data for those years will be cleaned and returned.}
 
 \item{rename.list}{(Optional) A named \code{character} vector used to rename columns in the raw Rovbase files.}
 
+\item{legal.dead}{(Optional) A named \code{character} vector used to identify legal death causes.}
+
 \item{print.report}{A \code{logical} denoting whether to print out a \code{.html} report summarizing the cleaning process or not.}
 
 \item{Rmd.template}{(Optional) The \code{path} to the \code{.rmd} template to be used for cleaning the data. By default, the \code{.rmd} template provided with the \code{rovquantR} package is used.}
@@ -68,7 +70,7 @@ for the specified species in the specified \code{data.dir} location, and conduct
  \item{removing samples flagged as unusable by RovData/Mike}
 }
  
-Additionally, it can produce a \code{html} report describing the content of the data in terms of number of samples, individuals, etc...
+Additionally, it can produce a \code{.html} report describing the content of the data in terms of number of samples, individuals, etc...
 }
 \author{
 Pierre Dupont

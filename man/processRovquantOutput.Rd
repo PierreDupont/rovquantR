@@ -14,37 +14,37 @@ processRovquantOutput(
   print.report = TRUE,
   Rmd.template = NULL,
   output.dir = NULL,
-  overwrite = FALSE
+  overwrite = FALSE,
+  full.report = FALSE
 )
 }
 \arguments{
-\item{data.dir}{A \code{path} to the directory containing the clean Rovbase data,
-as prepared by \code{cleanRovBaseData}.}
+\item{data.dir}{A \code{path} to the directory containing the clean Rovbase data, as prepared by \code{cleanRovBaseData}.}
 
-\item{working.dir}{A \code{path} to the directory for this analysis containing
-the \code{nimbleInputFiles} folder to store the prepared data.}
+\item{working.dir}{A \code{path} to the directory for this analysis containing the \code{nimbleInputFiles} folder to store the prepared data.}
 
-\item{species}{A \code{character} denoting the species; can be any of "bear", "wolf" or "wolverine.}
+\item{species}{A \code{character} denoting the species; can be one of "bear", "wolf" or "wolverine.}
 
-\item{nburnin}{An \code{integer} denoting the number of MCMC  dead recovery should be included (TRUE) or not (FALSE)}
+\item{nburnin}{An \code{integer} denoting the number of MCMC bites to be removed from each MCMC chain as burnin.}
 
-\item{niter}{A \code{logical} Whether dead recovery should be included (TRUE) or not (FALSE)}
+\item{niter}{An \code{integer} denoting the number of MCMC iterations to be used for density extraction.}
 
-\item{extraction.res}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+\item{extraction.res}{A \code{numeric} denoting the resolution (in meters) to use for density extraction.}
 
-\item{print.report}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+\item{print.report}{A \code{logical}  Whether an .html report summarizingf the results should be printed (TRUE) or not (FALSE).}
 
-\item{output_dir}{A \code{logical}  Whether dead recovery should be included (TRUE) or not(FALSE)}
+\item{Rmd.template}{(optional) A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.}
 
-\item{Rmd_template}{A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.}
+\item{output.dir}{(optional) A \code{path} where to print the report. Default is to print in the 'reports' folder of the working directory.}
+
+\item{overwrite}{A \code{logical} Whether to overwrite (TRUE) or ask before overwriting potentially existing .html reports (FALSE).}
 }
 \value{
 This function returns:
 \enumerate{
-\item A \code{.RData} file with the clean NGS and dead recovery data objects
- for the species and period specified.
+\item Multiple \code{.RData} files with the processed MCMC outputs and density outputs.
 \item A \code{.html} report summarizing the data cleaning process. 
-\item Additional \code{.png} images that can be reused somewhere else.
+\item Additional \code{.png} images and \code{.csv} that can be reused somewhere else.
 }
 }
 \description{

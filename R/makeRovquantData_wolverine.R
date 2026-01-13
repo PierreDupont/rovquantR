@@ -667,26 +667,28 @@ makeRovquantData_wolverine <- function(
   
   ## ------         2.2.6.2. ROVBASE ------
   
-  ##-- Load the last Rovbase data files
-  rovbaseObs1 <- readMostRecent( 
-    path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
-    extension = ".xlsx",
-    pattern = "RIB2810202415264376")
-  rovbaseObs2 <- readMostRecent( 
-    path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
-    extension = ".xlsx",
-    pattern = "RIB28102024152348493")
-  rovbaseObs3 <- readMostRecent( 
-    path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
-    extension = ".xlsx",
-    pattern = "RIB28102024152447860")
-  rovbaseObs4 <- readMostRecent( 
-    path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
-    extension = ".xlsx",
-    pattern = "RIB28102024152538742")
-  
+  # ##-- Load the last Rovbase data files
+  # rovbaseObs1 <- readMostRecent( 
+  #   path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
+  #   extension = ".xlsx",
+  #   pattern = "RIB2810202415264376")
+  # rovbaseObs2 <- readMostRecent( 
+  #   path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
+  #   extension = ".xlsx",
+  #   pattern = "RIB28102024152348493")
+  # rovbaseObs3 <- readMostRecent( 
+  #   path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
+  #   extension = ".xlsx",
+  #   pattern = "RIB28102024152447860")
+  # rovbaseObs4 <- readMostRecent( 
+  #   path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
+  #   extension = ".xlsx",
+  #   pattern = "RIB28102024152538742")
+
   ##-- Process Rovbase observations (all species)
-  rovbaseObs <- rbind(rovbaseObs1, rovbaseObs2, rovbaseObs3, rovbaseObs4) %>%
+  rovbaseObs <- readMultiples( 
+    path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
+    extension = ".xlsx") %>%
     ##-- Rename columns to facilitate manipulation
     dplyr::rename(., any_of(rename.list)) %>%
     ##-- Extract important info (e.g. month, year, country of collection)
