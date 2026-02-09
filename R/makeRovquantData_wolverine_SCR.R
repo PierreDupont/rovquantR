@@ -1,13 +1,13 @@
 #' @title RovQuant OPSCR wolverine data preparation.
 #'
 #' @description
-#' \code{makeRovquantData_wolverine} formats the available wolverine data for the OPSCR analysis using nimble and nimbleSCR.
+#' \code{makeRovquantData_wolverine_SCR} formats the available wolverine data for the OPSCR analysis using nimble and nimbleSCR.
 #' The data preparation process is composed of three main steps:
 #'  - defining and formatting habitat characteristics
 #'  - defining and formatting detectors characteristics
 #'  - defining and formatting individual detection histories
 #'
-#' @name makeRovquantData_wolverine
+#' @name makeRovquantData_wolverine_SCR
 #'
 #' @param data.dir A \code{path}.
 #' @param working.dir A \code{path}.
@@ -45,9 +45,9 @@
 #' @importFrom utils data
 #' 
 NULL
-#' @rdname makeRovquantData_wolverine
+#' @rdname makeRovquantData_wolverine_SCR
 #' @export
-makeRovquantData_wolverine <- function(
+makeRovquantData_wolverine_SCR <- function(
   ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
@@ -562,7 +562,8 @@ makeRovquantData_wolverine <- function(
   ## ------       2.2.4. EXTRACT DISTANCES TO ROADS ------
   
   ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster::raster(file.path(data.dir,"GIS/Roads/MinDistAllRoads1km.tif"))
+  DistAllRoads <- raster::raster(file.path(data.dir,
+                                           "GIS/Roads/MinDistAllRoads1km.tif"))
   
   ##-- Fasterize to remove values that fall in the sea
   r <- fasterize::fasterize(sf::st_as_sf(COUNTRIES), DistAllRoads)
@@ -572,8 +573,8 @@ makeRovquantData_wolverine <- function(
   rm(list = c("r"))
   
   ##-- Aggregate to GREGATE TO MATCH THE DETECTORS RESOLUTION
-  DistAllRoads <- aggregate( DistAllRoads,
-                             fact = detectors$resolution/res(DistAllRoads),
+  DistAllRoads <- raster::aggregate( DistAllRoads,
+                             fact = detectors$resolution/raster::res(DistAllRoads),
                              fun = mean)
   
   ##-- EXTRACT ROAD DISTANCE FOR EACH DETECTOR
@@ -596,8 +597,8 @@ makeRovquantData_wolverine <- function(
   ## ------       2.2.5. EXTRACT DAYS OF SNOW ------
   
   # [PD] NEW SNOW FILE FROM ASUN!
-  # SNOW <- stack(paste0(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
-  SNOW <- stack(file.path(data.dir,"GIS/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
+  SNOW <- stack(paste0(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
+  #SNOW <- stack(file.path(data.dir,"GIS/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
   
   ##-- RENAME THE LAYERS
   names(SNOW) <- paste(2008:2023, (2008:2023) + 1, sep = "_")
@@ -1842,14 +1843,11 @@ makeRovquantData_wolverine <- function(
       nimInits <- list(
         "sxy" = sxy.init,
         "z" = z.init,
-        "dmean" = stats::runif(1, 0, 10),
         "betaDens" = stats::runif(1, -0.1, 0.1),
-        "omeg1" = c(0.5, 0.5),
-        "gamma" = stats::runif(dim(y.alive)[3]-1, 0, 1),
-        "phi" = stats::runif(dim(y.alive)[3]-1, 0.1, 0.3),
+        "psi" = stats::runif(1, 0.1, 0.3),
         "pResponse" = stats::runif(1, 0.4, 0.5),
         "detResponse" = detResponse.inits,
-        "sigma" = stats::runif(n.years, 1, 4),
+        "sigma" = stats::runif(1, 1, 4),
         "p01" = array(stats::runif(18, 0, 0.2),
                       c(nimConstants$n.counties, dim(y.alive)[3])),
         "betaResponse" = stats::runif(dim(y.alive)[3], -0.1, 0.1),

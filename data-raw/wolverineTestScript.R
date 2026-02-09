@@ -50,7 +50,7 @@ library(nimbleSCR)
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Test.0.1"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Test.SCR"
 
 
 
@@ -59,7 +59,7 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2
 
 cleanRovbaseData( 
   species = "wolverine",
-  years = 2014:2023,
+  years = 2014:2025,
   data.dir = data.dir,
   working.dir = working.dir)
 
@@ -85,6 +85,7 @@ table(dead.recovery$Death_method)
 
 makeRovquantData(    
   species = "wolverine",
+  years = 2024,
   data.dir = data.dir,
   working.dir = working.dir)
 
