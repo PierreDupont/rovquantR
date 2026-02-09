@@ -191,26 +191,51 @@ makeRovquantData <- function(
       path = file.path(working.dir,"data"),
       pattern = "CleanData_wolverine")
 
-    ##-- Prepare the data
-    out <- makeRovquantData_wolverine(
-      ##-- paths
-      data.dir,
-      working.dir,
-      ##-- data
-      years,
-      sex,
-      aug.factor,
-      sampling.months,
-      ##-- habitat
-      habitat.res,
-      buffer.size,
-      max.move.dist,
-      ##-- detectors
-      detector.res,
-      subdetector.res,
-      max.det.dist,
-      resize.factor,
-      rename.list)
+    ## Check if we need SCR or OPSCR inpur format
+    if( length(years) == 1){
+      ##-- Prepare the data
+      out <- makeRovquantData_wolverine_SCR(
+        ##-- paths
+        data.dir,
+        working.dir,
+        ##-- data
+        years,
+        sex,
+        aug.factor,
+        sampling.months,
+        ##-- habitat
+        habitat.res,
+        buffer.size,
+        max.move.dist,
+        ##-- detectors
+        detector.res,
+        subdetector.res,
+        max.det.dist,
+        resize.factor,
+        rename.list)
+    } else {
+      ##-- Prepare the data
+      out <- makeRovquantData_wolverine(
+        ##-- paths
+        data.dir,
+        working.dir,
+        ##-- data
+        years,
+        sex,
+        aug.factor,
+        sampling.months,
+        ##-- habitat
+        habitat.res,
+        buffer.size,
+        max.move.dist,
+        ##-- detectors
+        detector.res,
+        subdetector.res,
+        max.det.dist,
+        resize.factor,
+        rename.list)
+    }
+
   }
   
   
