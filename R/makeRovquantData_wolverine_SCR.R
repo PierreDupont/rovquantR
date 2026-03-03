@@ -17,7 +17,6 @@
 #' @param sampling.months A \code{list}.
 #' @param habitat.res A \code{Numeric}.  
 #' @param buffer.size A \code{Numeric}.
-#' @param max.move.dist A \code{Numeric}.
 #' @param detector.res A \code{Numeric}.
 #' @param subdetector.res A \code{Numeric}.
 #' @param max.det.dist A \code{Numeric}.  
@@ -48,7 +47,7 @@ NULL
 #' @rdname makeRovquantData_wolverine_SCR
 #' @export
 makeRovquantData_wolverine_SCR <- function(
-  ##-- paths
+    ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
   
@@ -61,8 +60,7 @@ makeRovquantData_wolverine_SCR <- function(
   ##-- habitat
   habitat.res = 20000, 
   buffer.size = 60000,
-  max.move.dist = 250000,
-  
+
   ##-- detectors
   detector.res = 10000,
   subdetector.res = 2000,
@@ -72,7 +70,7 @@ makeRovquantData_wolverine_SCR <- function(
   ##-- Miscellanious
   rename.list = NULL)
 {
-
+  
   ## ------ 0. BASIC SET-UP ------
   
   ##-- Set default values for the wolverine model
@@ -242,7 +240,7 @@ makeRovquantData_wolverine_SCR <- function(
   COUNTIES_AGGREGATED$id <- as.character(1:nrow(COUNTIES_AGGREGATED))
   
   
-
+  
   ## ------   2. NGS DATA -----
   
   ##-- Extract date from the last cleaned data file
@@ -264,7 +262,7 @@ makeRovquantData_wolverine_SCR <- function(
   }
   DATA$years <- years
   #n.years <- length(years)
-
+  
   # ##-- list years with or without sampling in Norrbotten
   # yearsSampledNorrb <- c(2016:2018,2023)
   # yearsNotSampled <- years[!years %in% yearsSampledNorrb]
@@ -287,7 +285,7 @@ makeRovquantData_wolverine_SCR <- function(
   
   ##----------------------------------------------------------------------------
   
-  ## ------ II. CREATE OPSCR DATA ------
+  ## ------ II. CREATE SCR DATA ------
   
   ## ------   1. GENERATE HABITAT ------
   
@@ -328,7 +326,7 @@ makeRovquantData_wolverine_SCR <- function(
     dplyr::filter( Habitat %in% 1) %>%
     dplyr::mutate( id = 1:nrow(.)) %>%
     sf::st_set_crs( .,value = sf::st_crs(habitat$buffered.habitat.poly))
-
+  
   ##-- Study area grid from habitat raster
   habitat.rWthBufferPol <- sf::st_as_sf( 
     stars::st_as_stars(habitat$habitat.rWthBuffer), 
@@ -337,7 +335,7 @@ makeRovquantData_wolverine_SCR <- function(
     dplyr::filter(Habitat %in% 1)
   
   
-
+  
   ## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES ------
   
   ## ------       1.2.1. DEN COUNTS ------
@@ -371,7 +369,7 @@ makeRovquantData_wolverine_SCR <- function(
     y = habitat$habitat.df,
     by = "id")
   
-
+  
   
   ## ------   2. GENERATE DETECTORS -----
   
@@ -440,7 +438,7 @@ makeRovquantData_wolverine_SCR <- function(
   
   ##-- Put into "nimble2SCR" shape
   detectors$detectors.df$counties <- detCounties
-
+  
   # ##-- Create a toggle matrix to turn detection probability to 0 in Norrbotten 
   # ##-- in years without sampling
   # countyToggle <- matrix(1, nrow = max(detCounties), ncol = n.years)
@@ -484,16 +482,16 @@ makeRovquantData_wolverine_SCR <- function(
   
   message("Cleaning GPS tracks... ")
   
-  ## LOAD NEW GPS SEARCH TRACKS !!!
+  ## OLD GPS SEARCH TRACKS !!!
   ## [PD] : NEED TO THINK ABOUT BEST WAY TO LOAD GPS TRACKS WITHOUT FIXING NAMES
   # TRACKS <- rbind(
-  #   read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250908.shp")),
-  #   read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250908.shp"))) %>%
+  #   sf::read_sf (file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
+  #   sf::read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>%
   
   ##-- Combine all GPS tracks
   TRACKS <- rbind(
-    sf::read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
-    sf::read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>%
+    read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250908.shp")),
+    read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250908.shp"))) %>%
     ##-- Process dates
     dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
                    Mth = as.numeric(format(Dato,"%m")),
@@ -574,8 +572,8 @@ makeRovquantData_wolverine_SCR <- function(
   
   ##-- Aggregate to GREGATE TO MATCH THE DETECTORS RESOLUTION
   DistAllRoads <- raster::aggregate( DistAllRoads,
-                             fact = detectors$resolution/raster::res(DistAllRoads),
-                             fun = mean)
+                                     fact = detectors$resolution/raster::res(DistAllRoads),
+                                     fun = mean)
   
   ##-- EXTRACT ROAD DISTANCE FOR EACH DETECTOR
   detRoads <- raster::extract(DistAllRoads, detectors$main.detector.sp)
@@ -588,7 +586,7 @@ makeRovquantData_wolverine_SCR <- function(
                           fun = mean,
                           na.rm = T)
   detRoads[isna] <- tmp
-
+  
   ##-- Put into "nimble2SCR" format
   detectors$detectors.df$roads <- detRoads
   
@@ -597,11 +595,12 @@ makeRovquantData_wolverine_SCR <- function(
   ## ------       2.2.5. EXTRACT DAYS OF SNOW ------
   
   # [PD] NEW SNOW FILE FROM ASUN!
-  SNOW <- stack(paste0(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
+  SNOW <- stack(file.path(data.dir,"GIS/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
   #SNOW <- stack(file.path(data.dir,"GIS/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
   
-  ##-- RENAME THE LAYERS
-  names(SNOW) <- paste(2008:2023, (2008:2023) + 1, sep = "_")
+  # ##-- RENAME THE LAYERS
+  # names(SNOW) <- paste(2008:2023, (2008:2023) + 1, sep = "_")
+  # names(SNOW) <- gsub("[X]", "",  names(SNOW))
   
   ##-- SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
   SNOW <- SNOW[[paste("X", years, "_", years + 1, sep = "")]]
@@ -612,7 +611,7 @@ makeRovquantData_wolverine_SCR <- function(
   detSnow <- raster::extract(SNOW, det.sptransf)
   
   ##-- if NA returns the average value of the cells within 15km 
-  isna <- which(apply(detSnow, 1, function(x)any(is.na(x))))
+  isna <- which(is.na(detSnow))
   tmp <- raster::extract( SNOW,
                           det.sptransf[isna, ],
                           buffer = 15000,
@@ -646,7 +645,7 @@ makeRovquantData_wolverine_SCR <- function(
                    month = as.numeric(format(date,"%m")),
                    species = stringi::stri_trans_general(species, "Latin-ASCII"),
                    monitoring.season = ifelse( month < unlist(sampling.months)[1],
-                                               year, year + 1)) %>%
+                                               year - 1, year)) %>%
     ##-- Filter based on monitoring season
     dplyr::filter( month %in% unlist(sampling.months)) %>%
     ##-- Turn into spatial points object
@@ -676,7 +675,7 @@ makeRovquantData_wolverine_SCR <- function(
   #   path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
   #   extension = ".xlsx",
   #   pattern = "RIB28102024152538742")
-
+  
   ##-- Process Rovbase observations (all species)
   rovbaseObs <- readMultiples( 
     path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
@@ -695,7 +694,7 @@ makeRovquantData_wolverine_SCR <- function(
       year = as.numeric(format(Date,"%Y")),
       month = as.numeric(format(Date,"%m")),
       monitoring.season = ifelse(month < unlist(sampling.months)[1],
-                                 year, year+1)) %>%
+                                 year-1, year)) %>%
     ##-- Filter out unusable samples
     dplyr::filter( 
       ##-- Filter out samples without coordinates,...
@@ -716,8 +715,8 @@ makeRovquantData_wolverine_SCR <- function(
       ##-- ... based on space 
       !is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
   
-  ##-- Remove un-necessary objects
-  rm(list = c("rovbaseObs1","rovbaseObs2","rovbaseObs3","rovbaseObs4"))
+  # ##-- Remove un-necessary objects
+  # rm(list = c("rovbaseObs1","rovbaseObs2","rovbaseObs3","rovbaseObs4"))
   
   
   
@@ -748,22 +747,20 @@ makeRovquantData_wolverine_SCR <- function(
   ##-- Turn into binary raster
   rb.r1 <- rb.r
   rb.r1[rb.r1[]>0] <- 1
-  ##-- Store in a list
-  r.list <- list(sk.r, sk.r1, rb.r, rb.r1)
+  # ##-- Store in a list
+  # r.list <- list(sk.r, sk.r1, rb.r, rb.r1)
   #})
   
   ##-- Store in raster bricks
-  r.skandObsBinary <- brick(lapply(r.list,function(x) x[[2]]))
-  r.skandObsContinuous <- brick(lapply(r.list,function(x) x[[1]]))
-  r.rovbaseBinary <- brick(lapply(r.list,function(x) x[[4]]))
-  r.rovbaseContinuous <- brick(lapply(r.list,function(x) x[[3]]))
-  
+  r.skandObsBinary <- sk.r1 #brick(lapply(r.list,function(x) x[[2]]))
+  r.skandObsContinuous <- sk.r #brick(lapply(r.list,function(x) x[[1]]))
+  r.rovbaseBinary <- rb.r1 #brick(lapply(r.list,function(x) x[[4]]))
+  r.rovbaseContinuous <- rb.r #brick(lapply(r.list,function(x) x[[3]]))
   
   ##-- Combine both rasters
   r.SkandObsRovbaseBinary <- r.rovbaseBinary + r.skandObsBinary
-  for(t in 1:n.years){
-    r.SkandObsRovbaseBinary[[t]][r.SkandObsRovbaseBinary[[t]][]>1 ] <- 1
-  }
+  r.SkandObsRovbaseBinary[r.SkandObsRovbaseBinary[]>1 ] <- 1
+  
   
   
   ##-- Plot check
@@ -872,15 +869,15 @@ makeRovquantData_wolverine_SCR <- function(
   
   detOtherSamples <- rep(0, n.detectors)
   detOtherSamples[ ] <- raster::extract( r.SkandObsRovbaseBinary,
-                                                   detectors$main.detector.sp)
+                                         detectors$main.detector.sp)
   #colnames(detOtherSamples) <- paste0("detOtherSamples.", years)
   detectors$detectors.df <- cbind.data.frame( detectors$detectors.df, 
-                                             "detOtherSamples" = detOtherSamples)
+                                              "detOtherSamples" = detOtherSamples)
   
   
   
   ## ------       2.2.7. SCALE & ROUND DETECTOR-LEVEL COVARIATES ------
-
+  
   detSnow <- round(scale(detSnow), digits = 2)
   detRoads <- round(scale(detRoads), digits = 2)
   detTracks <- round(scale(detTracks), digits = 2)
@@ -937,7 +934,7 @@ makeRovquantData_wolverine_SCR <- function(
     resizeFactor = detectors$resize.factor,
     plot.check = F)
   
-
+  
   
   ## ------   5. SAVE STATE-SPACE CHARACTERISTICS -----
   
@@ -967,38 +964,38 @@ makeRovquantData_wolverine_SCR <- function(
       !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))) 
   
   
-  ## ------     6.2. DEAD RECOVERY DATA -----
+  # ## ------     6.2. DEAD RECOVERY DATA -----
+  # 
+  # data.dead <- myFullData.sp$dead.recovery %>%
+  #   dplyr::filter(
+  #     ##-- Subset to years of interest
+  #     Year %in% years,
+  #     ##-- Subset to sex of interest
+  #     Sex %in% sex,
+  #     ##-- Filter data for space
+  #     !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))) 
+  # 
   
-  data.dead <- myFullData.sp$dead.recovery %>%
-    dplyr::filter(
-      ##-- Subset to years of interest
-      Year %in% years,
-      ##-- Subset to sex of interest
-      Sex %in% sex,
-      ##-- Filter data for space
-      !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))) 
   
+  # ## ------     6.3. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016:18 and 2023 ------
+  # 
+  # ##-- Get Norrbotten borders
+  # COUNTIESNorrbotten <- COUNTIES %>%
+  #   dplyr::filter(county %in% "Norrbotten") %>%
+  #   dplyr::group_by(county) %>%
+  #   dplyr::summarize()
+  # 
+  # ##-- Identify detections collected in Norrbotten 
+  # is.Norr <- as.numeric(st_intersects(data.alive, COUNTIESNorrbotten))
+  # 
+  # # ##-- Check how many detections are removed per year
+  # # table(data.alive$Year[data.alive$Year %in% yearsNotSampled & is.Norr %in% 1])
+  # # sum(data.alive$Year %in% yearsNotSampled & is.Norr %in% 1)
+  # 
+  # ##-- Filter out detections in Norrbotten in years without sampling
+  # data.alive <- data.alive %>%
+  #   dplyr::filter(!(Year %in% yearsNotSampled & is.Norr %in% 1))
   
-
-  ## ------     6.3. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016:18 and 2023 ------
-  
-  ##-- Get Norrbotten borders
-  COUNTIESNorrbotten <- COUNTIES %>%
-    dplyr::filter(county %in% "Norrbotten") %>%
-    dplyr::group_by(county) %>%
-    dplyr::summarize()
-  
-  ##-- Identify detections collected in Norrbotten 
-  is.Norr <- as.numeric(st_intersects(data.alive, COUNTIESNorrbotten))
-
-  # ##-- Check how many detections are removed per year
-  # table(data.alive$Year[data.alive$Year %in% yearsNotSampled & is.Norr %in% 1])
-  # sum(data.alive$Year %in% yearsNotSampled & is.Norr %in% 1)
-  
-  ##-- Filter out detections in Norrbotten in years without sampling
-  data.alive <- data.alive %>%
-    dplyr::filter(!(Year %in% yearsNotSampled & is.Norr %in% 1))
-
   
   
   ## ------     6.3. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
@@ -1015,7 +1012,7 @@ makeRovquantData_wolverine_SCR <- function(
   # ##-- SAVE FOR FASTER LOADING
   # save(myFilteredData.sp, file = file.path(working.dir, "data/myFilteredData.sp.RData"))
   # load(file.path(working.dir, "data/myFilteredData.sp.RData"))
-
+  
   
   
   ## ------       6.3.2. ASSIGN SAMPLES TO OPPORTUNISTIC OR STRUCTURED ------
@@ -1032,7 +1029,7 @@ makeRovquantData_wolverine_SCR <- function(
         !is.na(trackID) &
         trackDist <= distanceThreshold & 
         !hairTrap)
-
+  
   
   
   ## ------       6.3.3. PLOT CHECKS ------
@@ -1132,18 +1129,18 @@ makeRovquantData_wolverine_SCR <- function(
   
   
   
-  ## ------     6.4. SEPARATE MORTALITY CAUSES ------
+  # ## ------     6.4. SEPARATE MORTALITY CAUSES ------
+  # 
+  # ##-- Identify legal mortality causes
+  # MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
+  # whichLegalCauses <- unlist(lapply(c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske"),
+  #                                   function(x)grep(x,MortalityNames)))
+  # legalCauses <- MortalityNames[whichLegalCauses]
+  # 
+  # ##-- Identify legal dead recoveries based on mortality causes
+  # data.dead <- data.dead %>%
+  #   mutate(legal = Death_cause %in% legalCauses)
   
-  ##-- Identify legal mortality causes
-  MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
-  whichLegalCauses <- unlist(lapply(c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske"),
-                                    function(x)grep(x,MortalityNames)))
-  legalCauses <- MortalityNames[whichLegalCauses]
-  
-  ##-- Identify legal dead recoveries based on mortality causes
-  data.dead <- data.dead %>%
-    mutate(legal = Death_cause %in% legalCauses)
-
   
   ##-- Plot check
   # if(plot.check){
@@ -1238,11 +1235,11 @@ makeRovquantData_wolverine_SCR <- function(
     subDetectors = detectors$detector.sp,
     radius = detectors$resolution)
   
-  ##-- DEAD RECOVERY
-  data.dead <- assignDetectors( 
-    data = data.dead,
-    detectors = detectors$main.detector.sp,
-    radius = detectors$resolution)
+  # ##-- DEAD RECOVERY
+  # data.dead <- assignDetectors( 
+  #   data = data.dead,
+  #   detectors = detectors$main.detector.sp,
+  #   radius = detectors$resolution)
   
   
   
@@ -1281,95 +1278,95 @@ makeRovquantData_wolverine_SCR <- function(
   # 
   # 
   # 
-  ## ------     6.7. PLOT NGS and DEAD RECOVERY MAPS ----- 
-  
-  ##-- layout
-  L <- n.years
-  if(L < 6){ nrows <- 1 } else{
-    if(L < 13){ nrows <- 2 } else {
-      if(L < 22){ nrows <- 3 } else {
-        if(L < 33){ nrows <- 4 } else {
-          nrows <- 5
-        }}}}
-  ncols <- ceiling(L/nrows)
-  
-  
-  ##-- NGS maps
-  grDevices::png(filename = file.path(working.dir, "figures/NGS_TimeSeries.png"),
-                 width = ncols*2, height = nrows*4,
-                 units = "in", pointsize = 12,
-                 res = 300, bg = NA)
-  ##-- layout
-  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
-  for(r in 1:nrows){
-    mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
-    mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
-  }#r
-  nf <- graphics::layout(mx,
-                         widths = c(rep(1,ncol(mx))),
-                         heights = rep(1,2))
-  par(mar = c(0,0,0,0))
-  
-  for(t in 1:length(years)){
-    ##-- Plot maps
-    plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
-    try(
-      plot( sf::st_geometry(data.alive$data.sp[data.alive$data.sp$Year == years[t], ]), add = TRUE, col = "orange", pch = 3),
-      silent = TRUE)
-    plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
-    
-    ##-- Add year
-    graphics::mtext(text = years[t],
-                    side = 1, line = -18,
-                    adj = 0.18, cex = 1.2)
-  }#t
-  dev.off()
-  
-  
-  ##-- Dead recoveries maps
-  grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
-                 width = ncols*2, height = nrows*4,
-                 units = "in", pointsize = 12,
-                 res = 300, bg = NA)
-  ##-- layout
-  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
-  for(r in 1:nrows){
-    mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
-    mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
-  }#r
-  nf <- graphics::layout(mx,
-                         widths = c(rep(1,ncol(mx))),
-                         heights = rep(1,2))
-  par(mar = c(0,0,0,0))
-  
-  for(t in 1:length(years)){
-    ##-- Plot maps
-    plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
-    try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t] & 
-                                           data.dead$Legal, ]),
-               add = TRUE, 
-               col = "slateblue1",
-               pch = 3),
-         silent = TRUE)
-    try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]),
-               add = TRUE,
-               col = "slateblue4",
-               pch = 3),
-         silent = TRUE)
-    plot( sf::st_geometry(COUNTRIES),
-          border = "gray20",
-          col = NA,
-          add = TRUE)
-    
-    ##-- Add year
-    graphics::mtext(text = years[t],
-                    side = 1, line = -18,
-                    adj = 0.18, cex = 1.2)
-  }#t
-  dev.off()
-  
-  
-  
+  # ## ------     6.7. PLOT NGS & DEAD RECOVERY MAPS ----- 
+  # 
+  # ##-- layout
+  # L <- n.years
+  # if(L < 6){ nrows <- 1 } else{
+  #   if(L < 13){ nrows <- 2 } else {
+  #     if(L < 22){ nrows <- 3 } else {
+  #       if(L < 33){ nrows <- 4 } else {
+  #         nrows <- 5
+  #       }}}}
+  # ncols <- ceiling(L/nrows)
+  # 
+  # 
+  # ##-- NGS maps
+  # grDevices::png(filename = file.path(working.dir, "figures/NGS_TimeSeries.png"),
+  #                width = ncols*2, height = nrows*4,
+  #                units = "in", pointsize = 12,
+  #                res = 300, bg = NA)
+  # ##-- layout
+  # mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  # for(r in 1:nrows){
+  #   mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
+  #   mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
+  # }#r
+  # nf <- graphics::layout(mx,
+  #                        widths = c(rep(1,ncol(mx))),
+  #                        heights = rep(1,2))
+  # par(mar = c(0,0,0,0))
+  # 
+  # for(t in 1:length(years)){
+  #   ##-- Plot maps
+  #   plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
+  #   try(
+  #     plot( sf::st_geometry(data.alive$data.sp[data.alive$data.sp$Year == years[t], ]), add = TRUE, col = "orange", pch = 3),
+  #     silent = TRUE)
+  #   plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
+  #   
+  #   ##-- Add year
+  #   graphics::mtext(text = years[t],
+  #                   side = 1, line = -18,
+  #                   adj = 0.18, cex = 1.2)
+  # }#t
+  # dev.off()
+  # 
+  # 
+  # ##-- Dead recoveries maps
+  # grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
+  #                width = ncols*2, height = nrows*4,
+  #                units = "in", pointsize = 12,
+  #                res = 300, bg = NA)
+  # ##-- layout
+  # mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  # for(r in 1:nrows){
+  #   mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
+  #   mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
+  # }#r
+  # nf <- graphics::layout(mx,
+  #                        widths = c(rep(1,ncol(mx))),
+  #                        heights = rep(1,2))
+  # par(mar = c(0,0,0,0))
+  # 
+  # for(t in 1:length(years)){
+  #   ##-- Plot maps
+  #   plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
+  #   try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t] & 
+  #                                          data.dead$Legal, ]),
+  #              add = TRUE, 
+  #              col = "slateblue1",
+  #              pch = 3),
+  #        silent = TRUE)
+  #   try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]),
+  #              add = TRUE,
+  #              col = "slateblue4",
+  #              pch = 3),
+  #        silent = TRUE)
+  #   plot( sf::st_geometry(COUNTRIES),
+  #         border = "gray20",
+  #         col = NA,
+  #         add = TRUE)
+  #   
+  #   ##-- Add year
+  #   graphics::mtext(text = years[t],
+  #                   side = 1, line = -18,
+  #                   adj = 0.18, cex = 1.2)
+  # }#t
+  # dev.off()
+  # 
+  # 
+  # 
   ## ------     6.8. SAVE FILTERED DATA ----- 
   
   save( data.alive, data.dead,
@@ -1456,64 +1453,64 @@ makeRovquantData_wolverine_SCR <- function(
     
     #distances <- list()
     #for(t in 1:n.years){
-      
-      ##[PD] WE NEED TO DISCUSS THE maxDist USED HERE 
-      ## MUCH SMALLER THAN THE MAX DIST USED IN THE LOCAL EVAL
-      
-      ##-- Identify detections further than maxDist
-      #print(paste0("------ ", t ," -------"))
-      distances <- checkDistanceDetections( 
-        y = y.ar$y.ar, 
-        detector.xy = detectors$detectors.df[ ,c("x","y")], 
-        max.distance = 40000,
-        method = "pairwise",
-        plot.check = F)
-      
-      ##-- Remove detections that are further then the threshold
-      #y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
-      y.ar.ALIVEOthers <- y.ar.ALIVEOthers * (1-distances$y.flagged)
-      y.ar.ALIVEStructured <- y.ar.ALIVEStructured * (1-distances$y.flagged)
-      
-      ##-- Remove detections also in data.alive$data.sp to run getSInits later
-      affected.ids <- which(apply(distances$y.flagged,1,sum)>0)
-      idd <- names(affected.ids)
-      for(i in 1:length(idd)){
-        detIds <- which(distances$y.flagged[idd[i], ] > 0)
-        data.alive$data.sp <- data.alive$data.sp %>%
-          dplyr::filter(!(Id %in% idd[i] & Detector %in% detIds))
-      }#i
-      
-      # ##-- Plot individuals with detections further than the threshold distance
-      # if(plot.check){
-      #   par(mfrow = c(1,1))
-      #   if(sum(distances[[t]]$y.flagged) > 0){
-      #     affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
-      #     count <- 0
-      #     for(i in affected.ids){
-      #       count <- count+1
-      #       plot(st_geometry(studyArea), main = paste("t: ",t,"     i: ", names(affected.ids)[count], sep = ""))
-      #       scalebar(2*myVars$DETECTIONS$maxDist, xy = c(800000,6700000), type = "bar", divs = 2, below = "km",
-      #                label = c(0, myVars$DETECTIONS$maxDist/1000, myVars$DETECTIONS$maxDist/500), cex = 0.8, adj = c(0.5,-0.9))
-      #       plot(st_geometry(COUNTRIES), add = T)
-      #       plot(st_geometry(detectors$main.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
-      #       
-      #       tmp <- data.alive[data.alive$Id == dimnames(y.ar.ALIVE)[[1]][i] &
-      #                                        data.alive$Year == years[t], ]
-      #       tmp <- tmp[order(tmp$Date), ]
-      #       tmp.xy <- st_coordinates(tmp)
-      #       n.det <- nrow(tmp.xy)
-      #       
-      #       plot(st_geometry(tmp), col = "pink", pch = 16, cex = 1,add=T)
-      #       arrows(x0 = tmp.xy[1:(n.det-1),1], y0 = tmp.xy[1:(n.det-1),2],
-      #              x1 = tmp.xy[2:n.det,1], y1 = tmp.xy[2:n.det,2],
-      #              length = 0.1, lwd = 1)
-      #       plot(st_geometry(detectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0), ]), pch = 16, col = "red",add=T)
-      #       
-      #       tmp2 <- detectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
-      #       plot(st_geometry(tmp2), add = T, col = "blue", pch = 13, cex = 1.5, lwd = 1)
-      #     }#i
-      #   }#if
-      # }#if plot.check
+    
+    ##[PD] WE NEED TO DISCUSS THE maxDist USED HERE 
+    ## MUCH SMALLER THAN THE MAX DIST USED IN THE LOCAL EVAL
+    
+    ##-- Identify detections further than maxDist
+    #print(paste0("------ ", t ," -------"))
+    distances <- checkDistanceDetections( 
+      y = y.ar$y.ar, 
+      detector.xy = detectors$detectors.df[ ,c("x","y")], 
+      max.distance = 40000,
+      method = "pairwise",
+      plot.check = F)
+    
+    ##-- Remove detections that are further then the threshold
+    #y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
+    y.ar.ALIVEOthers <- y.ar.ALIVEOthers * (1-distances$y.flagged)
+    y.ar.ALIVEStructured <- y.ar.ALIVEStructured * (1-distances$y.flagged)
+    
+    ##-- Remove detections also in data.alive$data.sp to run getSInits later
+    affected.ids <- which(apply(distances$y.flagged,1,sum)>0)
+    idd <- names(affected.ids)
+    for(i in 1:length(idd)){
+      detIds <- which(distances$y.flagged[idd[i], ] > 0)
+      data.alive$data.sp <- data.alive$data.sp %>%
+        dplyr::filter(!(Id %in% idd[i] & Detector %in% detIds))
+    }#i
+    
+    # ##-- Plot individuals with detections further than the threshold distance
+    # if(plot.check){
+    #   par(mfrow = c(1,1))
+    #   if(sum(distances[[t]]$y.flagged) > 0){
+    #     affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
+    #     count <- 0
+    #     for(i in affected.ids){
+    #       count <- count+1
+    #       plot(st_geometry(studyArea), main = paste("t: ",t,"     i: ", names(affected.ids)[count], sep = ""))
+    #       scalebar(2*myVars$DETECTIONS$maxDist, xy = c(800000,6700000), type = "bar", divs = 2, below = "km",
+    #                label = c(0, myVars$DETECTIONS$maxDist/1000, myVars$DETECTIONS$maxDist/500), cex = 0.8, adj = c(0.5,-0.9))
+    #       plot(st_geometry(COUNTRIES), add = T)
+    #       plot(st_geometry(detectors$main.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
+    #       
+    #       tmp <- data.alive[data.alive$Id == dimnames(y.ar.ALIVE)[[1]][i] &
+    #                                        data.alive$Year == years[t], ]
+    #       tmp <- tmp[order(tmp$Date), ]
+    #       tmp.xy <- st_coordinates(tmp)
+    #       n.det <- nrow(tmp.xy)
+    #       
+    #       plot(st_geometry(tmp), col = "pink", pch = 16, cex = 1,add=T)
+    #       arrows(x0 = tmp.xy[1:(n.det-1),1], y0 = tmp.xy[1:(n.det-1),2],
+    #              x1 = tmp.xy[2:n.det,1], y1 = tmp.xy[2:n.det,2],
+    #              length = 0.1, lwd = 1)
+    #       plot(st_geometry(detectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0), ]), pch = 16, col = "red",add=T)
+    #       
+    #       tmp2 <- detectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
+    #       plot(st_geometry(tmp2), add = T, col = "blue", pch = 13, cex = 1.5, lwd = 1)
+    #     }#i
+    #   }#if
+    # }#if plot.check
     #}#t
     
     
@@ -1587,9 +1584,9 @@ makeRovquantData_wolverine_SCR <- function(
     ## ------   1. NIMBLE MODEL DEFINITION ------
     
     modelCode <- nimbleCode({
-
+      
       ##------ SPATIAL PROCESS ------##  
-
+      
       betaDens  ~ dnorm(0.0,0.01)
       habIntensity[1:numHabWindows] <- exp(betaDens * denCounts[1:numHabWindows])
       sumHabIntensity <- sum(habIntensity[1:numHabWindows])
@@ -1597,7 +1594,7 @@ makeRovquantData_wolverine_SCR <- function(
       logSumHabIntensity <- log(sumHabIntensity)
       
       for(i in 1:n.individuals){
-        sxy[i, 1:2] ~ dbernppAC(
+        sxy[i,1:2] ~ dbernppAC(
           lowerCoords = lowerHabCoords[1:numHabWindows, 1:2],
           upperCoords = upperHabCoords[1:numHabWindows, 1:2],
           logIntensities = logHabIntensity[1:numHabWindows],
@@ -1609,7 +1606,7 @@ makeRovquantData_wolverine_SCR <- function(
         )
       }#i
       
-
+      
       ##----- DEMOGRAPHIC PROCESS -----## 
       
       pResponse ~ dunif(0, 1)
@@ -1621,7 +1618,7 @@ makeRovquantData_wolverine_SCR <- function(
       
       
       ##----- DETECTION PROCESS -----## 
-
+      
       sigma ~ dunif(0,4)
       
       betaResponse ~ dunif(-5,5)
@@ -1688,13 +1685,13 @@ makeRovquantData_wolverine_SCR <- function(
       }#i
       
       
-
+      
       ##---------- DERIVED PARAMETERS ----------##
-
+      
       N <- sum(z[1:n.individuals])
       
     })
-
+    
     
     
     ## ------   2. NIMBLE CONSTANTS ------
@@ -1766,7 +1763,7 @@ makeRovquantData_wolverine_SCR <- function(
       size = detectors$detectors.df$size,
       alpha = rep(1,2),
       detector.xy = as.matrix(detectors$scaledCoords))
-
+    
     
     
     ## ------   4. NIMBLE INITS ------
@@ -1806,7 +1803,7 @@ makeRovquantData_wolverine_SCR <- function(
       coordsData = AllDets,
       coordsHabitatGridCenter = habitat$habitat.xy,
       scaleToGrid =T )$coordsDataScaled
-  
+    
     ##-- Generate initial sxy values
     sxy.init <- getSInits( AllDetections = AllDets[,c("Id","Year","x","y")],
                            Id.vector = y.ar$Id.vector,
@@ -1821,16 +1818,15 @@ makeRovquantData_wolverine_SCR <- function(
     ##-- An extreme number of decimals may cause a number to appear as an integer
     ##-- to Nimble, and then coincide with habitat window boundaries
     sxy.init <- round(sxy.init, 4)
-  
+    
     
     
     ## ------   5. NIMBLE PARAMETERS ------
     
-    nimParams <- c( "N", "betaDens",
-                    "psi", "pResponse",
-                    "sigma", 
+    nimParams <- c( "N", "psi", "betaDens", 
+                    "pResponse", "sigma",
                     "p0Oth", "betaCovsOth", "betaResponseOth",
-                    "p0",  "betaCovs", "betaResponse")
+                    "p0", "betaCovs", "betaResponse")
     
     nimParams2 <- c("z", "sxy")
     
@@ -1848,12 +1844,11 @@ makeRovquantData_wolverine_SCR <- function(
         "pResponse" = stats::runif(1, 0.4, 0.5),
         "detResponse" = detResponse.inits,
         "sigma" = stats::runif(1, 1, 4),
-        "p01" = array(stats::runif(18, 0, 0.2),
-                      c(nimConstants$n.counties, dim(y.alive)[3])),
-        "betaResponse" = stats::runif(dim(y.alive)[3], -0.1, 0.1),
+        "p0" = stats::runif(nimConstants$n.counties, 0, 0.2),
+        "betaResponse" = stats::runif(1, -0.1, 0.1),
         "betaCovs" = array(stats::runif(dim(detCovs)[3], -0.1, 0.1),
                            c(dim(detCovsOth)[3], n.years)),
-        "p01Oth" = array(stats::runif(18, 0, 0.2),
+        "p0Oth" = array(stats::runif(18, 0, 0.2),
                          c(nimConstants$n.countries+1, dim(y.alive)[3])),
         "betaResponseOth" = stats::runif(dim(y.alive)[3], -0.1, 0.1),
         "betaCovsOth" = array(stats::runif(dim(detCovsOth)[3], -0.1, 0.1),
@@ -1869,6 +1864,7 @@ makeRovquantData_wolverine_SCR <- function(
                               paste0("nimbleInput_", DATE, "_", thisSex, "_", c, ".RData")))
     }#c
   }#thisSex
+  
   
   
   ## ------   8. RETURN IMPORTANT INFOS FOR REPORT ------

@@ -31,7 +31,7 @@ gc()
 ## ------ IMPORT REQUIRED LIBRARIES ------
 
 ## Ctrl + Shift + F10 (to restart R session)
-devtools::install_github("PierreDupont/rovquantR@devel")
+#devtools::install_github("PierreDupont/rovquantR@devel")
 
 
 ## ------ LOAD REQUIRED LIBRARIES ------
@@ -39,6 +39,11 @@ devtools::install_github("PierreDupont/rovquantR@devel")
 library(rovquantR)
 library(nimbleSCR)
 
+
+library(raster)
+library(sf)
+library(dplyr)
+library(ggplot2)
 
 
 ##------------------------------------------------------------------------------
@@ -59,7 +64,7 @@ working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2
 
 cleanRovbaseData( 
   species = "wolverine",
-  years = 2014:2025,
+  years = 2023:2025,
   data.dir = data.dir,
   working.dir = working.dir)
 

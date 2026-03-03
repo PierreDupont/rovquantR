@@ -213,7 +213,8 @@ makeRovquantData <- function(
         max.det.dist,
         resize.factor,
         rename.list)
-    } else {
+    
+      } else {
       ##-- Prepare the data
       out <- makeRovquantData_wolverine(
         ##-- paths
