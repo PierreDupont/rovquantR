@@ -20,8 +20,8 @@ makeDirectories <- function( path = NULL,
                              show.dir = TRUE){
   ##-- Check if the directory already exists 
   if (is.null(path)) {path <- getwd()}
+  split <- unlist(strsplit(path, split = "/"))
   if (dir.exists(path)) {
-    split <- unlist(strsplit(path, split = "/"))
     message(paste0("A folder named '", split[length(split)], "' already exists in the specified directory:"))
     message(paste(split[-length(split)], collapse = "/"))
   } else {
@@ -45,6 +45,14 @@ makeDirectories <- function( path = NULL,
   dir.create( file.path(path, "tables"), showWarnings = F)
   dir.create( file.path(path, "rasters"), showWarnings = F)
   dir.create( file.path(path, "reports"), showWarnings = F)
+  
+  ##-- Create README file
+  writeREADME(
+    path = path,
+    template = NULL,
+    name = split[length(split)],
+    save_as = "README.Rmd",
+    overwrite = FALSE)
   
   ##-- Display contents of directories in a tree-like format
   if (show.dir) {

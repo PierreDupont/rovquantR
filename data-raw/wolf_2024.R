@@ -120,25 +120,25 @@ Pack_ID2025 <- read.csv(file.path(data.dir, "RovbaseID for Rovquant estimates202
 
 
 ## GPS search tracks
-TRACKS_SINGLE <- read_sf(file.path(data.dir, "ROVBASE DOWNLOAD 20250415/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250422.shp", sep = ""))
-TRACKS_MULTI <- read_sf(file.path(data.dir, "ROVBASE DOWNLOAD 20250415/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422.shp", sep = ""))
+TRACKS_SINGLE <- read_sf(file.path(data.dir,"ROVBASE DOWNLOAD 20250415/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250422.shp", sep = ""))
+TRACKS_MULTI <- read_sf(file.path(data.dir,"ROVBASE DOWNLOAD 20250415/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422.shp", sep = ""))
 
 
 ## GLOBAL MAP
-GLOBALMAP <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/Scandinavia_border_33NNoLakes.shp",sep="")) ## Map of Scandinavia (including Finland & parts of Russia)
+GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/Scandinavia_border_33NNoLakes.shp")) ## Map of Scandinavia (including Finland & parts of Russia)
 GLOBALMAP <- st_simplify(GLOBALMAP2, dTolerance =  500)
 
 
 ## COUNTIES
-COMMUNES_NOR <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp",sep=""))   ## Communal map of Norway
-COMMUNES_SWE <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp",sep=""))    ## Communal map of Sweden
+COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))  ## Communal map of Norway
+COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))  ## Communal map of Sweden
 COUNTIES <- rbind(COMMUNES_NOR2, COMMUNES_SWE2) %>%
   group_by(NAME_1) %>%
   summarize()
 
 
 ##-- LOAD POLYGONS OF WATER + HUMANS WITH AREAS >80000M2 (CREATED IN TEMP/CM/GIS/buildingsWaterPolygons.R)
-COUNTRIESWaterHumans <- st_read(paste(dir.dropbox,"/DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp",sep="")) ## Map of Scandinavia (including Finland & parts of Russia)
+COUNTRIESWaterHumans <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) ## Map of Scandinavia (including Finland & parts of Russia)
 ##-- SELECT POLGYONS WITH AREAS SIZE WITH WaterHumans >25000000 m2 (5*5km)
 COUNTRIESWaterHumans <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ]
 ##-- remove small polygons (islands and things)
@@ -184,12 +184,29 @@ if(myVars$plot.check){
 
 ## ------     2.2. TRANSLATE SCANDINAVIAN CHARACTERS ------
 
-colnames(DNA) <- translateForeignCharacters(dat = colnames(DNA), dir.translation = dir.analysis )
-colnames(DEAD) <- translateForeignCharacters(dat = colnames(DEAD), dir.translation = dir.analysis )
-colnames(INDIVIDUAL_ID) <- translateForeignCharacters(dat=colnames(INDIVIDUAL_ID), dir.translation = dir.analysis )
-colnames(Pack_ID2023) <- translateForeignCharacters(dat=colnames(Pack_ID2023), dir.translation = dir.analysis )
-colnames(Pack_ID2024) <- translateForeignCharacters(dat=colnames(Pack_ID2024), dir.translation = dir.analysis )
-colnames(Pack_ID2025) <- translateForeignCharacters(dat=colnames(Pack_ID2025), dir.translation = dir.analysis )
+colnames(DNA) <- translateForeignCharacters(
+  dat = colnames(DNA),
+  dir.translation = dir.analysis)
+
+colnames(DEAD) <- translateForeignCharacters(
+  dat = colnames(DEAD),
+  dir.translation = dir.analysis)
+
+colnames(INDIVIDUAL_ID) <- translateForeignCharacters(
+  dat = colnames(INDIVIDUAL_ID),
+  dir.translation = dir.analysis)
+
+colnames(Pack_ID2023) <- translateForeignCharacters(
+  dat = colnames(Pack_ID2023),
+  dir.translation = dir.analysis)
+
+colnames(Pack_ID2024) <- translateForeignCharacters(
+  dat = colnames(Pack_ID2024),
+  dir.translation = dir.analysis)
+
+colnames(Pack_ID2025) <- translateForeignCharacters(
+  dat = colnames(Pack_ID2025), 
+  dir.translation = dir.analysis)
 
 
 
@@ -197,20 +214,14 @@ colnames(Pack_ID2025) <- translateForeignCharacters(dat=colnames(Pack_ID2025), d
 
 ## ------     1.1. CLEAN NGS & DEAD RECOVERY DATA ------
 
-myCleanedData.sp <- CleanDataNew3sf( dna_samples = DNA
-                                     ,
-                                     dead_recoveries = DEAD
-                                     ,
-                                     species_id = data$species
-                                     ,
-                                     country_polygon = COUNTRIES
-                                     ,
-                                     threshold_month = unlist(data$samplingMonths)[1]
-                                     ,
-                                     keep_dead = T
-                                     ,
-                                     age.label.lookup = age.lookup.table
-)
+myCleanedData.sp <- CleanDataNew3sf( 
+  dna_samples = DNA,
+  dead_recoveries = DEAD,
+  species_id = data$species,
+  country_polygon = COUNTRIES,
+  threshold_month = unlist(data$samplingMonths)[1],
+  keep_dead = T,
+  age.label.lookup = age.lookup.table)
 
 ##---- OVERWRITE GENDER FROM MICKE'S DATA WHEN AVAILABLE
 micke.sex <- as.character(unlist(lapply(myCleanedData.sp$Id, function(i) INDIVIDUAL_ID[as.character(INDIVIDUAL_ID$Individ..Rovbase.)==i,"Sex"][1])))
@@ -264,14 +275,11 @@ for(i in 1:length(Pack_ID2025$Sex)){
 
 ## ------     1.2. FILTER DATA FOR SEX ------
 
-myFullData.sp <- FilterDatasf( myData = myCleanedData.sp
-                               ,
-                               dead.recovery = T
-                               ,
-                               sex = data$sex
-                               , 
-                               setSex = T
-)
+myFullData.sp <- FilterDatasf( 
+  myData = myCleanedData.sp,
+  dead.recovery = T,
+  sex = data$sex, 
+  setSex = T)
 
 
 
@@ -1381,8 +1389,12 @@ for(t in 1:nYears){
   }
 }#t
 
+
+
 ## ------   9. GENERATE INDIVIDUAL-LEVEL COVARIATES ------
+
 ## ------     9.1. INDIVIDUAL STATE ------
+
 indSocialState <- matrix(1, nrow = dim(y.ar.ALIVE)[1], ncol = dim(y.ar.ALIVE)[3])
 for(i in 1:dim(indSocialState)[1]){
   if(any(y.obs[i, ] >= 3)){
@@ -1390,7 +1402,10 @@ for(i in 1:dim(indSocialState)[1]){
   }
 }#i
 
+
+
 ## ------     9.2. TRAP-RESPONSE ------
+
 ## Make matrix of previous capture indicator
 already.detected <- MakeTrapResponseCovsf(myFullData.sp$alive, myFullData.sp$dead.recovery)
 
@@ -1403,7 +1418,10 @@ already.detected <- already.detected[dimnames(already.detected)[[1]] %in% dimnam
 ## Plot an image of the matrix
 if(myVars$plot.check){image(t(already.detected))}
 
+
+
 ## ------     9.3. TELEPORTATION COVARIATE ------
+
 ## CHECK DISTANCES BETWEEN DETECTIONS BETWEEN YEARS 
 # distancesACs <- CheckDistanceACS( y = y.ar.ALIVE + y.ar.DEADProjected,
 #                                   detector.sp = detectors$main.detector.sp,
@@ -1417,8 +1435,12 @@ if(myVars$plot.check){image(t(already.detected))}
 # }   
 
 
+
 ## ------     9.4. AGE ------
-min.age <- age <- precapture <- matrix(NA, dim(y.ar.ALIVE)[1], dim(y.ar.ALIVE)[3], dimnames = list(y.ar$Id.vector,years))
+
+min.age <- age <- precapture <- matrix( NA,
+                                       dim(y.ar.ALIVE)[1], dim(y.ar.ALIVE)[3],
+                                       dimnames = list(y.ar$Id.vector,years))
 
 temp <- apply(y.ar.ALIVE, c(1,3), sum)
 year.first.capture <- apply(temp, 1, function(x)min(years[which(x>0)]))
@@ -1434,12 +1456,12 @@ for(i in y.ar$Id.vector){
   latest.recruitment.year <- min(year.dead,year.first.captured, na.rm = TRUE) 
   
   try({
-    min.age[i,] <- years-latest.recruitment.year
+    min.age[i,] <- years - latest.recruitment.year
   },silent = TRUE)
   
   try({
-    birth.year <- this.set$Death-this.set$min.age
-    if(birth.year<latest.recruitment.year) min.age[i,] <- years-birth.year 
+    birth.year <- this.set$Death - this.set$min.age
+    if(birth.year<latest.recruitment.year) min.age[i,] <- years - birth.year 
   },silent = TRUE)
   
   try({
@@ -1449,6 +1471,8 @@ for(i in y.ar$Id.vector){
 }
 image(t(min.age))
 image(t(age))
+
+
 
 ## ------   5. MAKE AUGMENTATION ------
 
