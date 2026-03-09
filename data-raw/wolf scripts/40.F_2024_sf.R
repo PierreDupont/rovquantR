@@ -82,21 +82,20 @@ YEARS <- lapply(years, function(x)c(x,x+1))
 
 ## ------     1.1. LOAD RAW SHAPEFILES ------ 
 
-COUNTRIES <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/countries_multipart.shp",sep="")) ## Map of Scandinavia (including Finland & parts of Russia)
-COUNTRIES <- COUNTRIES[which(COUNTRIES$ISO %in% c("NOR","SWE","FIN")), ]                                 ## Just take Sweden and Norway
-GLOBALMAP <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/Scandinavia_border_33NNoLakes.shp",sep="")) ## Map of Scandinavia (including Finland & parts of Russia)
+GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/Scandinavia_border_33NNoLakes.shp")) ## Map of Scandinavia (including Finland & parts of Russia)
 GLOBALMAP <- st_simplify(GLOBALMAP, dTolerance =  500)
-COMMUNES_NOR <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp",sep=""))   ## Communal map of Norway
-COMMUNES_SWE <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp",sep=""))    ## Communal map of Sweden
-COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
-COUNTIES <- COMMUNES %>% group_by(NAME_1) %>% summarize()
+COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) ## Communal map of Norway
+COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp")) ## Communal map of Sweden
+COUNTIES <- rbind(COMMUNES_NOR, COMMUNES_SWE) %>%
+  group_by(NAME_1) %>%
+  summarize()
 
 ## LOAD POLYGONS OF WATER + HUMANS WITH AREAS >80000M2 (CREATED IN TEMP/CM/GIS/buildingsWaterPolygons.R)
-COUNTRIESWaterHumans <- st_read(paste(dir.dropbox,"/DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp",sep="")) ## Map of Scandinavia (including Finland & parts of Russia)
+COUNTRIESWaterHumans <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) ## Map of Scandinavia (including Finland & parts of Russia)
 ## SELECT POLGYONS WITH AREAS SIZE WITH WaterHumans >25000000 m2 (5*5km)
 COUNTRIESWaterHumans <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ]
 ## Remove small polygons (islands and things)
-COUNTRIESWaterHumans <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$area>80000000,]
+COUNTRIESWaterHumans <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$area > 80000000, ]
 plot(st_geometry(COUNTRIESWaterHumans))
 
 
@@ -105,7 +104,7 @@ plot(st_geometry(COUNTRIESWaterHumans))
 
 ## POLYGONS OF SWEDEN & NORWAY
 COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ]
-COUNTRIES <- COUNTRIES %>%    group_by(ISO) %>%summarize()
+COUNTRIES <- COUNTRIES %>%  group_by(ISO) %>% summarize()
 
 SWE <- COUNTRIES[which(COUNTRIES$ISO %in% c("SWE")),]     ## Just take Sweden
 NOR <- COUNTRIES[which(COUNTRIES$ISO %in% c("NOR")),]     ## Just take Norway
@@ -131,14 +130,14 @@ load(file.path(working.dir, "data", "HABITATsf.RData"))
 
 
 
-## ------     1.3. LOAD SCANDINAVIAN 20KM HABIAT  ------ 
+## ------     1.4. LOAD SCANDINAVIAN 20KM HABIAT  ------ 
 
 ##-- USE THE PACKAGE DATA INSTEAD
 ## load(file.path(data.dir, "DATA/GISData/spatialDomain/Habitat20km.RData"))
 
 
 
-## ------     1.4. CREATE STUDY AREA POLYGON ------ 
+## ------     1.5. CREATE STUDY AREA POLYGON ------ 
 
 ## CREATE STUDY AREA POLYGON BASED x AND y EXTENTS
 myStudyArea.extent  <- st_bbox(extent(HABITAT$x.extent, HABITAT$y.extent))
@@ -150,42 +149,41 @@ myStudyArea.poly <- st_collection_extract(myStudyArea.poly, "POLYGON")
 
 
 
-## ------   2. NGS DATA ------ 
-
-## ------     2.1. LOAD ROVBASE FILES ------ 
+## ------   2. LOAD ROVBASE FILES ------ 
 
 ## NGS data from RovBase
 DNA <- read.csv( file.path(data.dir, "RIB22042025133456403_wolfDNA.csv"),
                  fileEncoding = "latin1")
+colnames(DNA) <- translateForeignCharacters(dat = colnames(DNA), dir.translation = dir.analysis )
+
 ## Dead Recoveries from RovBase
 DEAD <- read.csv( file.path(data.dir, "RIB22042025133534832_wolfDEAD.csv"),
                   fileEncoding = "latin1")
+colnames(DEAD) <- translateForeignCharacters(dat = colnames(DEAD), dir.translation = dir.analysis )
+
 ## Wolves infos from Micke
 INDIVIDUAL_ID <- read.csv( file.path(data.dir, "220512_ID Grouping 2006-2021.csv"),
                            fileEncoding = "latin1")  
+colnames(INDIVIDUAL_ID) <- translateForeignCharacters(dat = colnames(INDIVIDUAL_ID), dir.translation = dir.analysis )
+
 ## THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2022/23.
-Pack_ID2023 <- read.csv(file.path(data.dir, 
-                                  "Genetiskt ID RM vargar 2223 Bilaga 4_ØF.csv"),
-                        fileEncoding = "latin1")  
+Pack_ID2023 <- read.csv( file.path(data.dir, 
+                                   "Genetiskt ID RM vargar 2223 Bilaga 4_ØF.csv"),
+                         fileEncoding = "latin1")  
+colnames(Pack_ID2023) <- translateForeignCharacters(dat = colnames(Pack_ID2023), dir.translation = dir.analysis )
+
 ## THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2023/24.
 Pack_ID2024 <- read.csv( file.path(data.dir, "Bilaga_11.4_240424_ØF to Cyril.csv"),
                          fileEncoding = "latin1")  
+colnames(Pack_ID2024) <- translateForeignCharacters(dat = colnames(Pack_ID2024), dir.translation = dir.analysis )
+
 ## THIS IS THE PACK ID SENT BY Øystein.
 Pack_ID2025 <- read.csv( file.path(data.dir, "RovbaseID for Rovquant estimates2025FromOystein.csv"),
                          fileEncoding = "latin1")  
+colnames(Pack_ID2025) <- translateForeignCharacters(dat = colnames(Pack_ID2025), dir.translation = dir.analysis )
 ## Here we need to recreate the sex columns as Oystein gave me a list of ids only (losing the sex)
 Pack_ID2025$Sex <- apply(Pack_ID2025[,c("Sex1","Sex2","Sex3","Sex4")],1, function(x) x[which(!x%in% "")][1] )
 
-
-
-## ------     2.2.TRANSLATE SCANDINAVIAN CHARACTERS ------ 
-
-colnames(DNA) <- translateForeignCharacters(dat=colnames(DNA), dir.translation = dir.analysis )
-colnames(DEAD) <- translateForeignCharacters(dat=colnames(DEAD), dir.translation = dir.analysis )
-colnames(INDIVIDUAL_ID) <- translateForeignCharacters(dat=colnames(INDIVIDUAL_ID), dir.translation = dir.analysis )
-colnames(Pack_ID2023) <- translateForeignCharacters(dat=colnames(Pack_ID2023), dir.translation = dir.analysis )
-colnames(Pack_ID2024) <- translateForeignCharacters(dat=colnames(Pack_ID2024), dir.translation = dir.analysis )
-colnames(Pack_ID2025) <- translateForeignCharacters(dat=colnames(Pack_ID2025), dir.translation = dir.analysis )
 
 
 
@@ -215,7 +213,7 @@ ALL_TRACKS <- rbind(TRACKS_SINGLE, TRACKS_MULTI)
 ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Helikopter == "0", ]
 
 ## Check
-hist(ALL_TRACKS$Yr )
+hist(ALL_TRACKS$Yr)
 
 ## SELECT TRACKS YEAR
 dupIDs <- dupDist <- length <- TRACKS_YEAR <- TRACKS_YEAR.sp <- list()
@@ -231,7 +229,7 @@ for(t in 1:nYears){
   TRACKS$ID <- 1:nrow(TRACKS)
   TRACKS_YEAR[[t]] <- TRACKS
   # calculate length to identify duplicates
-  TRACKS_YEAR[[t]]$dist <- st_length(TRACKS_YEAR[[t]],byid = T)
+  TRACKS_YEAR[[t]]$dist <- st_length(TRACKS_YEAR[[t]], byid = T)
   # calculate centroids to also identify tracks that could have the same length but in different location
   TRACKS_YEAR[[t]]$centroidx <-  st_coordinates(st_centroid(TRACKS_YEAR[[t]]))[,1]
   # try a fast way to identify duplicated tracks
@@ -240,29 +238,29 @@ for(t in 1:nYears){
   #   distinct(Dato, dist, .keep_all = T)
   # distinct(Person, Dato, dist, .keep_all = T)
   df <- data.frame(ID = TRACKS_YEAR[[t]]$ID,
-                   Dato=TRACKS_YEAR[[t]]$Dato,
-                   Person =TRACKS_YEAR[[t]]$Person,
-                   dist=TRACKS_YEAR[[t]]$dist,
+                   Dato = TRACKS_YEAR[[t]]$Dato,
+                   Person = TRACKS_YEAR[[t]]$Person,
+                   dist = TRACKS_YEAR[[t]]$dist,
                    centroidx = TRACKS_YEAR[[t]]$centroidx)
-  dupIDs[[t]] <- duplicated(df[,2:5])# find duplicates based on person and distance and date
+  dupIDs[[t]] <- duplicated(df[ ,2:5])# find duplicates based on person and distance and date
   dupIDs[[t]] <- df$ID[dupIDs[[t]]]
-  dupDist[[t]] <- TRACKS_YEAR[[t]][dupIDs[[t]],]$dist
-  TRACKS_YEAR[[t]] <-  TRACKS_YEAR[[t]][-dupIDs[[t]],]
+  dupDist[[t]] <- TRACKS_YEAR[[t]][dupIDs[[t]], ]$dist
+  TRACKS_YEAR[[t]] <-  TRACKS_YEAR[[t]][-dupIDs[[t]], ]
 }#t
 
 ## PLOT CHECK
 if(plot.check){
   ## Number of tracks
-  barplot( unlist(lapply(TRACKS_YEAR,function(x) sum(x$dist))),
-           ylab = "sum length tracks")
+  barplot( unlist(lapply(TRACKS_YEAR, function(x) sum(x$dist))),
+           ylab = "Sum length tracks")
   ## Check number of duplicated tracks removed
-  dup <- (unlist(lapply(dupIDs,length)))
+  dup <- unlist(lapply(dupIDs, length))
   names(dup) <- years
   barplot(dup, ylab = "Number of duplicated tracks")
   ## distance
-  dupdist <- (unlist(lapply(dupDist,sum)))
+  dupdist <- unlist(lapply(dupDist,sum))
   names(dupdist) <- years
-  barplot(dupdist, ylab = "Distance")
+  barplot(dupdist, ylab = "Distance of duplicated tracks")
 }
 
 
@@ -279,7 +277,7 @@ DistAllRoads <- crop(DistAllRoads, myStudyArea.poly)
 ## PLOT CHECK
 if(plot.check){
   plot((DistAllRoads))
-  plot(st_geometry(myStudyArea.poly),add=T)
+  plot(st_geometry(myStudyArea.poly), add = T)
 }
 
 
@@ -291,20 +289,20 @@ if(plot.check){
 SNOW <- stack(file.path(data.dir, "GIS/Snow/AverageSnowCoverModisSeason2014_2025_Wolf.tif"))
 
 ## RENAME THE LAYERS
-names(SNOW) <- paste(2014:2024,(2014:2024)+1, sep="_")
+names(SNOW) <- paste(2014:2024,(2014:2024)+1, sep = "_")
 
 ## SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
-SNOW <- SNOW[[paste("X", years, "_", years+1, sep="")]]
+SNOW <- SNOW[[paste("X", years, "_", years+1, sep = "")]]
 SNOW <- raster::crop(SNOW, c(0,40,55,75))
 
 
 
 ## ------     3.4. SAVE SEARCH EFFORT OBJECTS FOR FASTER RUNS ------ 
 
-save(TRACKS_YEAR,
-     SNOW,
-     DistAllRoads,
-     file = file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
+save( TRACKS_YEAR,
+      SNOW,
+      DistAllRoads,
+      file = file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
 
 load(file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
 
