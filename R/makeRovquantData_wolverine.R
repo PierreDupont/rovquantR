@@ -573,7 +573,7 @@ makeRovquantData_wolverine <- function(
   ## ------       2.2.4. EXTRACT DISTANCES TO ROADS ------
   
   ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster::raster(file.path(data.dir,"GIS/Roads/MinDistAllRoads1km.tif"))
+  DistAllRoads <- raster::raster(file.path(data.dir,"Roads/MinDistAllRoads1km.tif"))
   
   ##-- Fasterize to remove values that fall in the sea
   r <- fasterize::fasterize(sf::st_as_sf(COUNTRIES), DistAllRoads)
@@ -583,9 +583,10 @@ makeRovquantData_wolverine <- function(
   rm(list = c("r"))
   
   ##-- AGGREGATE TO MATCH THE DETECTORS RESOLUTION
-  DistAllRoads <- aggregate( DistAllRoads,
-                             fact = detectors$resolution/res(DistAllRoads),
-                             fun = mean)
+  DistAllRoads <- raster::aggregate( 
+    x = DistAllRoads,
+    fact = detectors$resolution/raster::res(DistAllRoads),
+    fun = mean)
   
   ##-- EXTRACT ROAD DISTANCE FOR EACH DETECTOR
   detRoads <- raster::extract(DistAllRoads, detectors$main.detector.sp)
@@ -598,7 +599,8 @@ makeRovquantData_wolverine <- function(
                           fun = mean,
                           na.rm = T)
   detRoads[isna] <- tmp
-
+  detRoads <- round(scale(detRoads), digits = 2)
+  
   ##-- Put into "nimble2SCR" format
   detectors$detectors.df$roads <- detRoads
   
@@ -687,7 +689,7 @@ makeRovquantData_wolverine <- function(
 
   ##-- Process Rovbase observations (all species)
   rovbaseObs <- readMultiples( 
-    path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
+    path = file.path(data.dir,"ALL SPECIES IN SEPARATE YEARS"),
     extension = ".xlsx") %>%
     ##-- Rename columns to facilitate manipulation
     dplyr::rename(., any_of(rename.list)) %>%

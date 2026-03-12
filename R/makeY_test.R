@@ -132,11 +132,13 @@ makeDetectionHistory <- function( data,
   
   for(l in 1:length(data)){
     
+    thisData <- data[[l]]
+    thisDetectors <- detectors[[l]]
     
     ##-- Tabulate # of secondary occasions per detector per primary session
-    tab <- as.array(table(detectors$session,
-                          detectors$detector,
-                          detectors$occasion))
+    tab <- as.array(table(thisDetectors$session,
+                          thisDetectors$detector,
+                          thisDetectors$occasion))
     
     ##-- Get number of primary sessions
     all.sess <- dimnames(tab)[[1]]
@@ -160,16 +162,16 @@ makeDetectionHistory <- function( data,
       if(detection.fun %in% c("dbern")){
         ##-- If Bernoulli-type detection function, keep only one detection per secondary
         ##-- occasion (e.g. weekly sampling) 
-        data <- data[!duplicated(data[ ,c("detector","session","occasion","id")]), ] 
-        data <- droplevels(data)
+        thisData <- thisData[!duplicated(thisData[ ,c("detector","session","occasion","id")]), ] 
+        thisData <- droplevels(thisData)
       }
       
       ##-- Tabulate individual frequencies per detector, occasion and session
-      data$id <- factor(data$id, all.ids)
-      data$detector <- factor(data$detector, all.dets)
-      data$occasion <- factor(data$occasion, all.occ)
-      data$session <- factor(data$session, all.sess)
-      y <- as.array(table(data$id, data$detector, data$occasion, data$session))
+      thisData$id <- factor(thisData$id, all.ids)
+      thisData$detector <- factor(thisData$detector, all.dets)
+      thisData$occasion <- factor(thisData$occasion, all.occ)
+      thisData$session <- factor(thisData$session, all.sess)
+      y <- as.array(table(thisData$id, thisData$detector, thisData$occasion, thisData$session))
       dimnames(y) <- list("id" = all.ids,
                           "detector" = all.dets,
                           "occasion" = all.occ,
@@ -177,17 +179,17 @@ makeDetectionHistory <- function( data,
     }
     
     if(detection.fun %in% c("dbinom","dbinom_vector")){
-      if("subdetector" %in% names(data)){
+      if("subdetector" %in% names(thisData)){
         ##-- If PAB-type detection function, keep only one detection per subdetector
-        data <- data[!duplicated(data[ ,c("detector","session","occasion","subdetector","id")]), ] 
-        data <- droplevels(data) 
+        thisData <- thisData[!duplicated(thisData[ ,c("detector","session","occasion","subdetector","id")]), ] 
+        thisData <- droplevels(thisData) 
         
         ##-- Tabulate individual frequencies per detector, occasion and session
-        data$id <- factor(data$id, all.ids)
-        data$detector <- factor(data$detector, all.dets)
-        data$occasion <- factor(data$occasion, all.occ)
-        data$session <- factor(data$session, all.sess)
-        y <- as.array(table(data$id, data$detector, data$occasion, data$session))
+        thisData$id <- factor(thisData$id, all.ids)
+        thisData$detector <- factor(thisData$detector, all.dets)
+        thisData$occasion <- factor(thisData$occasion, all.occ)
+        thisData$session <- factor(thisData$session, all.sess)
+        y <- as.array(table(thisData$id, thisData$detector, thisData$occasion, thisData$session))
         dimnames(y) <- list("id" = all.ids,
                             "detector" = all.dets,
                             "occasion" = all.occ,
@@ -195,15 +197,15 @@ makeDetectionHistory <- function( data,
       } else {
         ##-- If binomial-type detection function, keep only one detection per secondary
         ##-- occasion (e.g. weekly sampling) 
-        data <- data[!duplicated(data[ ,c("detector","session","occasion","id")]), ] 
-        data <- droplevels(data)
+        thisData <- thisData[!duplicated(thisData[ ,c("detector","session","occasion","id")]), ] 
+        thisData <- droplevels(thisData)
         
         ##-- Tabulate individual frequencies per detector and session
-        data$id <- factor(data$id, all.ids)
-        data$detector <- factor(data$detector, all.dets)
-        data$occasion <- factor(data$occasion, all.occ)
-        data$session <- factor(data$session, all.sess)
-        y <- as.array(table(data$id, data$detector, data$session))
+        thisData$id <- factor(thisData$id, all.ids)
+        thisData$detector <- factor(thisData$detector, all.dets)
+        thisData$occasion <- factor(thisData$occasion, all.occ)
+        thisData$session <- factor(thisData$session, all.sess)
+        y <- as.array(table(thisData$id, thisData$detector, thisData$session))
         dimnames(y) <- list("id" = all.ids,
                             "detector" = all.dets,
                             "session" = all.sess)
@@ -212,7 +214,7 @@ makeDetectionHistory <- function( data,
     
     if(detection.fun %in% c("dcat")){
       ##-- Tabulate # of detections per individual, occasion and session
-      detNums <- as.array(table(data$id, data$occasion, data$session))
+      detNums <- as.array(table(thisData$id, thisData$occasion, thisData$session))
       if(any(detNums > 1)){
         stop("Individuals can be detected at only one detector per sampling occasion when using `dcat`")
       }
@@ -233,13 +235,12 @@ makeDetectionHistory <- function( data,
         thisI <- which(all.ids == detI[d,1])
         thisK <- which(all.occ == detK[d,2])
         thisT <- which(all.sess == detT[d,3])
-        y[thisI,thisK,thisT] <- data[data$id == detI[d,1] &
-                                       data$occasion == detK[d,2] & 
-                                       data$session == detT[d,3], "detector"]
+        y[thisI,thisK,thisT] <- thisData[thisData$id == detI[d,1] &
+                                       thisData$occasion == detK[d,2] & 
+                                       thisData$session == detT[d,3], "detector"]
         
       }#d
     }
-    
     
     
     
@@ -247,7 +248,7 @@ makeDetectionHistory <- function( data,
     
     if(detection.fun %in% c("dpoisLocal_normal", "dpoisLocal_exp")){
       ##-- Tabulate # of individual detections per detector, occasion and session
-      detMat <- as.array(table(data$id, data$detector, data$occasion, data$session))
+      detMat <- as.array(table(thisData$id, thisData$detector, thisData$occasion, thisData$session))
       
       ##-- Get # of individuals detected
       n.detected <- dim(detMat)[1]
@@ -284,13 +285,13 @@ makeDetectionHistory <- function( data,
     
     if(detection.fun %in% c("dbinomLocal_normal", "dbinomLocal_exp",
                             "dbinomLocal_normalPlateau", "dmultiLocal_normal")){
-      if("subdetector" %in% names(data)){ 
+      if("subdetector" %in% names(thisData)){ 
         ##-- If PAB-type detection function, keep only one detection per subdetector
-        data <- data[!duplicated(data[ ,c("detector","session","occasion","subdetector","id")]), ] 
-        data <- droplevels(data) 
+        thisData <- thisData[!duplicated(thisData[ ,c("detector","session","occasion","subdetector","id")]), ] 
+        thisData <- droplevels(thisData) 
         
         ##-- Tabulate # of individual detections per detector, occasion and session
-        detMat <- as.array(table(data$id, data$detector, data$occasion, data$session))
+        detMat <- as.array(table(thisData$id, thisData$detector, thisData$occasion, thisData$session))
         
         ##-- Get # of individuals detected
         n.detected <- dim(detMat)[1]
@@ -323,25 +324,15 @@ makeDetectionHistory <- function( data,
             }#t
           }#k
         }#i
-        
-        ##-- List data and constants and drop redundant dimensions
-        data.list <- list("y" = drop(y))
-        
-        cst.list <- list("lengthYCombined" = 2*max(detNums)+1)
-        # "n.occasions" = drop(n.occ),
-        # "n.sessions" = n.sess)
-        #cst.list <- cst.list[sapply(cst.list, function(x){!all(x==1)})]
-        return(list("data" = data.list,
-                    "constants" = cst.list))
       } else { 
         ##-- If binomial-type detection function, keep only one detection per secondary
         ##-- occasion (e.g. weekly sampling) 
-        data <- data[!duplicated(data[ ,c("detector","session","occasion","id")]), ] 
-        data <- droplevels(data) 
+        thisData <- thisData[!duplicated(thisData[ ,c("detector","session","occasion","id")]), ] 
+        thisData <- droplevels(thisData) 
         
         if(diff.occ){
           ##-- Tabulate # of individual detections per detector and session
-          detMat <- as.array(table(data$id,data$detector,data$occasion,data$session))
+          detMat <- as.array(table(thisData$id,thisData$detector,thisData$occasion,thisData$session))
           
           ##-- Get # of individuals detected
           n.detected <- dim(detMat)[1]
@@ -376,7 +367,7 @@ makeDetectionHistory <- function( data,
           }#i
         } else { 
           ##-- Tabulate # of individual detections per detector and session
-          detMat <- as.array(table(data$id, data$detector, data$session))
+          detMat <- as.array(table(thisData$id, thisData$detector, thisData$session))
           
           ##-- Get # of individuals detected
           n.detected <- dim(detMat)[1]
@@ -417,14 +408,14 @@ makeDetectionHistory <- function( data,
     if(detection.fun %in% c("dbernppLocalDetection_normal", "dbernppDetection_normal",
                             "dpoisppLocalDetection_normal", "dpoisppDetection_normal")){
       ##-- Check that detection "x" and "y" coordinates are provided
-      if(!all(c("x","y") %in% names(data))){
+      if(!all(c("x","y") %in% names(thisData))){
         stop("`x` and `y` coordinates of detections must be provided in `data` when 
       using `dbernppLocalDetection_normal`, `dbernppDetection_normal`, 
            `dpoisppLocalDetection_normal` or `dpoisppDetection_normal`.")
       }
       
       ##-- Tabulate # of detections per individual, occasion and session
-      detNums <- as.array(table(data$id, data$occasion, data$session))
+      detNums <- as.array(table(thisData$id, thisData$occasion, thisData$session))
       if(detection.fun %in% c("dbernppLocalDetection_normal", "dbernppDetection_normal")){
         if(any(detNums>1)){
           stop("Individuals can be detected only once per sampling occasion when using `dbernppLocalDetection_normal` or `dbernppDetection_normal`")
@@ -447,7 +438,7 @@ makeDetectionHistory <- function( data,
         for(k in 1:n.occ.max){
           for(t in 1:n.sess){
             if(detNums[i,k,t] > 0){
-              y[thisID,1:3,1:detNums[i,k,t],k,t] <- unlist(data[data$id == detIDs[i],
+              y[thisID,1:3,1:detNums[i,k,t],k,t] <- unlist(thisData[thisData$id == detIDs[i],
                                                                 c("x","y","detector")])
             }
           }#t

@@ -1,7 +1,8 @@
-rm(list=ls())
-gc()
 
 ## ------ IMPORT REQUIRED LIBRARIES ------
+
+rm(list=ls())
+gc()
 
 library(raster)
 library(coda)
@@ -25,47 +26,154 @@ library(ggplot2)
 source("C:/My_documents/RovQuant/workingDirectories.R")             
 
 ##-- DATA DIRECTORY
-##-- Directory containing the raw data necessary for the analysis
-##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
 data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2024/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2024/Test_F"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2024/Test_F_NEW"
 
 
 ## ------ SOURCE THE REQUIRED FUNCTIONS ------
 
-source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/functions/Nimble/dbinomLocal_normalWolf.R")
+source(file.path(dir.git,"Temp/CM/functions/Nimble/dbinomLocal_normalWolf.R"))
 
 
 ## -----------------------------------------------------------------------------
 
 ## ------ 0. SET-UP WORKING ENVIRONMENT ------
 
-## HABITAT
-x.extent = c(210000,740000)
-y.extent = c(6000000,7050000)
-habBuffer = 40000
-
-## NGS DATA SPECIFICATIONS
 years = 2015:2024
-nYears = length(years)
-YEARS = lapply(years, function(x)c(x,x+1))
-species = c("Ulv")                ## "Ulv","Jerv","Bjorn"
-sex = c("Hunn")                   ## "Hann","Hunn","Ukjent" 
-samplingMonths = list(10:12,1:4)  ## list(10:12,1:4), list(1:XXX), list(XX:XX,YY:YY)
-
-## DETECTORS SPECIFICATIONS
-detSubResolution = 1000
-detResolution = 10000
-detDeadResolution = 10000
-
-## DATA GENERATION 
-maxDist = 45000
-aug.factor = 0.8
-
-## MISCELLANEOUS
+nYears <- length(years)
+YEARS <- lapply(years, function(x)c(x,x+1))
+species = c("Ulv")               
+sex = c("Hunn")                
 plot.check = TRUE
+
+##-- Set default values for the wolverine model
+if(is.null(aug.factor)){aug.factor <- 0.8}
+if(is.null(sampling.months)){sampling.months <- list(10:12,1:4)}
+if(is.null(habitat.res)){habitat.res <- 20000} 
+if(is.null(x.extent)){x.extent <- c(210000,740000)} 
+if(is.null(y.extent)){y.extent <- c(6000000,7050000)} 
+if(is.null(buffer.size)){buffer.size <- 40000}
+if(is.null(detector.res)){detector.res <- 10000}
+if(is.null(subdetector.res)){subdetector.res <- 1000}
+if(is.null(max.det.dist)){max.det.dist <- 45000}
+if(is.null(resize.factor)){resize.factor <- 1}
+##-- Renaming list
+if(is.null(rename.list)) {
+  rename.list = c(
+    Age_estimated = "Alder, vurdert",
+    Age = "Alder, verifisert",
+    Age_verif_by = "Alder, verifisert av",
+    Age_class = "Alder på dødt individ",
+    Age_class_verif = "Aldersklasse verifisert SVA",
+    Analyzed_by = "AnalysertAv",
+    Analysis_priority = "Analyseprioritet",
+    Approved_by = "Godkjent av",
+    Approved_date = "Godkjentdato",
+    Assessment = "Vurdering",
+    Barcode_sample = "Strekkode (Prøve)",
+    Barcode = "Strekkode (Analyse)",
+    Birth_territory = "Født revir",
+    CITES = "CITES-nummer",
+    Collected_by = "Hvem samlet inn",
+    Collector_name = "Samlet selv - Navn",
+    Collector_phone = "Samlet selv - Telefon",
+    Collector_email = "Samlet selv - E-post",
+    Collector_role = "Samlet selv - Rolle",
+    Collector_other_name = "Annen innsamler - Navn" ,
+    Collector_other_phone = "Annen innsamler - Telefon",
+    Collector_other_email = "Annen innsamler - E-post",
+    Collector_other_role = "Annen innsamler - Rolle",
+    Comments_sample = "Merknad (Prøve)",
+    Comments = "Merknad (Analyse)",
+    Control_status = "Kontrollstatus",
+    Coordinate_system = "Koordinatsystem",
+    Counted_off_against_decision = "Regnes av mot vedtak",
+    County_number = "Fylkenummer",
+    County = "Fylke",
+    Date = "Funnetdato",
+    Date = "Dødsdato",
+    Death_cause = "Bakgrunn/årsak",
+    Death_method = "Bakgrunn/årsak metode",
+    Death_purpose = "Bakgrunn/årsak formål",
+    DNAID_sample = "DNAID (Prøve)",
+    DNAID = "DNAID (Analyse)",
+    EventID = "HendelseID",
+    East_Original = "Øst (opprinnelig)",
+    East_RT90 = "Øst (RT90)",
+    East_UTM33 = "Øst (UTM33/SWEREF99 TM)",
+    Felling_site_verif = "Kontroll av fellingsted",
+    Field_personnel ="Feltpersonell",
+    Hunting_date = "Observasjons/Jaktdato",
+    Id = "Individ",
+    Juvenile = "Yngling",
+    Mountain_area = "Fjellområde",
+    Method = "Metode",
+    Municipality_number = "Kommunenummer",
+    Municipality = "Kommune",
+    North_original = "Nord (opprinnelig)",
+    North_RT90 = "Nord (RT90)",
+    North_UTM33 = "Nord (UTM33/SWEREF99 TM)",
+    Origin = "Opprinnelse",
+    Outcome = "Utfall",
+    Last_saved_by_sample = "Sist lagret av (Prøve)",
+    Last_saved_sample = "Sist lagret dato (Prøve)",
+    Last_saved_by = "Sist lagret av (Analyse)",
+    Last_saved = "Sist lagret dato (Analyse)",
+    Last_saved_by = "Sist lagret av",
+    Last_saved =  "Sist lagret dato",
+    Locality = "Lokalitet",
+    Location = "Funnsted",
+    Lansstyrelsen_number = "Länsstyrelsens nr",
+    Quality_checked = "Kvalitetssikret av feltpersonell",
+    Quality_check_name = "Kvalitetssikrer - navn",
+    Quality_check_orga = "Kvalitetssikrer - Organisasjon",
+    Release_Date = "Frigivelsesdato",
+    Sample_type = "Prøvetype",
+    Sensitivity = "Følsomhet",
+    Species_sample = "Art (Prøve)",
+    Site_quality = "Stedkvalitet",
+    Time_of_death = "Dødstidspunkt",
+    Tips_name = "Tipser - Navn",
+    Tips_phone = "Tipser - Telefon",
+    Tips_email = "Tipser - E-post",
+    Tips_role = "Tipser - Rolle",
+    Tissue_sample = "Vevsprøve tatt",
+    Release_Date = "Frigivelsesdato",
+    RovbaseID = "RovbaseID (Analyse)",
+    RovbaseID_sample = "RovbaseID (Prøve)",
+    Species = "Art (Analyse)",
+    Species = "Art",
+    Sample_status = "Prøvestatus",
+    Sensitivity = "Følsomhet",
+    Sex_analysis = "Kjønn (Analyse)",
+    Sex = "Kjønn (Individ)",
+    Sex = "Kjønn",
+    Sex = "Kön",
+    Site_quality = "Stedkvalitet",
+    SVAID = "SVAID",
+    Uncertain_date = "Usikker dødsdato",
+    Weight_slaughter = "Slaktevekt",
+    Weight_total =  "Helvekt")
+}
+
+##-- Set up list of Habitat characteristics
+habitat <- list( resolution = habitat.res,
+                 buffer = buffer.size,
+                 x.extent = x.extent,
+                 y.extent = y.extent)
+
+##-- Set up list of Detectors characteristics
+detectors <- list( resolution = detector.res,
+                   resolution.sub = subdetector.res,
+                   maxDist = max.det.dist,
+                   resize.factor = resize.factor)
+
+##-- Set up list of Data characteristics
+DATA <- list( sex = sex,
+              aug.factor = aug.factor,
+              sampling.months = sampling.months)
 
 
 
@@ -73,111 +181,271 @@ plot.check = TRUE
 
 ## ------ I. LOAD & SELECT DATA ------
 
-## ------   1. HABITAT DATA ------ 
+## ------   1. HABITAT DATA -----
 
-## ------     1.1. LOAD RAW SHAPEFILES ------ 
+##-- Load pre-defined habitat rasters and shapefiles
+data(COUNTRIES, envir = environment()) 
+data(COUNTIES, envir = environment()) 
+data(habitatRasters, envir = environment()) 
+data(GLOBALMAP, envir = environment()) 
 
-GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/Scandinavia_border_33NNoLakes.shp")) ## Map of Scandinavia (including Finland & parts of Russia)
-GLOBALMAP <- st_simplify(GLOBALMAP, dTolerance =  500)
-COMMUNES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) ## Communal map of Norway
-COMMUNES_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp")) ## Communal map of Sweden
-COUNTIES <- rbind(COMMUNES_NOR, COMMUNES_SWE) %>%
-  group_by(NAME_1) %>%
+##-- Disaggregate habitat raster to the desired resolution
+habRaster <- raster::disaggregate(
+  x = habitatRasters[["Habitat"]],
+  fact = raster::res(habitatRasters[["Habitat"]])/habitat.res)
+
+##-- Merge counties for practical reasons
+COUNTIES <- COUNTIES %>%
+  mutate(id = case_when(
+    county %in% c("Akershus","Aust-Agder","Buskerud","Vestfold","Oslo","Østfold") ~ "NO1",
+    county %in% c("Oppland","Hedmark","Møre og Romsdal","Sør-Trøndelag","Nord-Trøndelag") ~ "NO2",
+    county %in% c("Jämtland","Västernorrland","Västerbotten","Dalarna","Gävleborg") ~ "SE1",
+    county %in% c("Uppsala","Västmanland","Stockholm","Södermanland") ~ "SE2",
+    county %in% c("Blekinge","Orebro","Östergötland","Jönköping","Kronoberg","Kalmar","Skåne","Gotland") ~ "SE3",
+    county %in% c("Västra Götaland","Värmland","Halland") ~ "SE4")) %>%
+  dplyr::group_by(id) %>%
+  dplyr::summarise()
+
+COUNTIES$id <- as.character(1:nrow(COUNTIES))
+## PLOT CHECK 
+COUNTIESplot <- st_simplify(COUNTIES, dTolerance = 500) %>%
+  st_intersection(., myStudyArea.poly) %>%
+  COUNTIESplot %>%
+  group_by(id) %>%
   summarize()
 
-## LOAD POLYGONS OF WATER + HUMANS WITH AREAS >80000M2 (CREATED IN TEMP/CM/GIS/buildingsWaterPolygons.R)
-COUNTRIESWaterHumans <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp")) ## Map of Scandinavia (including Finland & parts of Russia)
-## SELECT POLGYONS WITH AREAS SIZE WITH WaterHumans >25000000 m2 (5*5km)
-COUNTRIESWaterHumans <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ]
-## Remove small polygons (islands and things)
-COUNTRIESWaterHumans <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$area > 80000000, ]
-plot(st_geometry(COUNTRIESWaterHumans))
+ggplot(st_simplify(COUNTIESplot, dTolerance = 500)) +
+  geom_sf(aes(fill = id)) +
+  geom_sf_label(aes(label = id))
+
+col <- rainbow(length(unique(detCounties)))
+plot( st_geometry(COUNTIESplot))
+plot( st_geometry(detectors$main.detector.sp),
+      col = col[detCounties], pch = 16,
+      cex = 0.8, add = T)
 
 
-
-## ------     1.2. CLEAN SHAPEFILES ------ 
-
-## POLYGONS OF SWEDEN & NORWAY
-COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ]
-COUNTRIES <- COUNTRIES %>%  group_by(ISO) %>% summarize()
-
-SWE <- COUNTRIES[which(COUNTRIES$ISO %in% c("SWE")),]     ## Just take Sweden
-NOR <- COUNTRIES[which(COUNTRIES$ISO %in% c("NOR")),]     ## Just take Norway
-
-NOR1 <- st_simplify(NOR, dTolerance = 500)
-SWE1 <- st_simplify(SWE, dTolerance = 500)
-NOR1$ID <- "S"
-SWE1$ID <- "N"
-country <- rbind(NOR1, SWE1)
-
-
-
-## ------     1.3. SAVE SHAPEFILES OBJECTS FOR FASTER RUNS ------ 
-
-save( GLOBALMAP,
-      COUNTRIES,
-      COUNTIES,
-      COUNTRIESWaterHumans,
-      COMMUNES,
-      country,
-      file = file.path(working.dir, "data", "HABITATsf.RData"))
-load(file.path(working.dir, "data", "HABITATsf.RData"))
-
-
-
-## ------     1.4. LOAD SCANDINAVIAN 20KM HABITAT  ------ 
-
-##-- USE THE PACKAGE DATA INSTEAD
-## load(file.path(data.dir, "DATA/GISData/spatialDomain/Habitat20km.RData"))
-
-
-
-## ------     1.5. CREATE STUDY AREA POLYGON ------ 
 
 ## CREATE STUDY AREA POLYGON BASED x AND y EXTENTS
-myStudyArea.extent  <- st_bbox(extent(HABITAT$x.extent, HABITAT$y.extent))
-st_crs(myStudyArea.extent) <- st_crs(COUNTRIESWaterHumans)
-myStudyArea.poly <- st_crop(COUNTRIESWaterHumans,
-                            extent(HABITAT$x.extent, HABITAT$y.extent))
-# to get only "polygons objects"
-myStudyArea.poly <- st_collection_extract(myStudyArea.poly, "POLYGON")
+myStudyArea.extent <- st_bbox(extent(x.extent, y.extent))
+st_crs(myStudyArea.extent) <- st_crs(COUNTRIES)
+myStudyArea.poly <- st_crop(COUNTRIES, extent(x.extent, y.extent))
+myStudyArea.poly <- st_collection_extract(myStudyArea.poly, "POLYGON") # to get only "polygons objects"
 
 
 
 ## ------   2. LOAD ROVBASE FILES ------ 
 
-## NGS data from RovBase
-DNA <- read.csv( file.path(data.dir, "RIB22042025133456403_wolfDNA.csv"),
-                 fileEncoding = "latin1")
-colnames(DNA) <- translateForeignCharacters(dat = colnames(DNA), dir.translation = dir.analysis )
+##-- NGS data
+# DNA <- read.csv( file.path(data.dir, "RIB22042025133456403_wolfDNA.csv"),
+#                  fileEncoding = "latin1")
+# colnames(DNA) <- translateForeignCharacters(dat = colnames(DNA), dir.translation = dir.analysis)
+DNA <- suppressWarnings(readMostRecent( path = data.dir,
+                                        extension = ".xls",
+                                        pattern = "DNA")) %>%
+  ##-- Rename columns to facilitate manipulation
+  dplyr::rename(., any_of(rename.list)) %>%
+  ##-- Turn potential factors into characters 
+  dplyr::mutate(across(where(is.factor), as.character)) %>%
+  ##-- Initial filters
+  dplyr::filter(
+    ##-- Filter to the focal species
+    Species %in% norSpecies,
+    # [CHECK] Should we do this for all species now ???
+    # ##-- Filter dead recoveries (HB for the last wolverine analysis)
+    # !substr(RovbaseID_sample,1,1) %in% "M"
+  ) %>%
+  ##-- Remove any duplicates
+  dplyr::distinct(., .keep_all = TRUE) %>%
+  ##-- Add some columns
+  dplyr::mutate( 
+    ##-- Add "Country" column
+    Country_sample = substrRight(County, 3),
+    ##-- Change date format
+    Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
+    ##-- Extract year
+    Year = as.numeric(format(Date,"%Y")),
+    ##-- Extract month
+    Month = as.numeric(format(Date,"%m")),
+    ##-- Extract sampling season
+    ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
+    ##-- Set all months in given sampling period to the same year)
+    Year = ifelse( Month < unlist(sampling.months)[1],
+                   Year-1,
+                   Year),
+    ##-- Fix unknown "Id"
+    Id = ifelse(Id %in% "", NA, Id),
+    ##-- Fix unknown "Sex"
+    Sex = ifelse(Sex %in% "Ukjent", "unknown", Sex),
+    Sex = ifelse(is.na(Sex), "unknown", Sex),
+    Sex = ifelse(Sex %in% "Hunn", "female", Sex),
+    Sex = ifelse(Sex %in% "Hann", "male", Sex))
+# [CHECK] Should we filter for years here ???
+# %>%
+# ##-- Filter to the focal years
+# dplyr::filter(., Year %in% years)
+
 
 ## Dead Recoveries from RovBase
-DEAD <- read.csv( file.path(data.dir, "RIB22042025133534832_wolfDEAD.csv"),
-                  fileEncoding = "latin1")
-colnames(DEAD) <- translateForeignCharacters(dat = colnames(DEAD), dir.translation = dir.analysis )
+# DEAD <- read.csv( file.path(data.dir, "RIB22042025133534832_wolfDEAD.csv"),
+#                   fileEncoding = "latin1")
+# colnames(DEAD) <- translateForeignCharacters(dat = colnames(DEAD), dir.translation = dir.analysis )
+##-- Load raw excel file imported from rovbase 
+DR <- suppressWarnings(readMostRecent( path = data.dir,
+                                       extension = ".xls",
+                                       pattern = "dead_")) %>%
+  ##-- Rename columns to facilitate manipulation
+  dplyr::rename(., any_of(rename.list)) %>%
+  ##-- Initial filters
+  dplyr::filter(
+    ##-- Filter to the focal species
+    Species %in% norSpecies) %>%
+  ##-- Remove any duplicates
+  dplyr::distinct(., .keep_all = TRUE) %>%
+  ##-- Turn potential factors into characters 
+  dplyr::mutate(across(where(is.factor), as.character)) %>%
+  ##-- Add some columns
+  dplyr::mutate( 
+    ##-- Add "Country" column
+    Country_sample = substrRight(County, 3),
+    ##-- Change date format
+    Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
+    ##-- Extract year
+    Year = as.numeric(format(Date,"%Y")),
+    ##-- Extract month
+    Month = as.numeric(format(Date,"%m")),
+    ##-- Extract sampling season
+    ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
+    ##-- Set all months in given sampling period to the same year)
+    Year = ifelse( Month < unlist(sampling.months)[1],
+                   Year-1,
+                   Year), 
+    ##-- Fix unknown "Id"
+    Id = ifelse(Id %in% "", NA, Id),
+    ##-- Fix unknown "Sex"
+    Sex = ifelse(Sex %in% "Ukjent", "unknown", Sex),
+    Sex = ifelse(is.na(Sex), "unknown", Sex),
+    Sex = ifelse(Sex %in% "Hunn", "female", Sex),
+    Sex = ifelse(Sex %in% "Hann", "male", Sex),
+    ##-- Identify legal deaths
+    Legal = grepl(paste(legal.dead, collapse = "|"), Death_cause))
+# [CHECK] Should we filter for years here ???
+# %>%
+# ##-- Filter to the focal years
+# dplyr::filter(., Year %in% years)
 
 ## Wolves infos from Micke
-INDIVIDUAL_ID <- read.csv( file.path(data.dir, "220512_ID Grouping 2006-2021.csv"),
-                           fileEncoding = "latin1")  
-colnames(INDIVIDUAL_ID) <- translateForeignCharacters(dat = colnames(INDIVIDUAL_ID), dir.translation = dir.analysis )
+INDIVIDUAL_ID <- suppressWarnings(readMostRecent( path = data.dir,
+                                                  extension = ".xls",
+                                                  pattern = "_ID Grouping")) 
+# INDIVIDUAL_ID <- read.csv( file.path(data.dir, "220512_ID Grouping 2006-2021.csv"),
+#                            fileEncoding = "latin1")  
+#  colnames(INDIVIDUAL_ID) <- translateForeignCharacters(dat = colnames(INDIVIDUAL_ID), dir.translation = dir.analysis)
 
 ## THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2022/23.
-Pack_ID2023 <- read.csv( file.path(data.dir, 
-                                   "Genetiskt ID RM vargar 2223 Bilaga 4_ØF.csv"),
-                         fileEncoding = "latin1")  
-colnames(Pack_ID2023) <- translateForeignCharacters(dat = colnames(Pack_ID2023), dir.translation = dir.analysis )
+Pack_ID2023 <- suppressWarnings(readMostRecent( path = data.dir,
+                                               extension = ".xls",
+                                               pattern = "Genetiskt ID RM")) 
+# read.csv( file.path(data.dir, 
+#                                    "Genetiskt ID RM vargar 2223 Bilaga 4_ØF.csv"),
+#                          fileEncoding = "latin1")  
+# colnames(Pack_ID2023) <- translateForeignCharacters(dat = colnames(Pack_ID2023), dir.translation = dir.analysis)
 
 ## THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2023/24.
-Pack_ID2024 <- read.csv( file.path(data.dir, "Bilaga_11.4_240424_ØF to Cyril.csv"),
-                         fileEncoding = "latin1")  
-colnames(Pack_ID2024) <- translateForeignCharacters(dat = colnames(Pack_ID2024), dir.translation = dir.analysis )
+Pack_ID2024 <- suppressWarnings(readMostRecent( path = data.dir,
+                                                extension = ".xls",
+                                                pattern = "Bilaga_11")) 
+# read.csv( file.path(data.dir, "Bilaga_11.4_240424_ØF to Cyril.csv"),
+#                          fileEncoding = "latin1")  
+# colnames(Pack_ID2024) <- translateForeignCharacters(dat = colnames(Pack_ID2024), dir.translation = dir.analysis)
 
 ## THIS IS THE PACK ID SENT BY Øystein.
-Pack_ID2025 <- read.csv( file.path(data.dir, "RovbaseID for Rovquant estimates2025FromOystein.csv"),
-                         fileEncoding = "latin1")  
-colnames(Pack_ID2025) <- translateForeignCharacters(dat = colnames(Pack_ID2025), dir.translation = dir.analysis )
+Pack_ID2025 <- suppressWarnings(readMostRecent( path = data.dir,
+                                                extension = ".xls",
+                                                pattern = "estimates2025FromOystein")) 
+# read.csv( file.path(data.dir, "RovbaseID for Rovquant estimates2025FromOystein.csv"),
+#                          fileEncoding = "latin1")  
+# colnames(Pack_ID2025) <- translateForeignCharacters(dat = colnames(Pack_ID2025), dir.translation = dir.analysis)
 ## Here we need to recreate the sex columns as Oystein gave me a list of ids only (losing the sex)
-Pack_ID2025$Sex <- apply(Pack_ID2025[,c("Sex1","Sex2","Sex3","Sex4")],1, function(x) x[which(!x%in% "")][1] )
+Pack_ID2025$Sex <- apply(Pack_ID2025[,c("Sex1","Sex2","Sex3","Sex4")], 1, function(x) x[which(!x%in% "")][1])
+
+
+
+## ------   3. SEARCH EFFORT DATA ------ 
+
+## ------     3.1. GPS SEARCH TRACKS ------ 
+
+##-- Combine all GPS tracks
+TRACKS <- rbind(
+  sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250422.shp")),
+  sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422.shp"))) %>%
+  ##-- Process dates
+  dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
+                 Mth = as.numeric(format(Dato,"%m")),
+                 Yr = as.numeric(format(Dato,"%Y")),
+                 Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
+  ##-- Filter out irrelevant tracks
+  dplyr::filter( Helikopter == "0",      ## Remove helicopter tracks
+                 # Jerv == "1",          ## [CHECK] should we keep wolf tracks only?
+                 Year %in% years & Mth %in% unlist(sampling.months)) %>% ## Keep tracks during sampling season only
+  ##-- Extract track lengths & centroids
+  dplyr::mutate( Length = sf::st_length(., byid = T),
+                 Centroidx = sf::st_coordinates(sf::st_centroid(.))[ ,1]) 
+
+##-- Find & filter out duplicates based on person, distance and date.
+df <- data.frame( Dato = TRACKS$Dato,
+                  Year = TRACKS$Year,
+                  Person = TRACKS$Person,
+                  Length = TRACKS$Length,
+                  Centroidx = TRACKS$Centroidx)
+dupIDs <- which(duplicated(df))
+dupLength <- TRACKS$Length[duplicated(df)]
+TRACKS <- TRACKS[-dupIDs, ]
+
+
+## PLOT CHECK
+if(plot.check){
+  ## Total length of tracks searched
+  TRACKS %>%
+    group_by(Year)%>%
+    summarize(TotLength = sum(Length)) %>%
+    barplot( .,
+             ylab = "Sum length tracks")
+  ## Check number of duplicated tracks removed
+  dup <- unlist(lapply(dupIDs, length))
+  names(dup) <- years
+  barplot(dup, ylab = "Number of duplicated tracks")
+  
+  ## Check length of duplicated tracks removed
+  dupdist <- unlist(lapply(dupDist,sum))
+  names(dupdist) <- years
+  barplot(dupdist, ylab = "Distance of duplicated tracks")
+}
+
+
+## ------     3.3. DAYS OF SNOW ------ 
+
+## SEASONAL MAPS (CREATED IN TEMP/CM/GIS/snowMODIS)
+## UPDATE"!!!!!
+SNOW <- stack(file.path(data.dir, "Snow/AverageSnowCoverModisSeason2014_2025_Wolf.tif"))
+
+## RENAME THE LAYERS
+names(SNOW) <- paste(2014:2024,(2014:2024)+1, sep = "_")
+
+## SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
+SNOW <- SNOW[[paste("X", years, "_", years+1, sep = "")]]
+SNOW <- raster::crop(SNOW, c(0,40,55,75))
+
+
+
+## ------     3.4. SAVE SEARCH EFFORT OBJECTS FOR FASTER RUNS ------ 
+
+save( TRACKS_YEAR,
+      SNOW,
+      DistAllRoads,
+      file = file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
+
+load(file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
 
 
 
@@ -194,7 +462,7 @@ myCleanedData.sp <- CleanDataNew3sf(
   dead_recoveries = DEAD,
   species_id = DATA$species,
   country_polygon = COUNTRIES,
-  threshold_month = unlist(DATA$samplingMonths)[1],
+  threshold_month = unlist(DATA$sampling.months)[1],
   keep_dead = T,
   age.label.lookup = age.lookup.table)
 
@@ -294,7 +562,7 @@ myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[!is.na(as.num
 ## ------     1.5. FILTER DATA FOR DATES ------ 
 
 ## Remove all alive detections outside of the sampling period 
-myFilteredData.sp$alive <- myFilteredData.sp$alive[ myFilteredData.sp$alive$Month %in% unlist(DATA$samplingMonths) 
+myFilteredData.sp$alive <- myFilteredData.sp$alive[ myFilteredData.sp$alive$Month %in% unlist() 
                                                     & myFilteredData.sp$alive$Year %in% unlist(DATA$years), ]
 
 ## Remove all dead recoveries outside of the sampling period 
@@ -302,9 +570,9 @@ myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[ myFilteredDa
 
 
 
-## ------     1.6. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------ 
+## ------     1.6. SEPARATE STRUCTURED AND OPPORTUNISTIC SAMPLING ------ 
 
-## ------       1.6.1. ASSIGN SAMPLES TO TRACKS ------ 
+## ------       1.6.1. ASSIGN SAMPLES TO TRACKS  ------ 
 
 ## ASSIGN ROVBASE ID AND SIMPLIFY TRACKS
 myFilteredData.sp$alive$TrackRovbsID <- NA
@@ -359,7 +627,7 @@ load(file.path(working.dir, "data", "_myFilteredData.sp.RData"))
 
 
 
-## ------       1.6.2. SPLIT MYFILTERED DATA TO OPPORTUNISTIC & STRUCTURED ------ 
+## ------       1.6.2. SPLIT MYFILTERED DATA TO OPPORTUNISTIC AND STRUCTURED ------ 
 
 distanceThreshold <- 500
 
@@ -567,9 +835,15 @@ if(DATA$sex == "Hann"){
 
 ## ------     2.1. GENERATE HABITAT CHARACTERISTICS ------ 
 
+myHabitat.list <- MakeHabitatFromRastersf( 
+  poly = myStudyArea.poly,
+  habitat.r = habitatRasters[["Habitat"]],
+  buffer = buffer.size,                               
+  plot.check = T)
+
 ##-- Make habitat from predefined Scandinavian raster of suitable habitat
 habitat <- makeHabitatFromRaster(
-  poly = studyArea,
+  poly = myStudyArea.poly,
   habitat.r = habRaster,
   buffer = habitat$buffer,
   plot.check = FALSE) %>%
@@ -591,18 +865,12 @@ habitat$grid <- sf::st_as_sf( stars::st_as_stars(habitat$habitat.r),
   mutate( id = 1:nrow(.)) %>%
   st_set_crs( ., value = sf::st_crs(habitat$buffered.habitat.poly))
 
-
 ## PLOT CHECK
 if(plot.check){
-  plot(habitat$habitat.r)
-  plot(st_geometry(myStudyArea.poly), add = T)
-  plot(st_geometry(COUNTRIESWaterHumans), add = T)
+  plot(myHabitat.list$habitat.r)
+  plot(st_geometry(myStudyArea.poly), add=T)
+  plot(st_geometry(COUNTRIES), add=T)
 }
-
-# ##-- ???
-# habitat$buffered.habitat.poly <- sf::st_simplify( habitat$buffered.habitat.poly,
-#                                                   dTolerance = 0)
-# sf::st_crs(habitat$buffered.habitat.poly) <- sf::st_crs(habitat$habitat.sp)
 
 
 
@@ -616,7 +884,7 @@ for(t in 1:nYears){
   id.fam <- which(y.obsALL[ ,as.character(years[t]-1)] %in% c(3,4), arr.ind = T)
   
   m.xy <- matrix(NA, nrow = length(id.fam), ncol = 2)
-  colnames(m.xy) <- ("x","y")
+  colnames(m.xy) <- c("x","y")
   for(i in 1:length(id.fam)){
     tmp <- myFullData.sp$alive[IDS == row.names(y.obsALL)[i], ]
     m.xy[i, ]<- colMeans(st_coordinates(tmp))
@@ -642,43 +910,38 @@ for(t in 1:nYears){
 
 
 
+
 ## ------   3. GENERATE DETECTORS ------ 
 
 ## ------     3.1. GENERATE DETECTORS CHARACTERISTICS ------ 
 
-habitat.subdetectors <- disaggregate(
-  x = habitat$habitat.rWthBuffer,
-  fact = res(habitat$habitat.r)[1]/detectors$detSubResolution)
+habitat.subdetectors <- disaggregate( myHabitat.list$habitat.rWthBuffer,
+                                      fact = res(myHabitat.list$habitat.r)[1]/subdetector.res)
 
-##-- Generate NGS detectors based on the raster of sub-detectors
-detectors <- makeSearchGrid( 
-  data = subdetectors.r,
-  resolution = detectors$detResolution,
-  div = (detectors$resolution/detectors$resolution.sub)^2,
-  plot = FALSE) %>%
-  append(detectors,.)
-# detectors <- MakeSearchGridsf(
-#   data = habitat.subdetectors,
-#   resolution = detectors$detResolution,
-#   div = (detectors$detResolution/detectors$detSubResolution)^2,      
-#   plot = FALSE,
-#   fasterize = TRUE)
+myDetectors <- MakeSearchGridsf(
+  data = habitat.subdetectors,
+  resolution = detector.res,
+  div = (detector.res/subdetector.res)^2,      
+  plot = FALSE,
+  fasterize = TRUE)
 
 ## EXTRACT NUMBERS OF DETECTORS
-n.detectors <- dim(detectors$main.detector.sp)[1]
+n.detectors <- dim(mymain.detector.sp)[1]
 
-## FORMAT DETECTOR COORDINATES
-detector.xy <- st_coordinates(detectors$main.detector.sp)
-colnames(detectors.xy) <- c("x","y")
-
-## EXTRACT NUMBER OF SUB-DETECTORS PER DETECTOR
-n.trials <- as.vector(table(detectors$detector.sp$main.cell.id))
+## FORMAT DETECTOR LOCATIONS and NUMBER OF TRIALS PER DETECTOR IN ARRAYS/MATRICES
+detector.xy <- st_coordinates(mymain.detector.sp)
+n.trials <- as.vector(table(mydetector.sp$main.cell.id))
 
 ## PLOT CHECK
 if(plot.check){
-  plot( st_geometry(myStudyArea.poly), main = "Detectors")
-  plot( st_geometry(detectors$main.detector.sp), col = "red", pch = 16, cex = 0.1, add = T)
-  plot( st_geometry(GLOBALMAP), add = T)
+  par(mfrow = c(1,2))
+  plot(st_geometry(myStudyArea.poly), main = "Detectors Alive")
+  plot(st_geometry(mymain.detector.sp), col = "red", pch = 16, cex = 0.1, add = T)
+  plot(st_geometry(GLOBALMAP), add = T)
+  
+  plot(st_geometry(myStudyArea.poly), main = "Detectors Dead")
+  plot(st_geometry(mymain.detector.sp), col = "red", pch = 16, cex = 0.1, add = T)
+  plot(st_geometry(GLOBALMAP), add = T)
 }
 
 
@@ -687,15 +950,15 @@ if(plot.check){
 
 ## ------       3.2.1. EXTRACT COUNTRIES ------ 
 
-dist <- st_distance(detectors$main.detector.sp, country, by_element = F)
-detCountries <- apply(dist, 1, function(x) which.min(x))
+dist <- st_distance(mymain.detector.sp, country, by_element = F )
+detCountries <- apply(dist,1, function(x) which.min(x))
 detCountries <- as.numeric(as.factor(detCountries))
 
 
 
 ## ------       3.2.2. EXTRACT COUNTIES ------ 
 
-dist <- st_distance(detectors$main.detector.sp, COUNTIES, by_element = F)
+dist <- st_distance(mymain.detector.sp, COUNTIES, by_element = F )
 
 ## MERGE COUNTIES
 COUNTIES$id <- 1:nrow(COUNTIES)
@@ -704,7 +967,7 @@ COUNTIES$NAME_1[c(1,2,4,33,22,39)]
 COUNTIES$id[c(1,2,4,33,22,39)] <- 2
 #NO2
 COUNTIES$NAME_1[c(20,10,16,28,17)]
-COUNTIES$id[c(20,10,16,28,17)] <- 10
+COUNTIES$id[c(20,10,16,28,17)] <- 10#35
 #SE1
 COUNTIES$NAME_1[c(12,36,35,5,8)]
 COUNTIES$id[c(12,36,35,5,8)] <- 5
@@ -740,13 +1003,13 @@ COUNTIESplot <- st_simplify(COUNTIES, dTolerance = 500) %>%
   group_by(id) %>%
   summarize()
 
-ggplot(st_simplify(COUNTIESplot, dTolerance = 500)) +
+ggplot(st_simplify(COUNTIESplot,dTolerance = 500)) +
   geom_sf(aes(fill = id)) +
   geom_sf_label(aes(label = id))
 
 col <- rainbow(length(unique(detCounties)))
 plot( st_geometry(COUNTIESplot))
-plot( st_geometry(detectors$main.detector.sp),
+plot( st_geometry(mymain.detector.sp),
       col = col[detCounties], pch = 16,
       cex = 0.8, add = T)
 
@@ -754,82 +1017,9 @@ plot( st_geometry(detectors$main.detector.sp),
 
 ## ------       3.2.3. EXTRACT GPS TRACKS LENGTHS ------ 
 
-## LOAD GPS SEARCH TRACKS FROM ROVBASE
-TRACKS_SINGLE <- read_sf( file.path( data.dir,
-                                     "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250422.shp"))
-TRACKS_SINGLE$Dato <- as.POSIXct(strptime(TRACKS_SINGLE$Dato, "%Y-%m-%d"))
-TRACKS_SINGLE$Yr <- as.numeric(format(TRACKS_SINGLE$Dato,"%Y"))
-TRACKS_SINGLE$Mth <- as.numeric(format(TRACKS_SINGLE$Dato,"%m"))
-TRACKS_SINGLE$Dato <- as.character(TRACKS_SINGLE$Dato)
-
-TRACKS_MULTI <- read_sf( file.path( data.dir,
-                                    "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422.shp"))
-TRACKS_MULTI$Dato <- as.POSIXct(strptime(TRACKS_MULTI$Dato, "%Y-%m-%d"))
-TRACKS_MULTI$Yr <- as.numeric(format(TRACKS_MULTI$Dato,"%Y"))
-TRACKS_MULTI$Mth <- as.numeric(format(TRACKS_MULTI$Dato,"%m"))
-TRACKS_MULTI$Dato <- as.character(TRACKS_MULTI$Dato)
-
-## COMBINE ALL TRACKS
-ALL_TRACKS <- rbind(TRACKS_SINGLE, TRACKS_MULTI)
-
-## REMOVE HELICOPTER TRACKS
-ALL_TRACKS <- ALL_TRACKS[ALL_TRACKS$Helikopter == "0", ]
-
-## Check
-hist(ALL_TRACKS$Yr)
-
-## SELECT TRACKS YEAR
-dupIDs <- dupDist <- length <- TRACKS_YEAR <- TRACKS_YEAR.sp <- list()
-for(t in 1:nYears){
-  ## SUBSET GPS TRACKS TO THE SAMPLING PERIOD
-  TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][1] & ALL_TRACKS$Mth%in%DATA$samplingMonths[[1]], ]
-  TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr%in%YEARS[[t]][2] & ALL_TRACKS$Mth%in%DATA$samplingMonths[[2]], ]
-  TRACKS <- rbind(TRACKS_1, TRACKS_2)
-  ## SIMPLIFY TRACKS SHAPES
-  ## SUBSET TRACKS TO THE STUDY AREA
-  TRACKS <- st_intersection(TRACKS, st_as_sfc(myStudyArea.extent))
-  ## NAME TRACKS
-  TRACKS$ID <- 1:nrow(TRACKS)
-  TRACKS_YEAR[[t]] <- TRACKS
-  # calculate length to identify duplicates
-  TRACKS_YEAR[[t]]$dist <- st_length(TRACKS_YEAR[[t]], byid = T)
-  # calculate centroids to also identify tracks that could have the same length but in different location
-  TRACKS_YEAR[[t]]$centroidx <-  st_coordinates(st_centroid(TRACKS_YEAR[[t]]))[,1]
-  # try a fast way to identify duplicated tracks
-  # turn to dataframe and identify them
-  # sub_tracks_filter <- TRACKS_YEAR[[t]] %>%
-  #   distinct(Dato, dist, .keep_all = T)
-  # distinct(Person, Dato, dist, .keep_all = T)
-  df <- data.frame(ID = TRACKS_YEAR[[t]]$ID,
-                   Dato = TRACKS_YEAR[[t]]$Dato,
-                   Person = TRACKS_YEAR[[t]]$Person,
-                   dist = TRACKS_YEAR[[t]]$dist,
-                   centroidx = TRACKS_YEAR[[t]]$centroidx)
-  dupIDs[[t]] <- duplicated(df[ ,2:5])# find duplicates based on person and distance and date
-  dupIDs[[t]] <- df$ID[dupIDs[[t]]]
-  dupDist[[t]] <- TRACKS_YEAR[[t]][dupIDs[[t]], ]$dist
-  TRACKS_YEAR[[t]] <-  TRACKS_YEAR[[t]][-dupIDs[[t]], ]
-}#t
-
-## PLOT CHECK
-if(plot.check){
-  ## Number of tracks
-  barplot( unlist(lapply(TRACKS_YEAR, function(x) sum(x$dist))),
-           ylab = "Sum length tracks")
-  ## Check number of duplicated tracks removed
-  dup <- unlist(lapply(dupIDs, length))
-  names(dup) <- years
-  barplot(dup, ylab = "Number of duplicated tracks")
-  ## distance
-  dupdist <- unlist(lapply(dupDist,sum))
-  names(dupdist) <- years
-  barplot(dupdist, ylab = "Distance of duplicated tracks")
-}
-
-
 ## INITIALIZE MATRIX OF GPS TRACKS LENGTH FOR EACH DETECTOR & YEAR
-detectorGrid.r <- rasterFromXYZ(cbind(st_coordinates(detectors$main.detector.sp),
-                                      rep(1,nrow(detectors$main.detector.sp))))
+detectorGrid.r <- rasterFromXYZ(cbind(st_coordinates(mymain.detector.sp),
+                                      rep(1,nrow(mymain.detector.sp))))
 detectorGrid <- sf::st_as_sf(stars::st_as_stars(detectorGrid.r), 
                              as_points = FALSE, merge = F)
 st_crs(detectorGrid) <- st_crs(myStudyArea.poly)
@@ -851,37 +1041,57 @@ for(t in 1:nYears){
 
 ## Plot check 
 par(mar = c(0,0,0,0))
-plot(st_geometry(detectors$main.detector.sp[as.numeric(intersection$id), ]),
+plot(st_geometry(mymain.detector.sp[as.numeric(intersection$id), ]),
      cex = DoScale(detTracks[ ,t], l = 0, u = 2), pch = 16)
 
 
 
 ## ------       3.2.4. EXTRACT DISTANCES TO ROADS ------ 
 
-## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
-DistAllRoads <- raster(file.path(data.dir, "Roads/MinDistAllRoads1km.tif"))
-r <- fasterize(myStudyArea.poly, DistAllRoads)
+##-- Load map of distance to roads (1km resolution)
+DistAllRoads <- raster::raster(file.path(data.dir, "Roads/MinDistAllRoads1km.tif"))
+
+##-- Fasterize to remove values that fall in the sea
+r <- fasterize::fasterize(sf::st_as_sf(COUNTRIES), DistAllRoads)
 r[!is.na(r)] <- DistAllRoads[!is.na(r)]
 DistAllRoads <- r
-DistAllRoads <- crop(DistAllRoads, myStudyArea.poly)
-rm("r")
+DistAllRoads <- raster::crop(DistAllRoads, studyArea)
+rm(list = c("r"))
 
-## AGGREGATE TO MATCH THE DETECTORS RESOLUTION
-DistAllRoads <- aggregate( DistAllRoads,
-                           fact = detectors$detResolution/res(DistAllRoads),
-                           fun = mean)
 
-## EXTRACT ROAD DISTANCE FOR EACH DETECTOR
+##-- AGGREGATE TO MATCH THE DETECTORS RESOLUTION
+DistAllRoads <- raster::aggregate( 
+  x = DistAllRoads,
+  fact = detectors$resolution/raster::res(DistAllRoads),
+  fun = mean)
+
+##-- EXTRACT ROAD DISTANCE FOR EACH DETECTOR
 detRoads <- raster::extract(DistAllRoads, detectors$main.detector.sp)
+
+##-- If NA returns the average value of the cells within 15000m 
 isna <- which(is.na(detRoads))
-tmp <- raster::extract( DistAllRoads, detectors$main.detector.sp[isna, ],
+tmp <- raster::extract( x = DistAllRoads,
+                        y = detectors$main.detector.sp[isna, ],
                         buffer = 15000,
                         fun = mean,
                         na.rm = T)
 detRoads[isna] <- tmp
+detRoads <- round(scale(detRoads), digits = 2)
+
+##-- Put into "nimble2SCR" format
+detectors$detectors.df$roads <- detRoads
+
+
+## PLOT CHECK
 if(plot.check){
-  plot(st_geometry(detectors$main.detector.sp),cex=DoScale(detRoads),pch=16)
+  plot(st_geometry(mymain.detector.sp),cex=DoScale(detRoads),pch=16)
 }
+
+
+
+
+
+
 
 
 
@@ -900,7 +1110,7 @@ SNOW <- raster::crop(SNOW, c(0,40,55,75))
 
 ## EXTRACT SNOW 
 detSnow <- matrix(0, nrow = n.detectors, ncol = nYears)
-det.sptransf <- st_transform(detectors$main.detector.sp, st_crs(SNOW))
+det.sptransf <- st_transform(mymain.detector.sp, st_crs(SNOW))
 detSnow[ ,1:nYears] <- raster::extract(SNOW, det.sptransf)
 
 ## if NA returns the average value of the cells within 20000m 
@@ -908,7 +1118,7 @@ isna <- which(apply(detSnow, 1, function(x)any(is.na(x))))
 tmp <- raster::extract(SNOW, det.sptransf[isna, ], buffer = 15000, fun = mean, na.rm = T)
 detSnow[isna,1:nYears] <- tmp
 if(plot.check){
-  plot(st_geometry(detectors$main.detector.sp), cex=DoScale(detSnow[,3]),pch=16)
+  plot(st_geometry(mymain.detector.sp), cex=DoScale(detSnow[,3]),pch=16)
 }
 
 ## still some NA... Increase buffer again 
@@ -938,12 +1148,12 @@ st_crs(skandObs) <- st_crs("EPSG:4326")
 skandObs <- st_transform(skandObs, st_crs(myStudyArea.poly))
 
 ## SUBSET BASED ON SEASON 
-subset <- skandObs$month %in% c(unlist(DATA$samplingMonths))
+subset <- skandObs$month %in% c(unlist())
 skandObs$monitoring.season <- ifelse(skandObs$month < 12, skandObs$year, skandObs$year+1) #--- need to change for other species
 skandObs <- skandObs[subset,] 
 
 ## SUBSET BASED ON SPACE 
-habitat.rWthBufferPol <- sf::st_as_sf(stars::st_as_stars(habitat$habitat.rWthBuffer), 
+habitat.rWthBufferPol <- sf::st_as_sf(stars::st_as_stars(myHabitat.list$habitat.rWthBuffer), 
                                       as_points = FALSE, merge = TRUE)
 habitat.rWthBufferPol <- habitat.rWthBufferPol[habitat.rWthBufferPol$Habitat %in%1,]
 
@@ -953,7 +1163,7 @@ plot(st_geometry(habitat.rWthBufferPol))
 plot(st_geometry(skandObs),col="red",add=T)
 
 ## RASTERIZE AT THE DETECTOR LEVEL
-r.detector <- aggregate(habitat.subdetectors, fact=(detectors$detResolution/detectors$detSubResolution))
+r.detector <- aggregate(habitat.subdetectors, fact=(detector.res/subdetector.res))
 r.list <- lapply(years, function(y){
   rl <- raster::rasterize(skandObs[skandObs$monitoring.season %in% y, 1], r.detector , fun="count")[[1]]
   rl[is.na(rl[])] <- 0
@@ -1014,7 +1224,7 @@ st_crs(rovbaseObs.sp) <- st_crs(myStudyArea.poly)
 filter <- list(
   species = "Ulv",
   type = c("Ekskrement","Har","Urin","Valpeekskrement (Ulv)","Sekret (Jerv)","Saliv/Spytt"),
-  month = unlist(DATA$samplingMonths))
+  month = unlist())
 
 ## SUBSET MONTH AND TYPE OF SAMPLE
 subset <- rovbaseObs.sp$month %in% filter$month & rovbaseObs.sp$Proevetype %in% filter$type
@@ -1030,7 +1240,7 @@ subsetSpace <- !is.na(as.numeric(st_intersects(rovbaseObs.sp, habitat.rWthBuffer
 rovbaseObs.sp <- rovbaseObs.sp[subsetSpace,] 
 
 ## RASTERIZE 
-r.detector <- aggregate(habitat.subdetectors, fact=(detectors$detResolution/detectors$detSubResolution))
+r.detector <- aggregate(habitat.subdetectors, fact=(detector.res/subdetector.res))
 r.list <- lapply(years, function(y){
   rl <- raster::rasterize(rovbaseObs.sp[rovbaseObs.sp$monitoring.season %in% y, 1], r.detector , fun="count")[[1]]
   rl[is.na(rl[])] <- 0
@@ -1132,7 +1342,7 @@ if(plot.check){
 ## ------         3.2.6.5. ASSIGN THE COVARIATE ------ 
 
 detOtherSamples <- matrix(0, nrow = n.detectors, ncol = nYears)
-detOtherSamples[ ,1:nYears] <- raster::extract(r.SkandObsOtherSamplesBinary, detectors$main.detector.sp)
+detOtherSamples[ ,1:nYears] <- raster::extract(r.SkandObsOtherSamplesBinary, mymain.detector.sp)
 colSums(detOtherSamples)
 
 
@@ -1158,8 +1368,8 @@ if(plot.check){
   cuts <- seq(min(detTracks), max, length.out = 100) ## set breaks
   col <- rev(terrain.colors(100))
   for(t in 1:nYears){
-    detectorGrid <- rasterFromXYZ(cbind(st_coordinates(detectors$main.detector.sp),
-                                        rep(1,nrow(detectors$main.detector.sp))))
+    detectorGrid <- rasterFromXYZ(cbind(st_coordinates(mymain.detector.sp),
+                                        rep(1,nrow(mymain.detector.sp))))
     id <- which(detectorGrid[] %in% 1)
     detectorGrid[id] <- detTracks[ ,t]
     
@@ -1184,21 +1394,19 @@ if(plot.check){
     plot( st_geometry(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]),
           pch = 16, col = "red", cex = 0.2, add = T)
     
-    plot( st_geometry(habitat$buffered.habitat.poly),
+    plot( st_geometry(myHabitat.list$buffered.habitat.poly),
           add = T, border = "grey")
   }#t
   
   ## Snow
   for(t in 1:nYears){
-    plot(SNOW[[t]], main = paste("Snow", years[t]))
-    plot( st_transform( habitat$buffered.habitat.poly,
-                       st_crs(SNOW))$geometry,
-          add = T)
+    plot(SNOW[[t]], main=paste("Snow", years[t]))
+    plot(st_transform(myHabitat.list$buffered.habitat.poly, st_crs(SNOW))$geometry, add=T)
   }#t
   
   ## Roads
   plot(DistAllRoads, main = "Roads")
-  plot(st_geometry(habitat$buffered.habitat.poly), add = T)
+  plot(st_geometry(myHabitat.list$buffered.habitat.poly), add = T)
   dev.off()
 }
 
@@ -1248,66 +1456,183 @@ detectors$localObjects <- getLocalObjects(
 
 
 
-## ------   5. GENERATE y DETECTION ARRAYS ------ 
-## ------     5.2. ASSIGN DETECTORS ------ 
+## ------   4. GENERATE y DETECTION ARRAYS ------ 
+
+## ------     4.1. DATA SUMMARY ------ 
+
+## ------       4.1.1. DETECTIONS ALIVE ------ 
+
+## NUMBER OF INDIVIDUALS DETECTED ALIVE
+length(unique(myFilteredData.sp$alive$Id))
+
+## NUMBER OF INDIVIDUALS DETECTED ALIVE AND RECOVERED DEAD
+sum(unique(myFilteredData.sp$alive$Id) %in% unique(myFilteredData.sp$dead.recovery$Id))
+
+## NUMBER OF INDIVIDUALS DETECTED/YEAR/COUNTRY
+table.id <- table(myFilteredData.sp$alive$Id,myFilteredData.sp$alive$Year, myFilteredData.sp$alive$Country)
+apply(table.id, c(2,3), function(x) sum(x>0))
+
+## NUMBER OF DETECTIONS/YEAR/COUNTRY
+countrytab <- table(myFilteredData.sp$alive$Year, myFilteredData.sp$alive$Country)
+countrytab 
+
+## NUMBER OF DETECTIONS/YEAR/COUNTRY/SEX
+sex_countrytab <- table(myFilteredData.sp$alive$Year, myFilteredData.sp$alive$Country, myFilteredData.sp$alive$Sex)
+sex_countrytab
+
+## PROPORTION OF DETECTIONS PER YEAR/COUNTRY/SEX
+sex_countrytab_prop <- sex_countrytab
+for(i in 1:dim(sex_countrytab)[3]){
+  sex_countrytab_prop[,,i] <- sex_countrytab_prop[,,i]/countrytab
+}
+sex_countrytab_prop
+
+
+
+## ------       4.1.2. DEAD RECOVERIES ------ 
+
+## NUMBER OF INDIVIDUALS RECOVERED
+length(unique(myFilteredData.sp$dead.recovery$Id))
+
+## NUMBER OF DEAD RECOVERIES/YEAR/COUNTRY
+table(myFilteredData.sp$dead.recovery$Year, myFilteredData.sp$dead.recovery$Country)
+
+## MORTALITY CAUSES
+unique(as.character(myFilteredData.sp$dead.recovery$DeathCause))
+unique(as.character(myFilteredData.sp$dead.recovery$DeathCause_2))  
+MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$DeathCause))
+
+## DEFINE LEGAL MORTALITY
+legalCauses <- MortalityNames[grep("Lisensfelling", MortalityNames)]
+legalCauses <- c(legalCauses, MortalityNames[grep("tamdyr", MortalityNames)])
+legalCauses <- c(legalCauses, MortalityNames[grep("SNO", MortalityNames)])
+legalCauses <- c(legalCauses, MortalityNames[grep("Skadefelling", MortalityNames)])
+legalCauses <- c(legalCauses, MortalityNames[grep("Politibeslutning", MortalityNames)])
+legalCauses <- c(legalCauses, MortalityNames[grep("menneske", MortalityNames)])
+
+
+
+## ------       4.1.3. PLOTS ------ 
+
+legal.death <- myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$DeathCause %in% legalCauses, ]
+Other.death <- myFullData.sp$dead.recovery[!myFullData.sp$dead.recovery$DeathCause %in% legalCauses, ]
+
+table(legal.death$Year)
+table(Other.death$Year)
+
+## PLOT CHECK
+if(plot.check){
+  pdf(file = file.path(working.dir,"figures","DetectionsDeadRecoveries.pdf"))
+  
+  ## PLOT ALL DETECTIONS
+  for(t in 1:nYears){
+    plot(myHabitat.list$habitat.r, main = years[t]) 
+    plot(st_geometry(mymain.detector.sp), add=T, pch=16, cex=0.1)
+    plot(st_geometry(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]), 
+         pch=16,col="red", cex=0.7, add=T)
+    mtext(paste("Live detections",
+                nrow(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]),
+                "; ID:",
+                nrow(unique(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]$Id))),
+          line = +1)
+    
+    plot(st_geometry(myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t], ]),
+         pch=16,col="blue", cex=0.7,add=T)
+    mtext(paste("Dead recovery:",nrow(myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t], ])))
+    plot(st_geometry(GLOBALMAP), add=T) 
+  }#t
+  
+  ## PLOT NUMBER OF MORTALITY EVENTS, LEGAL/OTHERS 
+  barplot(table(legal.death$Country, legal.death$Year), main = "Legal causes")
+  barplot(table(Other.death$Country, Other.death$Year), main = "Other causes")
+  legend("topleft", fill = c(grey(0.3), grey(0.7)), legend = c("NOR","SWE"))
+  dev.off()  
+}
+
+## EXPORT NGS DATA 
+if(DATA$sex == "Hann"){
+  assign("myFilteredData.spM", myFilteredData.sp)
+  assign("myFilteredData.spOthersM", myFilteredData.spOthers)
+  assign("myFilteredData.spStructuredM", myFilteredData.spStructured)
+  
+  save(myFilteredData.spM, 
+       myFullData.spM,
+       myFilteredData.spOthersM,
+       myFilteredData.spStructuredM,
+       file = file.path(working.dir, "data", "NGSData.RData"))
+} else {
+  assign("myFilteredData.spF", myFilteredData.sp)
+  assign("myFilteredData.spOthersF", myFilteredData.spOthers)
+  assign("myFilteredData.spStructuredF", myFilteredData.spStructured)
+  
+  save(myFilteredData.spF,
+       myFullData.spF,
+       myFilteredData.spOthersF,
+       myFilteredData.spStructuredF,
+       file = file.path(working.dir, "data", "NGSData.RData"))
+}
+
+
+
+## ------     4.2. ASSIGN DETECTORS ------ 
 
 ## ALL SAMPLES
 myData.alive <- AssignDetectors_v3sf( 
   myData = myFilteredData.sp$alive,                
-  detectors = detectors$main.detector.sp,
-  mysubDetectors = detectors$detector.sp,
-  radius = detectors$detResolution)
+  myDetectors = mymain.detector.sp,
+  mysubDetectors = mydetector.sp,
+  radius = detector.res)
 
 ## STRUCTURED
 myData.aliveStruc <- AssignDetectors_v3sf( 
   myData = myFilteredData.spStructured,                
-  detectors = detectors$main.detector.sp,
-  mysubDetectors = detectors$detector.sp,
-  radius = detectors$detResolution)
+  myDetectors = mymain.detector.sp,
+  mysubDetectors = mydetector.sp,
+  radius = detector.res)
 
 ## OTHERS
 myData.aliveOthers <- AssignDetectors_v3sf( 
   myData = myFilteredData.spOthers,                
-  detectors = detectors$main.detector.sp,
-  mysubDetectors = detectors$detector.sp,
-  radius = detectors$detResolution)
+  myDetectors = mymain.detector.sp,
+  mysubDetectors = mydetector.sp,
+  radius = detector.res)
 
 ## DEAD RECOVERIES
 myData.dead <- AssignDetectors_v3sf(
   myData = myFilteredData.sp$dead.recovery,
-  detectors = detectors$main.detector.sp,
-  radius = detectors$detResolution)
+  myDetectors = mymain.detector.sp,
+  radius = detector.res)
 
 
 
-## ------     5.3. GENERATE NGS & DEAD RECOVERIES : y.alive[i,j,t] & y.dead[i,t] ------ 
+## ------     4.3. GENERATE NGS & DEAD RECOVERIES : y.alive[i,j,t] & y.dead[i,t] ------ 
 
 ## ALL SAMPLES
 y.ar <- MakeYsf( myData = myData.alive$myData.sp,
-                 detectors = detectors$main.detector.sp,
+                 myDetectors = mymain.detector.sp,
                  method = "Binomial",
                  myData2 = myData.dead,
-                 detectors2 = detectors$main.detector.sp,
+                 myDetectors2 = mymain.detector.sp,
                  returnIdvector = TRUE)
 y.ar.ALIVE <- y.ar$y.ar
 dimnames(y.ar.ALIVE) <- dimnames(y.ar$y.ar)
 
 ## STRUCTURED
 y.arStruc <- MakeYsf( myData = myData.aliveStruc$myData.sp,
-                      detectors = detectors$main.detector.sp,
+                      myDetectors = mymain.detector.sp,
                       method = "Binomial",
                       myData2 = myData.dead,
-                      detectors2 = detectors$main.detector.sp,
+                      myDetectors2 = mymain.detector.sp,
                       returnIdvector = TRUE)
 y.ar.ALIVEStruc <- y.arStruc$y.ar
 dimnames(y.ar.ALIVEStruc) <- dimnames(y.arStruc$y.ar)
 
 ## OTHERS
 y.arOth <- MakeYsf( myData = myData.aliveOthers$myData.sp,
-                    detectors = detectors$main.detector.sp,
+                    myDetectors = mymain.detector.sp,
                     method = "Binomial",
                     myData2 = myData.dead,
-                    detectors2 = detectors$main.detector.sp,
+                    myDetectors2 = mymain.detector.sp,
                     returnIdvector = TRUE)
 y.ar.ALIVEOth <- y.arOth$y.ar
 dimnames(y.ar.ALIVEOth) <- dimnames(y.arOth$y.ar)
@@ -1332,14 +1657,15 @@ dimnames(y.ar.DEAD) <- list(dimnames(y.ar$y.ar2)[[1]], dimnames(y.ar$y.ar2)[[3]]
 
 
 
-## ------     5.4. GENERATE OBSERVATIONS : y.obs[i,t] ------ 
+## ------     4.4. GENERATE OBSERVATIONS : y.obs[i,t] ------ 
 
 INDIVIDUAL_ID$STATUS_Numeric <- 1
 INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% "Juvenile"] <- 2
-INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% "Pair"] <- 3
-INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% "Family group"] <- 4
+INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% c("Pair" )] <- 3
+INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% c("Family group")] <- 4
 
-indIDRovBase <- unlist(lapply(strsplit(y.ar$Id.vector, " "), function(x) x[1]))
+## FOR THE LAST YEAR GET THROUGH THE PAIR BASED-FILE FROM LINN.
+indIDRovBase <- unlist(lapply(strsplit(y.ar$Id.vector," "), function(x) x[1]))
 
 ALLIDS <- c(unique(indIDRovBase))
 
@@ -1405,15 +1731,15 @@ if(plot.check){
 
 
 
-## ------     5.5. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------ 
+## ------     4.5. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------ 
 
 distances <- list()
 for(t in 1:nYears){
   print(paste("------ ", t ," -------", sep = "" ))
   distances[[t]] <- CheckDistanceDetectionsV2sf(
     y = y.ar.ALIVE[,,t], 
-    detector.xy = st_coordinates(detectors$main.detector.sp), 
-    max.distance = DETECTIONS$maxDist,
+    detector.xy = st_coordinates(mymain.detector.sp), 
+    max.distance = maxDist,
     method = "pairwise",
     plot.check = F)
   
@@ -1425,7 +1751,7 @@ for(t in 1:nYears){
       for(i in affected.ids){
         plot(st_geometry(myStudyArea.poly), main = paste("t: ",t,"     i: ", i, sep = ""))
         plot(st_geometry(GLOBALMAP), add = T)
-        plot(st_geometry(detectors$main.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
+        plot(st_geometry(mymain.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
         
         tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Id == y.ar$Id.vector[i], ]
         tmp <- tmp[order(tmp$Date), ]
@@ -1437,9 +1763,9 @@ for(t in 1:nYears){
         arrows(x0 = tmp.xy[1:(n.det-1),1], y0 = tmp.xy[1:(n.det-1),2],
                x1 = tmp.xy[2:n.det,1], y1 = tmp.xy[2:n.det,2], length = 0.1, lwd = 1)
         
-        plot(st_geometry(detectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0), ]), pch = 16, col = "red",add=T)
+        plot(st_geometry(mymain.detector.sp[which(y.ar.ALIVE[i,,t] > 0), ]), pch = 16, col = "red",add=T)
         
-        tmp2 <- detectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
+        tmp2 <- mymain.detector.sp[which(y.ar.ALIVE[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
         plot(st_geometry(tmp2), col = "blue", pch = 13, cex = 1.5, lwd = 1,add=T)
       }#i
     }#if
@@ -1459,9 +1785,10 @@ for(t in 1:nYears){
 }#t
 
 
-## ------   6. GENERATE INDIVIDUAL-LEVEL COVARIATES ------ 
 
-## ------     6.1. INDIVIDUAL STATE ------ 
+## ------   5. GENERATE INDIVIDUAL-LEVEL COVARIATES ------ 
+
+## ------     5.1. INDIVIDUAL STATE ------ 
 
 indSocialState <- matrix(1, nrow = dim(y.ar.ALIVE)[1], ncol = dim(y.ar.ALIVE)[3])
 for(i in 1:dim(indSocialState)[1]){
@@ -1472,7 +1799,7 @@ for(i in 1:dim(indSocialState)[1]){
 
 
 
-## ------     6.2. TRAP-RESPONSE ------ 
+## ------     5.2. TRAP-RESPONSE ------ 
 
 ## Make matrix of previous capture indicator
 already.detected <- MakeTrapResponseCovsf(myFullData.sp$alive, myFullData.sp$dead.recovery)
@@ -1488,19 +1815,58 @@ if(plot.check){image(t(already.detected))}
 
 
 
+## ------   6. GENERATE HABITAT-LEVEL COVARIATES ------ 
+
+## KERNEL OF INDIVIDUALS IN PAIRS 
+kern <- list()
+habDens <- matrix(NA, nrow = nHabCells, ncol = nYears)
+IDS <- unlist(lapply(strsplit(as.character(myFullData.sp$alive$Id) , " "), function(x)x[1])) 
+for(t in 1:nYears){
+  id.fam <- which(y.obsALL[,as.character(years[t]-1)]%in% c(3,4), arr.ind = T)
+  m.xy <- matrix(NA, nrow=length(id.fam), ncol=2 )
+  colnames(m.xy) <-c("x","y")
+  for(i in 1:length(id.fam)){
+    tmp <- myFullData.sp$alive[IDS==row.names(y.obsALL)[i],]
+    #plot(st_geometry(myHabitat.list$buffered.habitat.poly))
+    m.xy[i,]<- colMeans(st_coordinates(tmp))
+    #points(m.xy[i,2]~m.xy[i,1], col="red", pch=16)
+  }
+  if(sum(is.na(m.xy[,1]))>0){
+    m.xy <- m.xy[!is.na(m.xy[,1]),]
+  }
+  locationsFamily <- st_as_sf(as.data.frame(m.xy), coords =c("x","y"),crs=st_crs(myHabitat.list$habitat.sp))
+  locationsFamily$id <- rep(1, nrow(locationsFamily))
+  kern[[t]] <- raster(estUDm2spixdf(kernelUD(as(locationsFamily[ ,"id"],"Spatial"),h = 15000,
+                                             grid = as(myHabitat.list$habitat.r, 'SpatialPixels'))))
+  #plot(kern[[1]])
+  plot(st_geometry(myHabitat.list$habitat.poly), add=T)
+  habDens[,t] <- scale(kern[[t]][myHabitat.list$habitat.r[ ]==1])
+}
+
+#check 
+for(t in 1:nYears){
+  plot(kern[[t]],main=years[t])
+  plot(myHabitat.list$habitat.poly$geometry,add=T,col=NA)
+}
+
+
+
 ## ------   7. MAKE AUGMENTATION ------ 
 
 ## DATA ARRAYS
-y.alive <- MakeAugmentation(y = y.ar.ALIVE, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
-y.aliveOthers <- MakeAugmentation(y = y.ar.ALIVEOthers, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
-y.aliveStructured <- MakeAugmentation(y = y.ar.ALIVEStructured, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
+y.alive <- MakeAugmentation(y = y.ar.ALIVE, aug.factor = aug.factor, replace.value = 0)
+y.aliveOthers <- MakeAugmentation(y = y.ar.ALIVEOthers, aug.factor = aug.factor, replace.value = 0)
+y.aliveStructured <- MakeAugmentation(y = y.ar.ALIVEStructured, aug.factor = aug.factor, replace.value = 0)
 
-y.dead <- MakeAugmentation(y = y.ar.DEAD, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
-y.obs <- MakeAugmentation(y = y.obs, aug.factor = DETECTIONS$aug.factor, replace.value = 1)
+y.dead <- MakeAugmentation(y = y.ar.DEAD, aug.factor = aug.factor, replace.value = 0)
+y.obs <- MakeAugmentation(y = y.obs, aug.factor = aug.factor, replace.value = 1)
 
 ## INDIVIDUAL COVARIATES
-indSocialState <- MakeAugmentation(y = indSocialState, aug.factor = DETECTIONS$aug.factor, replace.value = 1)
-already.detected <- MakeAugmentation(y = already.detected, aug.factor = DETECTIONS$aug.factor, replace.value = 0)
+indSocialState <- MakeAugmentation(y = indSocialState, aug.factor = aug.factor, replace.value = 1)
+already.detected <- MakeAugmentation(y = already.detected, aug.factor = aug.factor, replace.value = 0)
+age <- MakeAugmentation(y = age, aug.factor = aug.factor, replace.value = NA)
+min.age <- MakeAugmentation(y = min.age, aug.factor = aug.factor, replace.value = NA)
+precapture <- MakeAugmentation(y = precapture, aug.factor = aug.factor, replace.value = 0)
 
 
 
@@ -1512,22 +1878,24 @@ already.detected <- MakeAugmentation(y = already.detected, aug.factor = DETECTIO
 
 modelCode <- nimbleCode({
   
-  ##------ SPATIAL PROCESS ------##  
-  beta.dens ~ dnorm(0.0,0.01)
+  ##------ SPATIAL PROCESS ------## 
   
   for(st in 1:2){
     dmean[st] ~ dunif(0,100)
     lambda[st] <- 1/dmean[st]
-  }
+  }#st
+  
+  beta.dens ~ dnorm(0.0,0.01)
   
   for(t in 1:n.years){
     habIntensity[1:numHabWindows,t] <- exp(beta.dens * habDens[1:numHabWindows,t])
     sumHabIntensity[t] <- sum(habIntensity[1:numHabWindows,t])
     logHabIntensity[1:numHabWindows,t] <- log(habIntensity[1:numHabWindows,t])
     logSumHabIntensity[t] <- log(sumHabIntensity[t])
-  }
+  }#t
   
   for(i in 1:n.individuals){
+    
     sxy[i,1:2,1] ~ dbernppAC(
       lowerCoords = lowerHabCoords[1:numHabWindows,1:2],
       upperCoords = upperHabCoords[1:numHabWindows,1:2],
@@ -1538,157 +1906,101 @@ modelCode <- nimbleCode({
       numGridCols = x.max)
     
     for(t in 2:n.years){
+      
       sxy[i,1:2,t] ~ dbernppACmovement_exp(
         lowerCoords = lowerHabCoords[1:numHabWindows,1:2],
         upperCoords = upperHabCoords[1:numHabWindows,1:2],
         s = sxy[i,1:2,t-1],
         lambda = lambda[state[i,t-1]+1],
         baseIntensities = habIntensity[1:numHabWindows,t],
-        habitatGrid = habitatGrid[1:y.max,1:x.max],
+        habitatGrid =  habitatGrid[1:y.max,1:x.max],
         numGridRows = y.max,
         numGridCols = x.max,
         numWindows = numHabWindows)
-      
     }#i
   }#t
   
   
-  ##----- DEMOGRAPHIC PROCESS -----## 
+  ##----- DEMOGRAPHIC PROCESS -----##
   
-  omeg1[1:3] ~ ddirch(alpha[1:3])   
+  ## FIRST YEAR
+  omeg1[1:3] ~ ddirch(alpha[1:3])  
   
-  # LEGAL HUNTING (TIME-DEPENDENT)[RB]
-  for(t in 1:n.years1){
-    w[1,t] ~ dunif(0,1)
-    w[2,t] ~ dunif(0,1)
-    h[1,t] ~ dunif(0,1)
-    h[2,t] ~ dunif(0,1)
-    rw[1,t] ~ dunif(0,1)
-    rw[2,t] ~ dunif(0,1)
-    
-    ones.dead.legal[1,t] ~ dbern(step(1 - (h[1,t] + w[1,t] + rw[1,t])))      
-    ones.dead.legal[2,t] ~ dbern(step(1 - (h[2,t] + w[2,t] + rw[2,t])))  
-  } 
-  
-  # FIRST YEAR
-  for(i in 1:n.individuals){ 
-    z[i,1] ~ dcat(omeg1[1:3]) 
+  for(i in 1:n.individuals){
+    z[i,1] ~ dcat(omeg1[1:3])
     isAlive[i,1] <- (z[i,1] == 2) + (z[i,1] == 3)
     state[i,1] <- (z[i,1] == 3)
   }#i
   
-  for(t in 1:n.years1){
-    # PRIORS 
+  ## FOLLOWING YEARS 
+  for(t in 1:(n.years-1)){
+    
     gamma[t] ~ dunif(0,1)
-    phi[1,t] <- 1-h[1,t]-w[1,t]-rw[1,t]
-    phi[2,t] <- 1-h[2,t]-w[2,t]-rw[2,t]
-    
-    wAll[1,t] <- w[1,t]+rw[1,t]
-    wAll[2,t] <- w[2,t]+rw[2,t]
-    
     psi[t] ~ dunif(0,1)
     
-    # "UNBORN"
-    omega[1,1,t] <- 1-gamma[t]
-    omega[1,2,t] <- gamma[t]
-    omega[1,3,t] <- 0
-    omega[1,4,t] <- 0
-    omega[1,5,t] <- 0
-    omega[1,6,t] <- 0
+    for(st in 1:2){
+      
+      w[st,t] ~ dunif(0,1)
+      h[st,t] ~ dunif(0,1)
+      rw[st,t] ~ dunif(0,1)
+      
+      ones.dead.legal[st,t] ~ dbern(step(1 - (h[st,t] + w[st,t] + rw[st,t])))     
+      
+      phi[st,t] <- 1 - h[st,t] - w[st,t] - rw[st,t]
+      
+      wAll[st,t] <- w[st,t] + rw[st,t]
+    }#st
     
-    # "NON-PAIRS"
-    omega[2,1,t] <- 0
-    omega[2,2,t] <- phi[1,t]*(1-psi[t])
-    omega[2,3,t] <- phi[1,t]*psi[t]
-    omega[2,4,t] <- h[1,t]
-    omega[2,5,t] <- rw[1,t]
-    omega[2,6,t] <- w[1,t]
+    omega[1,1:6,t] <- c(1-gamma[t], gamma[t]           , 0              , 0     , 0      , 0     ) ## "UNBORN"
+    omega[2,1:6,t] <- c(0         , phi[1,t]*(1-psi[t]), phi[1,t]*psi[t], h[1,t], rw[1,t], w[1,t]) ## "NON-PAIRS"
+    omega[3,1:6,t] <- c(0         , 0                  , phi[2,t]       , h[2,t], rw[2,t], w[2,t]) ## "PAIRS"
+    omega[4,1:6,t] <- c(0         , 0                  , 0              , 0     , 0      , 1     ) ## "NEWLY DEAD LEGAL HUNTING"
+    omega[5,1:6,t] <- c(0         , 0                  , 0              , 0     , 0      , 1     ) ## "NEWLY DEAD OTHER SOURCES"
+    omega[6,1:6,t] <- c(0         , 0                  , 0              , 0     , 0      , 1     ) ## "DEAD"
     
-    # "PAIRS"
-    omega[3,1,t] <- 0
-    omega[3,2,t] <- 0
-    omega[3,3,t] <- phi[2,t]
-    omega[3,4,t] <- h[2,t]
-    omega[3,5,t] <- rw[2,t]
-    omega[3,6,t] <- w[2,t]
-    
-    # "NEWLY DEAD LEGAL HUNTING"[RB]
-    omega[4,1,t] <- 0
-    omega[4,2,t] <- 0
-    omega[4,3,t] <- 0
-    omega[4,4,t] <- 0
-    omega[4,5,t] <- 0
-    omega[4,6,t] <- 1
-    
-    # "NEWLY DEAD OTHER SOURCES AND DEAD"[RB]
-    omega[5,1,t] <- 0
-    omega[5,2,t] <- 0
-    omega[5,3,t] <- 0
-    omega[5,4,t] <- 0
-    omega[5,5,t] <- 0
-    omega[5,6,t] <- 1
-    
-    omega[6,1,t] <- 0
-    omega[6,2,t] <- 0
-    omega[6,3,t] <- 0
-    omega[6,4,t] <- 0
-    omega[6,5,t] <- 0
-    omega[6,6,t] <- 1
-    
-    for(i in 1:n.individuals){ 
-      z[i,t+1] ~ dcat(omega[z[i,t],1:6,t]) 
+    for(i in 1:n.individuals){
+      z[i,t+1] ~ dcat(omega[z[i,t],1:6,t])
       isAlive[i,t+1] <- (z[i,t+1] == 2) + (z[i,t+1] == 3)
       state[i,t+1] <- (z[i,t+1] == 3)
-    }#i 								
-  }#t 
+    }#i                                                                                                        
+  }#t
   
   
+  ##----- DETECTION PROCESS -----##
   
-  ##----- DETECTION PROCESS -----## 
-  
-  # PRIORS
-  for(t in 1:n.years){
-    betaResponse[t] ~ dunif(-5,5)
-    betaResponseOth[t] ~ dunif(-5,5)
-    
-    for(st in 1:2){
-      sigma[st,t] ~ dunif(0, 50)
-    }
-    
-    for(n in 1:nTrapCovs){
-      trapBetas[n,t] ~ dunif(-5,5)
-    }
-    
-    for(n in 1:nTrapCovsOth){
-      trapBetasOth[n,t] ~ dunif(-5,5)
-    }
-  }
-  
-  for(c in 1:n.counties){
-    for(t in 1:n.years){
-      p0[c,1,t] ~ dunif(0,1)
-      p0[c,2,t] ~ dunif(0,1)
-    }#t
-  }#c     
-  
-  pResponse ~ dunif(0, 1)
-  
-  for(i in 1:n.individuals){ 
+  pResponse ~ dunif(0,1)
+  for(i in 1:n.individuals){
     idResponse[i,1] ~ dbern(pResponse)
   }
   
-  
-  for(c in 1:n.countries){
-    for(t in 1:n.years){
+  for(t in 1:n.years){
+    for(st in 1:2){
+      sigma[st,t] ~ dunif(0,50)
+    }#st
+    
+    ## Structured
+    betaResponse[t] ~ dunif(-5,5)
+    for(n in 1:nTrapCovs){
+      trapBetas[n,t] ~ dunif(-5,5)
+    }#n
+    for(c in 1:n.counties){
+      p0[c,1,t] ~ dunif(0,1)
+      p0[c,2,t] ~ dunif(0,1)
+    }#c    
+    
+    ## Opportunistic
+    betaResponseOth[t] ~ dunif(-5,5)
+    for(n in 1:nTrapCovsOth){
+      trapBetasOth[n,t] ~ dunif(-5,5)
+    }#n
+    for(c in 1:n.countries){
       p0Oth[c,1,t] ~ dunif(0,1)
       p0Oth[c,2,t] ~ dunif(0,1)
-    }#t
-  }#
-  
-  
-  for(t in 1:n.years){
+    }#c
+    
     for(i in 1:n.individuals){
-      ## STRUCTURED 
+      
+      ## Structured
       y.alive[i,1:nMaxDetectors,t] ~ dbinomLocal_normalWolf(
         detNums = nbDetections[i,t],
         detIndices = yDets[i,1:nMaxDetectors,t],
@@ -1703,15 +2015,14 @@ modelCode <- nimbleCode({
         habitatGrid = habitatIDDet[1:y.maxDet,1:x.maxDet],
         indicator = isAlive[i,t],
         z = z[i,t]-1,
-        trapCovsIntercept =  detCounties[1:n.detectors],
+        trapCovsIntercept = detCounties[1:n.detectors],
         indCov = idResponse[i,t],
         indBeta = betaResponse[t],
-        trapCovs =  trapCovs[1:n.detectors,1:nTrapCovs,t],
+        trapCovs = trapCovs[1:n.detectors,1:nTrapCovs,t],
         trapBetas = trapBetas[1:nTrapCovs,t],
-        lengthYCombined = 1
-      )
+        lengthYCombined = 1)
       
-      ## OTHERS
+      ## Opportunistic
       y.aliveOth[i,1:nMaxDetectorsOth,t] ~ dbinomLocal_normalWolf(
         detNums = nbDetectionsOth[i,t],
         detIndices = yDetsOth[i,1:nMaxDetectorsOth,t],
@@ -1726,25 +2037,27 @@ modelCode <- nimbleCode({
         habitatGrid = habitatIDDet[1:y.maxDet,1:x.maxDet],
         indicator = isAlive[i,t],
         z = z[i,t]-1,
-        trapCovsIntercept =  detCountries[1:n.detectors],
+        trapCovsIntercept = detCountries[1:n.detectors],
         indCov = idResponse[i,t],
         indBeta = betaResponseOth[t],
-        trapCovs =  trapCovsOth[1:n.detectors,1:nTrapCovsOth,t],
+        trapCovs = trapCovsOth[1:n.detectors,1:nTrapCovsOth,t],
         trapBetas = trapBetasOth[1:nTrapCovsOth,t],
-        lengthYCombined = 1
-      )
+        lengthYCombined = 1)
       
-      x.deadculled[i,t] ~ dbern(z[i,t]==4) 
-      x.deadOther[i,t] ~ dbern(z[i,t]==5) 
+      ## Dead recoveries legal
+      x.deadculled[i,t] ~ dbern(z[i,t] == 4)
+      
+      ## Dead recoveries others
+      x.deadOther[i,t] ~ dbern(z[i,t] == 5)
     }#i
   }#t
-  
   
   ##---------- DERIVED PARAMETERS ----------##
   
   for(t in 1:n.years){
     N[t] <- sum(isAlive[1:n.individuals,t])
   }#t
+  
 })
 
 
@@ -1752,9 +2065,12 @@ modelCode <- nimbleCode({
 ## ------   2. Z ------ 
 
 ## CREATE Z 
-z <- apply(y.alive, c(1,3), function(x) ifelse(any(x>0), 2, 0))
-z.dead <- apply(y.dead, c(1,2), function(x) ifelse(any(x>0)), 3, 0)
-z <- ifelse(z.dead + z == 0, NA, z.dead + z)
+z <- apply(y.alive, c(1,3), function(x) any(x>0))
+z <- ifelse(z, 2, 0)
+
+z.dead <- apply(y.dead, c(1,2), function(x) any(x>0))
+z.dead <- ifelse(z.dead, 3, 0)
+z <- ifelse(z.dead+z==0 ,NA, z.dead+z)
 
 ## IDENTIFY INDIVIDUALS DEAD TO CULLING
 aug.id.list <- c(y.ar$Id.vector, rep("AugInd", dim(z)[1]-length(y.ar$Id.vector)))
@@ -1782,9 +2098,7 @@ z <- t(apply(z, 1, function(zz){
       if(t.recovered< dim(z)[2]){
         zz[(t.recovered+1):(dim(z)[2])] <- 4
       }
-      if(t.recovered<= dim(z)[2]){
-        #if(t.recovered< dim(z)[2]){
-        
+      if(t.recovered <= dim(z)[2]){
         zz[(t.recovered-1)] <- 2
         print(1)
       }
@@ -1802,21 +2116,19 @@ z <- t(apply(z, 1, function(zz){
 
 z[z %in% 4] <- 6
 
-
 ## id culled get the state 4. id not culled get the 5. 
-z <- ifelse(z==3 & other.mx %in% c(1), 5, z)#remove other causes of mortality
-z <- ifelse(z==3 & legal.mx %in% c(1), 4, z)
+z <- ifelse(z==3 & other.mx %in% c(1), 5 ,z) # remove other causes of mortality
+z <- ifelse(z==3 & legal.mx %in% c(1), 4 ,z)
 
 ## IDENTIFY SOCIAL STATE
 z <- ifelse(z==2 & indSocialState %in% c(1), 2 ,z)
 z <- ifelse(z==2 & indSocialState %in% c(2), 3 ,z)
 
-# CREATE INITIAL Z VALUES  
+## CREATE INITIAL Z VALUES  
 z.init <- t(apply(z, 1, function(zz){
   out <- zz
   out[] <- 1
   if(any(!is.na(zz))){
-    
     if(sum(zz == 4, na.rm = T)<1){
       range.det <- range(which(!is.na(zz)))
       if(range.det[1]>1) zz[1:(range.det[1]-1)] <- 1
@@ -1837,43 +2149,43 @@ z.init <- t(apply(z, 1, function(zz){
     if(sum(is.na(out)>0)) {
       out[is.na(out)] <- 2
     }
-
   }
   return(out)
 }))
 
 z.init[!is.na(z)] <- NA
 
+z.age <- z
 
-x.deadculled <- x.deadOther <- z.age <- z
+x.deadculled <- x.deadOther <- z.age
 x.deadculled[] <- ifelse(z.age %in% c(4) & legal.mx == 1, 1, 0)
 x.deadculled <- t(apply(x.deadculled, 1, function(x){
   out <- x
   out[] <- 0
-  if(any(x == 1)) out[min(which(x == 1))] <- 1
+  if(any(x==1)) out[min(which(x==1))] <- 1
   return(out)
 }))
 
-x.deadOther[] <- ifelse(z.age%in%c(5) & other.mx == 1, 1, 0)
+x.deadOther[] <- ifelse(z.age %in% c(5) & other.mx == 1, 1 ,0)
 x.deadOther <- t(apply(x.deadOther, 1, function(x){
   out <- x
   out[] <- 0
-  if(any(x == 1)) out[min(which(x == 1))] <- 1
+  if(any(x==1)) out[min(which(x==1))] <- 1
   return(out)
 }))
 
 
 
-## ------   4. NIMBLE DATA ------ 
+## ------   4. NIMBLE DATA  ------ 
 
 ## ------     4.1. TRAP COVARIATES ------ 
 
-## STRUCTURED 
+#STRUCTURED 
 trapCovs <- array(0,c(nrow(detTracks), 2, nYears))
 trapCovs[,1,] <- detTracks
 trapCovs[,2,] <- detSnow
 
-## OTHERS 
+#OTHERS 
 trapCovsOth <- array(0,c(nrow(detTracks), 3, nYears))
 trapCovsOth[,1,] <- detRoads
 trapCovsOth[,2,] <- detSnow
@@ -1881,34 +2193,31 @@ trapCovsOth[,3,] <- detOtherSamples
 
 
 
-## ------     4.2. sxy INITS  ------ 
 
-## create a data.frame with all detections of all Individuals detected
-## project death to the next year
+## ------     4.2. GENERATE sxy & sxy.init ARAYS  ------ 
+
+## SXY INITS 
+#create a data.frame with all detections of all Individuals detected
+#project death to the next year
 myData.deadProj <- myData.dead[ ,c("Id","Year")]
 myData.deadProj$Year <- myData.deadProj$Year + 1#project dead reco to the next year
-## remove dead reco occuring the last year (not used)
-myData.deadProj <- myData.deadProj[!myData.deadProj$Year %in% max(myData.deadProj$Year), ]
+#remove dead reco occuring the last year (not used)
+myData.deadProj <- myData.deadProj[!myData.deadProj$Year %in% max(myData.deadProj$Year ),]
+myData.deadProj$Id
 
-AllDets <- rbind(myData.alive$myData.sp[ ,c("Id","Year")],
-                 myData.deadProj[ ,c("Id","Year")])
+AllDets <- rbind(myData.alive$myData.sp[,c("Id","Year")],
+                 myData.deadProj[,c("Id","Year")])
 AllDetections <- as.data.frame(AllDets)
 AllDetsxy <- st_coordinates(AllDets) 
 colnames(AllDetsxy) <- c("x","y")
 AllDetsxyscaled <- scaleCoordsToHabitatGrid(
   coordsData = AllDetsxy,
-  coordsHabitatGridCenter = habitat$habitat.xy,
-  scaleToGrid = T)$coordsDataScaled
+  coordsHabitatGridCenter = myHabitat.list$habitat.xy,
+  scaleToGrid =T )$coordsDataScaled
 
 AllDetections <- cbind(AllDetections, AllDetsxyscaled)
 
 idAugmented <- which(rownames(z) %in%"Augmented")
-
-# which(!y.ar$Id.vector%in% unique(AllDets$Id))
-# y.ar$Id.vector[788]
-# myData.dead[myData.dead$Id %in%y.ar$Id.vector[788], ]
-# y.dead[y.ar$Id.vector[788],]
-# sum(y.alive[y.ar$Id.vector[788],,])
 
 sxy.init <- getSInits( AllDetections = AllDetections,
                        Id.vector = y.ar$Id.vector,
@@ -1920,34 +2229,24 @@ sxy.init <- getSInits( AllDetections = AllDetections,
                        sd = 4,
                        movementMethod = "dbernppACmovement_normal")
 
-# sxy.init[880,,]
-# sxy.init <- MakeInitsXY( y = y.alive,
-#                          detector.xy = detector.xy,
-#                          habitat.r = habitat$habitat.r,
-#                          ydead = y.dead,
-#                          detector.xyDead = detector.xy,    
-#                          dist.move = 5000)
-# habitat.poly <- aggregate(rasterToPolygons(habitat$habitat.r,fun = function(x){x==1}))
-# colnames(sxy.init) <- c("x","y")
-
 ## SXY DATA 
 sxy.data <- sxy.init
 sxy.data[] <- NA
-# i=783
-# t=9
+i=783
+t=9
 for(i in 1:length(y.ar$Id.vector)){
   for(t in 1:(dim(sxy.data)[3]-1)){
-    if(z.age[i,t+1] %in% c(4,5,6) > 0){
+    if(sum(z.age[i,t+1] %in% c(4,5,6)) > 0){
       # temp <- myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Id == y.ar$Id.vector[i] &
       #                                     myFullData.sp$dead.recovery$Year == years[t], ]
       print(i)
       print(t)
       # if(length(temp) > 0){
       #if(!is.na(over(temp,myStudyArea.extent))){
-      #if(raster::extract(habitat$habitat.r, temp)==0){
+      #if(raster::extract(myHabitat.list$habitat.r, temp)==0){
       
       #id could be dead in the spatial extent but can be outside the habitat because in a cell <49%habitat
-      # buff <- gBuffer(temp,width = habitat$resolution*2)
+      # buff <- gBuffer(temp,width = myHabitat.list$resolution*2)
       # inter <- intersect(buff,habitat.poly)
       sxy.data[i, ,t+1]  <- sxy.init[i, ,t+1] #coordinates(spsample(x = inter,n = 1,type="random"))
       sxy.init[i, ,t+1]  <- NA#coordi
@@ -1955,15 +2254,17 @@ for(i in 1:length(y.ar$Id.vector)){
       #}
       # }
     }
-  }#t
-}#i
+  }
+}
+
 
 # plot check 
 # plot(ScaledLowUpCoords$lowerHabCoords[,2]~ScaledLowUpCoords$lowerHabCoords[,1])
 # points(sxy.init[i, 2,t+1]~sxy.init[i, 1,t+1],col="red",pch=16)
-# plot(habitat$habitat.r)
+# plot(myHabitat.list$habitat.r)
 # plot(st_geometry(AllDets[AllDets$Id == y.ar$Id.vector[i] &
 #                            AllDets$Year == years[t+1], ]),col="red",add=T)
+# #
 # tmp <- scaleCoordsToHabitatGrid(coordsData = sxy.init,
 #                          coordsHabitatGridCenter = habitatxy,scaleToGrid = F)$coordsDataScaled
 # tmp[i, ,t+1]
@@ -1976,18 +2277,14 @@ sxy.data <- round(sxy.data, 5)
 
 
 
-## ------     4.4. TRANSFORM Y TO SPARSE MATRICES  ------ 
 
-## STRUCTURED 
+## ------     4.3. TRANSFORM Y TO SPARSE MATRICES  ------ 
+#STRUCTURED 
 SparseY <- getSparseY(y.aliveStructured)
-
-## OTHER
+#OTHER
 SparseYOth <- getSparseY(y.aliveOthers)
 
-
-
-## ------     4.5. LATENT VARIABLE DET RESPONSE ------ 
-
+## ------     4.4. LATENT VARIABLE DET RESPONSE ------ 
 detResponse <- already.detected 
 detResponse[rownames(detResponse) %in% "Augmented", 1]  <- NA
 InitsDetResponse <- detResponse
@@ -1996,8 +2293,8 @@ InitsDetResponse[!is.na(detResponse)] <- NA
 
 
 
-## ------   5. NIMBLE DATA ------ 
 
+## ------   5. NIMBLE DATA ------ 
 nimData <- list( z = z.age,   
                  sxy = sxy.data,
                  y.alive = SparseY$y,
@@ -2008,19 +2305,17 @@ nimData <- list( z = z.age,
                  nbDetectionsOth = SparseYOth$detNums,
                  x.deadculled = x.deadculled,
                  x.deadOther = x.deadOther,
+                 
                  ones.dead.legal = array(1,c(2,dim(y.alive)[3]-1)),
                  idResponse = detResponse,
                  alpha = rep(1,3))
 
-
-
 ## ------   6. NIMBLE CONSTANTS ------ 
-
 nimConstants <- list( n.individuals = dim(y.alive)[1],
                       n.detectors = dim(y.alive)[2],  
                       n.years = dim(y.alive)[3], 
                       n.years1 = dim(y.alive)[3]-1, 
-                      numHabWindows = numHabWindows,
+                      numHabWindows = nHabCells,
                       n.counties = max(detCounties),
                       n.countries = max(detCountries),
                       nTrapCovs = 2,
@@ -2032,7 +2327,7 @@ nimConstants <- list( n.individuals = dim(y.alive)[1],
                       habitatGrid = ScaledLowUpCoords$habitatGrid,
                       lowerHabCoords = ScaledLowUpCoords$lowerHabCoords,
                       upperHabCoords = ScaledLowUpCoords$upperHabCoords,
-                      detector.xy = as.matrix(scaledCoords$coordsDataScaled),
+                      detector.xy = as.matrix(ScaledcoordsDataScaled),
                       lowerHabCoords = as.matrix(ScaledLowUpCoords$lowerHabCoords),
                       upperHabCoords = as.matrix(ScaledLowUpCoords$upperHabCoords),
                       y.maxDet = dim(DetectorIndexLESS$habitatGrid)[1],
@@ -2081,7 +2376,7 @@ nimParams2 <- c("z",
 if(DATA$sex %in% "Hunn"){
   if(!dir.exists(file.path(WD,"/Figures",modelName))){dir.create(file.path(WD,"/Figures", modelName))}
   
-  save(habitat, detectors, COUNTRIES,
+  save(myHabitat.list, myDetectors, COUNTRIES,
        myStudyArea.poly,COMMUNES,habitat.subdetectors,
        myFilteredData.sp, myFullData.sp, COUNTIESplot,
        detCounties.original,
@@ -2478,5 +2773,933 @@ save(myNimbleOutput,
        paste0(modelName,"_OUTPUT.RData")))
 
 
+
+## -----------------------------------------------------------------------------
+
+## ------ V. PROCESS RESULTS ------
+
+## ------   1. LOAD & PROCESS OPSCR OUTPUTS ------ 
+
+## COMBINE DIFFERENT CHAINS (IF ANY) INTO ONE 
+outDirectories <- list.files(file.path(WD, modelName))[grep("NimbleOut", list.files(file.path(WD, modelName)))]
+path.list <- file.path(WD, modelName, outDirectories)[c(1:4)]
+
+nthin <- 1
+# Retrieve the minimum number of bites per chain
+numBites <- unlist(lapply(path.list, function(x){
+  files <- list.files(x)
+  files <- files[grep(".RData", files)]
+  length(files)/2
+}))
+minBites <- min(numBites)
+minBites
+
+#Niter to Remove (burn-in) #CM
+NSkipBites <- 40
+nimOutput <- RUNTIME <- list()
+gc()
+for(p in 1:length(path.list)){
+  print(path.list[p])
+  outfiles <- list.files(path.list[p])
+  out <- runtime <- list()#[CM]
+  for(x in NSkipBites:minBites){
+    print(x)
+    load(file.path(path.list[p], paste("bite_", x, ".RData", sep = "")))
+    runtime[[x]] <- RunTime[3] 
+    params.simple <- sapply(strsplit(colnames(this.sample), "\\["), "[", 1)
+    parmIndex <- which(! params.simple %in% c("sxy","z"))
+    nthins <- seq(1,dim(this.sample)[1], by=nthin)
+    out[[x]] <- this.sample[nthins,]#[ ,parmIndex] 
+    if(sum(is.na(out[[x]]))>0){
+      out[[x]] <- out[[x]][-unique(which(is.na(out[[x]]),arr.ind = T)[,1]),]
+    }
+  }#x
+  RUNTIME[[p]] <- unlist(runtime)#[CM]
+  out.mx <- do.call(rbind, out)
+  nimOutput[[p]] <- as.mcmc(out.mx)
+}#p
+
+lapply(RUNTIME, function(x) x/3600)#[CM]
+unlist(lapply(RUNTIME, function(x) x/3600))#[CM]
+TIME <- lapply(RUNTIME, function(x) x/3600)
+
+max <- unlist(lapply(RUNTIME, function(x) x/3600))
+at=c(1:length(TIME[[1]]))
+plot(TIME[[1]]~at, pch=16, col=adjustcolor("red", alpha.f = 0.5), xlim=c(0,length(TIME[[1]])+2),
+     ylim=c(0,10), ylab="time hours", xlab="bite number")
+for(i in 2:length(TIME)){
+  points(TIME[[i]] ~ at, )
+}
+nimOutput <- as.mcmc.list(nimOutput)
+myResults <- ProcessCodaOutput(nimOutput,params.omit = c("sxy","z"))
+
+t=8
+table(myResults$sims.list$z[1,,t]==3 & myResults$sims.list$z[1,,t-1]==2)
+
+table(myResults$sims.list$z[1,,8])
+table(myResults$sims.list$z[1,,7])
+
+gc()
+
+
+
+## ------   2. PLOT PARAMETERS ESTIMATES ------ 
+
+{#doall}
+  pdf(file=file.path(WD, modelName, paste(modelName,"_ESTIMATES.pdf",sep="")))
+  
+  ## ------  2.1.N ------  
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(80,350), type ="n", xaxt="n", xlab = "Years", ylab = "N")
+  axis(1, c(1:nYears),labels = years)
+  for(t in 1:nYears){
+    plot.violins(list(myResults$sims.list$N[,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
+                 add = T,
+                 alpha = 0.2,
+                 border.col = "firebrick3")
+  }#t
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("N",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  
+  # ## ------  2.2.rho ------ 
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("gamma",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  
+  ## ------  [RB] h[t] ------ 
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "h")
+  axis(1, c(1:nYears),labels = years)
+  myCol <- c("firebrick3","navyblue")
+  myDev <- c(-0.2,+0.2)
+  for(t in 1:(nYears-1)){
+    for(s in 1:2){
+      plot.violins(list(myResults$sims.list$h[,s,t]),
+                   x = t+ myDev[s],
+                   at = t+myDev[s],
+                   violin.width = 0.3,
+                   col = myCol[s],
+                   add = T,
+                   alpha = 0.2,
+                   border.col = myCol[s])
+    }#s
+  }#t
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("h\\[",dimnames(nimOutput[[1]])[[2]])]
+  params <- params[1:2]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  
+  ## ------  [RB] wall[t] ------  
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "wAll")
+  axis(1, c(1:nYears),labels = years)
+  myDev <- c(-0.2,+0.2)
+  for(t in 1:(nYears-1)){
+    for(s in 1:2){
+      plot.violins(list(myResults$sims.list$wAll[,s,t]),
+                   x = t+ myDev[s],
+                   at = t+ myDev[s],
+                   violin.width = 0.3,
+                   col = myCol[s],
+                   add = T,
+                   alpha = 0.2,
+                   border.col = myCol[s])
+    }#s
+  }#t
+  
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("wAll",dimnames(nimOutput[[1]])[[2]])]
+  
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  
+  ## ------  [RB] rw[t] ------  
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "rw")
+  axis(1, c(1:nYears),labels = years)
+  myDev <- c(-0.2,+0.2)
+  for(t in 1:(nYears-1)){
+    for(s in 1:2){
+      plot.violins(list(myResults$sims.list$rw[,s,t]),
+                   x = t+ myDev[s],
+                   at = t+ myDev[s],
+                   violin.width = 0.3,
+                   col = myCol[s],
+                   add = T,
+                   alpha = 0.2,
+                   border.col = myCol[s])
+    }#s
+  }#t
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("rw",dimnames(nimOutput[[1]])[[2]])]
+  
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  
+  ## ------   2.3.phi ------ 
+  
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "phi")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  myDev <- c(-0.2,+0.2)
+  myCol <- c("firebrick3","navyblue")
+  for(t in 1:(nYears-1)){
+    for(s in 1:2){
+      plot.violins(list(myResults$sims.list$phi[ ,s, t]),
+                   x = t + myDev[s],
+                   at = t + myDev[s],
+                   violin.width = 0.2,
+                   col = myCol[s],
+                   add = T,
+                   alpha = 0.2,
+                   border.col = myCol[s])
+    }
+  }
+  
+  legend("bottomright", fill = c("firebrick3","navyblue"), legend = c("not pair", "pair"))
+  params <- dimnames(nimOutput[[1]])[[2]][grep("phi",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  
+  ## ------   2.4.p0 ------   
+  
+  par(mfrow=c(1,2))
+  myDev <- c(-0.2,+0.2)
+  myCol <- c("firebrick3","navyblue")
+  par(mfrow=c(1,2))
+  for(c in 1:6){
+    plot(-10, xlim = c(0,nYears+1), ylim=c(0,0.2), type ="n", xaxt="n", xlab = "Years",
+         ylab = "p0", main=paste(COUNTIES[COUNTIES$id==detCounties.original[c], ]$NAME_1, collapse = " "))
+    axis(1, at = 1:(nYears) , labels = years[1:(nYears)])
+    for(s in 1:2){
+      for(t in 1:nYears){
+        plot.violins(list(myResults$sims.list$p0[ , c, s, t]),
+                     x = t + myDev[s],
+                     at = t + myDev[s],
+                     violin.width = 0.2,
+                     col = myCol[s],
+                     add = T,
+                     alpha = 0.2,
+                     border.col = myCol[s])
+      }
+    }
+    plot(COUNTIESplot$geometry)
+    plot(COUNTIES[COUNTIES$id==detCounties.original[c], ],add=T, col="red")
+  }
+  
+  # text(COUNTIESplot
+  #      ,labels=COUNTIESplot$id, col="red")
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("p0\\[",dimnames(nimOutput[[1]])[[2]])[-1]]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  ## ------   2.4.p0Oth ------   
+  par(mfrow=c(1,2))
+  myDev <- c(-0.2,+0.2)
+  myCol <- c("firebrick3","navyblue")
+  par(mfrow=c(1,2))
+  main= c("Sweden", "Norway")
+  for(c in 1:2){
+    plot(-10, xlim = c(0,nYears+1), ylim=c(0,0.2), type ="n", xaxt="n", xlab = "Years",
+         ylab = "p0", main=main[c])#paste(COUNTIES[COUNTIES$id==detCounties.original[c], ]$NAME_1, collapse = " "))
+    axis(1, at = 1:(nYears) , labels = years[1:(nYears)])
+    for(s in 1:2){
+      for(t in 1:nYears){
+        plot.violins(list(myResults$sims.list$p0Oth[ , c, s, t]),
+                     x = t + myDev[s],
+                     at = t + myDev[s],
+                     violin.width = 0.2,
+                     col = myCol[s],
+                     add = T,
+                     alpha = 0.2,
+                     border.col = myCol[s])
+      }
+    }
+    # plot(COUNTIESplot)
+    # plot(COUNTIES[COUNTIES$id==detCounties.original[c], ],add=T, col="red")
+  }
+  
+  # text(COUNTIESplot
+  # ,labels=COUNTIESplot$id, col="red")
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("p0Oth",dimnames(nimOutput[[1]])[[2]])[-1]]
+  
+  
+  
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  
+  
+  
+  ## ------   2.5.psi ------   
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "psi")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$psi[ , t]),
+                 x = t ,
+                 at = t ,
+                 violin.width = 0.2,
+                 col = myCol[s],
+                 add = T,
+                 alpha = 0.2,
+                 border.col = myCol[s])
+  }
+  params <- dimnames(nimOutput[[1]])[[2]][grep("psi",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  ##sigma ##
+  par(mfrow=c(1,1))
+  offsetVal <- c(-0.2,0.2)
+  plot(-10, xlim = c(0,nYears), ylim=c(0,10000), type ="n", xaxt="n", xlab = "Years", ylab = "sigma")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  abline(v=seq(1.5,nYears-0.5,by=1),lty=2)
+  for(s in 1:2){
+    for(t in 1:(nYears-1)){
+      plot.violins(list(myResults$sims.list$sigma[ ,s,t]*myHabitat.list$resolution),
+                   x = t ,
+                   at = t +offsetVal[s] ,
+                   violin.width = 0.2,
+                   col = myCol[s],
+                   add = T,
+                   alpha = 0.2,
+                   border.col = myCol[s])
+    }
+  }
+  
+  ###
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,5), ylim=c(0,150000), type ="n", xaxt="n", xlab = "", ylab = "km")
+  axis(1, at = c(1.5,3.5) , labels = c("sigma","tau"))
+  #sigma
+  # for(s in 1:2){
+  #     plot.violins(list(myResults$sims.list$sigma[ , s]*myHabitat.list$resolution),
+  #                x = t ,
+  #                at = s ,
+  #                violin.width = 0.2,
+  #                col = myCol[s],
+  #                add = T,
+  #                alpha = 0.2,
+  #                border.col = myCol[s])
+  # }
+  #tau
+  for(s in 1:2){
+    plot.violins(list(myResults$sims.list$lambda[ , s]*myHabitat.list$resolution),
+                 x = t ,
+                 at = s+2 ,
+                 violin.width = 0.2,
+                 col = myCol[s],
+                 add = T,
+                 alpha = 0.2,
+                 border.col = myCol[s])
+  }
+  
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("sigma",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  ##beta.dens
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "beta.dens")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$beta.dens),
+                 x = t ,
+                 at = t ,
+                 violin.width = 0.2,
+                 col = myCol[s],
+                 add = T,
+                 alpha = 0.2,
+                 border.col = myCol[s])
+  }
+  params <- dimnames(nimOutput[[1]])[[2]][grep("beta.dens",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  ##trapBetas[1]
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(-2,1), type ="n", xaxt="n", xlab = "Years", ylab = "beta Tracks")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$trapBetas[ ,1,t]),
+                 x = t ,
+                 at = t ,
+                 violin.width = 0.2,
+                 col = myCol[s],
+                 add = T,
+                 alpha = 0.2,
+                 border.col = myCol[s])
+  }
+  
+  
+  ##trapBetas[2]
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(-1,1), type ="n", xaxt="n", xlab = "Years", ylab = "beta Snow")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$trapBetas[ ,2,t]),
+                 x = t ,
+                 at = t ,
+                 violin.width = 0.2,
+                 col = myCol[s],
+                 add = T,
+                 alpha = 0.2,
+                 border.col = myCol[s])
+  }
+  
+  
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("trapBetas",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  ##betaOth road 
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(-1,1), type ="n", xaxt="n", xlab = "Years", ylab = "beta other road")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$trapBetasOth[ ,1,t]),
+                 x = t ,
+                 at = t ,
+                 violin.width = 0.2,
+                 col = myCol[s],
+                 add = T,
+                 alpha = 0.2,
+                 border.col = myCol[s])
+  }
+  
+  # betaOth snow 
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(-1,1), type ="n", xaxt="n", xlab = "Years", ylab = "beta other snow")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$trapBetasOth[ ,2,t]),
+                 x = t ,
+                 at = t ,
+                 violin.width = 0.2,
+                 col = myCol[s],
+                 add = T,
+                 alpha = 0.2,
+                 border.col = myCol[s])
+  }
+  
+  # betaOth other 
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(-2,2), type ="n", xaxt="n", xlab = "Years", ylab = "beta other location other samples ")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$trapBetasOth[ ,3,t]),
+                 x = t ,
+                 at = t ,
+                 violin.width = 0.2,
+                 col = myCol[s],
+                 add = T,
+                 alpha = 0.2,
+                 border.col = myCol[s])
+  }
+  
+  params <- dimnames(nimOutput[[1]])[[2]][grep("trapBetasOth",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  ##betaResponse
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(-1,1), type ="n", xaxt="n", xlab = "Years", ylab = "betaResponse")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$betaResponse[ ,t]),
+                 x = t ,
+                 at = t ,
+                 violin.width = 0.2,
+                 col = myCol[s],
+                 add = T,
+                 alpha = 0.2,
+                 border.col = myCol[s])
+  }
+  
+  par(mfrow=c(1,1))
+  plot(-10, xlim = c(0,nYears), ylim=c(-1,1), type ="n", xaxt="n", xlab = "Years", ylab = "betaResponseOth")
+  axis(1, at = 1:(nYears-1) , labels = years[1:(nYears-1)])
+  for(t in 1:(nYears-1)){
+    plot.violins(list(myResults$sims.list$betaResponseOth[ ,t]),
+                 x = t ,
+                 at = t ,
+                 violin.width = 0.2,
+                 col = myCol[s],
+                 add = T,
+                 alpha = 0.2,
+                 border.col = myCol[s])
+  }
+  params <- dimnames(nimOutput[[1]])[[2]][grep("betaResponse",dimnames(nimOutput[[1]])[[2]])]
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  
+  ## ------  2.5.the rest ------ 
+  params <- c("lambda[1]",
+              "lambda[2]",
+              "pResponse")
+  for(i in 1:length(params)){
+    PlotJagsParams(jags.samples = nimOutput, params = params[i])
+  }
+  
+  
+  dev.off()
+}#do all
+
+
+
+## ------   3. LOAD & PROCESS SNAP OUTPUTS ------ 
+
+# List the directories containing bite outputs
+outDirectories <- list.files(file.path(WD, modelName))[grep("NimbleOut",
+                                                            list.files(file.path(WD,
+                                                                                 modelName)))]
+
+outDirectories <- outDirectories[grep("Snap",outDirectories)]
+
+#path.list <- file.path(WD, modelName, outDirectories)
+
+t=1
+nimOutputList <- myResultsList <-  list()
+
+for(t in 1:nYears){
+  path.list <- 0
+  for(ch in 1:4){
+    path.list[ch] <- file.path(WD, modelName, paste("NimbleOutFORSnap" ,
+                                                    modelName,years[t],"_", ch, ".RData", sep = "")) 
+  }
+  
+  # Retrieve the minimum number of bites per chain
+  numBites <- unlist(lapply(path.list, function(x){
+    files <- list.files(x)
+    files <- files[grep(".RData", files)]
+    length(files)/2
+  }))
+  
+  path.list <- path.list[!numBites%in%0]
+  numBites<- numBites[!numBites%in%0]
+  minBites <- min(numBites)
+  #Niter to Remove (burn-in) #CM
+  NSkipBites <- 55
+  nthin <- 1
+  nimOutput <- RUNTIME <- list()
+  #gc()
+  for(p in 1:length(path.list)){
+    print(path.list[p])
+    outfiles <- list.files(path.list[p])
+    out <- runtime <- list()#[CM]
+    for(x in NSkipBites:minBites){
+      print(x)
+      load(file.path(path.list[p], paste("bite_", x, ".RData", sep = "")))
+      runtime[[x]] <- RunTime[3] 
+      params.simple <- sapply(strsplit(colnames(this.sample), "\\["), "[", 1)
+      parmIndex <- which(! params.simple %in% c("sxy","z"))
+      nthins <- seq(1,dim(this.sample)[1], by=nthin)
+      out[[x]] <- this.sample[nthins,parmIndex]#[ ,parmIndex] 
+      
+      # out[[x]] <- this.sample[nthins,]#[ ,parmIndex] 
+    }#x
+    RUNTIME[[p]] <- unlist(runtime)#[CM]
+    out.mx <- do.call(rbind, out)
+    nimOutput[[p]] <- as.mcmc(out.mx)
+  }#p
+  
+  
+  lapply(RUNTIME, function(x) x/3600)
+  unlist(lapply(RUNTIME, function(x) x/3600))
+  
+  
+  for(i in 1: length(nimOutput)){
+    nimOutput[[i]][,"sigma[2]"] <-  nimOutput[[i]][,"sigma[2]"]*myHabitat.list$resolution
+    nimOutput[[i]][,"sigma[1]"] <-  nimOutput[[i]][,"sigma[1]"]*myHabitat.list$resolution
+  }
+  
+  nimOutputList[[t]] <- nimOutput <- as.mcmc.list(nimOutput)
+  
+  myResultsList[[t]] <- myResults <- ProcessCodaOutput(nimOutput, params.omit = c("sxy","z"))
+  
+} 
+gc()
+
+
+### combine all years together 
+myResultsListALL <-  myResultsList[[1]] 
+
+myResultsListALL$sims.list$N <- do.call(cbind,lapply(myResultsList, function(x) x$sims.list$N )) 
+myResultsListALL$sims.list$beta.dens <- do.call(cbind,lapply(myResultsList, function(x) x$sims.list$beta.dens )) 
+myResultsListALL$sims.list$betaResponse <- do.call(cbind,lapply(myResultsList, function(x) x$sims.list$betaResponse )) 
+
+myResultsListALL$sims.list$pResponse <- do.call(cbind,lapply(myResultsList, function(x) x$sims.list$pResponse )) 
+#myResultsListALL$sims.list$sigma <- do.call(cbind,lapply(myResultsList, function(x) x$sims.list$sigma )) 
+myResultsListALL$sims.list$psi <- do.call(cbind,lapply(myResultsList, function(x) x$sims.list$psi )) 
+
+myResultsListALL$sims.list$trapBetas <- array(NA,c(dim(myResultsListALL$sims.list$trapBetas),nYears) )
+myResultsListALL$sims.list$trapBetasOth <- array(NA,c(dim(myResultsListALL$sims.list$trapBetasOth),nYears) )
+
+myResultsListALL$sims.list$p0 <- array(NA,c(dim(myResultsListALL$sims.list$p0),nYears) )
+myResultsListALL$sims.list$p0Oth <- array(NA,c(dim(myResultsListALL$sims.list$p0Oth),nYears) )
+
+myResultsListALL$sims.list$sigma <- array(NA,c(dim(myResultsListALL$sims.list$sigma),nYears) )
+
+for(t in 1:nYears){
+  myResultsListALL$sims.list$trapBetas[,,t] <- myResultsList[[t]]$sims.list$trapBetas
+  myResultsListALL$sims.list$trapBetasOth[,,t] <- myResultsList[[t]]$sims.list$trapBetasOth
+  myResultsListALL$sims.list$sigma[,,t] <- myResultsList[[t]]$sims.list$sigma
+  myResultsListALL$sims.list$p0[,,,t] <- myResultsList[[t]]$sims.list$p0
+  myResultsListALL$sims.list$p0Oth[,,,t] <- myResultsList[[t]]$sims.list$p0Oth
+}
+
+
+
+## ------   4. PLOT PARAMETERS ESTIMATES ------ 
+
+{#doall}
+  pdf(file=file.path(WD, modelName, paste(modelName,"Snap_ESTIMATES.pdf",sep="")))
+  
+  ## ------  2.1.N ------  
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(80,350), type ="n", xaxt="n", xlab = "Years", ylab = "N")
+  axis(1, c(1:nYears),labels = years)
+  for(t in 1:nYears){
+    plot.violins(list(myResultsListALL$sims.list$N[,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
+                 add = T,
+                 alpha = 0.2,
+                 border.col = "firebrick3")
+  }#t
+  
+  for(t in 1:nYears){
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "N")
+    title(years[t],line = 0.5)
+  }
+  
+  
+  
+  ## ------   2.4.p0 ------   
+  
+  par(mfrow=c(1,2))
+  myDev <- c(-0.2,+0.2)
+  myCol <- c("firebrick3","navyblue")
+  par(mfrow=c(1,2))
+  for(c in 1:6){
+    plot(-10, xlim = c(0,nYears+1), ylim=c(0,0.2), type ="n", xaxt="n", xlab = "Years",
+         ylab = "p0", main=paste(COUNTIES[COUNTIES$id==detCounties.original[c], ]$NAME_1, collapse = " "))
+    axis(1, at = 1:(nYears) , labels = years[1:(nYears)])
+    for(s in 1:2){
+      for(t in 1:nYears){
+        plot.violins(list(myResultsListALL$sims.list$p0[ , c, s, t]),
+                     x = t + myDev[s],
+                     at = t + myDev[s],
+                     violin.width = 0.2,
+                     col = myCol[s],
+                     add = T,
+                     alpha = 0.2,
+                     border.col = myCol[s])
+      }
+    }
+    plot(COUNTIESplot)
+    plot(COUNTIES[COUNTIES$id==detCounties.original[c], ],add=T, col="red")
+  }
+  
+  text(COUNTIESplot
+       ,labels=COUNTIESplot$id, col="red")
+  
+  params <- dimnames(nimOutputList[[t]][[1]])[[2]][grep("p0\\[",dimnames(  nimOutputList[[t]][[1]])[[2]])[-1]]
+  
+  for(t in 1:nYears){
+    for(i in 1:length(params)){
+      PlotJagsParams(jags.samples = nimOutputList[[t]], params = params[i])
+      title(years[t], line = 0.5)
+    }
+  }
+  
+  
+  
+  ## ------   2.4.p0Oth ------   
+  
+  par(mfrow=c(1,2))
+  myDev <- c(-0.2,+0.2)
+  myCol <- c("firebrick3","navyblue")
+  par(mfrow=c(1,2))
+  main= c("Sweden", "Norway")
+  for(c in 1:2){
+    plot(-10, xlim = c(0,nYears+1), ylim=c(0,0.2), type ="n", xaxt="n", xlab = "Years",
+         ylab = "p0", main=main[c])#paste(COUNTIES[COUNTIES$id==detCounties.original[c], ]$NAME_1, collapse = " "))
+    axis(1, at = 1:(nYears) , labels = years[1:(nYears)])
+    for(s in 1:2){
+      for(t in 1:nYears){
+        plot.violins(list(myResultsListALL$sims.list$p0Oth[ , c, s, t]),
+                     x = t + myDev[s],
+                     at = t + myDev[s],
+                     violin.width = 0.2,
+                     col = myCol[s],
+                     add = T,
+                     alpha = 0.2,
+                     border.col = myCol[s])
+      }
+    }
+  }
+  
+  params <- dimnames(nimOutputList[[t]][[1]])[[2]][grep("p0Oth",dimnames(  nimOutputList[[t]][[1]])[[2]])[-1]]
+  for(t in 1:nYears){
+    for(i in 1:length(params)){
+      PlotJagsParams(jags.samples = nimOutputList[[t]], params = params[i])
+      title(years[t], line = 0.5)
+    }
+  }
+  
+  
+  
+  ## ------   2.5.sigma ------   
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(5000,12000), type ="n", xaxt="n", xlab = "Years", ylab = "sigma")
+  axis(1, c(1:nYears),labels = years)
+  offset <- c(-0.25,0.25)
+  for(t in 1:nYears){
+    for(s in 1:2){
+      plot.violins(list(myResultsListALL$sims.list$sigma[,s,t]),
+                   x = t,
+                   at = t+offset[s],
+                   violin.width = 0.3,
+                   col = myCol[s],
+                   add = T,
+                   alpha = 0.2,
+                   border.col = myCol[s])
+    }
+  }#t
+  
+  legend("topleft",legend=c("other","scent-marking"),col=myCol,pch=16)
+  
+  for(t in 1:nYears){
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "sigma[1]")
+    title(years[t],line = 0.5)
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "sigma[2]")
+    title(years[t],line = 0.5)
+  }
+  
+  
+  
+  ## ------   2.5.roads ------  
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(-3,3), type ="n", xaxt="n", xlab = "Years", ylab = "Beta Tracks")
+  axis(1, c(1:nYears),labels = years)
+  for(t in 1:nYears){
+    plot.violins(list(myResultsListALL$sims.list$trapBetas[,1,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
+                 add = T,
+                 alpha = 0.2,
+                 border.col = "firebrick3")
+  }#t
+  
+  for(t in 1:nYears){
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "trapBetas[1]")
+    title(years[t],line = 0.5)
+  }
+  
+  
+  
+  ## ------   2.6.tracks  ------ 
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(-1,1), type ="n", xaxt="n", xlab = "Years", ylab = "Beta Snow")
+  axis(1, c(1:nYears),labels = years)
+  for(t in 1:nYears){
+    plot.violins(list(myResultsListALL$sims.list$trapBetas[,2,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
+                 add = T,
+                 alpha = 0.2,
+                 border.col = "firebrick3")
+  }#t
+  
+  for(t in 1:nYears){
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "trapBetas[2]")
+    title(years[t],line = 0.5)
+  }
+  
+  
+  
+  ## ------   2.7. Snow ------   
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(-2,2), type ="n", xaxt="n", xlab = "Years", ylab = "Beta road (other)")
+  axis(1, c(1:nYears),labels = years)
+  for(t in 1:nYears){
+    plot.violins(list(myResultsListALL$sims.list$trapBetasOth[,1,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
+                 add = T,
+                 alpha = 0.2,
+                 border.col = "firebrick3")
+  }#t
+  
+  for(t in 1:nYears){
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "trapBetasOth[1]")
+    title(years[t],line = 0.5)
+  }
+  
+  
+  
+  ## ------   2.7. Snow ------ 
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(-2,2), type ="n", xaxt="n", xlab = "Years", ylab = "Beta Snow (other)")
+  axis(1, c(1:nYears),labels = years)
+  for(t in 1:nYears){
+    plot.violins(list(myResultsListALL$sims.list$trapBetasOth[,2,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
+                 add = T,
+                 alpha = 0.2,
+                 border.col = "firebrick3")
+  }#t
+  
+  for(t in 1:nYears){
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "trapBetasOth[2]")
+    title(years[t],line = 0.5)
+  }
+  
+  
+  
+  ## ------   2.7. Snow ------ 
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(-2,2), type ="n", xaxt="n", xlab = "Years", ylab = "Beta Snow (opportunistic)")
+  axis(1, c(1:nYears),labels = years)
+  for(t in 1:nYears){
+    plot.violins(list(myResultsListALL$sims.list$trapBetasOth[,3,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
+                 add = T,
+                 alpha = 0.2,
+                 border.col = "firebrick3")
+  }#t
+  
+  for(t in 1:nYears){
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "trapBetasOth[3]")
+    title(years[t],line = 0.5)
+  }
+  
+  
+  
+  ## ------   2.6. pResponse ------   
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(0,1), type ="n", xaxt="n", xlab = "Years", ylab = "pResponse")
+  axis(1, c(1:nYears),labels = years)
+  for(t in 1:nYears){
+    plot.violins(list(myResultsListALL$sims.list$pResponse[,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
+                 add = T,
+                 alpha = 0.2,
+                 border.col = "firebrick3")
+  }#t
+  
+  for(t in 1:nYears){
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "pResponse")
+    title(years[t],line = 0.5)
+  }
+  
+  
+  
+  ## ------   2.6. betaResponse ------   
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(-1,2), type ="n", xaxt="n", xlab = "Years", ylab = "betaResponse")
+  axis(1, c(1:nYears),labels = years)
+  for(t in 1:nYears){
+    plot.violins(list(myResultsListALL$sims.list$betaResponse[,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
+                 add = T,
+                 alpha = 0.2,
+                 border.col = "firebrick3")
+  }#t
+  
+  for(t in 1:nYears){
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "betaResponse")
+    title(years[t],line = 0.5)
+  }
+  
+  
+  
+  ## ------   2.7. beta.dens ------   
+  
+  plot(10, xlim = c(0, nYears+1), ylim = c(-1,1), type ="n", xaxt="n", xlab = "Years", ylab = "beta.dens")
+  axis(1, c(1:nYears),labels = years)
+  for(t in 1:nYears){
+    plot.violins(list(myResultsListALL$sims.list$beta.dens[,t]),
+                 x = t,
+                 at = t,
+                 violin.width = 0.3,
+                 col = "firebrick3",
+                 add = T,
+                 alpha = 0.2,
+                 border.col = "firebrick3")
+  }#t
+  
+  for(t in 1:nYears){
+    PlotJagsParams(jags.samples = nimOutputList[[t]], params = "beta.dens")
+    title(years[t],line = 0.5)
+  }
+  
+  dev.off()
+}#do all
 
 ## -----------------------------------------------------------------------------

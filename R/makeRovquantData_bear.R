@@ -384,6 +384,8 @@ makeRovquantData_bear <- function(
   r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
+  DistAllRoads <- raster::crop(DistAllRoads, studyArea)
+  rm(list = c("r"))
   
   ##-- AGGREGATE TO MATCH THE DETECTORS RESOLUTION
   DistAllRoads <- raster::aggregate( 
@@ -405,7 +407,7 @@ makeRovquantData_bear <- function(
   detRoads <- round(scale(detRoads), digits = 2)
   
   ##-- Put into "nimble2SCR" format
-  detectors$detectors.df$roads <- c(detRoads)
+  detectors$detectors.df$roads <- detRoads
   
   
   
