@@ -49,18 +49,39 @@ sex = c("Hunn")
 plot.check = TRUE
 
 ##-- Set default values for the wolverine model
-if(is.null(aug.factor)){aug.factor <- 0.8}
-if(is.null(sampling.months)){sampling.months <- list(10:12,1:4)}
-if(is.null(habitat.res)){habitat.res <- 20000} 
-if(is.null(x.extent)){x.extent <- c(210000,740000)} 
-if(is.null(y.extent)){y.extent <- c(6000000,7050000)} 
-if(is.null(buffer.size)){buffer.size <- 40000}
-if(is.null(detector.res)){detector.res <- 10000}
-if(is.null(subdetector.res)){subdetector.res <- 1000}
-if(is.null(max.det.dist)){max.det.dist <- 45000}
-if(is.null(resize.factor)){resize.factor <- 1}
+#if(is.null(aug.factor)){
+  aug.factor <- 0.8
+#  }
+#if(is.null(sampling.months)){
+  sampling.months <- list(10:12,1:4)
+#  }
+#if(is.null(habitat.res)){
+  habitat.res <- 20000
+#  } 
+#if(is.null(x.extent)){
+  x.extent <- c(210000,740000)
+#  } 
+#if(is.null(y.extent)){
+  y.extent <- c(6000000,7050000)
+#  } 
+#if(is.null(buffer.size)){
+  buffer.size <- 40000
+#  }
+#if(is.null(detector.res)){
+  detector.res <- 10000
+#  }
+#if(is.null(subdetector.res)){
+  subdetector.res <- 1000
+#  }
+#if(is.null(max.det.dist)){
+  max.det.dist <- 45000
+#  }
+#if(is.null(resize.factor)){
+  resize.factor <- 1
+#  }
+
 ##-- Renaming list
-if(is.null(rename.list)) {
+#if(is.null(rename.list)) {
   rename.list = c(
     Age_estimated = "Alder, vurdert",
     Age = "Alder, verifisert",
@@ -156,7 +177,7 @@ if(is.null(rename.list)) {
     Uncertain_date = "Usikker dødsdato",
     Weight_slaughter = "Slaktevekt",
     Weight_total =  "Helvekt")
-}
+#}
 
 ##-- Set up list of Habitat characteristics
 habitat <- list( resolution = habitat.res,
@@ -197,36 +218,27 @@ habRaster <- raster::disaggregate(
 ##-- Merge counties for practical reasons
 COUNTIES <- COUNTIES %>%
   mutate(id = case_when(
-    county %in% c("Akershus","Aust-Agder","Buskerud","Vestfold","Oslo","Østfold") ~ "NO1",
-    county %in% c("Oppland","Hedmark","Møre og Romsdal","Sør-Trøndelag","Nord-Trøndelag") ~ "NO2",
-    county %in% c("Jämtland","Västernorrland","Västerbotten","Dalarna","Gävleborg") ~ "SE1",
-    county %in% c("Uppsala","Västmanland","Stockholm","Södermanland") ~ "SE2",
-    county %in% c("Blekinge","Orebro","Östergötland","Jönköping","Kronoberg","Kalmar","Skåne","Gotland") ~ "SE3",
-    county %in% c("Västra Götaland","Värmland","Halland") ~ "SE4")) %>%
-  dplyr::group_by(id) %>%
-  dplyr::summarise()
+    county %in% c("Akershus","Agder","Buskerud","Vestfold","Oslo","Østfold","Telemark") ~ "NO1",
+    county %in% c("Innlandet","Møre og Romsdal","Trøndelag") ~ "NO2",
+    county %in% c("Jämtlands","Västernorrlands","Västerbottens","Dalarnas","Gävleborgs") ~ "SE1",
+    county %in% c("Uppsala","Västmanlands","Stockholms","Södermanlands") ~ "SE2",
+    county %in% c("Blekinge","Örebro","Östergötlands","Jönköpings","Kronobergs","Kalmar","Skåne","Gotlands") ~ "SE3",
+    county %in% c("Västra","Värmlands","Hallands") ~ "SE4")) 
+# %>%
+#   dplyr::group_by(id) %>%
+#   dplyr::summarise()
 
-COUNTIES$id <- as.character(1:nrow(COUNTIES))
-## PLOT CHECK 
-COUNTIESplot <- st_simplify(COUNTIES, dTolerance = 500) %>%
-  st_intersection(., myStudyArea.poly) %>%
-  COUNTIESplot %>%
-  group_by(id) %>%
-  summarize()
+##-- PLOT CHECK 
+if(plot.check){
+  COUNTIES %>% st_simplify(., dTolerance = 500) %>%
+    group_by(id) %>%
+    summarize() %>%
+    ggplot(.) +
+    geom_sf(aes(fill = id)) +
+    geom_sf_label(aes(label = id))
+}
 
-ggplot(st_simplify(COUNTIESplot, dTolerance = 500)) +
-  geom_sf(aes(fill = id)) +
-  geom_sf_label(aes(label = id))
-
-col <- rainbow(length(unique(detCounties)))
-plot( st_geometry(COUNTIESplot))
-plot( st_geometry(detectors$main.detector.sp),
-      col = col[detCounties], pch = 16,
-      cex = 0.8, add = T)
-
-
-
-## CREATE STUDY AREA POLYGON BASED x AND y EXTENTS
+##-- CREATE STUDY AREA POLYGON BASED x AND y EXTENTS
 myStudyArea.extent <- st_bbox(extent(x.extent, y.extent))
 st_crs(myStudyArea.extent) <- st_crs(COUNTRIES)
 myStudyArea.poly <- st_crop(COUNTRIES, extent(x.extent, y.extent))
@@ -373,8 +385,6 @@ Pack_ID2025$Sex <- apply(Pack_ID2025[,c("Sex1","Sex2","Sex3","Sex4")], 1, functi
 
 ## ------   3. SEARCH EFFORT DATA ------ 
 
-## ------     3.1. GPS SEARCH TRACKS ------ 
-
 ##-- Combine all GPS tracks
 TRACKS <- rbind(
   sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250422.shp")),
@@ -403,7 +413,7 @@ dupLength <- TRACKS$Length[duplicated(df)]
 TRACKS <- TRACKS[-dupIDs, ]
 
 
-## PLOT CHECK
+## --PLOT CHECK
 if(plot.check){
   ## Total length of tracks searched
   TRACKS %>%
@@ -422,29 +432,8 @@ if(plot.check){
   barplot(dupdist, ylab = "Distance of duplicated tracks")
 }
 
-
-## ------     3.3. DAYS OF SNOW ------ 
-
-## SEASONAL MAPS (CREATED IN TEMP/CM/GIS/snowMODIS)
-## UPDATE"!!!!!
-SNOW <- stack(file.path(data.dir, "Snow/AverageSnowCoverModisSeason2014_2025_Wolf.tif"))
-
-## RENAME THE LAYERS
-names(SNOW) <- paste(2014:2024,(2014:2024)+1, sep = "_")
-
-## SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
-SNOW <- SNOW[[paste("X", years, "_", years+1, sep = "")]]
-SNOW <- raster::crop(SNOW, c(0,40,55,75))
-
-
-
-## ------     3.4. SAVE SEARCH EFFORT OBJECTS FOR FASTER RUNS ------ 
-
-save( TRACKS_YEAR,
-      SNOW,
-      DistAllRoads,
-      file = file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
-
+##-- Save TRACKS
+save( TRACKS, file = file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
 load(file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
 
 
@@ -507,13 +496,13 @@ for(i in 1:length(Pack_ID2024$Kon)){
   tab[[i]] <- table(myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2024$Rovbase.ID[i]])
   #Overwrite sex 
   # if(length(tab[[i]])>1){print(tab[[i]])}
-  myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2024$Rovbase.ID[i]  ] <- Pack_ID2024$Kon[i]
+  myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2024$Rovbase.ID[i]] <- Pack_ID2024$Kon[i]
 }
 for(i in 1:length(Pack_ID2025$Sex)){
   tab[[i]] <- table(myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2025$IndividID[i]])
   # if(length(tab[[i]])>1){print(tab[[i]])}
   #Overwrite sex 
-  myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2025$IndividID[i]  ] <- Pack_ID2025$Sex[i]
+  myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2025$IndividID[i]] <- Pack_ID2025$Sex[i]
 }
 
 
@@ -950,7 +939,7 @@ if(plot.check){
 
 ## ------       3.2.1. EXTRACT COUNTRIES ------ 
 
-dist <- st_distance(mymain.detector.sp, country, by_element = F )
+dist <- st_distance(mymain.detector.sp, COUNTRIES, by_element = F )
 detCountries <- apply(dist,1, function(x) which.min(x))
 detCountries <- as.numeric(as.factor(detCountries))
 
@@ -973,15 +962,15 @@ COUNTIES$NAME_1[c(12,36,35,5,8)]
 COUNTIES$id[c(12,36,35,5,8)] <- 5
 #SE2
 COUNTIES$NAME_1[c(31,37,26,27)]
-COUNTIES$id[c(31,37,26,27)] <- 4
+COUNTIES$id[c(31,26,27)] <- 4
 #SE3
 COUNTIES$NAME_1[c(3,21,40,13,15,14,24,7)]
-COUNTIES$id[c(3,21,40,13,15,14,24,7)] <- 3
+COUNTIES$id[c(3,21,13,15,14,24,7)] <- 3
 #SE4
 COUNTIES$NAME_1[c(38,34,9)]
-COUNTIES$id[c(38,34,9)] <- 9
+COUNTIES$id[c(34,9)] <- 9
 
-## CONVERT TO FACTOR AND BACK
+## CONVERT TO FACTOR & BACK
 COUNTIES$id <- as.numeric(as.factor(COUNTIES$id))
 
 ## ASSIGN COUNTIES TO DETECTORS.
@@ -998,8 +987,7 @@ for(i in 1: max(detCounties)){
 
 ## PLOT CHECK 
 COUNTIESplot <- st_simplify(COUNTIES, dTolerance = 500) %>%
-  st_intersection(., myStudyArea.poly) %>%
-  COUNTIESplot %>%
+  #st_intersection(., myStudyArea.poly) %>%
   group_by(id) %>%
   summarize()
 
