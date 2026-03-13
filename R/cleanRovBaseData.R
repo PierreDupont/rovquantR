@@ -137,18 +137,10 @@ cleanRovbaseData <- function(
   
   ##-- Legal mortality patterns
   if(is.null(legal.dead)) {
-    if (engSpecies == "bear") {
+    if (engSpecies %in% c("bear","wolf","wolverine")) {
       legal.dead <- c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske")
     } else {
-      if (engSpecies == "wolf") {
-        legal.dead <- c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske")
-      } else {
-        if (engSpecies == "wolverine") {
-          legal.dead <- c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske")
-        } else {
-          legal.dead <- ""
-        }
-      }
+      legal.dead <- ""
     }
   }
   
@@ -319,8 +311,7 @@ cleanRovbaseData <- function(
       ##-- Fix unknown "Id"
       Id = ifelse(Id %in% "", NA, Id),
       ##-- Fix unknown "Sex"
-      Sex = ifelse(Sex %in% "Ukjent", "unknown", Sex),
-      Sex = ifelse(is.na(Sex), "unknown", Sex),
+      Sex = ifelse(Sex %in% "Ukjent" | is.na(Sex), "unknown" , Sex),
       Sex = ifelse(Sex %in% "Hunn", "female", Sex),
       Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
     ##-- Filter to the focal years
@@ -384,8 +375,7 @@ cleanRovbaseData <- function(
       ##-- Fix unknown "Id"
       Id = ifelse(Id %in% "", NA, Id),
       ##-- Fix unknown "Sex"
-      Sex = ifelse(Sex %in% "Ukjent", "unknown", Sex),
-      Sex = ifelse(is.na(Sex), "unknown", Sex),
+      Sex = ifelse(Sex %in% "Ukjent" | is.na(Sex), "unknown" , Sex),
       Sex = ifelse(Sex %in% "Hunn", "female", Sex),
       Sex = ifelse(Sex %in% "Hann", "male", Sex),
       ##-- Identify legal deaths

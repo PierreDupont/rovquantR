@@ -19,6 +19,7 @@ library(spatstat)
 library(stars)
 library(dplyr)
 library(ggplot2)
+library(rovquantR)
 
 
 ## ------ SET REQUIRED WORKING DIRECTORIES ------
@@ -39,144 +40,136 @@ source(file.path(dir.git,"Temp/CM/functions/Nimble/dbinomLocal_normalWolf.R"))
 
 ## -----------------------------------------------------------------------------
 
-## ------ 0. SET-UP WORKING ENVIRONMENT ------
+## ------ 0. SET-UP PARAMETERS ------
+
+makeDirectories( path = working.dir,
+                 subFolders = c("female","male"),
+                 show.dir = TRUE)
+
+plot.check = TRUE
 
 years = 2015:2024
 nYears <- length(years)
 YEARS <- lapply(years, function(x)c(x,x+1))
-species = c("Ulv")               
-sex = c("Hunn")                
-plot.check = TRUE
+species = "Ulv"           
+SPECIES <- "Gray wolf"
+engSpecies <- "wolf"
+norSpecies <- "Ulv"
 
-##-- Set default values for the wolverine model
-#if(is.null(aug.factor)){
-  aug.factor <- 0.8
-#  }
-#if(is.null(sampling.months)){
-  sampling.months <- list(10:12,1:4)
-#  }
-#if(is.null(habitat.res)){
-  habitat.res <- 20000
-#  } 
-#if(is.null(x.extent)){
-  x.extent <- c(210000,740000)
-#  } 
-#if(is.null(y.extent)){
-  y.extent <- c(6000000,7050000)
-#  } 
-#if(is.null(buffer.size)){
-  buffer.size <- 40000
-#  }
-#if(is.null(detector.res)){
-  detector.res <- 10000
-#  }
-#if(is.null(subdetector.res)){
-  subdetector.res <- 1000
-#  }
-#if(is.null(max.det.dist)){
-  max.det.dist <- 45000
-#  }
-#if(is.null(resize.factor)){
-  resize.factor <- 1
-#  }
+sex = c("male","female") 
+
+legal.dead <- c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske")
+
+##-- Set default values for the wolf model
+aug.factor <- 0.8
+sampling.months <- list(10:12,1:4)
+habitat.res <- 20000
+x.extent <- c(210000,740000)
+y.extent <- c(6000000,7050000)
+buffer.size <- 40000
+detector.res <- 10000
+subdetector.res <- 1000
+max.det.dist <- 45000
+resize.factor <- 1
+
 
 ##-- Renaming list
 #if(is.null(rename.list)) {
-  rename.list = c(
-    Age_estimated = "Alder, vurdert",
-    Age = "Alder, verifisert",
-    Age_verif_by = "Alder, verifisert av",
-    Age_class = "Alder på dødt individ",
-    Age_class_verif = "Aldersklasse verifisert SVA",
-    Analyzed_by = "AnalysertAv",
-    Analysis_priority = "Analyseprioritet",
-    Approved_by = "Godkjent av",
-    Approved_date = "Godkjentdato",
-    Assessment = "Vurdering",
-    Barcode_sample = "Strekkode (Prøve)",
-    Barcode = "Strekkode (Analyse)",
-    Birth_territory = "Født revir",
-    CITES = "CITES-nummer",
-    Collected_by = "Hvem samlet inn",
-    Collector_name = "Samlet selv - Navn",
-    Collector_phone = "Samlet selv - Telefon",
-    Collector_email = "Samlet selv - E-post",
-    Collector_role = "Samlet selv - Rolle",
-    Collector_other_name = "Annen innsamler - Navn" ,
-    Collector_other_phone = "Annen innsamler - Telefon",
-    Collector_other_email = "Annen innsamler - E-post",
-    Collector_other_role = "Annen innsamler - Rolle",
-    Comments_sample = "Merknad (Prøve)",
-    Comments = "Merknad (Analyse)",
-    Control_status = "Kontrollstatus",
-    Coordinate_system = "Koordinatsystem",
-    Counted_off_against_decision = "Regnes av mot vedtak",
-    County_number = "Fylkenummer",
-    County = "Fylke",
-    Date = "Funnetdato",
-    Date = "Dødsdato",
-    Death_cause = "Bakgrunn/årsak",
-    Death_method = "Bakgrunn/årsak metode",
-    Death_purpose = "Bakgrunn/årsak formål",
-    DNAID_sample = "DNAID (Prøve)",
-    DNAID = "DNAID (Analyse)",
-    EventID = "HendelseID",
-    East_Original = "Øst (opprinnelig)",
-    East_RT90 = "Øst (RT90)",
-    East_UTM33 = "Øst (UTM33/SWEREF99 TM)",
-    Felling_site_verif = "Kontroll av fellingsted",
-    Field_personnel ="Feltpersonell",
-    Hunting_date = "Observasjons/Jaktdato",
-    Id = "Individ",
-    Juvenile = "Yngling",
-    Mountain_area = "Fjellområde",
-    Method = "Metode",
-    Municipality_number = "Kommunenummer",
-    Municipality = "Kommune",
-    North_original = "Nord (opprinnelig)",
-    North_RT90 = "Nord (RT90)",
-    North_UTM33 = "Nord (UTM33/SWEREF99 TM)",
-    Origin = "Opprinnelse",
-    Outcome = "Utfall",
-    Last_saved_by_sample = "Sist lagret av (Prøve)",
-    Last_saved_sample = "Sist lagret dato (Prøve)",
-    Last_saved_by = "Sist lagret av (Analyse)",
-    Last_saved = "Sist lagret dato (Analyse)",
-    Last_saved_by = "Sist lagret av",
-    Last_saved =  "Sist lagret dato",
-    Locality = "Lokalitet",
-    Location = "Funnsted",
-    Lansstyrelsen_number = "Länsstyrelsens nr",
-    Quality_checked = "Kvalitetssikret av feltpersonell",
-    Quality_check_name = "Kvalitetssikrer - navn",
-    Quality_check_orga = "Kvalitetssikrer - Organisasjon",
-    Release_Date = "Frigivelsesdato",
-    Sample_type = "Prøvetype",
-    Sensitivity = "Følsomhet",
-    Species_sample = "Art (Prøve)",
-    Site_quality = "Stedkvalitet",
-    Time_of_death = "Dødstidspunkt",
-    Tips_name = "Tipser - Navn",
-    Tips_phone = "Tipser - Telefon",
-    Tips_email = "Tipser - E-post",
-    Tips_role = "Tipser - Rolle",
-    Tissue_sample = "Vevsprøve tatt",
-    Release_Date = "Frigivelsesdato",
-    RovbaseID = "RovbaseID (Analyse)",
-    RovbaseID_sample = "RovbaseID (Prøve)",
-    Species = "Art (Analyse)",
-    Species = "Art",
-    Sample_status = "Prøvestatus",
-    Sensitivity = "Følsomhet",
-    Sex_analysis = "Kjønn (Analyse)",
-    Sex = "Kjønn (Individ)",
-    Sex = "Kjønn",
-    Sex = "Kön",
-    Site_quality = "Stedkvalitet",
-    SVAID = "SVAID",
-    Uncertain_date = "Usikker dødsdato",
-    Weight_slaughter = "Slaktevekt",
-    Weight_total =  "Helvekt")
+rename.list = c(
+  Age_estimated = "Alder, vurdert",
+  Age = "Alder, verifisert",
+  Age_verif_by = "Alder, verifisert av",
+  Age_class = "Alder på dødt individ",
+  Age_class_verif = "Aldersklasse verifisert SVA",
+  Analyzed_by = "AnalysertAv",
+  Analysis_priority = "Analyseprioritet",
+  Approved_by = "Godkjent av",
+  Approved_date = "Godkjentdato",
+  Assessment = "Vurdering",
+  Barcode_sample = "Strekkode (Prøve)",
+  Barcode = "Strekkode (Analyse)",
+  Birth_territory = "Født revir",
+  CITES = "CITES-nummer",
+  Collected_by = "Hvem samlet inn",
+  Collector_name = "Samlet selv - Navn",
+  Collector_phone = "Samlet selv - Telefon",
+  Collector_email = "Samlet selv - E-post",
+  Collector_role = "Samlet selv - Rolle",
+  Collector_other_name = "Annen innsamler - Navn" ,
+  Collector_other_phone = "Annen innsamler - Telefon",
+  Collector_other_email = "Annen innsamler - E-post",
+  Collector_other_role = "Annen innsamler - Rolle",
+  Comments_sample = "Merknad (Prøve)",
+  Comments = "Merknad (Analyse)",
+  Control_status = "Kontrollstatus",
+  Coordinate_system = "Koordinatsystem",
+  Counted_off_against_decision = "Regnes av mot vedtak",
+  County_number = "Fylkenummer",
+  County = "Fylke",
+  Date = "Funnetdato",
+  Date = "Dødsdato",
+  Death_cause = "Bakgrunn/årsak",
+  Death_method = "Bakgrunn/årsak metode",
+  Death_purpose = "Bakgrunn/årsak formål",
+  DNAID_sample = "DNAID (Prøve)",
+  DNAID = "DNAID (Analyse)",
+  EventID = "HendelseID",
+  East_Original = "Øst (opprinnelig)",
+  East_RT90 = "Øst (RT90)",
+  East_UTM33 = "Øst (UTM33/SWEREF99 TM)",
+  Felling_site_verif = "Kontroll av fellingsted",
+  Field_personnel ="Feltpersonell",
+  Hunting_date = "Observasjons/Jaktdato",
+  Id = "Individ",
+  Juvenile = "Yngling",
+  Mountain_area = "Fjellområde",
+  Method = "Metode",
+  Municipality_number = "Kommunenummer",
+  Municipality = "Kommune",
+  North_original = "Nord (opprinnelig)",
+  North_RT90 = "Nord (RT90)",
+  North_UTM33 = "Nord (UTM33/SWEREF99 TM)",
+  Origin = "Opprinnelse",
+  Outcome = "Utfall",
+  Last_saved_by_sample = "Sist lagret av (Prøve)",
+  Last_saved_sample = "Sist lagret dato (Prøve)",
+  Last_saved_by = "Sist lagret av (Analyse)",
+  Last_saved = "Sist lagret dato (Analyse)",
+  Last_saved_by = "Sist lagret av",
+  Last_saved =  "Sist lagret dato",
+  Locality = "Lokalitet",
+  Location = "Funnsted",
+  Lansstyrelsen_number = "Länsstyrelsens nr",
+  Quality_checked = "Kvalitetssikret av feltpersonell",
+  Quality_check_name = "Kvalitetssikrer - navn",
+  Quality_check_orga = "Kvalitetssikrer - Organisasjon",
+  Release_Date = "Frigivelsesdato",
+  Sample_type = "Prøvetype",
+  Sensitivity = "Følsomhet",
+  Species_sample = "Art (Prøve)",
+  Site_quality = "Stedkvalitet",
+  Time_of_death = "Dødstidspunkt",
+  Tips_name = "Tipser - Navn",
+  Tips_phone = "Tipser - Telefon",
+  Tips_email = "Tipser - E-post",
+  Tips_role = "Tipser - Rolle",
+  Tissue_sample = "Vevsprøve tatt",
+  Release_Date = "Frigivelsesdato",
+  RovbaseID = "RovbaseID (Analyse)",
+  RovbaseID_sample = "RovbaseID (Prøve)",
+  Species = "Art (Analyse)",
+  Species = "Art",
+  Sample_status = "Prøvestatus",
+  Sensitivity = "Følsomhet",
+  Sex_analysis = "Kjønn (Analyse)",
+  Sex = "Kjønn (Individ)",
+  Sex = "Kjønn",
+  Sex = "Kön",
+  Site_quality = "Stedkvalitet",
+  SVAID = "SVAID",
+  Uncertain_date = "Usikker dødsdato",
+  Weight_slaughter = "Slaktevekt",
+  Weight_total =  "Helvekt")
 #}
 
 ##-- Set up list of Habitat characteristics
@@ -230,7 +223,7 @@ COUNTIES <- COUNTIES %>%
 
 ##-- PLOT CHECK 
 if(plot.check){
-  COUNTIES %>% st_simplify(., dTolerance = 500) %>%
+  COUNTIES %>% 
     group_by(id) %>%
     summarize() %>%
     ggplot(.) +
@@ -239,19 +232,20 @@ if(plot.check){
 }
 
 ##-- CREATE STUDY AREA POLYGON BASED x AND y EXTENTS
-myStudyArea.extent <- st_bbox(extent(x.extent, y.extent))
-st_crs(myStudyArea.extent) <- st_crs(COUNTRIES)
-myStudyArea.poly <- st_crop(COUNTRIES, extent(x.extent, y.extent))
-myStudyArea.poly <- st_collection_extract(myStudyArea.poly, "POLYGON") # to get only "polygons objects"
+# myStudyArea.extent <- st_bbox(extent(x.extent, y.extent))
+# st_crs(myStudyArea.extent) <- st_crs(COUNTRIES)
+studyArea <- st_crop( COUNTIES,
+                      xmin = x.extent[1], xmax = x.extent[2],
+                      ymin = y.extent[1], ymax = y.extent[2]) %>%
+  st_collection_extract(., "POLYGON")  
 
 
 
 ## ------   2. LOAD ROVBASE FILES ------ 
 
 ##-- NGS data
-# DNA <- read.csv( file.path(data.dir, "RIB22042025133456403_wolfDNA.csv"),
-#                  fileEncoding = "latin1")
-# colnames(DNA) <- translateForeignCharacters(dat = colnames(DNA), dir.translation = dir.analysis)
+# DNA <- read.csv( file.path(data.dir, "RIB22042025133456403_wolfDNA.csv"), fileEncoding = "latin1")
+# colnames(DNA) <- translateForeignCharacters( dat = colnames(DNA), dir.translation = dir.analysis)
 DNA <- suppressWarnings(readMostRecent( path = data.dir,
                                         extension = ".xls",
                                         pattern = "DNA")) %>%
@@ -288,8 +282,8 @@ DNA <- suppressWarnings(readMostRecent( path = data.dir,
     ##-- Fix unknown "Id"
     Id = ifelse(Id %in% "", NA, Id),
     ##-- Fix unknown "Sex"
-    Sex = ifelse(Sex %in% "Ukjent", "unknown", Sex),
-    Sex = ifelse(is.na(Sex), "unknown", Sex),
+    Sex = ifelse(Sex %in% "Ukjent" | is.na(Sex), "unknown", Sex),
+    #Sex = ifelse(is.na(Sex), "unknown", Sex),
     Sex = ifelse(Sex %in% "Hunn", "female", Sex),
     Sex = ifelse(Sex %in% "Hann", "male", Sex))
 # [CHECK] Should we filter for years here ???
@@ -305,7 +299,7 @@ DNA <- suppressWarnings(readMostRecent( path = data.dir,
 ##-- Load raw excel file imported from rovbase 
 DR <- suppressWarnings(readMostRecent( path = data.dir,
                                        extension = ".xls",
-                                       pattern = "dead_")) %>%
+                                       pattern = "dead")) %>%
   ##-- Rename columns to facilitate manipulation
   dplyr::rename(., any_of(rename.list)) %>%
   ##-- Initial filters
@@ -335,8 +329,8 @@ DR <- suppressWarnings(readMostRecent( path = data.dir,
     ##-- Fix unknown "Id"
     Id = ifelse(Id %in% "", NA, Id),
     ##-- Fix unknown "Sex"
-    Sex = ifelse(Sex %in% "Ukjent", "unknown", Sex),
-    Sex = ifelse(is.na(Sex), "unknown", Sex),
+    Sex = ifelse(Sex %in% "Ukjent" | is.na(Sex), "unknown" , Sex),
+    #Sex = ifelse(is.na(Sex), "unknown", Sex),
     Sex = ifelse(Sex %in% "Hunn", "female", Sex),
     Sex = ifelse(Sex %in% "Hann", "male", Sex),
     ##-- Identify legal deaths
@@ -346,94 +340,119 @@ DR <- suppressWarnings(readMostRecent( path = data.dir,
 # ##-- Filter to the focal years
 # dplyr::filter(., Year %in% years)
 
+
 ## Wolves infos from Micke
 INDIVIDUAL_ID <- suppressWarnings(readMostRecent( path = data.dir,
                                                   extension = ".xls",
-                                                  pattern = "_ID Grouping")) 
-# INDIVIDUAL_ID <- read.csv( file.path(data.dir, "220512_ID Grouping 2006-2021.csv"),
-#                            fileEncoding = "latin1")  
-#  colnames(INDIVIDUAL_ID) <- translateForeignCharacters(dat = colnames(INDIVIDUAL_ID), dir.translation = dir.analysis)
+                                                  pattern = "_ID Grouping")) %>%
+  dplyr::rename(., IdSimplified = "ROVBASE_IndividID")
+  
+# INDIVIDUAL_ID <- read.csv( file.path(data.dir, "220512_ID Grouping 2006-2021.csv"), fileEncoding = "latin1")  
+# colnames(INDIVIDUAL_ID) <- translateForeignCharacters(dat = colnames(INDIVIDUAL_ID), dir.translation = dir.analysis)
+
 
 ## THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2022/23.
 Pack_ID2023 <- suppressWarnings(readMostRecent( path = data.dir,
-                                               extension = ".xls",
-                                               pattern = "Genetiskt ID RM")) 
-# read.csv( file.path(data.dir, 
-#                                    "Genetiskt ID RM vargar 2223 Bilaga 4_ØF.csv"),
-#                          fileEncoding = "latin1")  
+                                                extension = ".xls",
+                                                pattern = "Genetiskt ID RM")) %>%
+  ##-- Rename columns to facilitate manipulation
+  dplyr::rename(., any_of(rename.list)) %>% 
+  ##-- Add some columns
+  dplyr::mutate( 
+    Sex = ifelse(Sex %in% "Ukjent" | is.na(Sex), "unknown", Sex),
+    Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
+    Sex = ifelse(Sex %in% c("Hane","Hann"), "male", Sex))
+# read.csv( file.path(data.dir, "Genetiskt ID RM vargar 2223 Bilaga 4_ØF.csv"), fileEncoding = "latin1")  
 # colnames(Pack_ID2023) <- translateForeignCharacters(dat = colnames(Pack_ID2023), dir.translation = dir.analysis)
+# Pack_ID2023$Kon[Pack_ID2023$Kon %in% "Tispe"] <- "Hunn"
+# Pack_ID2023$Kon[Pack_ID2023$Kon %in% "Hane"] <- "Hann"
+# Pack_ID2023$Kon[Pack_ID2023$Kon %in% "Tik"] <- "Hunn"
+
 
 ## THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2023/24.
 Pack_ID2024 <- suppressWarnings(readMostRecent( path = data.dir,
                                                 extension = ".xls",
-                                                pattern = "Bilaga_11")) 
-# read.csv( file.path(data.dir, "Bilaga_11.4_240424_ØF to Cyril.csv"),
-#                          fileEncoding = "latin1")  
+                                                pattern = "Bilaga_11")) %>%
+  ##-- Rename columns to facilitate manipulation
+  dplyr::rename(., any_of(rename.list)) %>% 
+  ##-- Add some columns
+  dplyr::mutate( 
+    Sex = ifelse(Sex %in% "Ukjent" | is.na(Sex), "unknown", Sex),
+    Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
+    Sex = ifelse(Sex %in% c("Hane","Hann"), "male", Sex))
+# read.csv( file.path(data.dir, "Bilaga_11.4_240424_ØF to Cyril.csv"), fileEncoding = "latin1")  
 # colnames(Pack_ID2024) <- translateForeignCharacters(dat = colnames(Pack_ID2024), dir.translation = dir.analysis)
+# Pack_ID2024$Kon[Pack_ID2024$Kon %in% "Tispe"] <- "Hunn"
+# Pack_ID2024$Kon[Pack_ID2024$Kon %in% "Hane"] <- "Hann"
+# Pack_ID2024$Kon[Pack_ID2024$Kon %in% "Tik"] <- "Hunn"
+
 
 ## THIS IS THE PACK ID SENT BY Øystein.
 Pack_ID2025 <- suppressWarnings(readMostRecent( path = data.dir,
                                                 extension = ".xls",
-                                                pattern = "estimates2025FromOystein")) 
-# read.csv( file.path(data.dir, "RovbaseID for Rovquant estimates2025FromOystein.csv"),
-#                          fileEncoding = "latin1")  
-# colnames(Pack_ID2025) <- translateForeignCharacters(dat = colnames(Pack_ID2025), dir.translation = dir.analysis)
+                                                pattern = "estimates2025FromOystein"))
 ## Here we need to recreate the sex columns as Oystein gave me a list of ids only (losing the sex)
-Pack_ID2025$Sex <- apply(Pack_ID2025[,c("Sex1","Sex2","Sex3","Sex4")], 1, function(x) x[which(!x%in% "")][1])
+Pack_ID2025$Sex <- apply(Pack_ID2025[ ,c("Sex1","Sex2","Sex3","Sex4")], 1, function(x) x[!is.na(x)][1]) 
+Pack_ID2025 <- Pack_ID2025 %>% 
+  dplyr::mutate( 
+    Sex = ifelse(Sex %in% "Ukjent" | is.na(Sex), "unknown", Sex),
+    Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
+    Sex = ifelse(Sex %in% c("Hane","Hann"), "male", Sex))
+# read.csv( file.path(data.dir, "RovbaseID for Rovquant estimates2025FromOystein.csv"), fileEncoding = "latin1")  
+# colnames(Pack_ID2025) <- translateForeignCharacters(dat = colnames(Pack_ID2025), dir.translation = dir.analysis)
 
 
 
 ## ------   3. SEARCH EFFORT DATA ------ 
 
-##-- Combine all GPS tracks
-TRACKS <- rbind(
-  sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250422.shp")),
-  sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422.shp"))) %>%
-  ##-- Process dates
-  dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
-                 Mth = as.numeric(format(Dato,"%m")),
-                 Yr = as.numeric(format(Dato,"%Y")),
-                 Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
-  ##-- Filter out irrelevant tracks
-  dplyr::filter( Helikopter == "0",      ## Remove helicopter tracks
-                 # Jerv == "1",          ## [CHECK] should we keep wolf tracks only?
-                 Year %in% years & Mth %in% unlist(sampling.months)) %>% ## Keep tracks during sampling season only
-  ##-- Extract track lengths & centroids
-  dplyr::mutate( Length = sf::st_length(., byid = T),
-                 Centroidx = sf::st_coordinates(sf::st_centroid(.))[ ,1]) 
-
-##-- Find & filter out duplicates based on person, distance and date.
-df <- data.frame( Dato = TRACKS$Dato,
-                  Year = TRACKS$Year,
-                  Person = TRACKS$Person,
-                  Length = TRACKS$Length,
-                  Centroidx = TRACKS$Centroidx)
-dupIDs <- which(duplicated(df))
-dupLength <- TRACKS$Length[duplicated(df)]
-TRACKS <- TRACKS[-dupIDs, ]
-
-
-## --PLOT CHECK
-if(plot.check){
-  ## Total length of tracks searched
-  TRACKS %>%
-    group_by(Year)%>%
-    summarize(TotLength = sum(Length)) %>%
-    barplot( .,
-             ylab = "Sum length tracks")
-  ## Check number of duplicated tracks removed
-  dup <- unlist(lapply(dupIDs, length))
-  names(dup) <- years
-  barplot(dup, ylab = "Number of duplicated tracks")
-  
-  ## Check length of duplicated tracks removed
-  dupdist <- unlist(lapply(dupDist,sum))
-  names(dupdist) <- years
-  barplot(dupdist, ylab = "Distance of duplicated tracks")
-}
-
-##-- Save TRACKS
-save( TRACKS, file = file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
+# ##-- Combine all GPS tracks
+# TRACKS <- rbind(
+#   sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250422.shp")),
+#   sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422.shp"))) %>%
+#   ##-- Process dates
+#   dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
+#                  Mth = as.numeric(format(Dato,"%m")),
+#                  Yr = as.numeric(format(Dato,"%Y")),
+#                  Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
+#   ##-- Filter out irrelevant tracks
+#   dplyr::filter( Helikopter == "0",      ## Remove helicopter tracks
+#                  # Jerv == "1",          ## [CHECK] should we keep wolf tracks only?
+#                  Year %in% years & Mth %in% unlist(sampling.months)) %>% ## Keep tracks during sampling season only
+#   ##-- Extract track lengths & centroids
+#   dplyr::mutate( Length = sf::st_length(., byid = T),
+#                  Centroidx = sf::st_coordinates(sf::st_centroid(.))[ ,1])
+# 
+# ##-- Find & filter out duplicates based on person, distance and date.
+# df <- data.frame( Dato = TRACKS$Dato,
+#                   Year = TRACKS$Year,
+#                   Person = TRACKS$Person,
+#                   Length = TRACKS$Length,
+#                   Centroidx = TRACKS$Centroidx)
+# dupIDs <- which(duplicated(df))
+# dupLength <- TRACKS$Length[duplicated(df)]
+# TRACKS <- TRACKS[-dupIDs, ]
+# 
+# ## --PLOT CHECK
+# if(plot.check){
+#   ## Total length of tracks searched
+#   TRACKS %>%
+#     group_by(Year)%>%
+#     summarize(TotLength = sum(Length)) %>%
+#     barplot( ., ylab = "Sum length tracks")
+#    
+#   ## Check number of duplicated tracks removed
+#   dup <- unlist(lapply(dupIDs, length))
+#   names(dup) <- years
+#   barplot(dup, ylab = "Number of duplicated tracks")
+#   
+#   ## Check length of duplicated tracks removed
+#   dupdist <- unlist(lapply(dupDist,sum))
+#   names(dupdist) <- years
+#   barplot(dupdist, ylab = "Distance of duplicated tracks")
+# }
+# 
+# ##-- Save TRACKS
+#save( TRACKS, file = file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
 load(file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
 
 
@@ -455,48 +474,35 @@ myCleanedData.sp <- CleanDataNew3sf(
   keep_dead = T,
   age.label.lookup = age.lookup.table)
 
+##-- make a simplified column to match the rovbase id given by Oystein in Linn's file
+myCleanedData.sp$IdSimplified <- unlist(lapply(strsplit(as.character(myCleanedData.sp$Id), " "), function(x) x[1]))
+
 ##-- OVERWRITE GENDER FROM MICKE'S DATA WHEN AVAILABLE
-micke.sex <- as.character(unlist(lapply(myCleanedData.sp$Id, function(i) INDIVIDUAL_ID[as.character(INDIVIDUAL_ID$Individ..Rovbase.)==i,"Sex"][1])))
+micke.sex <- as.character(unlist(lapply(myCleanedData.sp$Id, function(i) INDIVIDUAL_ID[as.character(INDIVIDUAL_ID$IdSimplified)==i,"Sex"][1])))
 micke.sex[micke.sex %in% "0"] <- NA
 micke.sex[micke.sex %in% names(table(micke.sex))[3]] <- NA
-micke.sex[micke.sex %in% "Hona"] <- "Hunn"
-micke.sex[micke.sex %in% "Hane"] <- "Hann"
+micke.sex[micke.sex %in% "Hona"] <- "female"
+micke.sex[micke.sex %in% "Hane"] <- "male"
 table(!is.na(micke.sex))
 new.sex <- ifelse(!is.na(micke.sex), as.character(micke.sex), as.character(myCleanedData.sp$Sex))
 table(myCleanedData.sp$Sex, new.sex)
 myCleanedData.sp$Sex <- new.sex
 table(myCleanedData.sp$Sex, new.sex)
 
-##-- OVERWRITE GENDER FROM PACK COMPOSITION (FROM LINN's file 2022-23)
-Pack_ID2023$Kon[Pack_ID2023$Kon %in% "Tispe"] <- "Hunn"
-Pack_ID2023$Kon[Pack_ID2023$Kon %in% "Hane"] <- "Hann"
-Pack_ID2023$Kon[Pack_ID2023$Kon %in% "Tik"] <- "Hunn"
-
-Pack_ID2024$Kon[Pack_ID2024$Kon %in% "Tispe"] <- "Hunn"
-Pack_ID2024$Kon[Pack_ID2024$Kon %in% "Hane"] <- "Hann"
-Pack_ID2024$Kon[Pack_ID2024$Kon %in% "Tik"] <- "Hunn"
-
-Pack_ID2025$Sex[Pack_ID2025$Sex %in% "Tispe"] <- "Hunn"
-Pack_ID2025$Sex[Pack_ID2025$Sex %in% "Hane"] <- "Hann"
-Pack_ID2025$Sex[Pack_ID2025$Sex %in% "Tik"] <- "Hunn"
-
-##-- make a simplified column to match the rovbase id given by Oystein in Linn's file
-myCleanedData.sp$IdSimplified <- unlist(lapply(strsplit(as.character(myCleanedData.sp$Id), " "), function(x) x[1]))
-
 ##-- OVERWRITE GENDER FROM PACK COMPOSITION (FROM LINN's file 2023-24)
 tab <- list()
 ##-- check the sex in the pair data given by Linn and assign the sex to all detections 
-for(i in 1:length(Pack_ID2023$Kon)){
+for(i in 1:length(Pack_ID2023$Sex)){
   tab[[i]] <- table(myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2023$Rovbase.ID[i]])
   #Overwrite sex 
   # if(length(tab[[i]])>1){print(tab[[i]])}
-  myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2023$Rovbase.ID[i]  ] <- Pack_ID2023$Kon[i]
+  myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2023$Rovbase.ID[i]] <- Pack_ID2023$Sex[i]
 }
-for(i in 1:length(Pack_ID2024$Kon)){
+for(i in 1:length(Pack_ID2024$Sex)){
   tab[[i]] <- table(myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2024$Rovbase.ID[i]])
   #Overwrite sex 
   # if(length(tab[[i]])>1){print(tab[[i]])}
-  myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2024$Rovbase.ID[i]] <- Pack_ID2024$Kon[i]
+  myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2024$Rovbase.ID[i]] <- Pack_ID2024$Sex[i]
 }
 for(i in 1:length(Pack_ID2025$Sex)){
   tab[[i]] <- table(myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2025$IndividID[i]])
@@ -527,45 +533,54 @@ for(i in myFullData.sp$IdDoubleDead){
 }#i  
 myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-duplicatedDeath, ]
 
-## EXPORT THE DATA 
-if(DATA$sex == "Hann"){
-  assign("myFullData.spM", myFullData.sp)
-} else {
-  assign("myFullData.spF", myFullData.sp)
-}
 
 
 
-## ------     1.4. FILTER DATA FOR SPACE ------ 
+## ------   6. FILTER DATA -----
 
-myFilteredData.sp <- myFullData.sp
+## ------     6.1. ALIVE DATA -----
 
-## Remove all alive detections outside of the study area extent 
-myFilteredData.sp$alive <- myFilteredData.sp$alive[!is.na(as.numeric(st_intersects(myFilteredData.sp$alive, st_as_sfc(myStudyArea.extent)))), ]
-
-## Remove all dead recoveries outside of the study area polygon 
-myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[!is.na(as.numeric(st_intersects(myFilteredData.sp$dead.recovery, st_as_sfc(myStudyArea.extent)))), ]
-
-
-
-## ------     1.5. FILTER DATA FOR DATES ------ 
-
-## Remove all alive detections outside of the sampling period 
-myFilteredData.sp$alive <- myFilteredData.sp$alive[ myFilteredData.sp$alive$Month %in% unlist() 
-                                                    & myFilteredData.sp$alive$Year %in% unlist(DATA$years), ]
-
-## Remove all dead recoveries outside of the sampling period 
-myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[ myFilteredData.sp$dead.recovery$Year %in% unlist(DATA$years),] 
+data.alive <- myFullData.sp$alive %>%
+  dplyr::filter(
+    ##-- Subset to years of interest
+    Year %in% years,
+    ##-- Subset to months of interest
+    Month %in% unlist(sampling.months),
+    ##-- Subset to sex of interest
+    Sex %in% sex) %>%
+  ##-- Filter based on space 
+  sf::st_filter( .,st_as_sfc(st_bbox(studyArea)), .predicate = st_intersects)
 
 
+## ------     6.2. DEAD RECOVERY DATA -----
 
-## ------     1.6. SEPARATE STRUCTURED AND OPPORTUNISTIC SAMPLING ------ 
+data.dead <- myFullData.sp$dead.recovery %>%
+  dplyr::filter(
+    ##-- Subset to years of interest
+    Year %in% years,
+    ##-- Subset to sex of interest
+    Sex %in% sex) %>%
+  ##-- Filter based on space 
+  sf::st_filter( .,st_as_sfc(st_bbox(studyArea)), .predicate = st_intersects)
+
+# ## Remove all alive detections outside of the study area extent 
+# data.alive <- data.alive[!is.na(as.numeric(st_intersects(data.alive, st_as_sfc(myStudyArea.extent)))), ]
+# ## Remove all dead recoveries outside of the study area polygon 
+# data.dead <- data.dead[!is.na(as.numeric(st_intersects(data.dead, st_as_sfc(myStudyArea.extent)))), ]
+# ## Remove all alive detections outside of the sampling period 
+# data.alive <- data.alive[ data.alive$Month %in% unlist()&  data.alive$Year %in% unlist(DATA$years), ]
+# ## Remove all dead recoveries outside of the sampling period 
+# data.dead <- data.dead[ data.dead$Year %in% unlist(DATA$years),] 
+
+
+
+## ------     1.6. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------ 
 
 ## ------       1.6.1. ASSIGN SAMPLES TO TRACKS  ------ 
 
 ## ASSIGN ROVBASE ID AND SIMPLIFY TRACKS
-myFilteredData.sp$alive$TrackRovbsID <- NA
-myFilteredData.sp$alive$TrackDist <- NA
+data.alive$TrackRovbsID <- NA
+data.alive$TrackDist <- NA
 
 TRACKSSimple_sf <- list()
 for(t in 1:nYears){
@@ -575,14 +590,14 @@ for(t in 1:nYears){
 }
 
 ## ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
-dnatemp <- st_as_sf(myFilteredData.sp$alive)
+dnatemp <- st_as_sf(data.alive)
 ## CREATE A BUFFER AROUND EACH DETECTION
 tmp <-  st_buffer(dnatemp, dist=750)
 
-for(i in 1:nrow(myFilteredData.sp$alive)){
+for(i in 1:nrow(data.alive)){
   # INTERSECT POINT WITH TRACKS,
   t <- which(years %in% tmp[i, ]$Year)
-  whichSameDate <- which(as.character(TRACKSSimple_sf[[t]]$Dato)==as.character(myFilteredData.sp$alive$Date[i]))
+  whichSameDate <- which(as.character(TRACKSSimple_sf[[t]]$Dato)==as.character(data.alive$Date[i]))
   tmpTRACKS <- st_intersection(TRACKSSimple_sf[[t]][whichSameDate,], tmp[i,])
   
   if(nrow(tmpTRACKS)==0){next}
@@ -593,18 +608,18 @@ for(i in 1:nrow(myFilteredData.sp$alive)){
   # MAKE SURE THE SAMPLE WAS COLLECTED AT THE SAME TIME THAN THE TRACK
   # IF NO MATCHING DATE ASSIGN TO NA?
   if(length(dist)==0){
-    myFilteredData.sp$alive$TrackRovbsID[i] <- NA
-    myFilteredData.sp$alive$TrackDist[i] <- NA
+    data.alive$TrackRovbsID[i] <- NA
+    data.alive$TrackDist[i] <- NA
   }
   # IF MATCHING DATE ASSING TO THAT TRACK
   if(length(dist)==1){
-    myFilteredData.sp$alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID
-    myFilteredData.sp$alive$TrackDist[i] <- dist
+    data.alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID
+    data.alive$TrackDist[i] <- dist
   }
   # IF SEVERAL MATCHING DATES ASSING TO THE CLOSEST OF THE MATCHING TRACKS
   if(length(dist)>1){
-    myFilteredData.sp$alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID[which.min(dist)]
-    myFilteredData.sp$alive$TrackDist[i] <- min(dist)
+    data.alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID[which.min(dist)]
+    data.alive$TrackDist[i] <- min(dist)
   }
   print(i)
 }
@@ -621,28 +636,28 @@ load(file.path(working.dir, "data", "_myFilteredData.sp.RData"))
 distanceThreshold <- 500
 
 ## Proevetype columns was replaced by two columns, merging them now...
-myFilteredData.sp$alive$Proevetype <-  ifelse(
-  myFilteredData.sp$alive$Annen.innsamler...Rolle %in% "", 
-  myFilteredData.sp$alive$Samlet.selv...Rolle,
-  myFilteredData.sp$alive$Annen.innsamler...Rolle)
+data.alive$Proevetype <-  ifelse(
+  data.alive$Annen.innsamler...Rolle %in% "", 
+  data.alive$Samlet.selv...Rolle,
+  data.alive$Annen.innsamler...Rolle)
 
-whichStructured <- myFilteredData.sp$alive$Proevetype %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
-  !is.na(myFilteredData.sp$alive$TrackRovbsID) &
-  myFilteredData.sp$alive$TrackDist <= distanceThreshold
-myFilteredData.spStructured <- myFilteredData.sp$alive[whichStructured,]
-myFilteredData.spOthers <- myFilteredData.sp$alive[!whichStructured,]
+whichStructured <- data.alive$Proevetype %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
+  !is.na(data.alive$TrackRovbsID) &
+  data.alive$TrackDist <= distanceThreshold
+myFilteredData.spStructured <- data.alive[whichStructured,]
+myFilteredData.spOthers <- data.alive[!whichStructured,]
 
 ## CHECK IF A SAMPLE IS NOT MISSING SOMEWHERE
 nrow(myFilteredData.spStructured) + nrow(myFilteredData.spOthers)
-nrow(myFilteredData.sp$alive)
+nrow(data.alive)
 
 ## Check number of opp vs. struc each year 
-myFilteredData.sp$alive$TrackDistCat <- ifelse(myFilteredData.sp$alive$TrackDist > 500, 0, 1)
-myFilteredData.sp$alive$TrackDistCat[is.na(myFilteredData.sp$alive$TrackDistCat)] <- 0
+data.alive$TrackDistCat <- ifelse(data.alive$TrackDist > 500, 0, 1)
+data.alive$TrackDistCat[is.na(data.alive$TrackDistCat)] <- 0
 
-table( myFilteredData.sp$alive$Proevetype,
-       myFilteredData.sp$alive$Year,
-       myFilteredData.sp$alive$TrackDistCat)
+table( data.alive$Proevetype,
+       data.alive$Year,
+       data.alive$TrackDistCat)
 
 
 
@@ -665,7 +680,7 @@ legend("topleft",
 dev.off()
 
 ## CONSTRAIN TO SAMPLES COLLECTED "Fylkesmannen","SNO" 
-tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Proevetype %in% 
+tmp <- data.alive[data.alive$Proevetype %in% 
                                  c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),]
 tab <- table(tmp$Year, tmp$TrackRovbsID, useNA ="always" )
 
@@ -677,16 +692,16 @@ for(t in 1:nYears){
   tmpNoTracks <- tmp1[is.na(tmp1$TrackRovbsID), ]
   tmpTracks <- tmp1[!is.na(tmp1$TrackRovbsID), ]
   
-  plot(st_geometry(myStudyArea.poly), main="Structured with track")
+  plot(st_geometry(studyArea), main="Structured with track")
   plot(st_geometry(tmpTracks), pch=21, col="black", cex=1,bg="red",add=T)
   
-  plot(st_geometry(myStudyArea.poly), main="Structured without track")
+  plot(st_geometry(studyArea), main="Structured without track")
   plot(st_geometry(tmpNoTracks), pch=21, col="black", cex=1,bg="blue",add=T)
   
-  tmpOpp <- myFilteredData.sp$alive[!myFilteredData.sp$alive$Proevetype %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),]
+  tmpOpp <- data.alive[!data.alive$Proevetype %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen"),]
   tmpOpp <- tmpOpp[tmpOpp$Year%in% years[t],]
   
-  plot(st_geometry(myStudyArea.poly), main="Other samples")
+  plot(st_geometry(studyArea), main="Other samples")
   plot(st_geometry(tmpOpp), pch=21, col="black", cex=1,bg="green",add=T)
   mtext(years[t],adj = -0.8,padj = 1)
 }
@@ -696,7 +711,7 @@ dev.off()
 ## OVERALL MAP DETECTION DEAD RECOVERIES MAP
 pdf(file = file.path(working.dir, "figures", "OverallDetectionsDeadRecoveries.pdf"))
 plot(st_geometry(GLOBALMAP))
-plot(st_geometry(myStudyArea.poly),add=T)
+plot(st_geometry(studyArea),add=T)
 plot(st_geometry(myFullData.sp$alive), pch=16, col="red", cex=0.3,add=T)
 plot(st_geometry(myFullData.sp$dead.recovery),pch=16, col="blue", cex=0.3,add=T)
 mtext(paste("Live detections", length(myFullData.sp$alive),
@@ -709,21 +724,21 @@ dev.off()
 ## ------       4.1. DETECTIONS ALIVE ------ 
 
 ## NUMBER OF INDIVIDUALS DETECTED ALIVE
-length(unique(myFilteredData.sp$alive$Id))
+length(unique(data.alive$Id))
 
 ## NUMBER OF INDIVIDUALS DETECTED ALIVE & RECOVERED DEAD
-sum(unique(myFilteredData.sp$alive$Id) %in% unique(myFilteredData.sp$dead.recovery$Id))
+sum(unique(data.alive$Id) %in% unique(data.dead$Id))
 
 ## NUMBER OF INDIVIDUALS DETECTED/YEAR/COUNTRY
-table.id <- table(myFilteredData.sp$alive$Id,myFilteredData.sp$alive$Year, myFilteredData.sp$alive$Country)
+table.id <- table(data.alive$Id,data.alive$Year, data.alive$Country)
 apply(table.id, c(2,3), function(x) sum(x>0))
 
 ## NUMBER OF DETECTIONS/YEAR/COUNTRY
-countrytab <- table(myFilteredData.sp$alive$Year, myFilteredData.sp$alive$Country)
+countrytab <- table(data.alive$Year, data.alive$Country)
 countrytab 
 
 ## NUMBER OF DETECTIONS/YEAR/COUNTRY/SEX
-sex_countrytab <- table(myFilteredData.sp$alive$Year, myFilteredData.sp$alive$Country, myFilteredData.sp$alive$Sex)
+sex_countrytab <- table(data.alive$Year, data.alive$Country, data.alive$Sex)
 sex_countrytab
 
 ## PROPORTION OF DETECTIONS PER YEAR/COUNTRY/SEX
@@ -738,14 +753,14 @@ sex_countrytab_prop
 ## ------       4.2. DEAD RECOVERIES ------ 
 
 ## NUMBER OF INDIVIDUALS RECOVERED
-length(unique(myFilteredData.sp$dead.recovery$Id))
+length(unique(data.dead$Id))
 
 ## NUMBER OF DEAD RECOVERIES/YEAR/COUNTRY
-table(myFilteredData.sp$dead.recovery$Year, myFilteredData.sp$dead.recovery$Country)
+table(data.dead$Year, data.dead$Country)
 
 ## MORTALITY CAUSES
-unique(as.character(myFilteredData.sp$dead.recovery$DeathCause))
-unique(as.character(myFilteredData.sp$dead.recovery$DeathCause_2))  
+unique(as.character(data.dead$DeathCause))
+unique(as.character(data.dead$DeathCause_2))  
 MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$DeathCause))
 
 ## DEFINE LEGAL MORTALITY
@@ -774,17 +789,17 @@ if(plot.check){
   for(t in 1:nYears){
     plot(habitat$habitat.r, main = years[t]) 
     plot(st_geometry(detectors$main.detector.sp), add=T, pch=16, cex=0.1)
-    plot(st_geometry(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]), 
+    plot(st_geometry(data.alive[data.alive$Year == years[t], ]), 
          pch=16,col="red", cex=0.7, add=T)
     mtext(paste("Live detections",
-                nrow(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]),
+                nrow(data.alive[data.alive$Year == years[t], ]),
                 "; ID:",
-                nrow(unique(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]$Id))),
+                nrow(unique(data.alive[data.alive$Year == years[t], ]$Id))),
           line = +1)
     
-    plot(st_geometry(myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t], ]),
+    plot(st_geometry(data.dead[data.dead$Year == years[t], ]),
          pch=16,col="blue", cex=0.7,add=T)
-    mtext(paste("Dead recovery:",nrow(myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t], ])))
+    mtext(paste("Dead recovery:",nrow(data.dead[data.dead$Year == years[t], ])))
     plot(st_geometry(GLOBALMAP), add=T) 
   }#t
   
@@ -825,14 +840,14 @@ if(DATA$sex == "Hann"){
 ## ------     2.1. GENERATE HABITAT CHARACTERISTICS ------ 
 
 myHabitat.list <- MakeHabitatFromRastersf( 
-  poly = myStudyArea.poly,
+  poly = studyArea,
   habitat.r = habitatRasters[["Habitat"]],
   buffer = buffer.size,                               
   plot.check = T)
 
 ##-- Make habitat from predefined Scandinavian raster of suitable habitat
 habitat <- makeHabitatFromRaster(
-  poly = myStudyArea.poly,
+  poly = studyArea,
   habitat.r = habRaster,
   buffer = habitat$buffer,
   plot.check = FALSE) %>%
@@ -857,7 +872,7 @@ habitat$grid <- sf::st_as_sf( stars::st_as_stars(habitat$habitat.r),
 ## PLOT CHECK
 if(plot.check){
   plot(myHabitat.list$habitat.r)
-  plot(st_geometry(myStudyArea.poly), add=T)
+  plot(st_geometry(studyArea), add=T)
   plot(st_geometry(COUNTRIES), add=T)
 }
 
@@ -924,11 +939,11 @@ n.trials <- as.vector(table(mydetector.sp$main.cell.id))
 ## PLOT CHECK
 if(plot.check){
   par(mfrow = c(1,2))
-  plot(st_geometry(myStudyArea.poly), main = "Detectors Alive")
+  plot(st_geometry(studyArea), main = "Detectors Alive")
   plot(st_geometry(mymain.detector.sp), col = "red", pch = 16, cex = 0.1, add = T)
   plot(st_geometry(GLOBALMAP), add = T)
   
-  plot(st_geometry(myStudyArea.poly), main = "Detectors Dead")
+  plot(st_geometry(studyArea), main = "Detectors Dead")
   plot(st_geometry(mymain.detector.sp), col = "red", pch = 16, cex = 0.1, add = T)
   plot(st_geometry(GLOBALMAP), add = T)
 }
@@ -987,7 +1002,7 @@ for(i in 1: max(detCounties)){
 
 ## PLOT CHECK 
 COUNTIESplot <- st_simplify(COUNTIES, dTolerance = 500) %>%
-  #st_intersection(., myStudyArea.poly) %>%
+  #st_intersection(., studyArea) %>%
   group_by(id) %>%
   summarize()
 
@@ -1010,7 +1025,7 @@ detectorGrid.r <- rasterFromXYZ(cbind(st_coordinates(mymain.detector.sp),
                                       rep(1,nrow(mymain.detector.sp))))
 detectorGrid <- sf::st_as_sf(stars::st_as_stars(detectorGrid.r), 
                              as_points = FALSE, merge = F)
-st_crs(detectorGrid) <- st_crs(myStudyArea.poly)
+st_crs(detectorGrid) <- st_crs(studyArea)
 detectorGrid$id <- 1:nrow(detectorGrid)
 plot(st_geometry(detectorGrid))
 
@@ -1133,7 +1148,7 @@ skandObs$month <- as.numeric(format(skandObs$date1,"%m"))
 ## MAKE IT SPATIAL 
 skandObs <- st_as_sf(skandObs, coords = c("longitude", "latitude"))
 st_crs(skandObs) <- st_crs("EPSG:4326")
-skandObs <- st_transform(skandObs, st_crs(myStudyArea.poly))
+skandObs <- st_transform(skandObs, st_crs(studyArea))
 
 ## SUBSET BASED ON SEASON 
 subset <- skandObs$month %in% c(unlist())
@@ -1177,7 +1192,7 @@ if(plot.check){
   ## MAPS 
   par(mar = c(0,0,2,0))
   for(t in 1:nYears){
-    plot(st_geometry(myStudyArea.poly), main= years[t])
+    plot(st_geometry(studyArea), main= years[t])
     plot(st_geometry(skandObs[skandObs$monitoring.season %in% years[t],  ]), pch=16, col="red", cex=0.1)
   }
   dev.off()
@@ -1206,7 +1221,7 @@ rovbaseObs$month <- as.numeric(format(rovbaseObs$Funnetdato,"%m"))
 ## DEFINE PROJECTIONS
 rovbaseObs.sp <- st_as_sf( rovbaseObs,
                            coords = c("Oest (UTM33/SWEREF99 TM)","Nord (UTM33/SWEREF99 TM)"))
-st_crs(rovbaseObs.sp) <- st_crs(myStudyArea.poly)
+st_crs(rovbaseObs.sp) <- st_crs(studyArea)
 
 ## SUBSET THE DATA 
 filter <- list(
@@ -1379,7 +1394,7 @@ if(plot.check){
             font = 2,
             line = 2.5,
             cex = 0.8))
-    plot( st_geometry(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]),
+    plot( st_geometry(data.alive[data.alive$Year == years[t], ]),
           pch = 16, col = "red", cex = 0.2, add = T)
     
     plot( st_geometry(myHabitat.list$buffered.habitat.poly),
@@ -1451,21 +1466,21 @@ detectors$localObjects <- getLocalObjects(
 ## ------       4.1.1. DETECTIONS ALIVE ------ 
 
 ## NUMBER OF INDIVIDUALS DETECTED ALIVE
-length(unique(myFilteredData.sp$alive$Id))
+length(unique(data.alive$Id))
 
 ## NUMBER OF INDIVIDUALS DETECTED ALIVE AND RECOVERED DEAD
-sum(unique(myFilteredData.sp$alive$Id) %in% unique(myFilteredData.sp$dead.recovery$Id))
+sum(unique(data.alive$Id) %in% unique(data.dead$Id))
 
 ## NUMBER OF INDIVIDUALS DETECTED/YEAR/COUNTRY
-table.id <- table(myFilteredData.sp$alive$Id,myFilteredData.sp$alive$Year, myFilteredData.sp$alive$Country)
+table.id <- table(data.alive$Id,data.alive$Year, data.alive$Country)
 apply(table.id, c(2,3), function(x) sum(x>0))
 
 ## NUMBER OF DETECTIONS/YEAR/COUNTRY
-countrytab <- table(myFilteredData.sp$alive$Year, myFilteredData.sp$alive$Country)
+countrytab <- table(data.alive$Year, data.alive$Country)
 countrytab 
 
 ## NUMBER OF DETECTIONS/YEAR/COUNTRY/SEX
-sex_countrytab <- table(myFilteredData.sp$alive$Year, myFilteredData.sp$alive$Country, myFilteredData.sp$alive$Sex)
+sex_countrytab <- table(data.alive$Year, data.alive$Country, data.alive$Sex)
 sex_countrytab
 
 ## PROPORTION OF DETECTIONS PER YEAR/COUNTRY/SEX
@@ -1480,14 +1495,14 @@ sex_countrytab_prop
 ## ------       4.1.2. DEAD RECOVERIES ------ 
 
 ## NUMBER OF INDIVIDUALS RECOVERED
-length(unique(myFilteredData.sp$dead.recovery$Id))
+length(unique(data.dead$Id))
 
 ## NUMBER OF DEAD RECOVERIES/YEAR/COUNTRY
-table(myFilteredData.sp$dead.recovery$Year, myFilteredData.sp$dead.recovery$Country)
+table(data.dead$Year, data.dead$Country)
 
 ## MORTALITY CAUSES
-unique(as.character(myFilteredData.sp$dead.recovery$DeathCause))
-unique(as.character(myFilteredData.sp$dead.recovery$DeathCause_2))  
+unique(as.character(data.dead$DeathCause))
+unique(as.character(data.dead$DeathCause_2))  
 MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$DeathCause))
 
 ## DEFINE LEGAL MORTALITY
@@ -1516,17 +1531,17 @@ if(plot.check){
   for(t in 1:nYears){
     plot(myHabitat.list$habitat.r, main = years[t]) 
     plot(st_geometry(mymain.detector.sp), add=T, pch=16, cex=0.1)
-    plot(st_geometry(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]), 
+    plot(st_geometry(data.alive[data.alive$Year == years[t], ]), 
          pch=16,col="red", cex=0.7, add=T)
     mtext(paste("Live detections",
-                nrow(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]),
+                nrow(data.alive[data.alive$Year == years[t], ]),
                 "; ID:",
-                nrow(unique(myFilteredData.sp$alive[myFilteredData.sp$alive$Year == years[t], ]$Id))),
+                nrow(unique(data.alive[data.alive$Year == years[t], ]$Id))),
           line = +1)
     
-    plot(st_geometry(myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t], ]),
+    plot(st_geometry(data.dead[data.dead$Year == years[t], ]),
          pch=16,col="blue", cex=0.7,add=T)
-    mtext(paste("Dead recovery:",nrow(myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year == years[t], ])))
+    mtext(paste("Dead recovery:",nrow(data.dead[data.dead$Year == years[t], ])))
     plot(st_geometry(GLOBALMAP), add=T) 
   }#t
   
@@ -1566,7 +1581,7 @@ if(DATA$sex == "Hann"){
 
 ## ALL SAMPLES
 myData.alive <- AssignDetectors_v3sf( 
-  myData = myFilteredData.sp$alive,                
+  myData = data.alive,                
   myDetectors = mymain.detector.sp,
   mysubDetectors = mydetector.sp,
   radius = detector.res)
@@ -1587,7 +1602,7 @@ myData.aliveOthers <- AssignDetectors_v3sf(
 
 ## DEAD RECOVERIES
 myData.dead <- AssignDetectors_v3sf(
-  myData = myFilteredData.sp$dead.recovery,
+  myData = data.dead,
   myDetectors = mymain.detector.sp,
   radius = detector.res)
 
@@ -1737,11 +1752,11 @@ for(t in 1:nYears){
     if(sum(distances[[t]]$y.flagged) > 0){
       affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
       for(i in affected.ids){
-        plot(st_geometry(myStudyArea.poly), main = paste("t: ",t,"     i: ", i, sep = ""))
+        plot(st_geometry(studyArea), main = paste("t: ",t,"     i: ", i, sep = ""))
         plot(st_geometry(GLOBALMAP), add = T)
         plot(st_geometry(mymain.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
         
-        tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Id == y.ar$Id.vector[i], ]
+        tmp <- data.alive[data.alive$Id == y.ar$Id.vector[i], ]
         tmp <- tmp[order(tmp$Date), ]
         tmp.xy <- st_coordinates(tmp)
         n.det <- nrow(tmp.xy)
@@ -2365,7 +2380,7 @@ if(DATA$sex %in% "Hunn"){
   if(!dir.exists(file.path(WD,"/Figures",modelName))){dir.create(file.path(WD,"/Figures", modelName))}
   
   save(myHabitat.list, myDetectors, COUNTRIES,
-       myStudyArea.poly,COMMUNES,habitat.subdetectors,
+       studyArea,COMMUNES,habitat.subdetectors,
        myFilteredData.sp, myFullData.sp, COUNTIESplot,
        detCounties.original,
        file = file.path(paste(WD,"/Figures/",modelName,sep=""), "NecessaryObjects.RData" ))

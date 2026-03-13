@@ -663,10 +663,10 @@ makeRovquantData_wolverine <- function(
     sf::st_as_sf(., coords = c("longitude","latitude")) %>%
     sf::st_set_crs(., value = "EPSG:4326") %>%
     sf::st_transform(., sf::st_crs(COUNTIES)) %>%
-    dplyr::filter(!is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
-  
-  
-  
+    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
+ 
+ # dplyr::filter(!is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
+
   ## ------         2.2.6.2. ROVBASE ------
   
   # ##-- Load the last Rovbase data files
@@ -722,12 +722,11 @@ makeRovquantData_wolverine <- function(
     ##-- Turn into spatial points object
     sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
     sf::st_set_crs(. , sf::st_crs(COUNTIES)) %>%
-    filter( 
-      ##-- ... based on space 
-      !is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
+    ##-- Filter based on space 
+    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
   
-  ##-- Remove un-necessary objects
-  rm(list = c("rovbaseObs1","rovbaseObs2","rovbaseObs3","rovbaseObs4"))
+  # ##-- Remove un-necessary objects
+  # rm(list = c("rovbaseObs1","rovbaseObs2","rovbaseObs3","rovbaseObs4"))
   
   
   
@@ -976,9 +975,10 @@ makeRovquantData_wolverine <- function(
       ##-- Subset to months of interest
       Month %in% unlist(sampling.months),
       ##-- Subset to sex of interest
-      Sex %in% sex,
-      ##-- Filter data for space
-      !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))) 
+      Sex %in% sex) %>%
+    ##-- Filter based on space 
+    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
+
   
   
   ## ------     6.2. DEAD RECOVERY DATA -----
@@ -988,9 +988,9 @@ makeRovquantData_wolverine <- function(
       ##-- Subset to years of interest
       Year %in% years,
       ##-- Subset to sex of interest
-      Sex %in% sex,
-      ##-- Filter data for space
-      !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))) 
+      Sex %in% sex) %>%
+    ##-- Filter based on space 
+    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
   
   
 

@@ -429,12 +429,11 @@ makeRovquantData_bear <- function(
   
   ##-- Subset SkandObs 
   skandObs <- skandObs %>%
-    dplyr::filter( 
-      ##-- ...based on monitoring season
-      month %in% unlist(sampling.months),
-      ##-- ... based on space 
-      !is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
-  
+    ##-- ...based on monitoring season
+    dplyr::filter(month %in% unlist(sampling.months)) %>%
+    ##-- ... based on space 
+    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
+
   # ##-- Rasterize at the detector level
   # r.list <- lapply(DATA$years, function(y){
   #   if(y %in% skandObs$year){
@@ -482,11 +481,10 @@ makeRovquantData_bear <- function(
   
   ##-- Subset RovbaseObs 
   rovbaseObs <- rovbaseObs %>%
-    filter( 
-      ##-- ...based on monitoring season
-      month %in% unlist(sampling.months),
-      ##-- ... based on space 
-      !is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
+    ##-- ...based on monitoring season
+    filter( month %in% unlist(sampling.months)) %>%
+    ##-- ... based on space 
+    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
   
   # ##-- Rasterize at the detector level
   # r.list <- lapply(years, function(y){
@@ -655,6 +653,7 @@ makeRovquantData_bear <- function(
   
   
   ## ------   6. FILTER DATA -----
+  
   ## ------     6.1. ALIVE DATA -----
   
   data.alive <- myFullData.sp$alive %>%
@@ -664,10 +663,9 @@ makeRovquantData_bear <- function(
       ##-- Subset to months of interest
       Month %in% unlist(sampling.months),
       ##-- Subset to sex of interest
-      Sex %in% sex,
-      ##-- Filter data for space
-      !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
-    ) %>%
+      Sex %in% sex) %>%
+    ##-- Filter data for space
+    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects) %>%
     ##-- Assign detector based on distance
     assignDetectors(
       data = .,                
@@ -684,12 +682,9 @@ makeRovquantData_bear <- function(
       ##-- Subset to years of interest
       Year %in% years,
       ##-- Subset to sex of interest
-      Sex %in% sex,
-      ##-- Filter data for space
-      !is.na(as.numeric(sf::st_intersects(.,habitat.rWthBufferPol)))
-      # ##-- Filter data for space
-      # Country_sample == "(N)"
-    ) %>% 
+      Sex %in% sex) %>%
+    ##-- Filter data for space
+    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects) %>%
     ##-- Assign detector based on distance
     assignDetectors(
       data = .,
