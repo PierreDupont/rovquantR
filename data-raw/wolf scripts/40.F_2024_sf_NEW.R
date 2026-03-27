@@ -467,7 +467,7 @@ load(file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.
 
 myCleanedData.sp <- CleanDataNew3sf( 
   dna_samples = DNA,
-  dead_recoveries = DEAD,
+  dead_recoveries = DR,
   species_id = DATA$species,
   country_polygon = COUNTRIES,
   threshold_month = unlist(DATA$sampling.months)[1],
@@ -2282,12 +2282,16 @@ sxy.data <- round(sxy.data, 5)
 
 
 ## ------     4.3. TRANSFORM Y TO SPARSE MATRICES  ------ 
+
 #STRUCTURED 
 SparseY <- getSparseY(y.aliveStructured)
 #OTHER
 SparseYOth <- getSparseY(y.aliveOthers)
 
+
+
 ## ------     4.4. LATENT VARIABLE DET RESPONSE ------ 
+
 detResponse <- already.detected 
 detResponse[rownames(detResponse) %in% "Augmented", 1]  <- NA
 InitsDetResponse <- detResponse
@@ -2298,6 +2302,7 @@ InitsDetResponse[!is.na(detResponse)] <- NA
 
 
 ## ------   5. NIMBLE DATA ------ 
+
 nimData <- list( z = z.age,   
                  sxy = sxy.data,
                  y.alive = SparseY$y,
@@ -2313,7 +2318,10 @@ nimData <- list( z = z.age,
                  idResponse = detResponse,
                  alpha = rep(1,3))
 
+
+
 ## ------   6. NIMBLE CONSTANTS ------ 
+
 nimConstants <- list( n.individuals = dim(y.alive)[1],
                       n.detectors = dim(y.alive)[2],  
                       n.years = dim(y.alive)[3], 
@@ -2350,6 +2358,7 @@ nimConstants <- list( n.individuals = dim(y.alive)[1],
 )
 
 ## ------   7. NIMBLE PARAMETERS ------ 
+
 nimParams <- c("N",
                "omeg1",
                "gamma",
@@ -2375,6 +2384,7 @@ nimParams2 <- c("z",
                 "sxy")
 
 ## ------   8. SAVE NECESSARY OBJECTS FOR PLOTTING ------ 
+
 #ONLY SAVE IF IT IS THE FEMALE SCRIPT TO AVOID DUPLICATED SCRIPTS
 if(DATA$sex %in% "Hunn"){
   if(!dir.exists(file.path(WD,"/Figures",modelName))){dir.create(file.path(WD,"/Figures", modelName))}
@@ -2388,7 +2398,7 @@ if(DATA$sex %in% "Hunn"){
 
 ## ------   9. SET UP SEVERAL CHAINS WITH DIFFERENT STARTING VALUES ------ 
 
-for(c in 1:4){#----SET UP SEVERAL CHAINS WITH DIFFERENT STARTING VALUES
+for(c in 1:4){
   
   ## ------    3.4. LIST NIMBLE INITS ------ 
   nimInits <- list( "sxy" = sxy.init,
@@ -2456,7 +2466,8 @@ for(c in 1:4){#----SET UP SEVERAL CHAINS WITH DIFFERENT STARTING VALUES
 }
 
 ## ------   7. NIMBLE RUN ------ 
-load(file.path(WD, modelName, paste(modelName, "_INPUTChain1.RData", sep="" )))
+
+load(file.path(WD, modelName, paste0(modelName, "_INPUTChain1.RData")))
 ptm <- proc.time()
 model <- nimbleModel( code = modelCode,
                       constants = nimConstants,
