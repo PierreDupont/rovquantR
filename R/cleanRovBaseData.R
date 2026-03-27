@@ -480,13 +480,13 @@ cleanRovbaseData <- function(
                                              "County","Country_sample"))
   numDupData <- nrow(duplicateData)
   if(numDupData > 0){
-  write.csv( duplicateData,
-             file = file.path( working.dir, "tables",
-                               paste0( engSpecies, "_DR in DNA_",
-                                       years[1]," to ", years[length(years)],
-                                       ".csv")))
+    write.csv( duplicateData,
+               file = file.path( working.dir, "tables",
+                                 paste0( engSpecies, "_DR in DNA_",
+                                         years[1]," to ", years[length(years)],
+                                         ".csv")))
     ##-- Remove duplicated data in DNA before merging 
-   # DNA <- DNA[!DNA$DNAID %in% duplicateData$DNAID, ]
+    # DNA <- DNA[!DNA$DNAID %in% duplicateData$DNAID, ]
   }
 
   

@@ -39,6 +39,8 @@ source(file.path(dir.git,"Temp/CM/functions/Nimble/dbinomLocal_normalWolf.R"))
 
 
 ## -----------------------------------------------------------------------------
+####### cleanRovBaseData() -----
+## -----------------------------------------------------------------------------
 
 ## ------ 0. SET-UP PARAMETERS ------
 
@@ -58,7 +60,8 @@ norSpecies <- "Ulv"
 
 sex = c("male","female") 
 
-legal.dead <- c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske")
+legal.dead <- c( "Lisensfelling","tamdyr","SNO","Skadefelling",
+                 "Politibeslutning","menneske")
 
 ##-- Set default values for the wolf model
 aug.factor <- 0.8
@@ -405,32 +408,32 @@ Pack_ID2025 <- Pack_ID2025 %>%
 
 ## ------   3. SEARCH EFFORT DATA ------ 
 
-# ##-- Combine all GPS tracks
-# TRACKS <- rbind(
-#   sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250422.shp")),
-#   sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422.shp"))) %>%
-#   ##-- Process dates
-#   dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
-#                  Mth = as.numeric(format(Dato,"%m")),
-#                  Yr = as.numeric(format(Dato,"%Y")),
-#                  Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
-#   ##-- Filter out irrelevant tracks
-#   dplyr::filter( Helikopter == "0",      ## Remove helicopter tracks
-#                  # Jerv == "1",          ## [CHECK] should we keep wolf tracks only?
-#                  Year %in% years & Mth %in% unlist(sampling.months)) %>% ## Keep tracks during sampling season only
-#   ##-- Extract track lengths & centroids
-#   dplyr::mutate( Length = sf::st_length(., byid = T),
-#                  Centroidx = sf::st_coordinates(sf::st_centroid(.))[ ,1])
-# 
-# ##-- Find & filter out duplicates based on person, distance and date.
-# df <- data.frame( Dato = TRACKS$Dato,
-#                   Year = TRACKS$Year,
-#                   Person = TRACKS$Person,
-#                   Length = TRACKS$Length,
-#                   Centroidx = TRACKS$Centroidx)
-# dupIDs <- which(duplicated(df))
-# dupLength <- TRACKS$Length[duplicated(df)]
-# TRACKS <- TRACKS[-dupIDs, ]
+##-- Combine all GPS tracks
+TRACKS <- rbind(
+  sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250422.shp")),
+  sf::read_sf(file.path(data.dir, "TRACKS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422.shp"))) %>%
+  ##-- Process dates
+  dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
+                 Mth = as.numeric(format(Dato,"%m")),
+                 Yr = as.numeric(format(Dato,"%Y")),
+                 Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
+  ##-- Filter out irrelevant tracks
+  dplyr::filter( Helikopter == "0",      ## Remove helicopter tracks
+                 # Jerv == "1",          ## [CHECK] should we keep wolf tracks only?
+                 Year %in% years & Mth %in% unlist(sampling.months)) %>% ## Keep tracks during sampling season only
+  ##-- Extract track lengths & centroids
+  dplyr::mutate( Length = sf::st_length(., byid = T),
+                 Centroidx = sf::st_coordinates(sf::st_centroid(.))[ ,1])
+
+##-- Find & filter out duplicates based on person, distance and date.
+df <- data.frame( Dato = TRACKS$Dato,
+                  Year = TRACKS$Year,
+                  Person = TRACKS$Person,
+                  Length = TRACKS$Length,
+                  Centroidx = TRACKS$Centroidx)
+dupIDs <- which(duplicated(df))
+dupLength <- TRACKS$Length[duplicated(df)]
+TRACKS <- TRACKS[-dupIDs, ]
 # 
 # ## --PLOT CHECK
 # if(plot.check){
@@ -456,10 +459,6 @@ Pack_ID2025 <- Pack_ID2025 %>%
 load(file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
 
 
-
-## -----------------------------------------------------------------------------
-
-## ------ II. CREATE OPSCR DATA ------
 
 ## ------   1. CLEAN & FILTER NGS DATA ------ 
 
@@ -494,20 +493,14 @@ tab <- list()
 ##-- check the sex in the pair data given by Linn and assign the sex to all detections 
 for(i in 1:length(Pack_ID2023$Sex)){
   tab[[i]] <- table(myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2023$Rovbase.ID[i]])
-  #Overwrite sex 
-  # if(length(tab[[i]])>1){print(tab[[i]])}
   myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2023$Rovbase.ID[i]] <- Pack_ID2023$Sex[i]
 }
 for(i in 1:length(Pack_ID2024$Sex)){
   tab[[i]] <- table(myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2024$Rovbase.ID[i]])
-  #Overwrite sex 
-  # if(length(tab[[i]])>1){print(tab[[i]])}
   myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2024$Rovbase.ID[i]] <- Pack_ID2024$Sex[i]
 }
 for(i in 1:length(Pack_ID2025$Sex)){
   tab[[i]] <- table(myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2025$IndividID[i]])
-  # if(length(tab[[i]])>1){print(tab[[i]])}
-  #Overwrite sex 
   myCleanedData.sp$Sex[myCleanedData.sp$IdSimplified %in% Pack_ID2025$IndividID[i]] <- Pack_ID2025$Sex[i]
 }
 
@@ -515,11 +508,61 @@ for(i in 1:length(Pack_ID2025$Sex)){
 
 ## ------     1.2. FILTER DATA FOR SEX -----
 
-myFullData.sp <- FilterDatasf( 
-  myData = myCleanedData.sp,
-  dead.recovery = T,
-  sex = DATA$sex, 
-  setSex = T)
+# myFullData.sp <- FilterDatasf( 
+#   myData = myCleanedData.sp,
+#   dead.recovery = T,
+#   sex = DATA$sex, 
+#   setSex = T)
+
+
+## [PD] part of the cleanRovBaseData function now!!!!
+
+  ##-- List all individual IDs
+  ID <- unique(as.character(myCleanedData.sp$Id))
+  myCleanedData.sp$Sex <- as.character(myCleanedData.sp$Sex)
+  
+  ##-- Initialize the vector of IDs with conflicting sexes
+  IdDoubleSex <- 0
+  counter <- 1
+  
+  for(i in 1:length(ID)){
+    ##-- subset data to individual i
+    tmp <- myCleanedData.sp$Sex[myCleanedData.sp$Id == ID[i]] 
+    ##-- create a table of the number of times individual i was assigned to each sex
+    tab <- table(tmp[tmp %in% c("female","male")])
+    ##-- If conflicting sexes (ID identified as both "Hunn" and "Hann")
+    if(length(tab) == 2){
+      ##-- If ID assigned the same number of times to the 2 sexes, assign to Ukjent
+      if(tab[1] == tab[2]){
+        myCleanedData.sp$Sex[myCleanedData.sp$Id == ID[i]] <- "unknown"
+      } else {
+        ##-- Otherwise pick the most common sex
+        myCleanedData.sp$Sex[myCleanedData.sp$Id == ID[i]] <- names(tab)[which(tab == max(tab))]
+      }
+      # print(paste("Warnings!!!", "Individuals", ID[i], "assigned to both sexes. Now assigned to", names(tab)[which(tab == max(tab))])) 
+      IdDoubleSex[counter] <- ID[i]
+      counter <- counter + 1
+    }
+    ##-- If only one of "female" or "male" registered
+    if(length(tab) == 1){myCleanedData.sp$Sex[myCleanedData.sp$Id == ID[i]] <- names(tab)}
+    
+    ##-- If anything else registered : "unknown"
+    if(length(tab) == 0){myCleanedData.sp$Sex[myCleanedData.sp$Id == ID[i]] <- "Ukjent"}
+  }#i
+
+
+myData.dead <- myData[!is.na(myData$Death), ]
+myData.alive <- myData[is.na(myData$Death), ]
+
+myData.dead$Id <- droplevels(myData.dead$Id)
+myData.alive$Id <- droplevels(myData.alive$Id)
+
+IdDoubleDead <- myData.dead$Id[duplicated(myData.dead$Id)]
+
+myFullData.sp <- list( alive = myData.alive,
+                       dead.recovery = myData.dead,
+                       IdDoubleSex = IdDoubleSex,
+                       IdDoubleDead = IdDoubleDead)
 
 
 
@@ -531,8 +574,8 @@ for(i in myFullData.sp$IdDoubleDead){
   if(length(tmp)==0){tmp  <- which(myFullData.sp$dead.recovery$Id == i)[-1]}
   duplicatedDeath <- c(duplicatedDeath, tmp)
 }#i  
-myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-duplicatedDeath, ]
 
+myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-duplicatedDeath, ]
 
 
 
@@ -631,7 +674,7 @@ load(file.path(working.dir, "data", "_myFilteredData.sp.RData"))
 
 
 
-## ------       1.6.2. SPLIT MYFILTERED DATA TO OPPORTUNISTIC AND STRUCTURED ------ 
+## ------       1.6.2. SPLIT MYFILTERED DATA TO OPPORTUNISTIC & STRUCTURED ------ 
 
 distanceThreshold <- 500
 
@@ -835,6 +878,10 @@ if(DATA$sex == "Hann"){
 
 
 
+## -----------------------------------------------------------------------------
+####### makeROvQuantData() -----
+## -----------------------------------------------------------------------------
+## ------ II. CREATE OPSCR DATA ------
 ## ------   2. GENERATE HABITAT ------
 
 ## ------     2.1. GENERATE HABITAT CHARACTERISTICS ------ 
@@ -879,6 +926,8 @@ if(plot.check){
 
 
 ## ------     2.2. GENERATE HABITAT-LEVEL COVARIATES ------ 
+
+## ------       1.2.1. DENSIT OF PACKS/PAIRS ------
 
 ## KERNEL OF INDIVIDUALS IN PAIRS 
 kern <- list()
@@ -940,7 +989,8 @@ n.trials <- as.vector(table(mydetector.sp$main.cell.id))
 if(plot.check){
   par(mfrow = c(1,2))
   plot(st_geometry(studyArea), main = "Detectors Alive")
-  plot(st_geometry(mymain.detector.sp), col = "red", pch = 16, cex = 0.1, add = T)
+  plot(st_geometry(mymain.detector.sp),
+       col = "red", pch = 16, cex = 0.1, add = T)
   plot(st_geometry(GLOBALMAP), add = T)
   
   plot(st_geometry(studyArea), main = "Detectors Dead")
@@ -1818,41 +1868,41 @@ if(plot.check){image(t(already.detected))}
 
 
 
-## ------   6. GENERATE HABITAT-LEVEL COVARIATES ------ 
-
-## KERNEL OF INDIVIDUALS IN PAIRS 
-kern <- list()
-habDens <- matrix(NA, nrow = nHabCells, ncol = nYears)
-IDS <- unlist(lapply(strsplit(as.character(myFullData.sp$alive$Id) , " "), function(x)x[1])) 
-for(t in 1:nYears){
-  id.fam <- which(y.obsALL[,as.character(years[t]-1)]%in% c(3,4), arr.ind = T)
-  m.xy <- matrix(NA, nrow=length(id.fam), ncol=2 )
-  colnames(m.xy) <-c("x","y")
-  for(i in 1:length(id.fam)){
-    tmp <- myFullData.sp$alive[IDS==row.names(y.obsALL)[i],]
-    #plot(st_geometry(myHabitat.list$buffered.habitat.poly))
-    m.xy[i,]<- colMeans(st_coordinates(tmp))
-    #points(m.xy[i,2]~m.xy[i,1], col="red", pch=16)
-  }
-  if(sum(is.na(m.xy[,1]))>0){
-    m.xy <- m.xy[!is.na(m.xy[,1]),]
-  }
-  locationsFamily <- st_as_sf(as.data.frame(m.xy), coords =c("x","y"),crs=st_crs(myHabitat.list$habitat.sp))
-  locationsFamily$id <- rep(1, nrow(locationsFamily))
-  kern[[t]] <- raster(estUDm2spixdf(kernelUD(as(locationsFamily[ ,"id"],"Spatial"),h = 15000,
-                                             grid = as(myHabitat.list$habitat.r, 'SpatialPixels'))))
-  #plot(kern[[1]])
-  plot(st_geometry(myHabitat.list$habitat.poly), add=T)
-  habDens[,t] <- scale(kern[[t]][myHabitat.list$habitat.r[ ]==1])
-}
-
-#check 
-for(t in 1:nYears){
-  plot(kern[[t]],main=years[t])
-  plot(myHabitat.list$habitat.poly$geometry,add=T,col=NA)
-}
-
-
+# ## ------   6. GENERATE HABITAT-LEVEL COVARIATES ------ 
+# 
+# ## KERNEL OF INDIVIDUALS IN PAIRS 
+# kern <- list()
+# habDens <- matrix(NA, nrow = nHabCells, ncol = nYears)
+# IDS <- unlist(lapply(strsplit(as.character(myFullData.sp$alive$Id) , " "), function(x)x[1])) 
+# for(t in 1:nYears){
+#   id.fam <- which(y.obsALL[,as.character(years[t]-1)]%in% c(3,4), arr.ind = T)
+#   m.xy <- matrix(NA, nrow=length(id.fam), ncol=2 )
+#   colnames(m.xy) <-c("x","y")
+#   for(i in 1:length(id.fam)){
+#     tmp <- myFullData.sp$alive[IDS==row.names(y.obsALL)[i],]
+#     #plot(st_geometry(myHabitat.list$buffered.habitat.poly))
+#     m.xy[i,]<- colMeans(st_coordinates(tmp))
+#     #points(m.xy[i,2]~m.xy[i,1], col="red", pch=16)
+#   }
+#   if(sum(is.na(m.xy[,1]))>0){
+#     m.xy <- m.xy[!is.na(m.xy[,1]),]
+#   }
+#   locationsFamily <- st_as_sf(as.data.frame(m.xy), coords =c("x","y"),crs=st_crs(myHabitat.list$habitat.sp))
+#   locationsFamily$id <- rep(1, nrow(locationsFamily))
+#   kern[[t]] <- raster(estUDm2spixdf(kernelUD(as(locationsFamily[ ,"id"],"Spatial"),h = 15000,
+#                                              grid = as(myHabitat.list$habitat.r, 'SpatialPixels'))))
+#   #plot(kern[[1]])
+#   plot(st_geometry(myHabitat.list$habitat.poly), add=T)
+#   habDens[,t] <- scale(kern[[t]][myHabitat.list$habitat.r[ ]==1])
+# }
+# 
+# #check 
+# for(t in 1:nYears){
+#   plot(kern[[t]],main=years[t])
+#   plot(myHabitat.list$habitat.poly$geometry,add=T,col=NA)
+# }
+# 
+# 
 
 ## ------   7. MAKE AUGMENTATION ------ 
 
