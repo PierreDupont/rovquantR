@@ -333,8 +333,13 @@ makeRovquantData_bear <- function(
     plot = FALSE) %>%
     append(detectors,.)
   
-  ##-- Extract numbers of detectors
-  n.detectors <- detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
+  ##-- Format detector locations & number of trials per detector
+  n.trials <- as.vector(table(detectors$detector.sp$main.cell.id))
+  detectors$detectors.df <- cbind.data.frame(
+    "id" = 1:n.detectors,
+    "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
+    "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
+    "size" = n.trials)
   
   ##-- make a spatial grid from polygon
   detectors$grid <- sf::st_as_sf(raster::rasterToPolygons(
@@ -344,13 +349,8 @@ makeRovquantData_bear <- function(
     mutate( id = 1:nrow(.)) %>%
     rename( "Detector" = Habitat)
   
-  ##-- Format detector locations & number of trials per detector
-  n.trials <- as.vector(table(detectors$detector.sp$main.cell.id))
-  detectors$detectors.df <- cbind.data.frame(
-    "id" = 1:n.detectors,
-    "x" = sf::st_coordinates(detectors$main.detector.sp)[ ,1],
-    "y" = sf::st_coordinates(detectors$main.detector.sp)[ ,2],
-    "size" = n.trials)
+  ##-- Extract numbers of detectors
+  n.detectors <- detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
 
   
   
@@ -380,7 +380,9 @@ makeRovquantData_bear <- function(
   ## ------       2.2.2. EXTRACT DISTANCES TO ROADS -----
   
   ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster::raster(file.path(data.dir, "Roads/MinDistAllRoads1km.tif"))
+  DistAllRoads <- readMostRecent( path = file.path(data.dir, "Roads"), 
+                                  extension = ".tif", 
+                                  stack = FALSE)
   
   ##-- Fasterize to remove values that fall in the sea
   r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
@@ -460,9 +462,10 @@ makeRovquantData_bear <- function(
   ## ------         2.2.3.2. ROVBASE ------
   
   ##-- Get all samples collected (all species)
-  rovbaseObs <- readMostRecent( path = data.dir,
-                                extension = ".xls",
-                                pattern = "all_samples") %>%
+  rovbaseObs <- readMultiples( path = file.path(data.dir, "AllSamples"),
+                               extension = ".xlsx") %>%
+    ##-- Rename columns to facilitate manipulation
+    dplyr::rename(., any_of(rename.list)) %>%
     ##-- Deal with Scandinavian characters
     dplyr::mutate(Species = stringi::stri_trans_general(Species, "Latin-ASCII")) %>%
     ##-- Filter out samples without coordinates
