@@ -514,19 +514,43 @@ cleanRovbaseData <- function(
                             "unknown")))
     
     
+    ##-- THIS IS THE PACK ID SENT BY ØYSTEIN FOR THE WINTER 2024/25.
+    Pack_ID2026 <- suppressWarnings(readMostRecent( path = data.dir,
+                                                      extension = ".xls",
+                                                      pattern = "Bilaga 4")) %>%
+      ##-- Rename columns to facilitate manipulation
+      dplyr::rename(.,
+                    IdSimplified = "RovbaseID",
+                    any_of(rename.list)) %>%
+      ##-- Turn potential factors into characters
+      dplyr::mutate(across(where(is.factor), as.character)) %>%
+      ##-- Add some columns
+      dplyr::mutate(
+        ##-- Add status 
+        Status = "Pair",
+        ##-- Fix unknown "Sex"
+        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
+        Sex = ifelse(is.na(Sex), "unknown", Sex),
+        Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
+        Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex),
+        Year = 2025)
+    
+    
     ##-- Consolidate all info on individual sex in one dataframe
     ALL_SEX <- rbind( DATA[ ,c("IdSimplified","Sex")],
                       INDIVIDUAL_ID[ ,c("IdSimplified","Sex")],
                       Pack_ID2023[ ,c("IdSimplified","Sex")],
                       Pack_ID2024[ ,c("IdSimplified","Sex")],
-                      Pack_ID2025[ ,c("IdSimplified","Sex")])
+                      Pack_ID2025[ ,c("IdSimplified","Sex")],
+                      Pack_ID2026[ ,c("IdSimplified","Sex")])
     
     
     ##-- Consolidate all info on individual status in one dataframe
     ALL_STATUS <- rbind( INDIVIDUAL_ID[ ,c("IdSimplified","Year","Status")],
                          Pack_ID2023[ ,c("IdSimplified","Year","Status")],
                          Pack_ID2024[ ,c("IdSimplified","Year","Status")],
-                         Pack_ID2025[ ,c("IdSimplified","Year","Status")]) 
+                         Pack_ID2025[ ,c("IdSimplified","Year","Status")],
+                         Pack_ID2026[ ,c("IdSimplified","Year","Status")]) 
     
     ##-- Merge with detection data 
     DATA <- DATA %>%

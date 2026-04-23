@@ -43,7 +43,7 @@ writeREADME <- function(
   
   ##-- Find the template for the README.rmd file
   if(is.null(template)) {
-    template_path <- system.file("rmd", "template-README", package = "rovquantR")
+    template_path <- system.file("rmd", "template-README.txt", package = "rovquantR")
     if(!file.exists(template_path)) {
       stop("Can not find the template for the README file.\n You must provide the path to the README template through the \"Rmd_template\" argument.")
     }
