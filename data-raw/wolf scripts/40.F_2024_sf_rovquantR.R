@@ -33,7 +33,7 @@ gc()
 
 ## ------ INSTALL 'rovquantR' FROM GITHUB ------
 
-devtools::install_github("PierreDupont/rovquantR")
+devtools::install_github("PierreDupont/rovquantR@devel")
 
 ## Ctrl + Shift + F10 (to restart R session)
 

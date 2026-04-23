@@ -26,28 +26,29 @@ library(ggplot2)
 #library(snow)
 
 ## ------ SET REQUIRED WORKING DIRECTORIES ------
-source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/myWorkingDirectories.R")
-#source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")             
+#source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/myWorkingDirectories.R")
+source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")             
 #source("C:/PROJECTS/RovQuant/Temp/RB/myWorkingDirectories.R")   
 
 ## ------ SOURCE THE REQUIRED FUNCTIONS ------
 sourceDirectory(dir.function, modifiedOnly = FALSE)
 sourceDirectory(dir.function.nimble, modifiedOnly = FALSE)
 
-load(paste(dir.dropbox,"/DATA/MISC DATA/age.lookup.table.RData",sep=""))
+load(file.path(dir.dropbox,"DATA/MISC DATA/age.lookup.table.RData"))
 
-source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/functions/Nimble/dbin_LESSCachedAllSparseWolf.R")
-source("C:/My_documents/rovquant/analyses/Rgit/RovQuant/Temp/CM/functions/Nimble/dbinomLocal_normalWolf.R")
+source(file.path(dir.git,"Temp/CM/functions/Nimble/dbin_LESSCachedAllSparseWolf.R"))
+source(file.path(dir.git,"Temp/CM/functions/Nimble/dbinomLocal_normalWolf.R"))
 
 
-## ----------------------------------------------------------------------------------------------
-## ------ 0.SET ANALYSIS CHARACTERISTICS -----
-## ----------------------------------------------------------------------------------------------
-### ==== 1. GENERAL VARIABLES DECLARATION ====
+## -----------------------------------------------------------------------------
+## ------ 0. SET ANALYSIS CHARACTERISTICS -----
+
+data.dir <- file.path(dir.dropbox, "wolf/2025/Data")
 myVars <- list( 
   ## WORKING DIRECTORY & MODEL NAME
   #WD = "C:/My_documents/NIMBLE/WOLF",
-  WD = "C:/Users/cymi/Dropbox (Old)/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/WolfRuns20152024",
+  WD = file.path(dir.dropbox, "wolf/2025/Test_F_ORIGINAL"),
+  
   # WD = "C:/PROJECTS/Rgit/DATA/rovquant/WOLF OPSCR v2.1/NIMBLE",
   modelName = "40.F_2024_sf",
  
@@ -85,9 +86,8 @@ if(is.null(myVars$modelName))stop("YOU SHOULD PROBABLY CHOOSE A NAME FOR THIS AN
 if(is.null(myVars$WD))stop("YOU SHOULD PROBABLY CHOOSE A WORKING DIRECTORY FOR THIS ANALYSIS/MODEL")
 if(!dir.exists(file.path(myVars$WD,myVars$modelName))){dir.create(file.path(myVars$WD, myVars$modelName))}
 
-## ----------------------------------------------------------------------------------------------
-## ------ I.LOAD AND SELECT DATA ------
-## ----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
+## ------ I. LOAD AND SELECT DATA ------
 ### ==== 1. HABITAT DATA ====
 ### ====    1.1.LOAD RAW SHAPEFILES ====
 COUNTRIES <- st_read(paste(dir.dropbox,"/DATA/GISData/scandinavian_border/countries_multipart.shp",sep="")) ## Map of Scandinavia (including Finland & parts of Russia)
@@ -168,32 +168,45 @@ if(myVars$plot.check){
 
 ### ==== 2. NGS DATA ====
 ### ====    2.1.LOAD ROVBASE FILES ====
-DNA <- read.csv(paste(dir.dropbox,"/DATA/RovbaseData/ROVBASE DOWNLOAD 20250415/RIB22042025133456403_wolfDNA.csv",sep=""), fileEncoding="latin1")## NGS data from RovBase
-DEAD <- read.csv(paste(dir.dropbox,"/DATA/RovbaseData/ROVBASE DOWNLOAD 20250415/RIB22042025133534832_wolfDEAD.csv",sep=""), fileEncoding="latin1") ## Dead Recoveries from RovBase
-INDIVIDUAL_ID <- read.csv(paste(dir.dropbox,"/DATA/RovbaseData/ROVBASE DOWNLOAD 20220513/220512_ID Grouping 2006-2021.csv",sep=""), fileEncoding="latin1")  ## Wolves infos from Micke
+
+## NGS data from RovBase
+DNA <- read.csv(file.path(data.dir,"csv/RIB22042025133456403_wolfDNA.csv"),
+                fileEncoding = "latin1")
+
+## Dead Recoveries from RovBase
+DEAD <- read.csv(file.path(data.dir,"csv/RIB22042025133534832_wolfDEAD.csv"), 
+                 fileEncoding = "latin1") 
+
+## Wolves infos from Micke
+INDIVIDUAL_ID <- read.csv(file.path(data.dir,"csv/220512_ID Grouping 2006-2021.csv"),
+                          fileEncoding = "latin1") 
+
 ## THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2022/23.
-Pack_ID2023 <- read.csv(paste(dir.dropbox,
-                          "/DATA/MickeIndividual/Genetiskt ID RM vargar 2223 Bilaga 4_ØF.csv",sep=""),
-                    fileEncoding="latin1")  
-Pack_ID2024 <- read.csv(paste(dir.dropbox,
-                              "/DATA/MickeIndividual/Bilaga_11.4_240424_ØF to Cyril.csv",sep=""),
-                        fileEncoding="latin1")  
+Pack_ID2023 <- read.csv(file.path(data.dir,"csv/Genetiskt ID RM vargar 2223 Bilaga 4_ØF.csv"),
+                    fileEncoding = "latin1") 
 
-Pack_ID2025 <- read.csv(paste(dir.dropbox,
-                              "/DATA/MickeIndividual/RovbaseID for Rovquant estimates2025FromOystein.csv",sep=""),
-                        fileEncoding="latin1")  
+## THIS IS THE PACK ID SENT BY ØYSTEIN 
+Pack_ID2024 <- read.csv(file.path(data.dir,"csv/Bilaga_11.4_240424_ØF to Cyril.csv"),
+                        fileEncoding = "latin1")  
+
+Pack_ID2025 <- read.csv(file.path(data.dir,"csv/RovbaseID for Rovquant estimates2025FromOystein.csv"),
+                        fileEncoding = "latin1")
+
 ## Here we need to recreate the sex columns as Oystein gave me a list of ids only (losing the sex)
-Pack_ID2025$Sex <- apply(Pack_ID2025[,c("Sex1","Sex2","Sex3","Sex4")],1, function(x) x[which(!x%in% "")][1] )
+Pack_ID2025$Sex <- apply(Pack_ID2025[,c("Sex1","Sex2","Sex3","Sex4")], 1, function(x) x[which(!x%in% "")][1])
 
-## THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2023/24.
+
 
 ### ====    2.2.TRANSLATE SCANDINAVIAN CHARACTERS ====
+
 colnames(DNA) <- translateForeignCharacters(dat=colnames(DNA), dir.translation = dir.analysis )
 colnames(DEAD) <- translateForeignCharacters(dat=colnames(DEAD), dir.translation = dir.analysis )
 colnames(INDIVIDUAL_ID) <- translateForeignCharacters(dat=colnames(INDIVIDUAL_ID), dir.translation = dir.analysis )
 colnames(Pack_ID2023) <- translateForeignCharacters(dat=colnames(Pack_ID2023), dir.translation = dir.analysis )
 colnames(Pack_ID2024) <- translateForeignCharacters(dat=colnames(Pack_ID2024), dir.translation = dir.analysis )
 colnames(Pack_ID2025) <- translateForeignCharacters(dat=colnames(Pack_ID2025), dir.translation = dir.analysis )
+
+
 
 #### ==== 3. SEARCH EFFORT DATA ====
 #### ====    3.1.GPS SEARCH TRACKS ====
@@ -316,12 +329,12 @@ colnames(Pack_ID2025) <- translateForeignCharacters(dat=colnames(Pack_ID2025), d
 # 
 # ### ====    3.4.SAVE SEARCH EFFORT OBJECTS FOR FASTER RUNS ====
 # save(TRACKS_YEAR, SNOW, DistAllRoads, file = file.path(myVars$WD, "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
-load(file.path(myVars$WD, "TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
+load(file.path(dir.dropbox, "wolf/WolfRuns20152024/TRACKSSouthSweden2014202540NotSimplifiedSF.RData"))
 
 
-## ----------------------------------------------------------------------------------------------
-## ------ II.CREATE SCR DATA ------
-## ----------------------------------------------------------------------------------------------
+
+## -----------------------------------------------------------------------------
+## ------ II. CREATE SCR DATA ------
 ### ==== 1. CLEAN AND FILTER NGS DATA =====
 ### ====    1.1 CLEAN NGS AND DEAD RECOVERY DATA ====
 
@@ -722,8 +735,12 @@ ggplot(st_simplify(COUNTIESplot,dTolerance = 500)) +
 #######################################################
 col <- rainbow(length(unique(detCounties)))
 plot(st_geometry(COUNTIESplot))
-plot(st_geometry(myDetectors$main.detector.sp), col=col[detCounties], pch=16, cex=0.8,add=T)
+plot(st_geometry(myDetectors$main.detector.sp),
+     col=col[detCounties],
+     pch=16, cex=0.8,add=T)
 #########
+
+
 
 ### ====       3.2.3. EXTRACT GPS TRACKS LENGTHS ====
 ## INITIALIZE MATRIX OF GPS TRACKS LENGTH FOR EACH DETECTOR & YEAR
@@ -1475,9 +1492,8 @@ age <- MakeAugmentation(y = age, aug.factor = myVars$DETECTIONS$aug.factor, repl
 min.age <- MakeAugmentation(y = min.age, aug.factor = myVars$DETECTIONS$aug.factor, replace.value = NA)
 precapture <- MakeAugmentation(y = precapture, aug.factor = myVars$DETECTIONS$aug.factor, replace.value = 0)
 
-## ----------------------------------------------------------------------------------------------
-## ------ III.MODEL SETTING AND RUNNING ------- 
-## ----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
+## ------ III. MODEL SETTING AND RUNNING ------- 
 ### ==== 1. NIMBLE MODEL DEFINITION ====
 modelCode <- nimbleCode({
   ##--------------------------------------------------------------------------------------------
@@ -2112,13 +2128,12 @@ nimParams2 <- c("z",
 ### ==== 8. SAVE NECESSARY OBJECTS FOR PLOTTING ====
 #ONLY SAVE IF IT IS THE FEMALE SCRIPT TO AVOID DUPLICATED SCRIPTS
 if(myVars$DATA$sex %in% "Hunn"){
-  if(!dir.exists(file.path(myVars$WD,"/Figures",myVars$modelName))){dir.create(file.path(myVars$WD,"/Figures", myVars$modelName))}
-
-save(myHabitat.list, myDetectors, COUNTRIES,
-     myStudyArea.poly,COMMUNES,habitat.subdetectors,
-        myFilteredData.sp, myFullData.sp, COUNTIESplot,
-     detCounties.original,
-     file = file.path(paste(myVars$WD,"/Figures/",myVars$modelName,sep=""), "NecessaryObjects.RData" ))
+  
+  save(myHabitat.list, myDetectors, COUNTRIES,
+       myStudyArea.poly,COMMUNES,habitat.subdetectors,
+       myFilteredData.sp, myFullData.sp, COUNTIESplot,
+       detCounties.original,
+       file = file.path(myVars$WD,myVars$modelName, "NecessaryObjects.RData"))
 }
 
 ### ==== 9. SET UP SEVERAL CHAINS WITH DIFFERENT STARTING VALUES ====
@@ -2191,7 +2206,9 @@ for(i in 1:nimConstants$n.individuals){
  }
 
 ### ==== 7. NIMBLE RUN ====
-load(file.path(myVars$WD, myVars$modelName, paste(myVars$modelName, "_INPUTChain1.RData", sep="" )))
+
+load(file.path(myVars$WD, myVars$modelName,
+               paste0(myVars$modelName, "_INPUTChain1.RData")))
 ptm <- proc.time()
 model <- nimbleModel( code = modelCode,
                       constants = nimConstants,
@@ -2212,8 +2229,10 @@ nimData$z[788,]
 model$z[794,]
 model$z[856,]
 
-## MAKE THE SINGLE SEASON SCR MODEL ###
 
+
+## -----------------------------------------------------------------------------
+## ------ IV. MAKE THE SINGLE SEASON SCR MODEL ------- 
 
 which(!is.na(nimData$z) & !is.na(nimInits$z),arr.ind = T)
 
@@ -2221,7 +2240,7 @@ nimData$z[733,]
 nimInits$z[733,]
 
 modelCode1 <- nimbleCode({
-  ##--------------------------------------------------------------------------------------------
+  ##----------------------------------------------------------------------------
   ##-----------------------------## 
   ##------ SPATIAL PROCESS ------##  
   ##-----------------------------##  
@@ -2258,7 +2277,7 @@ modelCode1 <- nimbleCode({
   
   
   
-  ##--------------------------------------------------------------------------------------------
+  ##----------------------------------------------------------------------------
   ##-------------------------------## 
   ##----- DEMOGRAPHIC PROCESS -----## 
   ##-------------------------------##  
@@ -2276,7 +2295,7 @@ modelCode1 <- nimbleCode({
   # for(i in 1:n.individuals){ 
   #   idResponse[i,1] ~ dbern(pResponse)
   # }
-  ##---------------------------------------------------------------------------------------------   
+  ##----------------------------------------------------------------------------
   ##-----------------------------##
   ##----- DETECTION PROCESS -----## 
   ##-----------------------------##
@@ -2376,18 +2395,11 @@ modelCode1 <- nimbleCode({
   }#i
   # }#t
   
-  ##---------------------------------------------------------------------------------------------										  
+  ##----------------------------------------------------------------------------
   ##----------------------------------------## 
   ##---------- DERIVED PARAMETERS ----------##
   ##----------------------------------------##
-  # for(i in 1:n.individuals){ 
-  #   # isAlive[i,1] <- (z[i,1] == 2) 
-  #    isAlive[i] <- (z[i] == 1) 
-  #    
-  #    #for(t in 1:n.years1){
-  #    #   isAlive[i,t+1] <- (z[i,t+1] == 2) 
-  #    #}
-  # }
+
   N <- sum(z[1:n.individuals])
   
 })
@@ -2700,9 +2712,9 @@ save(myNimbleOutput,
      TotalRuntime,
      file = file.path(myVars$WD, myVars$modelName, paste(myVars$modelName,"_OUTPUT.RData", sep="")))
 
-## -----------------------------------------------------------------------------------------------
-## ------ IV.PROCESS RESULTS ------
-## -----------------------------------------------------------------------------------------------
+## -----------------------------------------------------------------------------
+## ------ V.PROCESS RESULTS ------
+
 ### ==== 1. LOAD & PROCESS OPSCR OUTPUTS ====
 
 ## COMBINE DIFFERENT CHAINS (IF ANY) INTO ONE 
@@ -3619,3 +3631,5 @@ for(t in 1:nYears){
   
   dev.off()
 }#do all
+
+## -----------------------------------------------------------------------------

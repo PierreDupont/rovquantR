@@ -76,6 +76,108 @@ load(file.path(dir.dropbox,"DATA/MISC DATA/age.lookup.table.RData"))
 head(age.lookup.table)
 
 
+##-- Create list for renaming Rovbase files 
+##-- This is saved in R/sysdata.rda as it is for internal use in 'rovquantR' functions.
+r.list.internal = c(
+    Age_estimated = "Alder, vurdert",
+    Age = "Alder, verifisert",
+    Age_verif_by = "Alder, verifisert av",
+    Age_class = "Alder på dødt individ",
+    Age_class_verif = "Aldersklasse verifisert SVA",
+    Analyzed_by = "AnalysertAv",
+    Analysis_priority = "Analyseprioritet",
+    Approved_by = "Godkjent av",
+    Approved_date = "Godkjentdato",
+    Assessment = "Vurdering",
+    Barcode_sample = "Strekkode (Prøve)",
+    Barcode = "Strekkode (Analyse)",
+    Birth_territory = "Født revir",
+    CITES = "CITES-nummer",
+    Collected_by = "Hvem samlet inn",
+    Collector_name = "Samlet selv - Navn",
+    Collector_phone = "Samlet selv - Telefon",
+    Collector_email = "Samlet selv - E-post",
+    Collector_role = "Samlet selv - Rolle",
+    Collector_other_name = "Annen innsamler - Navn" ,
+    Collector_other_phone = "Annen innsamler - Telefon",
+    Collector_other_email = "Annen innsamler - E-post",
+    Collector_other_role = "Annen innsamler - Rolle",
+    Comments_sample = "Merknad (Prøve)",
+    Comments = "Merknad (Analyse)",
+    Control_status = "Kontrollstatus",
+    Coordinate_system = "Koordinatsystem",
+    Counted_off_against_decision = "Regnes av mot vedtak",
+    County_number = "Fylkenummer",
+    County = "Fylke",
+    Date = "Funnetdato",
+    Date = "Dødsdato",
+    Death_cause = "Bakgrunn/årsak",
+    Death_method = "Bakgrunn/årsak metode",
+    Death_purpose = "Bakgrunn/årsak formål",
+    DNAID_sample = "DNAID (Prøve)",
+    DNAID = "DNAID (Analyse)",
+    EventID = "HendelseID",
+    East_Original = "Øst (opprinnelig)",
+    East_RT90 = "Øst (RT90)",
+    East_UTM33 = "Øst (UTM33/SWEREF99 TM)",
+    Felling_site_verif = "Kontroll av fellingsted",
+    Field_personnel ="Feltpersonell",
+    Hunting_date = "Observasjons/Jaktdato",
+    Id = "Individ",
+    Id = "Individ (Rovbase)",
+    IdSimplified = "ROVBASE_IndividID",
+    Juvenile = "Yngling",
+    Mountain_area = "Fjellområde",
+    Method = "Metode",
+    Municipality_number = "Kommunenummer",
+    Municipality = "Kommune",
+    North_original = "Nord (opprinnelig)",
+    North_RT90 = "Nord (RT90)",
+    North_UTM33 = "Nord (UTM33/SWEREF99 TM)",
+    Origin = "Opprinnelse",
+    Outcome = "Utfall",
+    Last_saved_by_sample = "Sist lagret av (Prøve)",
+    Last_saved_sample = "Sist lagret dato (Prøve)",
+    Last_saved_by = "Sist lagret av (Analyse)",
+    Last_saved = "Sist lagret dato (Analyse)",
+    Last_saved_by = "Sist lagret av",
+    Last_saved =  "Sist lagret dato",
+    Locality = "Lokalitet",
+    Location = "Funnsted",
+    Lansstyrelsen_number = "Länsstyrelsens nr",
+    Quality_checked = "Kvalitetssikret av feltpersonell",
+    Quality_check_name = "Kvalitetssikrer - navn",
+    Quality_check_orga = "Kvalitetssikrer - Organisasjon",
+    Release_Date = "Frigivelsesdato",
+    Sample_type = "Prøvetype",
+    Sensitivity = "Følsomhet",
+    Species_sample = "Art (Prøve)",
+    Site_quality = "Stedkvalitet",
+    Time_of_death = "Dødstidspunkt",
+    Tips_name = "Tipser - Navn",
+    Tips_phone = "Tipser - Telefon",
+    Tips_email = "Tipser - E-post",
+    Tips_role = "Tipser - Rolle",
+    Tissue_sample = "Vevsprøve tatt",
+    Release_Date = "Frigivelsesdato",
+    RovbaseID = "RovbaseID (Analyse)",
+    RovbaseID_sample = "RovbaseID (Prøve)",
+    Species = "Art (Analyse)",
+    Species = "Art",
+    Sample_status = "Prøvestatus",
+    Sensitivity = "Følsomhet",
+    Sex_analysis = "Kjønn (Analyse)",
+    Sex = "Kjønn (Individ)",
+    Sex = "Kjønn",
+    Sex = "Kön",
+    Site_quality = "Stedkvalitet",
+    SVAID = "SVAID",
+    Uncertain_date = "Usikker dødsdato",
+    Weight_slaughter = "Slaktevekt",
+    Weight_total =  "Helvekt")
+
+  
+
 ## -----------------------------------------------------------------------------
 
 ##-- Load and prepare spatial data (COUNTRIES and COUNTIES maps in our case)
@@ -168,7 +270,7 @@ load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNew
 
 
 ##-- Save necessary data in the right folder (./data)
-use_data(fromto, age.lookup.table, internal = TRUE, overwrite = TRUE)
+use_data(fromto, age.lookup.table, r.list.internal, internal = TRUE, overwrite = TRUE)
 use_data(COUNTIES, overwrite = TRUE)
 use_data(REGIONS, overwrite = TRUE)
 use_data(COUNTRIES, overwrite = TRUE)

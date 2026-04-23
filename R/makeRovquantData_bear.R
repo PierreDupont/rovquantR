@@ -22,6 +22,8 @@
 #' @param subdetector.res A \code{Numeric}.
 #' @param max.det.dist A \code{Numeric}.  
 #' @param resize.factor A \code{Numeric}.
+#' @param rename.list A \code{list}.
+#' 
 #' 
 #' @return 
 #' A \code{html} report summarizing the data preparation process
@@ -29,13 +31,13 @@
 #'
 #' @author Pierre Dupont
 #' 
-#' @import sf 
-#' @import raster
 #' @import dplyr
-#' @importFrom graphics mtext layout 
+#' @import raster
+#' @import sf 
 #' @importFrom adehabitatHR estUDm2spixdf kernelUD
 #' @importFrom fasterize fasterize
-#' @importFrom nimbleSCR getSparseY scaleCoordsToHabitatGrid
+#' @importFrom grDevices grey
+#' @importFrom nimbleSCR getSparseY scaleCoordsToHabitatGrid getLocalObjects
 #' @importFrom sp SpatialPoints CRS
 #' @importFrom spatstat.geom as.owin ppp
 #' @importFrom spatstat.explore density.ppp
@@ -43,7 +45,6 @@
 #' @importFrom stats runif
 #' @importFrom stringi stri_trans_general 
 #' @importFrom utils data
-#' @importFrom grDevices grey
 #' 
 NULL
 #' @rdname makeRovquantData_bear
@@ -57,7 +58,7 @@ makeRovquantData_bear <- function(
   years = NULL,
   sex = c("female","male"),
   aug.factor = 2,
-  sampling.months = list(c(4,5,6,7,8,9,10,11)),
+  sampling.months = list(c(4:11)),
   
   ##-- habitat
   habitat.res = 20000, 
@@ -68,24 +69,26 @@ makeRovquantData_bear <- function(
   detector.res = 5000,
   subdetector.res = 1000,
   max.det.dist = 60000,
-  resize.factor = 1 
+  resize.factor = 1, 
+  
+  ##-- Miscellanious
+  rename.list = NULL
 ){
-  ## ---------------------------------------------------------------------------
   
   ## ------ 0. BASIC SET-UP ------
   
   ##-- Set default values for the brown bear model
   if(is.null(aug.factor)){aug.factor <- 2}
-  if(is.null(sampling.months)){sampling.months <- list(c(4,5,6,7,8,9,10,11))}
+  if(is.null(sampling.months)){sampling.months <- list(c(4:11))}
   if(is.null(habitat.res)){habitat.res <- 20000} 
   if(is.null(buffer.size)){buffer.size <- 50000}
-  if(is.null(max.move.dist)){max.move.dist <- 250000}
+  if(is.null(max.move.dist)){max.move.dist <- 300000}
   if(is.null(detector.res)){detector.res <- 5000}
   if(is.null(subdetector.res)){subdetector.res <- 1000}
   if(is.null(max.det.dist)){max.det.dist <- 60000}
   if(is.null(resize.factor)){resize.factor <- 1}
-  
-  
+  if(is.null(rename.list)){rename.list = r.list.internal}
+
   ##-- Set up list of Habitat characteristics
   habitat <- list( resolution = habitat.res,
                    buffer = buffer.size,
@@ -94,7 +97,8 @@ makeRovquantData_bear <- function(
   ##-- Set up list of Detectors characteristics
   detectors <- list( resolution = detector.res,
                      resolution.sub = subdetector.res,
-                     maxDist = max.det.dist)
+                     maxDist = max.det.dist,
+                     resize.factor = resize.factor)
   
   ##-- Set up list of Data characteristics
   DATA <- list( sex = sex,
@@ -110,10 +114,10 @@ makeRovquantData_bear <- function(
   ## ------   1. HABITAT DATA -----
   
   ##-- Load pre-defined habitat rasters and shapefiles
-  data(COUNTRIES, envir = environment()) 
-  data(COUNTIES, envir = environment()) 
+  #data(COUNTRIES, envir = environment()) 
+  data(REGIONS, envir = environment()) 
   data(habitatRasters, envir = environment()) 
-  data(GLOBALMAP, envir = environment()) 
+  #data(GLOBALMAP, envir = environment()) 
   
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
@@ -121,20 +125,18 @@ makeRovquantData_bear <- function(
     fact = raster::res(habitatRasters[["Habitat"]])/habitat.res)
   
   ##-- Merge Norwegian counties for practical reasons
-  COUNTIES <- COUNTIES %>%
-    mutate(county = case_when(
-      county %in% c("Trøndelag", "Nordland") ~ "Trøndelag",
-      county %in% c("Troms", "Finnmark") ~ "Finnmark",
+  COUNTIES_AGGREGATED <- REGIONS %>%
+    mutate(id = case_when(
+      county %in% c("Trøndelag", "Nordland") ~ "NO2",
+      county %in% c("Troms", "Finnmark") ~ "NO1",
       county %in% c("Akershus","Agder", "Buskerud",
                     "Innlandet", "Hordaland",
                     "Møre og Romsdal","Oslo", "Oppland",
                     "Rogaland", "Vestland","Telemark",
-                    "Vestfold","Østfold") ~ "Innlandet")) %>%
-    dplyr::filter( , county %in% c("Trøndelag","Innlandet","Finnmark")) %>%
-    dplyr::group_by(county) %>%
+                    "Vestfold","Østfold") ~ "NO3")) %>%
+    dplyr::filter( , id %in% c("NO1","NO2","NO3")) %>%
+    dplyr::group_by(id) %>%
     dplyr::summarise() 
-  
-  COUNTIES$id <- as.character(1:nrow(COUNTIES))
   
   
   
@@ -142,10 +144,10 @@ makeRovquantData_bear <- function(
   
   ##-- Extract date from the last cleaned DATA file
   DATE <- getMostRecent( 
-    path = file.path(working.dir,"data"),
+    path = file.path(working.dir, "data"),
     pattern = "CleanData_bear")
   
-  ##-- Load the most recent Bear data from RovBase
+  ##-- Load the most recent clean Bear data from RovBase
   myFullData.sp <- readMostRecent( 
     path = file.path(working.dir,"data"),
     pattern = "CleanData_bear",
@@ -176,7 +178,7 @@ makeRovquantData_bear <- function(
   studyArea <- myFullData.sp$alive %>%
     sf::st_buffer(., dist = habitat$buffer) %>%
     sf::st_union() %>%
-    sf::st_intersection(., COUNTIES) %>%
+    sf::st_intersection(., REGIONS) %>%
     sf::st_as_sf()
   
   ##-- Make habitat from predefined Scandinavian raster of suitable habitat
@@ -259,7 +261,7 @@ makeRovquantData_bear <- function(
     ##-- Turn into spatial points object
     sf::st_as_sf(., coords = c("longitude","latitude")) %>%
     sf::st_set_crs(. , value = "EPSG:4326") %>%
-    sf::st_transform(. ,sf::st_crs(COUNTIES))
+    sf::st_transform(. ,sf::st_crs(REGIONS))
   
   ##-- Rasterize SkandObs bear observations at the habitat level
   rl <- raster::rasterize( x = skandObs[skandObs$species %in% "Bjorn",1],
@@ -356,9 +358,9 @@ makeRovquantData_bear <- function(
   
   ## ------       2.2.1. EXTRACT COUNTIES -----
   
-  ##-- Assign counties to detectors
-  dist <- sf::st_distance(detectors$main.detector.sp, COUNTIES)
-  detCounties1 <- apply(dist, 1, function(x) COUNTIES$county[which.min(x)])
+  ##-- Assign aggregated counties to detectors
+  dist <- sf::st_distance(detectors$main.detector.sp, COUNTIES_AGGREGATED)
+  detCounties1 <- apply(dist, 1, function(x) COUNTIES_AGGREGATED$id[which.min(x)])
   
   ##-- Re-order to account for some counties being never sampled
   detCounties <- as.numeric(as.factor(detCounties1))
@@ -378,10 +380,10 @@ makeRovquantData_bear <- function(
   ## ------       2.2.2. EXTRACT DISTANCES TO ROADS -----
   
   ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster::raster(file.path(data.dir,"Roads/MinDistAllRoads1km.tif"))
+  DistAllRoads <- raster::raster(file.path(data.dir, "Roads/MinDistAllRoads1km.tif"))
   
   ##-- Fasterize to remove values that fall in the sea
-  r <- fasterize::fasterize(sf::st_as_sf(GLOBALMAP), DistAllRoads)
+  r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
   DistAllRoads <- raster::crop(DistAllRoads, studyArea)
@@ -476,7 +478,7 @@ makeRovquantData_bear <- function(
                    country = substrRight(County,3)) %>%
     ##-- Turn into spatial points object
     sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
-    sf::st_set_crs(. , sf::st_crs(COUNTIES))
+    sf::st_set_crs(. , sf::st_crs(REGIONS))
   
   
   ##-- Subset RovbaseObs 
@@ -579,19 +581,19 @@ makeRovquantData_bear <- function(
                heights = rep(1,2))
   par(mar = c(0,0,0,0))
   for(t in 1:length(years)){
-    plot(st_geometry(COUNTRIES[1,]), border = NA, col = "gray80")
+    plot(sf::st_geometry(COUNTRIES[1,]), border = NA, col = "gray80")
     
     thisColumn <- which(names(st_drop_geometry(detectors$grid)) == paste0("detOtherSamples.",years[t]))
     thisCol <- ifelse(st_drop_geometry(detectors$grid)[,thisColumn] == 0, "white", "forestgreen")
     plot(detectors$grid[, paste0("detOtherSamples.",years[t])],
          border = NA, add = TRUE, legend = FALSE, col = thisCol)
-    mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
+    graphics::mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
     
     if(t == n.years){
-      segments(x0 = 830000, x1 = 830000,
+      graphics::segments(x0 = 830000, x1 = 830000,
                y0 = 6730000, y1 = 6730000 + 500000,
                col = grey(0.3), lwd = 4, lend = 2)
-      text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
+      graphics::text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
     }#if
   }#t
   dev.off()
@@ -603,10 +605,10 @@ makeRovquantData_bear <- function(
   par(mar = c(0,0,0,0))
   plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
   plot(detectors$grid[, "roads"], add = T, border = NA,)
-  segments(x0 = 830000, x1 = 830000,
+  graphics::segments(x0 = 830000, x1 = 830000,
            y0 = 6730000, y1 = 6730000 + 500000,
            col = grey(0.3), lwd = 4, lend = 2)
-  text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
+  graphics::text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
   dev.off()  
   
   

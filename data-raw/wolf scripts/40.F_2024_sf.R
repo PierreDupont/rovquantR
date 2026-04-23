@@ -25,10 +25,10 @@ library(ggplot2)
 source("C:/My_documents/RovQuant/workingDirectories.R")             
 
 ##-- DATA DIRECTORY
-data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2024/Data"
+data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2025/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2024/Test_F"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2025/Test_F"
 
 
 ## ------ SOURCE THE REQUIRED FUNCTIONS ------
@@ -312,6 +312,7 @@ load(file.path(working.dir, "data", "TRACKSSouthSweden2014202540NotSimplifiedSF.
 ## ------   1. CLEAN & FILTER NGS DATA ------ 
 
 ## ------     1.1. CLEAN NGS & DEAD RECOVERY DATA ------ 
+
 load(file.path(dir.dropbox,"DATA/MISC DATA/age.lookup.table.RData"))
 
 myCleanedData.sp <- CleanDataNew3sf( 
@@ -609,14 +610,14 @@ myDetectors <- MakeSearchGridsf(
   plot = FALSE,
   fasterize = TRUE)
 
-## EXTRACT NUMBERS OF DETECTORS
+##-- EXTRACT NUMBERS OF DETECTORS
 n.detectors <- dim(myDetectors$main.detector.sp)[1]
 
-## FORMAT DETECTOR LOCATIONS and NUMBER OF TRIALS PER DETECTOR IN ARRAYS/MATRICES
+##-- FORMAT DETECTOR LOCATIONS and NUMBER OF TRIALS PER DETECTOR IN ARRAYS/MATRICES
 detector.xy <- st_coordinates(myDetectors$main.detector.sp)
 n.trials <- as.vector(table(myDetectors$detector.sp$main.cell.id))
 
-## PLOT CHECK
+##-- PLOT CHECK
 if(plot.check){
   plot(st_geometry(myStudyArea.poly), main = "Detectors Alive")
   plot(st_geometry(myDetectors$main.detector.sp), col = "red", pch = 16, cex = 0.1, add = T)
@@ -1164,11 +1165,11 @@ if(sex == "Hann"){
   assign("myFilteredData.spOthersF", myFilteredData.spOthers)
   assign("myFilteredData.spStructuredF", myFilteredData.spStructured)
   
-  save(myFilteredData.spF,
-       myFullData.spF,
-       myFilteredData.spOthersF,
-       myFilteredData.spStructuredF,
-       file = file.path(working.dir, "data", "NGSData.RData"))
+  save( myFilteredData.spF,
+        myFullData.spF,
+        myFilteredData.spOthersF,
+        myFilteredData.spStructuredF,
+        file = file.path(working.dir, "data", "NGSData.RData"))
 }
 
 

@@ -74,7 +74,7 @@ cleanRovbaseData <- function(
   overwrite = FALSE
 ) {
   
-  ##----- 1. INITIAL CHECKS -----
+  ## ----- 1. INITIAL CHECKS -----
   
   ##-- Make sure directory structure exists
   if(two.sex) {
@@ -145,106 +145,10 @@ cleanRovbaseData <- function(
   }
   
   ##-- Renaming list
-  if(is.null(rename.list)) {
-    rename.list = c(
-      Age_estimated = "Alder, vurdert",
-      Age = "Alder, verifisert",
-      Age_verif_by = "Alder, verifisert av",
-      Age_class = "Alder på dødt individ",
-      Age_class_verif = "Aldersklasse verifisert SVA",
-      Analyzed_by = "AnalysertAv",
-      Analysis_priority = "Analyseprioritet",
-      Approved_by = "Godkjent av",
-      Approved_date = "Godkjentdato",
-      Assessment = "Vurdering",
-      Barcode_sample = "Strekkode (Prøve)",
-      Barcode = "Strekkode (Analyse)",
-      Birth_territory = "Født revir",
-      CITES = "CITES-nummer",
-      Collected_by = "Hvem samlet inn",
-      Collector_name = "Samlet selv - Navn",
-      Collector_phone = "Samlet selv - Telefon",
-      Collector_email = "Samlet selv - E-post",
-      Collector_role = "Samlet selv - Rolle",
-      Collector_other_name = "Annen innsamler - Navn" ,
-      Collector_other_phone = "Annen innsamler - Telefon",
-      Collector_other_email = "Annen innsamler - E-post",
-      Collector_other_role = "Annen innsamler - Rolle",
-      Comments_sample = "Merknad (Prøve)",
-      Comments = "Merknad (Analyse)",
-      Control_status = "Kontrollstatus",
-      Coordinate_system = "Koordinatsystem",
-      Counted_off_against_decision = "Regnes av mot vedtak",
-      County_number = "Fylkenummer",
-      County = "Fylke",
-      Date = "Funnetdato",
-      Date = "Dødsdato",
-      Death_cause = "Bakgrunn/årsak",
-      Death_method = "Bakgrunn/årsak metode",
-      Death_purpose = "Bakgrunn/årsak formål",
-      DNAID_sample = "DNAID (Prøve)",
-      DNAID = "DNAID (Analyse)",
-      EventID = "HendelseID",
-      East_Original = "Øst (opprinnelig)",
-      East_RT90 = "Øst (RT90)",
-      East_UTM33 = "Øst (UTM33/SWEREF99 TM)",
-      Felling_site_verif = "Kontroll av fellingsted",
-      Field_personnel ="Feltpersonell",
-      Hunting_date = "Observasjons/Jaktdato",
-      Id = "Individ",
-      Juvenile = "Yngling",
-      Mountain_area = "Fjellområde",
-      Method = "Metode",
-      Municipality_number = "Kommunenummer",
-      Municipality = "Kommune",
-      North_original = "Nord (opprinnelig)",
-      North_RT90 = "Nord (RT90)",
-      North_UTM33 = "Nord (UTM33/SWEREF99 TM)",
-      Origin = "Opprinnelse",
-      Outcome = "Utfall",
-      Last_saved_by_sample = "Sist lagret av (Prøve)",
-      Last_saved_sample = "Sist lagret dato (Prøve)",
-      Last_saved_by = "Sist lagret av (Analyse)",
-      Last_saved = "Sist lagret dato (Analyse)",
-      Last_saved_by = "Sist lagret av",
-      Last_saved =  "Sist lagret dato",
-      Locality = "Lokalitet",
-      Location = "Funnsted",
-      Lansstyrelsen_number = "Länsstyrelsens nr",
-      Quality_checked = "Kvalitetssikret av feltpersonell",
-      Quality_check_name = "Kvalitetssikrer - navn",
-      Quality_check_orga = "Kvalitetssikrer - Organisasjon",
-      Release_Date = "Frigivelsesdato",
-      Sample_type = "Prøvetype",
-      Sensitivity = "Følsomhet",
-      Species_sample = "Art (Prøve)",
-      Site_quality = "Stedkvalitet",
-      Time_of_death = "Dødstidspunkt",
-      Tips_name = "Tipser - Navn",
-      Tips_phone = "Tipser - Telefon",
-      Tips_email = "Tipser - E-post",
-      Tips_role = "Tipser - Rolle",
-      Tissue_sample = "Vevsprøve tatt",
-      Release_Date = "Frigivelsesdato",
-      RovbaseID = "RovbaseID (Analyse)",
-      RovbaseID_sample = "RovbaseID (Prøve)",
-      Species = "Art (Analyse)",
-      Species = "Art",
-      Sample_status = "Prøvestatus",
-      Sensitivity = "Følsomhet",
-      Sex_analysis = "Kjønn (Analyse)",
-      Sex = "Kjønn (Individ)",
-      Sex = "Kjønn",
-      Sex = "Kön",
-      Site_quality = "Stedkvalitet",
-      SVAID = "SVAID",
-      Uncertain_date = "Usikker dødsdato",
-      Weight_slaughter = "Slaktevekt",
-      Weight_total =  "Helvekt")
-  }
+  if(is.null(rename.list)){rename.list = r.list.internal}
   
   ##-- Load pre-processed habitat shapefiles
-  data(COUNTRIES, envir = environment()) 
+  data(REGIONS, envir = environment()) 
   
   ##-- data info
   DATE <- getMostRecent(path = data.dir, pattern = "DNA")
@@ -271,9 +175,9 @@ cleanRovbaseData <- function(
   
   
   
-  ##----- 2. CLEAN THE DATA -----
+  ## ----- 2. CLEAN THE DATA -----
   
-  ##-----   2.1. RAW NGS DATA -----
+  ## -----   2.1. RAW NGS DATA -----
   
   ##-- NGS data
   DNA <- suppressWarnings(readMostRecent( path = data.dir,
@@ -340,12 +244,12 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   2.2. RAW DEAD RECOVERY DATA -----
+  ## -----   2.2. RAW DEAD RECOVERY DATA -----
   
   ##-- Load raw excel file imported from rovbase 
   DR <- suppressWarnings(readMostRecent( path = data.dir,
                                          extension = ".xls",
-                                         pattern = "dead_")) %>%
+                                         pattern = "dead")) %>%
     ##-- Rename columns to facilitate manipulation
     dplyr::rename(., any_of(rename.list)) %>%
     ##-- Initial filters
@@ -405,7 +309,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   2.3. CHECKS & FILTERS -----
+  ## -----   2.3. CHECKS & FILTERS -----
   
   ##-- Filter out unusable samples
   numNoID_DNA <- sum(is.na(DNA$Id))              ## number of samples without ID
@@ -487,11 +391,11 @@ cleanRovbaseData <- function(
                                          ".csv")))
     ##-- Remove duplicated data in DNA before merging 
     # DNA <- DNA[!DNA$DNAID %in% duplicateData$DNAID, ]
-  }
+  }#if
 
   
   
-  ##-----   2.4. MERGE -----
+  ## -----   2.4. MERGE -----
   
   ##-- Merge DNA and dead recoveries files using all shared names columns
   # DATA <- full_join(DNA, DR, by = names(DNA)[names(DNA) %in% names(DR)]) 
@@ -504,7 +408,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   2.5. AGE -----
+  ## -----   2.5. AGE -----
   
   ##-- Determine Death and Birth Years
   DATA <- DATA %>%
@@ -514,15 +418,132 @@ cleanRovbaseData <- function(
       Birth = Death - Age)
   
   
-  ##-----   2.6. SEX ASSIGNMENT -----
   
+  ## -----   2.6. SEX ASSIGNMENT -----
+  
+  ##-- If this is the wolf data, we first consolidate all the info we have about
+  ##-- individual sex abd status from the different data sources.
+  if(engSpecies == "wolf"){
+    
+    ##-- Add simplified ID column
+    DATA <- DATA %>%
+      dplyr::mutate(IdSimplified = unlist(lapply(strsplit(Id, " "), function(x) x[1])))
+    
+    ##-- Load most recent Micke's file
+    INDIVIDUAL_ID <- suppressWarnings(readMostRecent( path = data.dir,
+                                                      extension = ".xls",
+                                                      pattern = "_ID Grouping")) %>%
+      ##-- Rename columns to facilitate manipulation
+      dplyr::rename(.,
+                    any_of(rename.list),
+                    Year = "ReprodYear (May 1 year y - Apr 30 y+1)") %>%
+      ##-- Turn potential factors into characters
+      dplyr::mutate(across(where(is.factor), as.character)) %>%
+      ##-- Add some columns
+      dplyr::mutate(
+        IdSimplified = unlist(lapply(strsplit(Id, " "), function(x) x[1])),
+        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
+        Sex = ifelse(is.na(Sex), "unknown", Sex),
+        Sex = ifelse(Sex %in% "Hona", "female", Sex),
+        Sex = ifelse(Sex %in% "Hane", "male", Sex))
+    
+    
+    ##-- THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2022/23.
+    Pack_ID2023 <- suppressWarnings(readMostRecent( path = data.dir,
+                                                    extension = ".xls",
+                                                    pattern = "Genetiskt ID")) %>%
+      ##-- Rename columns to facilitate manipulation
+      dplyr::rename(.,
+                    any_of(rename.list),
+                    IdSimplified = "Rovbase-ID") %>%
+      ##-- Turn potential factors into characters
+      dplyr::mutate(across(where(is.factor), as.character)) %>%
+      ##-- Add some columns
+      dplyr::mutate(
+        ##-- Add status 
+        Status = "Pair",
+        ##-- Fix unknown "Sex"
+        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
+        Sex = ifelse(is.na(Sex), "unknown", Sex),
+        Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
+        Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex),
+        Year = 2022)
+    
+    
+    ##-- THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2023/24.
+    Pack_ID2024 <- suppressWarnings(readMostRecent( path = data.dir,
+                                                    extension = ".xls",
+                                                    pattern = "Bilaga_")) %>%
+      ##-- Rename columns to facilitate manipulation
+      dplyr::rename(.,
+                    IdSimplified = "RovbaseID",
+                    any_of(rename.list)) %>%
+      ##-- Turn potential factors into characters
+      dplyr::mutate(across(where(is.factor), as.character)) %>%
+      ##-- Add some columns
+      dplyr::mutate(
+        ##-- Add status 
+        Status = "Pair",
+        ##-- Fix unknown "Sex"
+        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
+        Sex = ifelse(is.na(Sex), "unknown", Sex),
+        Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
+        Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex),
+        Year = 2023)
+    
+    
+    ##-- THIS IS THE PACK ID SENT BY ØYSTEIN FOR THE WINTER 2024/25.
+    Pack_ID2025 <- suppressWarnings(readMostRecent( path = data.dir,
+                                                    extension = ".xls",
+                                                    pattern = "FromOystein")) %>%
+      ##-- Rename columns to facilitate manipulation
+      dplyr::rename(.,
+                    any_of(rename.list),
+                    IdSimplified = "IndividID") %>%
+      ##-- Turn potential factors into characters
+      dplyr::mutate( across(where(is.factor), as.character),
+                     Year = 2024,
+                     Status = "Pair") %>%
+      dplyr::rowwise() %>%
+      dplyr::mutate(
+        ##-- Fix unknown "Sex"
+        Sex = ifelse(any(c_across(Sex1:Sex4) %in% c("Tispe","Tik")),
+                     "female",
+                     ifelse(any(c_across(Sex1:Sex4) %in% c("Hann","Hane")),
+                            "male",
+                            "unknown")))
+    
+    
+    ##-- Consolidate all info on individual sex in one dataframe
+    ALL_SEX <- rbind( DATA[ ,c("IdSimplified","Sex")],
+                      INDIVIDUAL_ID[ ,c("IdSimplified","Sex")],
+                      Pack_ID2023[ ,c("IdSimplified","Sex")],
+                      Pack_ID2024[ ,c("IdSimplified","Sex")],
+                      Pack_ID2025[ ,c("IdSimplified","Sex")])
+    
+    
+    ##-- Consolidate all info on individual status in one dataframe
+    ALL_STATUS <- rbind( INDIVIDUAL_ID[ ,c("IdSimplified","Year","Status")],
+                         Pack_ID2023[ ,c("IdSimplified","Year","Status")],
+                         Pack_ID2024[ ,c("IdSimplified","Year","Status")],
+                         Pack_ID2025[ ,c("IdSimplified","Year","Status")]) 
+    
+    ##-- Merge with detection data 
+    DATA <- DATA %>%
+      left_join(., ALL_STATUS, by = c("IdSimplified","Year"))
+  }#if
+  
+  ##-- Loop over all individuals
   ID <- unique(as.character(DATA$Id))
   doubleSexID <- IdDoubleSex <- NULL  
-  
   counter <- 1
   for(i in 1:length(ID)){
     ##-- Subset data to individual i
-    tmp <- DATA$Sex[DATA$Id == ID[i]]
+    if(engSpecies == "wolf"){
+      tmp <- ALL_SEX$Sex[ALL_SEX$IdSimplified == unlist(lapply(strsplit(ID[i], " "), function(x) x[1]))]
+    } else {
+      tmp <- DATA$Sex[DATA$Id == ID[i]]
+    }
     
     ##-- Number of times individual i was assigned to each sex
     tab <- table(tmp[tmp %in% c("female","male")])
@@ -554,136 +575,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   2.7. WOLF -----
-  
-  if(engSpecies == "wolf"){
-    
-    ##-- Load most recent Micke's file
-    INDIVIDUAL_ID <- suppressWarnings(readMostRecent( path = data.dir,
-                                                      extension = ".xls",
-                                                      pattern = "Grouping")) %>%
-      ##-- Rename columns to facilitate manipulation
-      dplyr::rename(., any_of(rename.list)) %>%
-      ##-- Turn potential factors into characters 
-      dplyr::mutate(across(where(is.factor), as.character)) %>%
-      ##-- Add some columns
-      dplyr::mutate( 
-        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
-        Sex = ifelse(is.na(Sex), "unknown", Sex),
-        Sex = ifelse(Sex %in% "Hona", "female", Sex),
-        Sex = ifelse(Sex %in% "Hane", "male", Sex))  
-    
-    
-    
-    ############################################################################
-    
-    ### CHECK ###
-    
-    ##-- Overwrite gender from Micke's data when available
-    micke.sex <- unlist(lapply(DATA$Id,
-                               function(i){ 
-                                 INDIVIDUAL_ID[INDIVIDUAL_ID$`Individ (Rovbase)` %in% i, "Sex"][1]
-                               }))
-    DATA$Sex <- ifelse(!is.na(micke.sex), micke.sex, DATA$Sex)
-    
-    numOverwiteSex <- sum(unique(INDIVIDUAL_ID$`Individ (Rovbase)`) %in% DATA$Id)
-    ############################################################################
-    
-    
-    
-    
-    ##-- THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2022/23.
-    Pack_ID2023 <- suppressWarnings(readMostRecent( path = data.dir,
-                                                    extension = ".xls",
-                                                    pattern = "Genetiskt ID")) %>%
-      ##-- Rename columns to facilitate manipulation
-      dplyr::rename(., any_of(rename.list)) %>%
-      ##-- Turn potential factors into characters 
-      dplyr::mutate(across(where(is.factor), as.character)) %>%
-      ##-- Add some columns
-      dplyr::mutate( 
-        ##-- Fix unknown "Sex"
-        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
-        Sex = ifelse(is.na(Sex), "unknown", Sex),
-        Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
-        Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex)) 
-    # Pack_ID2023 <- read.csv(file.path( data.dir,
-    #                                    "Genetiskt ID RM vargar 2223 Bilaga 4_ØF.csv"),
-    #                         fileEncoding = "latin1")  
-    # Pack_ID2023$Kon[Pack_ID2023$Kon %in% c("Tispe","Tik")] <- "female"
-    # Pack_ID2023$Kon[Pack_ID2023$Kon %in% "Hane"] <- "male"
-    
-    
-    ##-- THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2023/24.
-    Pack_ID2024 <- suppressWarnings(readMostRecent( path = data.dir,
-                                                    extension = ".xls",
-                                                    pattern = "Bilaga_")) %>%
-      ##-- Rename columns to facilitate manipulation
-      dplyr::rename(., any_of(rename.list)) %>%
-      ##-- Turn potential factors into characters 
-      dplyr::mutate(across(where(is.factor), as.character)) %>%
-      ##-- Add some columns
-      dplyr::mutate( 
-        ##-- Fix unknown "Sex"
-        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
-        Sex = ifelse(is.na(Sex), "unknown", Sex),
-        Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
-        Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex)) 
-    # Pack_ID2024 <- read.csv(file.path( data.dir,
-    #                                    "Bilaga_11.4_240424_ØF to Cyril.csv"),
-    #                         fileEncoding = "latin1")  
-    # Pack_ID2024$Kon[Pack_ID2024$Kon %in% c("Tispe","Tik")] <- "female"
-    # Pack_ID2024$Kon[Pack_ID2024$Kon %in% "Hane"] <- "male"
-    
-    
-    ##-- THIS IS THE PACK ID SENT BY ØYSTEIN FOR THE WINTER 2024/25.
-    Pack_ID2025 <- suppressWarnings(readMostRecent( path = data.dir,
-                                                    extension = ".xls",
-                                                    pattern = "FromOystein")) %>%
-      ##-- Rename columns to facilitate manipulation
-      dplyr::rename(., any_of(rename.list)) %>%
-      ##-- Turn potential factors into characters 
-      dplyr::mutate(across(where(is.factor), as.character)) %>%
-      dplyr::rowwise() %>%
-      dplyr::mutate(
-        Sex = ifelse(any(c_across(Sex1:Sex4) %in% c("Tispe","Tik")),
-                     "female", 
-                     ifelse(any(c_across(Sex1:Sex4) %in% c("Hann","Hane")),
-                            "male",
-                            "unknown")))
-    # Pack_ID2025 <- read.csv(file.path( data.dir,
-    #                                    "RovbaseID for Rovquant estimates2025FromOystein.csv"),
-    #                         fileEncoding = "latin1")  
-    # ##-- Here we need to recreate the sex columns as Oystein gave me a list of ids only (losing the sex)
-    # Pack_ID2025$Sex <- apply(Pack_ID2025[ ,c("Sex1","Sex2","Sex3","Sex4")], 1, function(x) x[which(!x%in% "")][1])
-    # Pack_ID2025$Sex[Pack_ID2025$Sex %in% c("Tispe","Tik")] <- "female"
-    # Pack_ID2025$Sex[Pack_ID2025$Sex %in% "Hane"] <- "male"
-    
-    
-    ##-- Make a simplified column to match the rovbase id given by Oystein in Linn's file
-    DATA$IdSimplified <- unlist(lapply(strsplit(as.character(DATA$Id), " "), function(x) x[1]))
-    
-    ##-- OVERWRITE GENDER FROM PACK COMPOSITION (FROM LINN's file 2023-24)
-    ##-- check the sex in the pair data given by Linn and assign the sex to all detections 
-    ##-- Overwrite sex 
-    for(i in 1:nrow(Pack_ID2023)){
-      DATA$Sex[DATA$IdSimplified %in% Pack_ID2023$Rovbase.ID[i]] <- Pack_ID2023$SEx[i]
-    }#i
-    
-    ##-- Overwrite sex 
-    for(i in 1:nrow(Pack_ID2024)){
-      DATA$Sex[DATA$IdSimplified %in% Pack_ID2024$Rovbase.ID[i]] <- Pack_ID2024$Sex[i]
-    }#i
-    
-    ##-- Overwrite sex 
-    for(i in 1:nrow(Pack_ID2025)){
-      DATA$Sex[DATA$IdSimplified %in% Pack_ID2025$IndividID[i]] <- Pack_ID2025$Sex[i]
-    }#i
-  }
-  
-  
-  
-  ##-----   2.8. SPLIT DATA -----
+  ## -----   2.8. SPLIT DATA -----
   
   ##-- Split DATA into alive and dead.recovery datasets
   alive <- DATA[is.na(DATA$Death), ]
@@ -708,9 +600,9 @@ cleanRovbaseData <- function(
   
   
   
-  ##----- 3. SPECIES-SPECIFIC CLEANING STEPS ------
+  ## ----- 3. SPECIES-SPECIFIC CLEANING STEPS ------
   
-  ##-----   3.1. WOLVERINE -----
+  ## -----   3.1. WOLVERINE -----
   
   if(engSpecies == "wolverine"){
 
@@ -783,7 +675,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   3.2. BEAR -----
+  ## -----   3.2. BEAR -----
   
   if(engSpecies == "bear"){
     ##-- Load most recent "flagged" file from HB
@@ -802,9 +694,9 @@ cleanRovbaseData <- function(
   
   
   
-  ##----- 4. DATA ISSUES -----
+  ## ----- 4. DATA ISSUES -----
   
-  ##-----   4.1. MULTIPLE DEATHS ------
+  ## -----   4.1. MULTIPLE DEATHS ------
   
   # ##-- Identify and count individuals dead "more than once"
   # ID <- names(table(dead.recovery$Id))[table(dead.recovery$Id)>1]
@@ -839,7 +731,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   4.2. GHOST INDIVIDUALS ------
+  ## -----   4.2. GHOST INDIVIDUALS ------
   
   id.list <- unique(c(as.character(dead.recovery$Id), as.character(alive$Id)))
   ghosts <- unlist(lapply(id.list, function(id) {
@@ -865,7 +757,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##----- 5. TURN INTO .sf OBJECTS -----
+  ## ----- 5. TURN INTO .sf OBJECTS -----
   
   ##-- Turn into sf points dataframe
   alive <- sf::st_as_sf( x = alive,
@@ -887,9 +779,9 @@ cleanRovbaseData <- function(
   
   
   
-  ##----- 6. DATA SUMMARY -----
+  ## ----- 6. DATA SUMMARY -----
   
-  ##-----   6.1. DATA SUMMARY - TABLES -----
+  ## -----   6.1. DATA SUMMARY - TABLES -----
   
   ##-- Number of NGS samples per year and country (date,rovbase)
   samples <- table(alive$Country_sample, alive$Year)
@@ -933,7 +825,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   6.2. NUMBER OF SAMPLES - FIGURE -----
+  ## -----   6.2. NUMBER OF SAMPLES - FIGURE -----
   
   ##-- Number of NGS per month
   dat.alive <- alive %>%
@@ -985,7 +877,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   6.3. NUMBER OF INDIVIDUALS - FIGURE -----
+  ## -----   6.3. NUMBER OF INDIVIDUALS - FIGURE -----
   
   ##-- Number of IDs
   dat.alive <- alive %>% 
@@ -1033,7 +925,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   6.4. SAMPLING MAPS - FIGURE ------
+  ## -----   6.4. SAMPLING MAPS - FIGURE ------
   
   ##-- Maps layout
   L <- length(years)
@@ -1085,7 +977,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##-----   6.5. PREVIOUSLY DETECTED - FIGURE -----
+  ## -----   6.5. PREVIOUSLY DETECTED - FIGURE -----
   
   ##-- Plot number of individuals with previous NGS detections
   plot1 <- alive %>%
@@ -1138,7 +1030,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##----- 7. SAVE DATA ------
+  ## ----- 7. SAVE DATA ------
   
   save( alive, 
         dead.recovery,
@@ -1146,7 +1038,7 @@ cleanRovbaseData <- function(
   
   
   
-  ##----- 8. PRINT REPORT -----
+  ## ----- 8. PRINT REPORT -----
   
   if (print.report) {
     

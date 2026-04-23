@@ -635,7 +635,9 @@ processRovquantOutput_wolverine_SCR <- function(
     text(x = c(xLeg-150000,xLeg-150000),
          y = c(yLeg-100000,yLeg-180000),
          c("NGS samples", "Dead recoveries"), cex = 2, pos = 4)
-    dev.off()
+  }#t
+  dev.off()
+    
     
   # ##-- Plot Carnivore observations maps
   # pdf(file = file.path(working.dir, "figures", paste0("CarnivoreObs_maps_classic.pdf")),
@@ -1984,9 +1986,7 @@ processRovquantOutput_wolverine_SCR <- function(
   #       include.colnames = FALSE,
   #       add.to.row = addtorow,
   #       file = file.path(working.dir, "tables/TableParametersOthers.tex"))
-  # 
-  # 
-  # 
+
   
   ## ------ 6. OUTPUT -----
   out$YEARS <- years+1

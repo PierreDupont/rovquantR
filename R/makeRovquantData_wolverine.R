@@ -22,6 +22,7 @@
 #' @param subdetector.res A \code{Numeric}.
 #' @param max.det.dist A \code{Numeric}.  
 #' @param resize.factor A \code{Numeric}.
+#' @param rename.list A \code{list}.
 #' 
 #' 
 #' @return 
@@ -30,12 +31,13 @@
 #'
 #' @author Pierre Dupont
 #' 
-#' @import sf 
-#' @import raster
 #' @import dplyr
+#' @import raster
+#' @import sf 
 #' @importFrom adehabitatHR estUDm2spixdf kernelUD
 #' @importFrom fasterize fasterize
-#' @importFrom nimbleSCR getSparseY scaleCoordsToHabitatGrid 
+#' @importFrom grDevices grey
+#' @importFrom nimbleSCR getSparseY scaleCoordsToHabitatGrid getLocalObjects
 #' @importFrom sp SpatialPoints CRS
 #' @importFrom spatstat.geom as.owin ppp
 #' @importFrom spatstat.explore density.ppp
@@ -70,8 +72,8 @@ makeRovquantData_wolverine <- function(
   resize.factor = 1,
   
   ##-- Miscellanious
-  rename.list = NULL)
-{
+  rename.list = NULL
+  ){
 
   ## ------ 0. BASIC SET-UP ------
   
@@ -80,111 +82,17 @@ makeRovquantData_wolverine <- function(
   if(is.null(sampling.months)){sampling.months <- list(12,1:6)}
   if(is.null(habitat.res)){habitat.res <- 20000} 
   if(is.null(buffer.size)){buffer.size <- 60000}
+  if(is.null(max.move.dist)){max.move.dist <- 250000}
   if(is.null(detector.res)){detector.res <- 10000}
   if(is.null(subdetector.res)){subdetector.res <- 2000}
   if(is.null(max.det.dist)){max.det.dist <- 84000}
   if(is.null(resize.factor)){resize.factor <- 1}
-  if(is.null(rename.list)){
-    rename.list = c(
-      Age_estimated = "Alder, vurdert",
-      Age = "Alder, verifisert",
-      Age_verif_by = "Alder, verifisert av",
-      Age_class = "Alder på dødt individ",
-      Age_class_verif = "Aldersklasse verifisert SVA",
-      Analyzed_by = "AnalysertAv",
-      Analysis_priority = "Analyseprioritet",
-      Approved_by = "Godkjent av",
-      Approved_date = "Godkjentdato",
-      Assessment = "Vurdering",
-      Barcode_sample = "Strekkode (Prøve)",
-      Barcode = "Strekkode (Analyse)",
-      Birth_territory = "Født revir",
-      CITES = "CITES-nummer",
-      Collected_by = "Hvem samlet inn",
-      Collector_name = "Samlet selv - Navn",
-      Collector_phone = "Samlet selv - Telefon",
-      Collector_email = "Samlet selv - E-post",
-      Collector_role = "Samlet selv - Rolle",
-      Collector_other_name = "Annen innsamler - Navn" ,
-      Collector_other_phone = "Annen innsamler - Telefon",
-      Collector_other_email = "Annen innsamler - E-post",
-      Collector_other_role = "Annen innsamler - Rolle",
-      Comments_sample = "Merknad (Prøve)",
-      Comments = "Merknad (Analyse)",
-      Control_status = "Kontrollstatus",
-      Coordinate_system = "Koordinatsystem",
-      Counted_off_against_decision = "Regnes av mot vedtak",
-      County_number = "Fylkenummer",
-      County = "Fylke",
-      Date = "Funnetdato",
-      Date = "Dødsdato",
-      Death_cause = "Bakgrunn/årsak",
-      Death_method = "Bakgrunn/årsak metode",
-      Death_purpose = "Bakgrunn/årsak formål",
-      DNAID_sample = "DNAID (Prøve)",
-      DNAID = "DNAID (Analyse)",
-      EventID = "HendelseID",
-      East_Original = "Øst (opprinnelig)",
-      East_RT90 = "Øst (RT90)",
-      East_UTM33 = "Øst (UTM33/SWEREF99 TM)",
-      Felling_site_verif = "Kontroll av fellingsted",
-      Field_personnel ="Feltpersonell",
-      Hunting_date = "Observasjons/Jaktdato",
-      Id = "Individ",
-      Juvenile = "Yngling",
-      Mountain_area = "Fjellområde",
-      Method = "Metode",
-      Municipality_number = "Kommunenummer",
-      Municipality = "Kommune",
-      North_original = "Nord (opprinnelig)",
-      North_RT90 = "Nord (RT90)",
-      North_UTM33 = "Nord (UTM33/SWEREF99 TM)",
-      Origin = "Opprinnelse",
-      Outcome = "Utfall",
-      Last_saved_by_sample = "Sist lagret av (Prøve)",
-      Last_saved_sample = "Sist lagret dato (Prøve)",
-      Last_saved_by = "Sist lagret av (Analyse)",
-      Last_saved = "Sist lagret dato (Analyse)",
-      Last_saved_by = "Sist lagret av",
-      Last_saved =  "Sist lagret dato",
-      Locality = "Lokalitet",
-      Location = "Funnsted",
-      Lansstyrelsen_number = "Länsstyrelsens nr",
-      Quality_checked = "Kvalitetssikret av feltpersonell",
-      Quality_check_name = "Kvalitetssikrer - navn",
-      Quality_check_orga = "Kvalitetssikrer - Organisasjon",
-      Release_Date = "Frigivelsesdato",
-      Sample_type = "Prøvetype",
-      Sensitivity = "Følsomhet",
-      Species_sample = "Art (Prøve)",
-      Site_quality = "Stedkvalitet",
-      Time_of_death = "Dødstidspunkt",
-      Tips_name = "Tipser - Navn",
-      Tips_phone = "Tipser - Telefon",
-      Tips_email = "Tipser - E-post",
-      Tips_role = "Tipser - Rolle",
-      Tissue_sample = "Vevsprøve tatt",
-      Release_Date = "Frigivelsesdato",
-      RovbaseID = "RovbaseID (Analyse)",
-      RovbaseID_sample = "RovbaseID (Prøve)",
-      Species = "Art (Analyse)",
-      Species = "Art",
-      Sample_status = "Prøvestatus",
-      Sensitivity = "Følsomhet",
-      Sex_analysis = "Kjønn (Analyse)",
-      Sex = "Kjønn (Individ)",
-      Sex = "Kjønn",
-      Sex = "Kön",
-      Site_quality = "Stedkvalitet",
-      SVAID = "SVAID",
-      Uncertain_date = "Usikker dødsdato",
-      Weight_slaughter = "Slaktevekt",
-      Weight_total =  "Helvekt")
-  }
+  if(is.null(rename.list)){rename.list = r.list.internal}
   
   ##-- Set up list of Habitat characteristics
   habitat <- list( resolution = habitat.res,
-                   buffer = buffer.size)
+                   buffer = buffer.size,
+                   maxDist = max.move.dist)
   
   ##-- Set up list of Detectors characteristics
   detectors <- list( resolution = detector.res,
@@ -206,18 +114,13 @@ makeRovquantData_wolverine <- function(
   ## ------   1. HABITAT DATA -----
   
   ##-- Load pre-defined habitat rasters and shapefiles
-  data(COUNTRIES, envir = environment()) 
-  data(COUNTIES, envir = environment()) 
   data(habitatRasters, envir = environment()) 
-  data(GLOBALMAP, envir = environment()) 
   data(REGIONS, envir = environment())
-  
   
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
     x = habitatRasters[["Habitat"]],
     fact = raster::res(habitatRasters[["Habitat"]])/habitat.res)
-  
   
   ##-- Merge counties for practical reasons
   COUNTIES_AGGREGATED <- REGIONS %>%
@@ -236,18 +139,8 @@ makeRovquantData_wolverine <- function(
       county %in% c("Nordland") ~ 7,
       county %in% c("Troms") ~ 8)) %>%
     dplyr::group_by(id) %>%
-    dplyr::summarize() %>%
-    sf::st_simplify( ., preserveTopology = T, dTolerance = 500)
-  
-  COUNTIES_AGGREGATED$id <- as.character(1:nrow(COUNTIES_AGGREGATED))
-  
-  # ##-- CREATE STUDY AREA POLYGON 
-  # myStudyArea <- COUNTRIES %>%
-  #   filter(ISO %in% c("NOR","SWE")) %>%
-  #   mutate(id = 1) %>%
-  #   group_by(id) %>% 
-  #   summarize()
-  
+    dplyr::summarize()
+
   
 
   ## ------   2. NGS DATA -----
@@ -308,7 +201,7 @@ makeRovquantData_wolverine <- function(
     dplyr::mutate(id = 1) %>%
     dplyr::group_by(id) %>% 
     dplyr::summarize() %>% 
-    sf::st_intersection(., COUNTRIES) %>%
+    sf::st_intersection(., REGIONS) %>%
     sf::st_as_sf()
   
   ##-- Make habitat from predefined Scandinavian raster of suitable habitat
@@ -490,38 +383,32 @@ makeRovquantData_wolverine <- function(
   
   message("Cleaning GPS tracks... ")
   
-  ## LOAD NEW GPS SEARCH TRACKS !!!
-  ## [PD] : NEED TO THINK ABOUT BEST WAY TO LOAD GPS TRACKS WITHOUT FIXING NAMES
-  # TRACKS <- rbind(
-  #   read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250908.shp")),
-  #   read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250908.shp"))) %>%
-  
   ##-- Combine all GPS tracks
-  TRACKS <- rbind(
-    sf::read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20240829_dateSfAll.shp")),
-    sf::read_sf(file.path(data.dir, "GPS/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20240829_dateSfAll.shp"))) %>%
-    ##-- Process dates
-    dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
-                   Mth = as.numeric(format(Dato,"%m")),
-                   Yr = as.numeric(format(Dato,"%Y")),
-                   Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
+  TRACKS <- readTracks( data.dir = data.dir,
+                        years = years,
+                        sampling.months = sampling.months) %>%
     ##-- Filter out irrelevant tracks
-    dplyr::filter( Helikopter == "0",      ## Remove helicopter tracks
-                   Jerv == "1",            ## Keep Wolverine tracks only
-                   Year %in% years & Mth %in% unlist(sampling.months)) %>% ## Keep tracks during sampling season only
-    ##-- Extract track lengths & centroids
-    dplyr::mutate( Length = sf::st_length(., byid = T),
-                   Centroidx = sf::st_coordinates(sf::st_centroid(.))[ ,1]) 
+    dplyr::filter(Jerv == "1")
   
-  ##-- Find & filter out duplicates based on person, distance and date.
-  df <- data.frame( Dato = TRACKS$Dato,
-                    Year = TRACKS$Year,
-                    Person = TRACKS$Person,
-                    Length = TRACKS$Length,
-                    Centroidx = TRACKS$Centroidx)
-  dupIDs <- which(duplicated(df))
-  dupLength <- TRACKS$Length[duplicated(df)]
-  TRACKS <- TRACKS[-dupIDs, ]
+  ##-- Extract length of GPS search track per detector grid cell
+  detTracks <- matrix(0, nrow = n.detectors, ncol = n.years)
+  for(t in 1:n.years){
+    intersection <- TRACKS %>%
+      dplyr::filter(Year == years[t]) %>%
+      sf::st_intersection(detectors$grid, .) %>%
+      dplyr::mutate(LEN = st_length(.)) %>%
+      sf::st_drop_geometry() %>%
+      dplyr::group_by(id) %>%
+      dplyr::summarise(transect_L = sum(LEN)) 
+    detTracks[intersection$id,t] <- as.numeric(intersection$transect_L)
+    print(t)
+  }#t
+  
+  ##-- Put into "nimble2SCR" format
+  colnames(detTracks) <- paste0("tracks.", years)
+  detectors$detectors.df <- cbind.data.frame(detectors$detectors.df, detTracks)
+  
+  
   
   # ##-- Plot check
   # if(plot.check){
@@ -549,24 +436,24 @@ makeRovquantData_wolverine <- function(
   # ##-- save 
   # save( TRACKS, file = file.path(working.dir, "data/searchTracks.RData"))
   # load(file = file.path(working.dir, "data/searchTracks.RData"))
-  
-  
-  ##-- Extract length of GPS search track per detector grid cell
-  detTracks <- matrix(0, nrow = n.detectors, ncol = n.years)
-  TRACKS.r <- list()
-  for(t in 1:n.years){
-    intersection <- TRACKS %>%
-      dplyr::filter(Year == years[t]) %>%
-      sf::st_intersection(detectors$grid, .) %>%
-      dplyr::mutate(LEN = st_length(.)) %>%
-      sf::st_drop_geometry() %>%
-      dplyr::group_by(id) %>%
-      dplyr::summarise(transect_L = sum(LEN)) ##-- Get total length searched in each detector grid cell
-    detTracks[intersection$id,t] <- as.numeric(intersection$transect_L)
-    TRACKS.r[[t]] <- detectors$raster
-    TRACKS.r[[t]][detectors$raster[] %in% 1] <- detTracks[ ,t]
-    print(t)
-  }#t
+  #
+  #
+  # ##-- Extract length of GPS search track per detector grid cell
+  # detTracks <- matrix(0, nrow = n.detectors, ncol = n.years)
+  # #TRACKS.r <- list()
+  # for(t in 1:n.years){
+  #   intersection <- TRACKS %>%
+  #     dplyr::filter(Year == years[t]) %>%
+  #     sf::st_intersection(detectors$grid, .) %>%
+  #     dplyr::mutate(LEN = st_length(.)) %>%
+  #     sf::st_drop_geometry() %>%
+  #     dplyr::group_by(id) %>%
+  #     dplyr::summarise(transect_L = sum(LEN)) ##-- Get total length searched in each detector grid cell
+  #   detTracks[intersection$id,t] <- as.numeric(intersection$transect_L)
+  #   # TRACKS.r[[t]] <- detectors$raster
+  #   # TRACKS.r[[t]][detectors$raster[] %in% 1] <- detTracks[ ,t]
+  #   # print(t)
+  # }#t
 
   
   
@@ -576,7 +463,7 @@ makeRovquantData_wolverine <- function(
   DistAllRoads <- raster::raster(file.path(data.dir,"Roads/MinDistAllRoads1km.tif"))
   
   ##-- Fasterize to remove values that fall in the sea
-  r <- fasterize::fasterize(sf::st_as_sf(COUNTRIES), DistAllRoads)
+  r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
   DistAllRoads <- raster::crop(DistAllRoads, studyArea)
@@ -610,7 +497,7 @@ makeRovquantData_wolverine <- function(
   
   # [PD] NEW SNOW FILE FROM ASUN!
   # SNOW <- stack(paste0(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
-  SNOW <- stack(file.path(data.dir,"GIS/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
+  SNOW <- stack(file.path(data.dir,"Snow/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
   
   ##-- RENAME THE LAYERS
   names(SNOW) <- paste(2008:2023, (2008:2023) + 1, sep = "_")
@@ -642,7 +529,7 @@ makeRovquantData_wolverine <- function(
   
   ##-- Load the last SkandObs data file
   skandObs <- readMostRecent( 
-    path = data.dir,
+    path = file.path(data.dir, "Skandobs"),
     extension = ".xlsx",
     pattern = "Skandobs")
   
@@ -662,7 +549,7 @@ makeRovquantData_wolverine <- function(
     ##-- Turn into spatial points object
     sf::st_as_sf(., coords = c("longitude","latitude")) %>%
     sf::st_set_crs(., value = "EPSG:4326") %>%
-    sf::st_transform(., sf::st_crs(COUNTIES)) %>%
+    sf::st_transform(., sf::st_crs(REGIONS)) %>%
     sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
  
  # dplyr::filter(!is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
@@ -689,7 +576,7 @@ makeRovquantData_wolverine <- function(
 
   ##-- Process Rovbase observations (all species)
   rovbaseObs <- readMultiples( 
-    path = file.path(data.dir,"ALL SPECIES IN SEPARATE YEARS"),
+    path = file.path(data.dir, "AllSamples"),
     extension = ".xlsx") %>%
     ##-- Rename columns to facilitate manipulation
     dplyr::rename(., any_of(rename.list)) %>%
@@ -721,7 +608,7 @@ makeRovquantData_wolverine <- function(
       !(Species %in% "Jerv" & !is.na(Id))) %>%
     ##-- Turn into spatial points object
     sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
-    sf::st_set_crs(. , sf::st_crs(COUNTIES)) %>%
+    sf::st_set_crs(. , sf::st_crs(REGIONS)) %>%
     ##-- Filter based on space 
     sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
   
@@ -997,7 +884,7 @@ makeRovquantData_wolverine <- function(
   ## ------     6.3. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016:18 and 2023 ------
   
   ##-- Get Norrbotten borders
-  COUNTIESNorrbotten <- COUNTIES %>%
+  COUNTIESNorrbotten <- REGIONS %>%
     dplyr::filter(county %in% "Norrbotten") %>%
     dplyr::group_by(county) %>%
     dplyr::summarize()

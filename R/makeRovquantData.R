@@ -71,6 +71,8 @@ makeRovquantData <- function(
   
   ##-- habitat
   habitat.res = NULL, 
+  x.extent = NULL,
+  y.extent = NULL,
   buffer.size = NULL,
   max.move.dist = NULL,
   
@@ -140,39 +142,43 @@ makeRovquantData <- function(
   
   ##---- 2. WOLF DATA PREPARATION -----
   
-  # ##-- Check species and use corresponding function
-  # if(sum(grep("wolf", species, ignore.case = T))>0|
-  #    sum(grep("wolves", species, ignore.case = T))>0|
-  #    sum(grep("ulv", species, ignore.case = T))>0){
-  #   
-  #   ##-- Get clean name for the report
-  #   SPECIES <- "Gray wolf"
-  #   
-  #   ##-- Extract date from the last cleaned data file
-  #   DATE <- getMostRecent( 
-  #     path = file.path(working.dir,"data"),
-  #     pattern = "CleanData_wolf")
-  #   
-  #   ##-- Prepare the data
-  #   out <- makeRovquantData_wolf(
-  #     ##-- paths
-  #     data.dir,
-  #     working.dir,
-  #     ##-- data
-  #     years,
-  #     sex,
-  #     aug.factor,
-  #     sampling.months,
-  #     ##-- habitat
-  #     habitat.res, 
-  #     buffer.size,
-  #     max.move.dist,
-  #     ##-- detectors
-  #     detector.res,
-  #     subdetector.res,
-  #     max.det.dist,
-  #     resize.factor)
-  # }
+  ##-- Check species and use corresponding function
+  if(sum(grep("wolf", species, ignore.case = T))>0|
+     sum(grep("wolves", species, ignore.case = T))>0|
+     sum(grep("ulv", species, ignore.case = T))>0){
+
+    ##-- Get clean name for the report
+    SPECIES <- "Gray wolf"
+
+    ##-- Extract date from the last cleaned data file
+    DATE <- getMostRecent(
+      path = file.path(working.dir,"data"),
+      pattern = "CleanData_wolf")
+
+    ##-- Prepare the data
+    out <- makeRovquantData_wolf(
+      ##-- paths
+      data.dir,
+      working.dir,
+      ##-- data
+      years,
+      sex,
+      aug.factor,
+      sampling.months,
+      ##-- habitat
+      habitat.res,
+      x.extent,
+      y.extent,
+      buffer.size,
+      max.move.dist,
+      ##-- detectors
+      detector.res,
+      subdetector.res,
+      max.det.dist,
+      resize.factor,
+      rename.list)
+  }
+
 
   
   

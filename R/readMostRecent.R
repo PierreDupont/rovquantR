@@ -23,6 +23,7 @@
 #' @importFrom readxl read_excel
 #' @importFrom readr guess_encoding 
 #' @importFrom utils read.csv write.csv
+#' @importFrom raster raster stack
 #' 
 NULL
 #' @rdname readMostRecent
@@ -35,6 +36,7 @@ readMostRecent <- function(
     returnDate = FALSE,
     sep = ",",
     dec = ".",
+    stack = TRUE,
     ...)
   {
   
@@ -83,6 +85,16 @@ readMostRecent <- function(
     }
     data <- readRData(fileName)
   }
+  
+  ##-- function to read the most recent .tif file
+  if(length(grep("tif", extension, ignore.case = T)) > 0){
+    if(stack){
+      data <- raster::stack(file.path(path, infiles[lastFile]))
+    } else { 
+      data <- raster::raster(file.path(path, infiles[lastFile]))
+      }
+  }
+  
   
   ##-- Output
   if(returnDate) {
