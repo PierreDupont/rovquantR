@@ -456,7 +456,7 @@ makeRovquantData_wolf <- function(
   ## ------         2.2.6.1. SKANDOBS ------
   
   ##-- Load the last SkandObs data file
-  skandObs <- readMostRecent( path = file.path(data.dir,"Skandobs"),
+  skandObs <- readMostRecent( path = file.path(data.dir, "Skandobs"),
                               extension = ".xlsx",
                               pattern = "Skandobs")
   
@@ -910,7 +910,6 @@ makeRovquantData_wolf <- function(
     for(t in 1:n.years){
       
       ##-- Identify detections further than maxDist
-      # print(paste0("------ ", t ," -------"))
       distances[[t]] <- checkDistanceDetections( 
         y = y.ar$y.ar[ , ,t], 
         detector.xy = detectors$detectors.df[ ,c("x","y")], 
@@ -1298,18 +1297,14 @@ makeRovquantData_wolf <- function(
     
     nimData <- list( 
       z = z.data,   
-
       y.alive = y.sparse$y,
       detIndices = y.sparse$detIndices,
       detNums = y.sparse$detNums,
-      
       y.aliveOth = y.sparseOth$y, 
       detIndicesOth = y.sparseOth$detIndices,
       detNumsOth = y.sparseOth$detNums,
-      
       x.deadculled = x.deadculled,
       x.deadOther = x.deadOther,
-      
       habitatGrid = detectors$localObjects$habitatGrid,
       habDens = habDens,
       lowerHabCoords = as.matrix(habitat$scaledLowerCoords), 
@@ -1428,11 +1423,11 @@ makeRovquantData_wolf <- function(
     
     ## ------   5. NIMBLE PARAMETERS ------ 
     
-    nimParams <- c("N","lambda","dmean","betaDens",
-                   "omeg1","gamma","psi","phi","h","w","wAll","rw",
-                   "pResponse","sigma",
-                   "p0","betaResponse","betaCovs",
-                   "p0Oth","betaResponseOth","betaCovsOth")
+    nimParams <- c("N", "lambda", "dmean", "betaDens",
+                   "omeg1", "gamma", "psi", "phi", "h", "w", "wAll", "rw",
+                   "pResponse", "sigma",
+                   "p0", "betaResponse", "betaCovs",
+                   "p0Oth", "betaResponseOth", "betaCovsOth")
     
     nimParams2 <- c("z", "sxy")
     

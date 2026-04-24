@@ -333,6 +333,9 @@ makeRovquantData_bear <- function(
     plot = FALSE) %>%
     append(detectors,.)
   
+  ##-- Extract numbers of detectors
+  n.detectors <- detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
+  
   ##-- Format detector locations & number of trials per detector
   n.trials <- as.vector(table(detectors$detector.sp$main.cell.id))
   detectors$detectors.df <- cbind.data.frame(
@@ -348,9 +351,6 @@ makeRovquantData_bear <- function(
     fun = function(x){x>0})) %>%
     mutate( id = 1:nrow(.)) %>%
     rename( "Detector" = Habitat)
-  
-  ##-- Extract numbers of detectors
-  n.detectors <- detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
 
   
   
