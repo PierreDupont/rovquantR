@@ -234,7 +234,7 @@ makeRovquantData_wolf <- function(
   
   ##-- Kernel of NGS detections of individuals in pairs 
   kern <- list()
-  habDens <- matrix(NA, nrow = n.habwindows, ncol = n.years)
+  habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
   for(t in 1:n.years){
     ##-- Subset the NGS data to individuals in packs/pairs this year
     data.pairs.t <- myFullData.sp$alive %>%
