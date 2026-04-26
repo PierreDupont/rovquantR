@@ -1005,7 +1005,7 @@ makeRovquantData_wolf <- function(
                                            replace.value = 0)
     
     ##-- Individual covariates
-    y.status <- MakeAugmentation( y = y.status,
+    y.status <- makeAugmentation( y = y.status,
                                   aug.factor = aug.factor,
                                   replace.value = 1)
     
