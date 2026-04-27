@@ -52,7 +52,7 @@ NULL
 #' @rdname makeRovquantData_wolf
 #' @export
 makeRovquantData_wolf <- function(
-  ##-- paths
+    ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
   
@@ -77,7 +77,7 @@ makeRovquantData_wolf <- function(
   
   ##-- Miscellanious
   rename.list = NULL
-  ){
+){
   
   ## ------ 0. BASIC SET-UP ------
   
@@ -122,7 +122,7 @@ makeRovquantData_wolf <- function(
   ##-- Load pre-defined habitat rasters and shapefiles
   data(habitatRasters, envir = environment()) 
   data(REGIONS, envir = environment())
-
+  
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
     x = habitatRasters[["Habitat"]],
@@ -190,8 +190,8 @@ makeRovquantData_wolf <- function(
   
   ##-- Determine study area based on predefined extent
   studyArea <- sf::st_crop( REGIONS,
-                        xmin = x.extent[1], xmax = x.extent[2],
-                        ymin = y.extent[1], ymax = y.extent[2]) %>%
+                            xmin = x.extent[1], xmax = x.extent[2],
+                            ymin = y.extent[1], ymax = y.extent[2]) %>%
     sf::st_collection_extract(., "POLYGON") %>%
     summarise()  
   
@@ -317,7 +317,7 @@ makeRovquantData_wolf <- function(
   ##-- Extract numbers of detectors
   n.detectors <- detectors$n.detectors <- dim(detectors$main.detector.sp)[1]
   
-
+  
   
   ## ------     2.2. GENERATE DETECTOR-LEVEL COVARIATES -----
   
@@ -332,7 +332,7 @@ makeRovquantData_wolf <- function(
   
   ##-- Put into "nimble2SCR" format
   detectors$detectors.df$countries <- detCountries
-
+  
   
   
   ## ------       2.2.2. EXTRACT COUNTIES ------
@@ -350,7 +350,7 @@ makeRovquantData_wolf <- function(
   ## ------       2.2.3. EXTRACT GPS TRACKS LENGTHS ------
   
   message("Cleaning GPS tracks... ")
-
+  
   ##-- Combine all GPS tracks
   TRACKS <- readTracks( data.dir = data.dir,
                         years = years,
@@ -514,7 +514,7 @@ makeRovquantData_wolf <- function(
       month %in% unlist(sampling.months)
       # ##-- ... if sample was from the focal species and successfully genotyped 
       # !(Species %in% "Ulv" & !is.na(Id))
-      ) %>%
+    ) %>%
     ##-- Turn into spatial points object
     sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
     sf::st_set_crs(. , sf::st_crs(REGIONS)) %>%
@@ -684,7 +684,7 @@ makeRovquantData_wolf <- function(
     ##-- Filter based on space 
     sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
   
-
+  
   
   ## ------     6.3. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
   
@@ -1009,11 +1009,11 @@ makeRovquantData_wolf <- function(
                                   aug.factor = aug.factor,
                                   replace.value = 1)
     
-    already.detected <- makeAugmentation( y = already.detected,
-                                          aug.factor = aug.factor,
-                                          replace.value = 0)
+    detResponse <- makeAugmentation( y = detResponse,
+                                     aug.factor = aug.factor,
+                                     replace.value = 0)
     ##-- Set first detection for augmented individuals to NA
-    already.detected[rownames(already.detected) %in% "Augmented",1]  <- NA
+    detResponse[rownames(detResponse) %in% "Augmented",1]  <- NA
     
     
     
@@ -1457,7 +1457,7 @@ makeRovquantData_wolf <- function(
         "sigma" = array(runif(2,4,8),c(2,dim(y.alive)[3])),
         "detResponse" = detResponse.init,
         "pResponse"  = runif(1,0,1))
-
+      
       save( modelCode,
             nimData,
             nimConstants,
