@@ -1365,11 +1365,10 @@ makeRovquantData_wolf <- function(
     ## ------     4.2. GENERATE INITIAL sxy ------ 
     
     ##-- Project death to the next year and combine all detections
-    AllDetections <- data.dead %>% 
-      select(Id, Year) %>%
+    AllDetections <- data.dead[ ,c("Id","Year")] %>% 
       mutate(Year = Year + 1) %>%
       filter(Year != max(Year)) %>%
-      rbind(., data.alive$data.sp[ ,c("Id", "Year")]) %>%
+      rbind(., data.alive$data.sp[ ,c("Id","Year")]) %>%
       mutate( "x" = st_coordinates(.)[,1],
               "y" = st_coordinates(.)[,2]) %>%
       st_drop_geometry() 
