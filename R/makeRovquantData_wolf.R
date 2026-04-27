@@ -1452,7 +1452,7 @@ makeRovquantData_wolf <- function(
         "betaResponseOth" = runif(dim(y.alive)[3],-1,1),
         "betaDens" = runif(1,-1,1),
         "betaCovs" = array(runif(nimConstants$n.covs,-1,1),c(nimConstants$n.covs,dim(y.alive)[3])),
-        "betaCovsOth" = array(runif(nimConstants$n.covs.Oth,-1,1),c(nimConstants$n.covs.Oth,dim(y.alive)[3])),
+        "betaCovsOth" = array(runif(nimConstants$n.covsOth,-1,1),c(nimConstants$n.covsOth,dim(y.alive)[3])),
         "sigma" = array(runif(2,4,8),c(2,dim(y.alive)[3])),
         "detResponse" = detResponse.init,
         "pResponse"  = runif(1,0,1))
