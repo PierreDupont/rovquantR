@@ -1,5 +1,6 @@
-#' Detection history formatting
+#' @title  Detection history formatting
 #'
+#' @description
 #' R utility function to format SCR and OPSCR detection data into detection history arrays of different formats.
 #' The format of the detection history is determined by the name of the \code{nimble} distribution used in the model (provided by the 'detection.fun' argument)
 #'
@@ -36,9 +37,6 @@
 #' 
 #' @import nimble
 #' @importFrom stats dnorm 
-#' 
-#' @references
-#' nimbleSCR manual: ... 
 #'
 #' @examples 
 #' n.samples <- 150
@@ -72,9 +70,7 @@
 #' makeDetectionHistory(data, detectors, "dpoisLocal_normal", all.ids)
 #' makeDetectionHistory(data, detectors, "dbernppLocalDetection_normal", all.ids)
 #' makeDetectionHistory(data, detectors, "dpoisppLocalDetection_normal", all.ids)
-
-
-NULL
+#'
 #' @rdname makeDetectionHistory
 #' @export
 makeDetectionHistory <- function( data,   

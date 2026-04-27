@@ -32,7 +32,6 @@
 #' 
 #' @rdname getInits.s
 #' @export
-
 getInits.s <- function( 
     y,
     trapCoords,

@@ -1,30 +1,31 @@
-#' Local evaluation of a binomial SCR detection process 
+#' @title Local evaluation of a binomial SCR detection process 
 #'
-#' The \code{dbinomLocal_normal} distribution is a NIMBLE custom distribution which can be used to model and simulate
+#' @description
+#' The \code{dbinomLocal_normalWolf} distribution is a NIMBLE custom distribution which can be used to model and simulate
 #' binomial observations (\emph{x}) of a single individual over a set of detectors defined by their 
 #' coordinates (\emph{trapCoords}). The distribution assumes that an individual’s detection probability at any detector
 #' follows a half-normal function of the distance between the  individual's activity center (\emph{s}) and the detector location. 
-#' All coordinates (\emph{s} and \emph{trapCoords}) should be scaled to the habitat (see (\code{\link{scaleCoordsToHabitatGrid})
+#' All coordinates (\emph{s} and \emph{trapCoords}) should be scaled to the habitat (see \code{\link{scaleCoordsToHabitatGrid}}).
 #'
-#' The \code{dbinomLocal_normal} distribution incorporates three features to increase computation efficiency (see Turek et al., 2021 <doi.org/10.1002/ecs2.3385>  for more details):
+#' The \code{dbinomLocal_normalWolf} distribution incorporates three features to increase computation efficiency (see Turek et al., 2021 <doi.org/10.1002/ecs2.3385>  for more details):
 #' \enumerate{
-#' \item A local evaluation of the detection probability calculation (see Milleret et al., 2019 <doi:10.1002/ece3.4751> for more details)
+#' \item A local evaluation of the detection probability calculation (see Milleret et al., 2019 <doi:10.1002/ece3.4751> for more details).
 #' \item A sparse matrix representation (\emph{x}, \emph{detIndices} and \emph{detNums}) of the observation data to reduce the size of objects to be processed.
 #' \item An indicator (\emph{indicator}) to shortcut calculations for individuals unavailable for detection.
 #' }
 #' 
-#' The \code{dbinomLocal_normal} distribution requires x- and y- detector coordinates (\emph{trapCoords}) and activity centers coordinates (\emph{s}) to be scaled to the habitat grid (\emph{habitatGrid}) using the (\code{\link{scaleCoordsToHabitatGrid}} function.)
+#' The \code{dbinomLocal_normalWolf} distribution requires x- and y- detector coordinates (\emph{trapCoords}) and activity centers coordinates (\emph{s}) to be scaled to the habitat grid (\emph{habitatGrid}) using the \code{\link{scaleCoordsToHabitatGrid}} function.
 #'
 #' When the aim is to simulate detection data: 
 #' \enumerate{
 #' \item \emph{x} should be provided using the \emph{yCombined} object as returned by \code{\link{getSparseY}}, 
 #' \item arguments \emph{detIndices} and \emph{detNums} should not be provided, 
-#' \item argument \emph{lengthYCombined} should be provided using the \emph{lengthYCombined} object as returned by  \code{\link{getSparseY}}.
+#' \item argument \emph{lengthYCombined} should be provided using the \emph{lengthYCombined} object as returned by \code{\link{getSparseY}}.
 #' }
 #' 
 #' 
 #' 
-#' @name dbinomLocal_normal
+#' @name dbinomLocal_normalWolf
 #'
 #' @param x Vector of individual detection frequencies. This argument can be provided in two formats: (i) with the \emph{y} object as returned by the \code{\link{getSparseY}} function; (ii) with the \emph{yCombined} object as returned by \code{\link{getSparseY}}. 
 #' Note that when the random generation functionality is used (\code{rbinomLocal_normal}), only the \emph{yCombined} format can be used. 
@@ -36,8 +37,8 @@
 #' @param p0 Baseline detection probability used in the half-normal detection function.
 #' @param p0Traps Vector of baseline detection probabilities for each trap used in the half-normal detection function. When \emph{p0Traps} is used, \emph{p0} should not be provided. 
 #' @param sigma Scale parameter of the half-normal detection function.
-#' @param s Individual activity center x- and y-coordinates scaled to the habitat (see (\code{\link{scaleCoordsToHabitatGrid}).
-#' @param trapCoords Matrix of x- and y-coordinates of all traps scaled to the habitat (see (\code{\link{scaleCoordsToHabitatGrid}).
+#' @param s Individual activity center x- and y-coordinates scaled to the habitat (see \code{\link{scaleCoordsToHabitatGrid}}).
+#' @param trapCoords Matrix of x- and y-coordinates of all traps scaled to the habitat (see \code{\link{scaleCoordsToHabitatGrid}}).
 #' @param localTrapsIndices Matrix of indices of local traps around each habitat grid cell, as returned by the \code{\link{getLocalObjects}} function.
 #' @param localTrapsNum  Vector of numbers of local traps around all habitat grid cells, as returned by the \code{\link{getLocalObjects}} function.
 #' @param resizeFactor Aggregation factor used in the \code{\link{getLocalObjects}} function to reduce the number of habitat grid cells to retrieve local traps for.
@@ -85,6 +86,7 @@
 #' p0 <- 0.2
 #' sigma <- 2
 #' indicator <- 1 
+#' 
 #' # WE CONSIDER 2 INDIVIDUALS
 #' y <- matrix(c(0, 1, 1, 0,
 #'               0, 1, 0, 1),ncol=4,nrow=2)
@@ -113,7 +115,7 @@
 #'  # WE TAKE THE FIRST INDIVIDUAL
 #' i=1
 #'   # OPTION 1: USING THE RANDOM GENERATION FUNCTIONNALITY 
-#' dbinomLocal_normal(x=SparseY$y[i,,1],
+#' dbinomLocal_normalWolf(x=SparseY$y[i,,1],
 #'                    detNums=SparseY$detNums[i],
 #'                    detIndices=SparseY$detIndices[i,,1],
 #'                    size=rep(1,4),
@@ -129,7 +131,7 @@
 #'                                                                 
 #'   # OPTION 2: USING RANDOM GENERATION FUNCTIONNALITY 
 #'   # WE DO NOT PROVIDE THE detNums AND detIndices ARGUMENTS
-#' dbinomLocal_normal(x=SparseY$yCombined[i,,1],
+#' dbinomLocal_normalWolf(x=SparseY$yCombined[i,,1],
 #'                    size=rep(1,4),
 #'                    p0 = p0,
 #'                    sigma= sigma, 
@@ -263,7 +265,7 @@ dbinomLocal_normalWolf <- nimbleFunction(
   })
 
 
-#' @rdname dbinomLocal_normal
+#' @rdname dbinomLocal_normalWolf
 #' @export
 rbinomLocal_normalWolf <- nimbleFunction(
   run = function( n = double(0, default = 1),
