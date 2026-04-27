@@ -178,7 +178,7 @@ makeRovquantData_bear <- function(
   studyArea <- myFullData.sp$alive %>%
     sf::st_buffer(., dist = habitat$buffer) %>%
     sf::st_union() %>%
-    sf::st_intersection(., REGIONS) %>%
+    sf::st_intersection(., COUNTIES_AGGREGATED) %>%
     sf::st_as_sf()
   
   ##-- Make habitat from predefined Scandinavian raster of suitable habitat
