@@ -40,11 +40,17 @@ Note that the extent and resolution of this raster must match the extent and res
 
 \item{species}{(optional) A \code{character} string with the name of the species to be displayed (only used with \code{type = "summary"}).}
 
+\item{labels}{(optional) A \code{list} of labels to be displayed with the density maps. Typically, country-specific credible intervals of population abundance estimates.}
+
+\item{x.labels}{(optional) A \code{numeric} vector of values between 0 and 1, one value for each item in the \code{labels} list, denoting the relative position(s) of labels along the x-axis.}
+
+\item{y.labels}{(optional) A \code{numeric} vector of values between 0 and 1, one value for each item in the \code{labels} list, denoting the relative position(s) of labels along the y-axes.}
+
+\item{caption}{(optional) A \code{numeric} vector with the boundaries of the credible interval for the population size estimates to be displayed (only used with \code{type = "summary"}).}
+
 \item{export.raster}{A \code{logical}; whether to save density rasters as .tif files or not.}
 
 \item{name}{A \code{character} string with the name to be used when saving .png and .tif files.}
-
-\item{q95}{(optional) A \code{numeric} vector with the boundaries of the 95% credible interval for the population size estimates to be displayed (only used with \code{type = "summary"}).}
 }
 \value{
 This function prints out \code{.png} image of density maps in the specified folder.

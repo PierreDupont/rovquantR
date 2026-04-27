@@ -10,14 +10,15 @@ makeRovquantData_bear(
   years = NULL,
   sex = c("female", "male"),
   aug.factor = 2,
-  sampling.months = list(c(4, 5, 6, 7, 8, 9, 10, 11)),
+  sampling.months = list(c(4:11)),
   habitat.res = 20000,
   buffer.size = 50000,
   max.move.dist = 3e+05,
   detector.res = 5000,
   subdetector.res = 1000,
   max.det.dist = 60000,
-  resize.factor = 1
+  resize.factor = 1,
+  rename.list = NULL
 )
 }
 \arguments{
@@ -46,6 +47,8 @@ makeRovquantData_bear(
 \item{max.det.dist}{A \code{Numeric}.}
 
 \item{resize.factor}{A \code{Numeric}.}
+
+\item{rename.list}{A \code{list}.}
 }
 \value{
 A \code{html} report summarizing the data preparation process

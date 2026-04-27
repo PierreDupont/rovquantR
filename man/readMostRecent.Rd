@@ -16,6 +16,7 @@ readMostRecent(
   returnDate = FALSE,
   sep = ",",
   dec = ".",
+  stack = TRUE,
   ...
 )
 

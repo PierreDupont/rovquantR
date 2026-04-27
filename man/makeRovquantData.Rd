@@ -13,6 +13,8 @@ makeRovquantData(
   aug.factor = NULL,
   sampling.months = NULL,
   habitat.res = NULL,
+  x.extent = NULL,
+  y.extent = NULL,
   buffer.size = NULL,
   max.move.dist = NULL,
   detector.res = NULL,

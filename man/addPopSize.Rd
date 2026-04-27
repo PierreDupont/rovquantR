@@ -7,9 +7,9 @@
 addPopSize(x, y, labels)
 }
 \arguments{
-\item{x, y}{\code{Numeric} vectors of values between 0 and 1, one value for each item in the \code{text} list, denoting the relative position(s) along the x- and y-axes.}
+\item{x, y}{\code{Numeric} vectors of values between 0 and 1, one value for each item in the \code{labels} list, denoting the relative position(s) along the x- and y-axes.}
 
-\item{text}{A named \code{list} containing the population size estimates. 
+\item{labels}{A named \code{list} containing the population size estimates. 
 If names are provided, they will be used to match country flags.}
 }
 \value{

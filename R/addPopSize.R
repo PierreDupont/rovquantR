@@ -4,9 +4,9 @@
 #'
 #' The \code{addPopSize} function uses the outputs from the \code{getDensity} function as input.
 #'
-#' @param text A named \code{list} containing the population size estimates. 
+#' @param labels A named \code{list} containing the population size estimates. 
 #' If names are provided, they will be used to match country flags.
-#' @param x,y \code{Numeric} vectors of values between 0 and 1, one value for each item in the \code{text} list, denoting the relative position(s) along the x- and y-axes.
+#' @param x,y \code{Numeric} vectors of values between 0 and 1, one value for each item in the \code{labels} list, denoting the relative position(s) along the x- and y-axes.
 #' 
 #' @return This function adds population size estimates as text and country flags.
 #' 
