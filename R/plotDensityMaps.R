@@ -75,10 +75,11 @@ plotDensityMaps <- function(
     norSpecies <- "jerv"
     }
   
-  
   ##-- Convert densities to the desired density unit (usually inds.100km-2)
   conversionFactor <- unit/( raster::res(input)[1]/1000)^2
   
+  ##-- Get the corresponding map legend
+  legendName <- bquote(.(paste0("Individuals/", unit)) ~ km^2)
   
   ##-- Rasterize and mask density maps 
   density <- list()
@@ -175,10 +176,9 @@ plotDensityMaps <- function(
                                         cex.axis = 1,
                                         line = 0),
                       smallplot = c(0.81, 0.86, 0.1, 0.5), 
-                      legend.args = list(text = paste0("Individuals/", unit, " km2"),
-                                         side = 2, font = 1, line = 0, cex = 1))
-        ######----- NEED TO FIX LEGEND TEXT 
-        ######----- expression("Individuals/100 km"^ 2)
+                      legend.args = list( text = legendName,
+                                          side = 2, font = 1,
+                                          line = 0, cex = 1))
       }#if
       
       ##-- Export rasters
@@ -238,8 +238,9 @@ plotDensityMaps <- function(
                                     labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                     cex.axis = 1.2),
                   smallplot = c(0.88, 0.90, 0.2, 0.4),
-                  legend.args = list(text = paste0("Individuals/", unit, " km2"),
-                                     side = 2, font = 1, line = 0, cex = 0.9))
+                  legend.args = list( text = legendName,
+                                      side = 2, font = 1,
+                                      line = 0, cex = 0.9))
     dev.off()
   }
   
@@ -275,8 +276,9 @@ plotDensityMaps <- function(
                                       labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                       cex.axis = 1.2),
                     smallplot = c(0.80, 0.83, 0.25, 0.45),
-                    legend.args = list(text = paste0("Individuals/", unit, " km2"),
-                                       side = 2, font = 1, line = 0, cex = 1))
+                    legend.args = list( text = legendName,
+                                        side = 2, font = 1,
+                                        line = 0, cex = 1))
       
       ##-- Add km scale 
       addScale(x = 0.75, y = 0.25, size = 500000)
@@ -292,9 +294,9 @@ plotDensityMaps <- function(
       mtext(text = paste0("Density map and estimated ", engSpecies,
                           "\nabundance range in ",
                           names(estimates)[length(density)]),
-            side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
+            side = 1, line = 2, adj = 0.5, cex = 1.2, font = 2)
       } else {
-        mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
+        mtext(text = caption, side = 1, line = 2, adj = 0.5, cex = 1.2, font = 2)
       }
       dev.off()
     }
@@ -333,8 +335,9 @@ plotDensityMaps <- function(
                                       labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                       cex.axis = 1.2),
                     smallplot = c(0.80, 0.83, 0.25, 0.45),
-                    legend.args = list(text = paste0("Individer/", unit, " km2"),
-                                       side = 2, font = 1, line = 0, cex = 1))
+                    legend.args = list( text = legendName,
+                                        side = 2, font = 1,
+                                        line = 0, cex = 1))
       
       ##-- Add km scale 
       addScale(x = 0.75, y = 0.25, size = 500000)

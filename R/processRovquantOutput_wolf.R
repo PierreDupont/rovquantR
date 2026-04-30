@@ -63,7 +63,7 @@ processRovquantOutput_wolf <- function(
                DATE = DATE)
   
   ##-- States alive
-  alive.states <- 2
+  alive.states <- c(2,3)
   
   
   
@@ -147,7 +147,7 @@ processRovquantOutput_wolf <- function(
       county %in% c("Västra Götaland","Värmland","Halland") ~ "SE4")) %>%
     dplyr::group_by(id) %>%
     dplyr::summarise()
-
+  
   ##-- Prepare raster of countries
   countryRaster <- habitatRasterResolution$`5km`[["Countries"]]
   
@@ -211,7 +211,7 @@ processRovquantOutput_wolf <- function(
     
     ##-- Rescale sigma & dmean to the original coordinate system
     results_F$sims.list$sigma <- results_F$sims.list$sigma * raster::res(habitat$habitat.r)[1]
-    results_F$sims.list$dmean <- results_F$sims.list$dmean * raster::res(habitat$habitat.r)[1]
+    # results_F$sims.list$dmean <- results_F$sims.list$dmean * raster::res(habitat$habitat.r)[1]
     
     
     
@@ -248,7 +248,7 @@ processRovquantOutput_wolf <- function(
     
     ##-- Rescale sigma & dmean to the original coordinate system
     results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
-    results_M$sims.list$dmean <- results_M$sims.list$dmean * raster::res(habitat$habitat.r)[1]
+    # results_M$sims.list$dmean <- results_M$sims.list$dmean * raster::res(habitat$habitat.r)[1]
     
     
     

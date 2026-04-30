@@ -54,6 +54,7 @@ library(raster)
 library(rmapshaper)
 library(colorspace)
 library(nngeo)
+library(smoothr)
 
 
 
@@ -191,8 +192,9 @@ COUNTRIES <- GLOBALMAP %>%
   filter(ISO %in% c("SWE","NOR"), 
          area > 80000000) %>%
   group_by(ISO) %>%
-  summarize()
-
+  summarize() %>%
+  fill_holes(., threshold = units::set_units(600, km^2)) ##-- Remove holes to keep only the two big lakes in Sweden
+plot(COUNTRIES)
 
 ##-- POLYGONS OF CARNIVORE MANAGEMENT REGIONS IN NORWAY 
 REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) %>%
