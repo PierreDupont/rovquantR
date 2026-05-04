@@ -274,10 +274,14 @@ processRovquantOutput_wolf <- function(
     ##-- sigma
     minIterSigma <- min(dim(results_F$sims.list$sigma)[1],dim(results_M$sims.list$sigma)[1])
     iterSigma <- seq(1, minIterSigma, by = minIterSigma/minIter)
-    resultsSXYZ_MF$sims.list$sigma <- abind::abind(results_M$sims.list$sigma[iterSigma, ],
-                                                   results_F$sims.list$sigma[iterSigma, ],
-                                                   along = 3)
-    dimnames(resultsSXYZ_MF$sims.list$sigma)[[3]] <- c("M","F")
+    resultsSXYZ_MF$sims.list$sigma <- abind::abind(results_M$sims.list$sigma[iterSigma, , ],
+                                                   results_F$sims.list$sigma[iterSigma, , ],
+                                                   along = 4)
+    dimnames(resultsSXYZ_MF$sims.list$sigma) <- list(
+      iterations = 1:dim(resultsSXYZ_MF$sims.list$sigma)[1],
+      states = c("others","scent-marking"),
+      years = years,
+      sex =  c("M","F"))
     
     ##-- sex
     resultsSXYZ_MF$sims.list$sex <- rep(c("M","F"),
@@ -357,7 +361,7 @@ processRovquantOutput_wolf <- function(
   rrRegions <- ratify(rrRegions)
   levels(rrRegions)[[1]] <- data.frame(
     "ID" = c(1,2,3,23:30),
-    "Regions"= c( "Nordre","Midtre","Söndre",
+    "Regions"= c( "Nordre","Midtre","Södre",
                   "Region 3","Region 1","Region 2","Region 4",
                   "Region 7","Region 6","Region 8","Region 5"))
   areaRegionsTotal <- table(factorValues(rrRegions, rrRegions[]))*res(rrRegions)[1]*1e-6
@@ -463,7 +467,7 @@ processRovquantOutput_wolf <- function(
         regionID = regionID,
         returnPosteriorCells = F)
     }#t
-    names(ACdensity) <- years+1
+    names(ACdensity) <- years
     
     
     
@@ -482,7 +486,7 @@ processRovquantOutput_wolf <- function(
         regionID = regionID,
         returnPosteriorCells = F)
     }#t
-    names(ACdensityM) <- years+1
+    names(ACdensityM) <- years
     
     
     
@@ -501,7 +505,7 @@ processRovquantOutput_wolf <- function(
         regionID = regionID,
         returnPosteriorCells = F)
     }
-    names(ACdensityF) <- years+1
+    names(ACdensityF) <- years
     
 
     
@@ -511,11 +515,17 @@ processRovquantOutput_wolf <- function(
     sigma <- array(NA, c( dim(sx_extract)[1],
                           length(resultsSXYZ_MF$sims.list$sex),
                           dim(sx_extract)[3]))
-    for(i in 1:length(resultsSXYZ_MF$sims.list$sex)){
-      if(resultsSXYZ_MF$sims.list$sex[i] == "M"){
-        sigma[ ,i, ] <- resultsSXYZ_MF$sims.list$sigma[ , ,"M"]
-      } else {
-        sigma[ ,i, ] <- resultsSXYZ_MF$sims.list$sigma[ , ,"F"]
+    
+    for(i in 1:dim(sigma)[2]){
+      thisSex <- ifelse(resultsSXYZ_MF$sims.list$sex[i] == "M", "M", "F")
+      for(t in 1:dim(sigma)[3]){
+        for(ite in 1:dim(sigma)[1]){
+          if(resultsSXYZ_MF$sims.list$z[ite,i,t] == 3){
+            sigma[ite,i,t] <- resultsSXYZ_MF$sims.list$sigma[ite,"scent-marking",t,thisSex]
+          } else {
+            sigma[ite,i,t] <- resultsSXYZ_MF$sims.list$sigma[ite,"others",t,thisSex]
+          }
+        }
       }
     }#i
 
@@ -541,7 +551,7 @@ processRovquantOutput_wolf <- function(
       UDdensity[[t]]$CILCell <- NULL
       UDdensity[[t]]$CIHCell <- NULL
     }#t
-    names(UDdensity) <- years+1
+    names(UDdensity) <- years
     
     
     
@@ -573,11 +583,11 @@ processRovquantOutput_wolf <- function(
   message("## Plotting population density maps...") 
   
   ##-- Create 5km raster for plotting
-  rrNorway <- extraction.raster[["Countries"]]
-  rrNorway[!rrNorway[] %in% c(2,4)] <- NA
-  rrNorway[rrNorway[] %in% c(2,4)] <- 1
-  rrNorway <- raster::crop(rrNorway, habitat$habitat.r)
-  rrCombined <- rrRegions + rrNorway
+  rrCountries <- extraction.raster[["Countries"]]
+  rrCountries[!rrCountries[] %in% c(2,4)] <- NA
+  rrCountries[rrCountries[] %in% c(2,4)] <- 1
+  rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
+  rrCombined <- rrRegions + rrCountries
   
   ##-- AC-density maps
   plotDensityMaps(
@@ -597,7 +607,7 @@ processRovquantOutput_wolf <- function(
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES,
-    type = c("time.series", "last.year"),#,"summary","summary_NOR"),
+    type = c("time.series", "last.year","summary","summary_NOR"),
     species = "wolf",
     labels = list("nor" = ACdensity[[n.years]]$summary["Norway",c("95%CILow","95%CIHigh")],
                   "swe" = ACdensity[[n.years]]$summary["Sweden",c("95%CILow","95%CIHigh")],
@@ -636,11 +646,17 @@ processRovquantOutput_wolf <- function(
        xlab = "", ylab = paste("Estimated number of wolfs"),
        xaxt = "n", axes = F, cex.lab = 1.6)
   graphics::axis(1, at = c(1:(n.years)), labels = years+1, cex.axis = 1.5, padj = -1)
-  graphics::axis(2, at = seq(0,ymax,200), labels = seq(0,ymax,200), cex.axis = 1.5, hadj = 0.5)
+  graphics::axis(2, at = seq(0,ymax,100), labels = seq(0,ymax,100), cex.axis = 1.5, hadj = 0.5)
   graphics::abline(v = (1:n.years)+0.5, lty = 2)
   graphics::abline(h = seq(0,ymax, by = 100), lty = 2, col = "gray90")
   
   for(t in 1:n.years){
+    
+    ##-- Number of individuals detected
+    xx <- c(t-0.5,t+0.5,t+0.5,t-0.5)
+    yy <- c(0,0,n.detected[t],n.detected[t])
+    polygon(xx, yy, border = NA, col = adjustcolor("black", 0.05))
+    
     ##-- Norway
     plotQuantiles(x = ACdensity[[t]]$PosteriorRegions["Norway", ],
                   at = t + diffSex,
@@ -648,34 +664,27 @@ processRovquantOutput_wolf <- function(
                   col = colCountries[1])
     
     ##-- Sweden 
-    add.star <- t %in% yearsNotSampled
+    # add.star <- t %in% yearsNotSampled
     plotQuantiles(x = ACdensity[[t]]$PosteriorRegions["Sweden", ],
                   at = t - diffSex,
                   width = 0.15,
-                  col = colCountries[2],
-                  add.star = add.star)
+                  col = colCountries[2])
     
     ##-- TOTAL
     plotQuantiles(x = colSums(ACdensity[[t]]$PosteriorAllRegions),
                   at = t,
                   width = 0.15,
-                  col = colCountries[3],
-                  add.star = add.star)
-    
-    # ##-- ADD NUMBER OF INDIVIDUALS DETECTED
-    # xx <- c(t-0.25,t+0.25,t+0.25,t-0.25)
-    # yy <- c(n.detected[t]-1,n.detected[t]-1,n.detected[t]+1,n.detected[t]+1)
-    # polygon(xx, yy, border = NA, col = "goldenrod1")
-  }#t
+                  col = colCountries[3])
+    }#t
   box()
   
   ##-- legend
   par(xpd = TRUE)
   xx <- c(0.11*n.years, 0.24*n.years, 0.37*n.years) 
-  yy <- c(200,200,200)
+  yy <- c(575,575,575)
   labs <- c("Norway", "Sweden", "Total")
   polygon(x = c(0.08*n.years,0.46*n.years,0.46*n.years,0.08*n.years),
-          y = c(150,150,250,250),
+          y = c(590,590,560,560),
           col = adjustcolor("white", alpha.f = 0.9),
           border = "gray90")
   points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 3.5, col = adjustcolor(colCountries,0.3))
@@ -2484,8 +2493,8 @@ processRovquantOutput_wolf <- function(
   # 
   # ## ------   2.5. GET THE DETECTED INDIVIDUALS ------
   # 
-  # n.detected <- read.csv(file.path(working.dir, "tables", "TotalIdDetected.csv"))
-  # n.detected <- n.detected[1,2:ncol(n.detected)]
+  n.detected <- read.csv(file.path(working.dir, "tables", "TotalIdDetected.csv"))
+  n.detected <- n.detected[1,2:ncol(n.detected)]
   # 
   # 
   # 

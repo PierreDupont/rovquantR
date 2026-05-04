@@ -214,8 +214,8 @@ plotDensityMaps <- function(
     ##-- Add caption if available
     if(!is.null(names(estimates))){
       mtext(text = names(estimates)[t],
-            side = 1, line =  -25,
-            adj = 0.25, cex = 3, font = 2)
+            side = 1, line = -25,
+            adj = 0.25, cex = 1, font = 2)
     }
     
     ##-- Add legend
