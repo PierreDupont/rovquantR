@@ -52,7 +52,7 @@ NULL
 #' @rdname makeRovquantData_wolf
 #' @export
 makeRovquantData_wolf <- function(
-    ##-- paths
+  ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
   
@@ -163,19 +163,6 @@ makeRovquantData_wolf <- function(
   DATA$years <- years
   n.years <- length(years)
   
-  ##-- Filter NGS samples for dates
-  myFullData.sp$alive <- myFullData.sp$alive %>%
-    dplyr::filter(
-      ##-- Subset to years of interest
-      Year %in% years,
-      ##-- Subset to monitoring period
-      Month %in% unlist(sampling.months))
-  
-  ##-- Filter Dead recoveries for dates
-  myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
-    ##-- Subset to years of interest
-    dplyr::filter(Year %in% years)
-  
   
   
   ## ---------------------------------------------------------------------------
@@ -271,6 +258,7 @@ makeRovquantData_wolf <- function(
     plot(kern[[t]], main = years[t])
     plot(habitat$habitat.poly$geometry, add = T, col = NA)
     
+    ##-- Scale covariate
     habDens[ ,t] <- scale(kern[[t]][habitat$habitat.r[ ] == 1])
   } #t
   
@@ -282,7 +270,7 @@ makeRovquantData_wolf <- function(
   
   ## ------     2.1. GENERATE DETECTORS CHARACTERISTICS -----
   
-  ##-- Generate NGS detectors based on the study area 
+  ##-- Generate raster of sub-detectors based on the study area 
   detectors$subdetectors.r <- raster::disaggregate(
     habitat$habitat.rWthBuffer,
     fact = raster::res(habitat$habitat.r)[1]/detectors$resolution.sub)
@@ -732,7 +720,7 @@ makeRovquantData_wolf <- function(
   
   
   
-  ## ------     6.5. PLOT NGS and DEAD RECOVERY MAPS ----- 
+  ## ------     6.5. PLOT NGS & DEAD RECOVERY MAPS ----- 
   
   ##-- layout
   L <- n.years
