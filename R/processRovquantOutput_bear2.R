@@ -1765,150 +1765,151 @@ processRovquantOutput_bear2 <- function(
 
 
 
-  ## ------     4.8.3. SEX-RATIO MAPS ------
-
-  ##-- Convert densities from 25km2 (5*5 raster) to 100km2
-  SexRatio <- list()
-  for(t in 1:length(years)){
-    SexRatio[[t]] <- ACdensityF[[t]]$MeanCell/ACdensity[[t]]$MeanCell
-  }
-
-  ##-- Crop density maps to Norway
-  rrCombined <- rrRegions + rrNorway
-  SexRatioMap <- list()
-  for(t in 1:length(years)){
-    SexRatioMap[[t]] <- densityInputRegions$regions.r
-    SexRatioMap[[t]][] <- NA
-    SexRatioMap[[t]][!is.na(densityInputRegions$regions.r[])] <- SexRatio[[t]]
-    SexRatioMap[[t]][is.na(rrCombined[])] <- NA
-
-    crs(SexRatioMap[[t]]) <- st_crs(habitat$habitat.poly)
-  }#t
-
-
-  # pdf(file = file.path(working.dir, "figures/SexRatio_Maps.pdf"),
-  #    width = 12, height = 8)
-  grDevices::png(filename = file.path(working.dir, "figures/SexRatio_Maps.png"),
-      width = 12, height = 8, units = "in", pointsize = 12,
-      res = 300, bg = NA)
-
-  ##-- Set color scale
-  max <- 1
-  cuts <- seq(0, max, length.out = 100) ##-- set breaks
-  colfunc <- colorRampPalette(c(colSex[2],"white", colSex[1]))
-  col <- colfunc(100)
-
-  ##-- layout
-  mx <- rbind(c(1,rep(1:5, each = 2)),
-              c(rep(1:5, each = 2), 5))
-  mx <- rbind(mx, mx + 5)
-  nf <- layout(mx,
-               widths = c(rep(1,ncol(mx))),
-               heights = rep(1,2))
-  #layout.show(nf)
-  par(mar = c(0,0,0,0))
-
-  ##-- Plot Sex-ratio maps
-  for(t in 1:length(years)){
-    plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
-    image(SexRatioMap[[t]], add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-    plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = grey(0.4), col = NA, add = TRUE)
-    mtext(text = years[t], side = 1, -20, adj=0.2, cex=1.2)
-
-    if(t == n.years){
-      segments(x0 = 830000, x1 = 830000,
-               y0 = 6730000, y1 = 6730000 + 500000,
-               col = grey(0.3), lwd = 4, lend = 2)
-      text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 1.4)
-      plot( SexRatioMap[[t]],
-            legend.only = T,
-            breaks = cuts,
-            col = col,
-            legend.width = 2,
-            axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                             labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                             cex.axis = 1.2),
-            smallplot = c(0.95, 1.00, 0.2, 0.6),
-            legend.args = list(text = "% Female bears",
-                               side = 2, font = 1, line = 1, cex = 1))
-    }#if
-  }#t
-  dev.off()
-
-
-
-
-  ## ------     4.8.4. SEX-RATIO MAPS (SMOOTHED) ------
-
-  ##-- Set smoothing factor
-  smoothingFactor <- c(3,7,11,21)
-  for(SF in smoothingFactor){
-
-    SexRatioMap.smooth <- list()
-    for(t in 1:length(years)){
-      SexRatioMap.smooth[[t]] <- densityInputRegions$regions.r
-      SexRatioMap.smooth[[t]][] <- NA
-      SexRatioMap.smooth[[t]][!is.na(densityInputRegions$regions.r[])] <- SexRatio[[t]]
-      SexRatioMap.smooth[[t]] <- terra::focal(terra::rast(SexRatioMap[[t]]), SF, "mean", na.rm=TRUE)
-      SexRatioMap.smooth[[t]][is.na(rrCombined[])] <- NA
-    }#t
-
-
-  # pdf(file = file.path(working.dir, "figures", paste0("SexRatio_Maps_smooth_",SF,".pdf")),
-  #      width = 12, height = 8)
-    grDevices::png(filename = file.path(working.dir, "figures", paste0("SexRatio_Maps_smooth_",SF,".png")),
-        width = 12, height = 8, units = "in", pointsize = 12,
-        res = 300, bg = NA)
-
-    ##-- Set color scale
-    max <- 1
-    cuts <- seq(0, max, length.out = 100) ##-- set breaks
-    colfunc <- colorRampPalette(c(inferno(100)[1], inferno(100)[25], inferno(100)[50], inferno(100)[75], inferno(100)[100]))
-    col <- colfunc(100)
-
-
-    ##-- layout
-    mx <- rbind(c(1,rep(1:5, each = 2)),
-                c(rep(1:5, each = 2), 5))
-    mx <- rbind(mx, mx + 5)
-    nf <- layout(mx,
-                 widths = c(rep(1,ncol(mx))),
-                 heights = rep(1,2))
-    #layout.show(nf)
-    par(mar = c(0,0,0,0))
-
-    ##-- Plot AC maps
-    for(t in 1:length(years)){
-      plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = NA, col = "gray80")
-      image( SexRatioMap.smooth[[t]], add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-      plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = grey(0.4), col = NA, add = TRUE)
-      mtext(text = years[t], side = 1, -20, adj=0.2, cex=1.2)
-
-      if(t == n.years){
-        segments(x0 = 830000, x1 = 830000,
-                 y0 = 6730000, y1 = 6730000 + 500000,
-                 col = grey(0.3), lwd = 4, lend = 2)
-        text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 1.4)
-        plot( raster(SexRatioMap.smooth[[t]]),
-              legend.only = T,
-              breaks = cuts,
-              col = col,
-              legend.width = 2,
-              axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                               labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                               cex.axis = 1.2),
-              smallplot = c(0.82, 0.84, 0.2, 0.6),
-              legend.args = list(text = "% Female bears",
-                                 side = 2, font = 1, line = 0.2, cex = 1))
-      }#if
-    }#t
-    dev.off()
-  }#SF
-
-
-
+  # ## ------     4.8.3. SEX-RATIO MAPS ------
+  # 
+  # ##-- Convert densities from 25km2 (5*5 raster) to 100km2
+  # SexRatio <- list()
+  # for(t in 1:length(years)){
+  #   SexRatio[[t]] <- ACdensityF[[t]]$MeanCell/ACdensity[[t]]$MeanCell
+  # }
+  # 
+  # ##-- Crop density maps to Norway
+  # rrCombined <- rrRegions + rrNorway
+  # SexRatioMap <- list()
+  # for(t in 1:length(years)){
+  #   SexRatioMap[[t]] <- densityInputRegions$regions.r
+  #   SexRatioMap[[t]][] <- NA
+  #   SexRatioMap[[t]][!is.na(densityInputRegions$regions.r[])] <- SexRatio[[t]]
+  #   SexRatioMap[[t]][is.na(rrCombined[])] <- NA
+  # 
+  #   crs(SexRatioMap[[t]]) <- st_crs(habitat$habitat.poly)
+  # }#t
+  # 
+  # 
+  # # pdf(file = file.path(working.dir, "figures/SexRatio_Maps.pdf"),
+  # #    width = 12, height = 8)
+  # grDevices::png(filename = file.path(working.dir, "figures/SexRatio_Maps.png"),
+  #     width = 12, height = 8, units = "in", pointsize = 12,
+  #     res = 300, bg = NA)
+  # 
+  # ##-- Set color scale
+  # max <- 1
+  # cuts <- seq(0, max, length.out = 100) ##-- set breaks
+  # colfunc <- colorRampPalette(c(colSex[2],"white", colSex[1]))
+  # col <- colfunc(100)
+  # 
+  # ##-- layout
+  # mx <- rbind(c(1,rep(1:5, each = 2)),
+  #             c(rep(1:5, each = 2), 5))
+  # mx <- rbind(mx, mx + 5)
+  # nf <- layout(mx,
+  #              widths = c(rep(1,ncol(mx))),
+  #              heights = rep(1,2))
+  # #layout.show(nf)
+  # par(mar = c(0,0,0,0))
+  # 
+  # ##-- Plot Sex-ratio maps
+  # for(t in 1:length(years)){
+  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
+  #   image(SexRatioMap[[t]], add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
+  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = grey(0.4), col = NA, add = TRUE)
+  #   mtext(text = years[t], side = 1, -20, adj=0.2, cex=1.2)
+  # 
+  #   if(t == n.years){
+  #     segments(x0 = 830000, x1 = 830000,
+  #              y0 = 6730000, y1 = 6730000 + 500000,
+  #              col = grey(0.3), lwd = 4, lend = 2)
+  #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 1.4)
+  #     plot( SexRatioMap[[t]],
+  #           legend.only = T,
+  #           breaks = cuts,
+  #           col = col,
+  #           legend.width = 2,
+  #           axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
+  #                            labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
+  #                            cex.axis = 1.2),
+  #           smallplot = c(0.95, 1.00, 0.2, 0.6),
+  #           legend.args = list(text = "% Female bears",
+  #                              side = 2, font = 1, line = 1, cex = 1))
+  #   }#if
+  # }#t
+  # dev.off()
+  # 
+  # 
+  # 
+  # 
+  # ## ------     4.8.4. SEX-RATIO MAPS (SMOOTHED) ------
+  # 
+  # ##-- Set smoothing factor
+  # smoothingFactor <- c(3,7,11,21)
+  # for(SF in smoothingFactor){
+  # 
+  #   SexRatioMap.smooth <- list()
+  #   for(t in 1:length(years)){
+  #     SexRatioMap.smooth[[t]] <- densityInputRegions$regions.r
+  #     SexRatioMap.smooth[[t]][] <- NA
+  #     SexRatioMap.smooth[[t]][!is.na(densityInputRegions$regions.r[])] <- SexRatio[[t]]
+  #     SexRatioMap.smooth[[t]] <- terra::focal(terra::rast(SexRatioMap[[t]]), SF, "mean", na.rm=TRUE)
+  #     SexRatioMap.smooth[[t]][is.na(rrCombined[])] <- NA
+  #   }#t
+  # 
+  # 
+  # # pdf(file = file.path(working.dir, "figures", paste0("SexRatio_Maps_smooth_",SF,".pdf")),
+  # #      width = 12, height = 8)
+  #   grDevices::png(filename = file.path(working.dir, "figures", paste0("SexRatio_Maps_smooth_",SF,".png")),
+  #       width = 12, height = 8, units = "in", pointsize = 12,
+  #       res = 300, bg = NA)
+  # 
+  #   ##-- Set color scale
+  #   max <- 1
+  #   cuts <- seq(0, max, length.out = 100) ##-- set breaks
+  #   colfunc <- colorRampPalette(c(inferno(100)[1], inferno(100)[25], inferno(100)[50], inferno(100)[75], inferno(100)[100]))
+  #   col <- colfunc(100)
+  # 
+  # 
+  #   ##-- layout
+  #   mx <- rbind(c(1,rep(1:5, each = 2)),
+  #               c(rep(1:5, each = 2), 5))
+  #   mx <- rbind(mx, mx + 5)
+  #   nf <- layout(mx,
+  #                widths = c(rep(1,ncol(mx))),
+  #                heights = rep(1,2))
+  #   #layout.show(nf)
+  #   par(mar = c(0,0,0,0))
+  # 
+  #   ##-- Plot AC maps
+  #   for(t in 1:length(years)){
+  #     plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = NA, col = "gray80")
+  #     image( SexRatioMap.smooth[[t]], add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
+  #     plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = grey(0.4), col = NA, add = TRUE)
+  #     mtext(text = years[t], side = 1, -20, adj=0.2, cex=1.2)
+  # 
+  #     if(t == n.years){
+  #       segments(x0 = 830000, x1 = 830000,
+  #                y0 = 6730000, y1 = 6730000 + 500000,
+  #                col = grey(0.3), lwd = 4, lend = 2)
+  #       text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 1.4)
+  #       plot( raster(SexRatioMap.smooth[[t]]),
+  #             legend.only = T,
+  #             breaks = cuts,
+  #             col = col,
+  #             legend.width = 2,
+  #             axis.args = list(at = round(seq(0, max-0.05, length.out = 4), digits = 1),
+  #                              labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
+  #                              cex.axis = 1.2),
+  #             smallplot = c(0.82, 0.84, 0.2, 0.6),
+  #             legend.args = list(text = "% Female bears",
+  #                                side = 2, font = 1, line = 0.2, cex = 1))
+  #     }#if
+  #   }#t
+  #   dev.off()
+  # }#SF
+  # 
+  # 
+  # 
 
   ##----------------------------------------------------------------------------
+  
   ## ------ 5. TABLES -----
   
   gc()
