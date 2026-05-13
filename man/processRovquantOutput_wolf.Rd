@@ -9,6 +9,8 @@ processRovquantOutput_wolf(
   working.dir = NULL,
   nburnin = 0,
   niter = 100,
+  thin = 1,
+  thin2 = 1,
   extraction.res = 5000,
   overwrite = FALSE
 )
@@ -22,12 +24,17 @@ processRovquantOutput_wolf(
 
 \item{niter}{An \code{integer} denoting the number of MCMC iterations to be used for density extraction.}
 
+\item{thin}{An \code{integer} denoting the thinning rate for main parameters.}
+
+\item{thin2}{An \code{integer} denoting the thinning rate for secondary parameters.}
+
 \item{extraction.res}{A \code{integer} denoting the raster resolution for density extraction.}
+
+\item{overwrite}{A \code{logical} denoting whether to overwrite existing.}
 }
 \value{
-A \code{.RData} file with the clean NGS and dead recovery data objects
-for the species and period specified.
-A \code{html} report summarizing the data cleaning process
+\code{.RData} files with the MCMC samples, summary statistics and extracted population densities and population sizes.
+A \code{html} report summarizing the main results from the OPSCR analysis.
 Additional \code{.png} images that can be reused somewhere else.
 }
 \description{
