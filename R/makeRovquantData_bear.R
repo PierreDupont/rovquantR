@@ -668,9 +668,12 @@ makeRovquantData_bear <- function(
       ##-- Subset to months of interest
       Month %in% unlist(sampling.months),
       ##-- Subset to sex of interest
-      Sex %in% sex) %>%
-    ##-- Filter data for space
-    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects) %>%
+      Sex %in% sex,
+      ##-- Subset to samples collected in NORWAY
+      Country_sample %in% "(N)") %>%
+    # [PD] 09.06.2026 change from filter based on space (habitat) tyo filter based on registration in rovbase
+    # ##-- Filter data for space
+    # sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects) %>%
     ##-- Assign detector based on distance
     assignDetectors(
       data = .,                
@@ -687,9 +690,12 @@ makeRovquantData_bear <- function(
       ##-- Subset to years of interest
       Year %in% years,
       ##-- Subset to sex of interest
-      Sex %in% sex) %>%
-    ##-- Filter data for space
-    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects) %>%
+      Sex %in% sex,
+      ##-- Subset to samples collected in NORWAY
+      Country_sample %in% "(N)") %>%
+    # [PD] 09.06.2026 change from filter based on space (habitat) tyo filter based on registration in rovbase
+    # ##-- Filter data for space
+    # sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects) %>%
     ##-- Assign detector based on distance
     assignDetectors(
       data = .,
