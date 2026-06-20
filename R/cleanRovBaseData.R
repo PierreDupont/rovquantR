@@ -145,7 +145,10 @@ cleanRovbaseData <- function(
   }
   
   ##-- Renaming list
-  if(is.null(rename.list)){rename.list = r.list.internal}
+  if(is.null(rename.list)) {
+    if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
+    rename.list <- r.list.internal
+  }
   
   ##-- Load pre-processed habitat shapefiles
   data(REGIONS, envir = environment()) 

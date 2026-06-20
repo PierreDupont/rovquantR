@@ -62,6 +62,8 @@ makeRovquantData_bear <- function(
   
   ##-- habitat
   habitat.res = 20000, 
+  x.extent = NULL,
+  y.extent = NULL,
   buffer.size = 50000,
   max.move.dist = 300000,
   
@@ -81,13 +83,18 @@ makeRovquantData_bear <- function(
   if(is.null(aug.factor)){aug.factor <- 2}
   if(is.null(sampling.months)){sampling.months <- list(c(4:11))}
   if(is.null(habitat.res)){habitat.res <- 20000} 
+  if(is.null(x.extent)){x.extent <- c(100000,1114700)}
+  if(is.null(y.extent)){y.extent <- c(6650000,7950000)}
   if(is.null(buffer.size)){buffer.size <- 50000}
   if(is.null(max.move.dist)){max.move.dist <- 300000}
   if(is.null(detector.res)){detector.res <- 5000}
   if(is.null(subdetector.res)){subdetector.res <- 1000}
   if(is.null(max.det.dist)){max.det.dist <- 60000}
   if(is.null(resize.factor)){resize.factor <- 1}
-  if(is.null(rename.list)){rename.list = r.list.internal}
+  if(is.null(rename.list)) {
+    if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
+    rename.list <- r.list.internal
+  }
 
   ##-- Set up list of Habitat characteristics
   habitat <- list( resolution = habitat.res,
@@ -114,7 +121,7 @@ makeRovquantData_bear <- function(
   ## ------   1. HABITAT DATA -----
   
   ##-- Load pre-defined habitat rasters and shapefiles
-  #data(COUNTRIES, envir = environment()) 
+  data(COUNTRIES, envir = environment()) 
   data(REGIONS, envir = environment()) 
   data(habitatRasters, envir = environment()) 
   #data(GLOBALMAP, envir = environment()) 
@@ -175,11 +182,19 @@ makeRovquantData_bear <- function(
   
   ##-- Determine study area based on NGS detections
   ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
-  studyArea <- myFullData.sp$alive %>%
-    sf::st_buffer(., dist = habitat$buffer) %>%
-    sf::st_union() %>%
-    sf::st_intersection(., COUNTIES_AGGREGATED) %>%
-    sf::st_as_sf()
+  # studyArea <- myFullData.sp$alive %>%
+  #   sf::st_buffer(., dist = habitat$buffer) %>%
+  #   sf::st_union() %>%
+  #   sf::st_intersection(., COUNTIES_AGGREGATED) %>%
+  #   sf::st_as_sf()
+  
+  ##-- Determine study area based on predefined extent
+  studyArea <- REGIONS %>%
+    dplyr::filter(country == "NOR") %>%
+    sf::st_crop( ., xmin = x.extent[1], xmax = x.extent[2],
+                 ymin = y.extent[1], ymax = y.extent[2]) %>%
+    sf::st_collection_extract(., "POLYGON") %>%
+    summarise()  
   
   ##-- Make habitat from predefined Scandinavian raster of suitable habitat
   habitat <- makeHabitatFromRaster(
@@ -323,12 +338,13 @@ makeRovquantData_bear <- function(
   ##-- Generate raster of sub-detectors based on the study area
   subdetectors.r <- raster::disaggregate(
     x = habitat$habitat.rWthBuffer,
-    fact = raster::res(habitat$habitat.r)[1]/detectors$resolution.sub)
+    fact = raster::res(habitat$habitat.r)[1]/detectors$resolution.sub) %>%
+    mask(., studyArea)
   
   ##-- Generate NGS detectors based on the raster of sub-detectors
   detectors <- makeSearchGrid( 
     data = subdetectors.r,
-    resolution = detectors$detResolution,
+    resolution = detectors$resolution,
     div = (detectors$resolution/detectors$resolution.sub)^2,
     plot = FALSE) %>%
     append(detectors,.)
@@ -671,7 +687,7 @@ makeRovquantData_bear <- function(
       Sex %in% sex,
       ##-- Subset to samples collected in NORWAY
       Country_sample %in% "(N)") %>%
-    # [PD] 09.06.2026 change from filter based on space (habitat) tyo filter based on registration in rovbase
+    # [PD] 09.06.2026 change from filter based on space (habitat) to filter based on registration in rovbase
     # ##-- Filter data for space
     # sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects) %>%
     ##-- Assign detector based on distance

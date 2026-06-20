@@ -119,11 +119,13 @@ plotDensityMaps <- function(
           }}}}
     ncols <- ceiling(L/nrows)
     
-    grDevices::png(filename = file.path( path, "figures",
-                                        paste0(name,"_TimeSeries.png")),
-                   width = ncols*2, height = nrows*4,
+    grDevices::png(filename = file.path( path, "figures", paste0(name,"_TimeSeries.png")),
+                   width = ncols*2.3, height = nrows*4,
                    units = "in", pointsize = 12,
                    res = 300, bg = NA)
+    # grDevices::pdf(file = file.path( path, "figures",paste0(name,"_TimeSeries.pdf")),
+    #                width = ncols*2.3, height = nrows*4,
+    #                pointsize = 12)
     
     ##-- layout
     mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
@@ -154,8 +156,8 @@ plotDensityMaps <- function(
       ##-- Add year if available
       if(!is.null(names(estimates))){
         graphics::mtext(text = names(estimates)[t],
-                        side = 1, line =  -20,
-                        adj = 0.2, cex = 1.2)
+                        side = 1, line = -5,
+                        adj = 0.12, cex = 1)
       }
       
       ##-- Add legend
@@ -163,7 +165,7 @@ plotDensityMaps <- function(
         graphics::segments(
           x0 = legend.x, x1 = legend.x,
           y0 = legend.y - 250000, y1 = legend.y + 250000,
-          col = "grey30", lwd = 4, lend = 2)
+          col = "grey10", lwd = 3, lend = 2)
         graphics::text(
           x = legend.x - 0.04 * xRange,
           y = legend.y,
@@ -173,7 +175,7 @@ plotDensityMaps <- function(
                       col = col, legend.width = 2,
                       axis.args = list( at = round(seq(0, max-0.04, length.out = 4), digits = 1),
                                         labels = round(seq(0, max-0.04, length.out = 4), digits = 1),
-                                        cex.axis = 1,
+                                        cex.axis = 1.2,
                                         line = 0),
                       smallplot = c(0.81, 0.86, 0.1, 0.5), 
                       legend.args = list( text = legendName,
@@ -181,12 +183,12 @@ plotDensityMaps <- function(
                                           line = 0, cex = 1))
       }#if
       
-      ##-- Export rasters
+      #-- Export rasters
       if(export.raster){
         writeRaster( density[[t]],
                      file.path( path, "rasters",
                                 paste0( name, "_",
-                                        raster::res(input)[1]/1000, "km", 
+                                        raster::res(input)[1]/1000, "km",
                                         names(estimates)[t], ".tif")),
                      overwrite = TRUE)
       }
@@ -202,7 +204,8 @@ plotDensityMaps <- function(
     grDevices::png(filename = file.path(path, "figures", paste0(name,"_LastYear.png")),
                    width = 8, height = 8, units = "in", pointsize = 12,
                    res = 300, bg = NA)
-    
+    # grDevices::pdf(file = file.path(path, "figures", paste0(name,"_LastYear.pdf")),
+    #                width = 8, height = 8, pointsize = 12)
     graphics::par(mar = c(0,0,0,0))
     plot(sf::st_geometry(background), border = NA, col = "gray80")
     raster::image( density[[length(density)]], add = TRUE,

@@ -87,7 +87,10 @@ makeRovquantData_wolverine <- function(
   if(is.null(subdetector.res)){subdetector.res <- 2000}
   if(is.null(max.det.dist)){max.det.dist <- 84000}
   if(is.null(resize.factor)){resize.factor <- 1}
-  if(is.null(rename.list)){rename.list = r.list.internal}
+  if(is.null(rename.list)) {
+    if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
+    rename.list <- r.list.internal
+  }  
   
   ##-- Set up list of Habitat characteristics
   habitat <- list( resolution = habitat.res,

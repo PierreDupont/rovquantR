@@ -60,7 +60,7 @@ makeRovquantData_wolf <- function(
   years = NULL,
   sex = c("female","male"),
   aug.factor = 0.8,
-  sampling.months = list(10:12,1:4),
+  sampling.months = list(10:12,1:3),
   
   ##-- habitat
   habitat.res = 20000,
@@ -83,7 +83,7 @@ makeRovquantData_wolf <- function(
   
   ##-- Set default values for the wolf model
   if(is.null(aug.factor)){aug.factor <- 0.8}
-  if(is.null(sampling.months)){sampling.months <- list(10:12,1:4)}
+  if(is.null(sampling.months)){sampling.months <- list(10:12,1:3)}
   if(is.null(habitat.res)){habitat.res <- 20000} 
   if(is.null(x.extent)){x.extent <- c(210000,760000)}
   if(is.null(y.extent)){y.extent <- c(6000000,7050000)}
@@ -93,7 +93,10 @@ makeRovquantData_wolf <- function(
   if(is.null(subdetector.res)){subdetector.res <- 1000}
   if(is.null(max.det.dist)){max.det.dist <- 45000}
   if(is.null(resize.factor)){resize.factor <- 1}
-  if(is.null(rename.list)){rename.list = r.list.internal}
+  if(is.null(rename.list)) {
+    if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
+    rename.list <- r.list.internal
+  }
   
   ##-- Set up list of Habitat characteristics
   habitat <- list( resolution = habitat.res,
@@ -228,7 +231,7 @@ makeRovquantData_wolf <- function(
       dplyr::filter( Year == years[t],
                      Status %in% c("Pair", "Family group"))
     
-    ##-- Get mean coordinates of pack coordinates
+    ##-- Get mean coordinates of packs
     IDs <- unique(data.pairs.t$IdSimplified)
     m.xy <- matrix(NA, nrow = length(IDs), ncol = 2)
     colnames(m.xy) <- c("x","y")
