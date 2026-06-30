@@ -289,14 +289,25 @@ processRovquantOutput_bear2 <- function(
   
   ##-- Create 5km raster of carnivore regions for extraction
   rrRegions <- extraction.raster$Regions
+  areaRegionsTotal <- table(factorValues(rrRegions, rrRegions[]))*res(rrRegions)[1]*1e-6
   rrRegions <- raster::mask(rrRegions, habitat$habitat.poly)
   rrRegions <- raster::crop(rrRegions, habitat$habitat.r)
+ 
+  ##-- Calculate studied area of each county
+  areaRegions <- table(factorValues(rrRegions,rrRegions[]))*res(rrRegions)[1]*1e-6
+  areaRegionsTotal <- areaRegionsTotal[names(areaRegionsTotal) %in% names(areaRegions)]
+  percRegions <- round(areaRegions/areaRegionsTotal, 2)
+  
+  ##-- Merge the percentages
+  percAllRegions <- c(percTotal, percCountries, percRegions, percCounties)
+  names(percAllRegions)[1] <- "Total"
   
   ##-- Create 5km raster of counties for extraction
   rrCounties <- extraction.raster$Counties
   rrCounties <- raster::mask(rrCounties, habitat$habitat.poly)
   rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
   
+
   ##-- Calculate density only if necessary
   ##-- Check that a file with that name does not already exist to avoid overwriting
   densTest <- TRUE
@@ -1838,8 +1849,8 @@ processRovquantOutput_bear2 <- function(
   # 
   # 
   # 
-  # ## ------     4.8.4. SEX-RATIO MAPS (SMOOTHED) ------
-  # 
+  ## ------     4.8.4. SEX-RATIO MAPS (SMOOTHED) ------
+  
   # ##-- Set smoothing factor
   # smoothingFactor <- c(3,7,11,21)
   # for(SF in smoothingFactor){
@@ -1904,9 +1915,8 @@ processRovquantOutput_bear2 <- function(
   #   }#t
   #   dev.off()
   # }#SF
-  # 
-  # 
-  # 
+
+  
 
   ##----------------------------------------------------------------------------
   
@@ -1996,7 +2006,7 @@ processRovquantOutput_bear2 <- function(
   ##-- ADJUST NAMES
   idregion1 <- idregionTable
   idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
-  row.names(NCarRegionEstimates) <- idregion1
+  row.names(NCarRegionEstimatesLast) <- idregion1
   
   ##-- print .csv
   write.csv( NCarRegionEstimatesLast,
@@ -2058,7 +2068,57 @@ processRovquantOutput_bear2 <- function(
   
   
   
-  ## ------     5.1.3. ALL YEARS, PER SEX, PER REGION ------
+  ## ------     5.1.3. LAST YEAR, PER SEX, PER REGION WITH PROPORTION OF AREA COVERED ------
+  
+  NCarRegionEstimatesLast <- matrix("", ncol = 3, nrow = length(idregionTable))
+  row.names(NCarRegionEstimatesLast) <- c(idregionTable)
+  colnames(NCarRegionEstimatesLast) <- c("Females","Males","Total")
+  
+  for(i in 1:length(idregionTable)){
+    ##-- FEMALES
+    NCarRegionEstimatesLast[idregionTable[i],"Females"] <-
+      paste0(round(ACdensityF[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+             round(ACdensityF[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+             round(ACdensityF[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
+    
+    ##-- MALES
+    NCarRegionEstimatesLast[idregionTable[i],"Males"] <-
+      paste0(round(ACdensityM[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+             round(ACdensityM[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+             round(ACdensityM[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
+    
+    ##-- BOTH SEXES
+    NCarRegionEstimatesLast[idregionTable[i],"Total"] <-
+      paste0(round(ACdensity[[n.years]]$summary[idregionTable[i],"mean"],digits = 1)," (",
+             round(ACdensity[[n.years]]$summary[idregionTable[i],"95%CILow"],digits = 0),"-",
+             round(ACdensity[[n.years]]$summary[idregionTable[i],"95%CIHigh"],digits = 0),")")
+    
+    ##-- AREA
+    areaTest <- round(percAllRegions[idregionTable[i]]*100, digits = 0)
+    NCountyEstimatesLastRegions[idregionTable[i],"\\% Area"] <- ifelse(areaTest > 97, 100, areaTest)
+  }#i
+  
+  ##-- ADJUST NAMES
+  idregion1 <- idregionTable
+  idregion1[which(idregion1 %in% "Total")] <- "TOTAL"
+  row.names(NCarRegionEstimatesLast) <- idregion1
+  
+  ##-- print .csv
+  write.csv( NCarRegionEstimatesLast,
+             file = file.path(working.dir, "tables/N_LastYearPerSex_region_area.csv"))
+  
+  ##-- print .tex
+  row.names(NCarRegionEstimatesLast) <- c(paste0("\\hspace{0.1cm} ",idregionNOR),"TOTAL")
+  print(xtable::xtable(NCarRegionEstimatesLast, type = "latex",
+                       align = paste(c("l",rep("c",ncol(NCarRegionEstimatesLast))), collapse = "")),
+        sanitize.text.function=function(x){x},
+        floating = FALSE,
+        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables/N_LastYearPerSex_region.tex"))
+  
+  
+  
+  ## ------     5.1.4. ALL YEARS, PER SEX, PER REGION ------
   
   NCarRegionEstimatesAllSex <- matrix("", ncol = n.years*3, nrow = length(idregionTable)+1)
   row.names(NCarRegionEstimatesAllSex) <- c("", idregionTable)
@@ -2114,7 +2174,7 @@ processRovquantOutput_bear2 <- function(
   
   
   
-  ## ------     5.1.4. ALL YEARS, BOTH SEX, PER COUNTY -----
+  ## ------     5.1.5. ALL YEARS, BOTH SEX, PER COUNTY -----
   
   idcounty <- row.names(ACdensity[[1]]$summary)
   
@@ -2164,7 +2224,7 @@ processRovquantOutput_bear2 <- function(
   
   
   
-  ## ------     5.1.5. LAST YEAR, PER SEX, PER COUNTY -----
+  ## ------     5.1.6. LAST YEAR, PER SEX, PER COUNTY -----
   
   ##-- AC-Density
   NCountyEstimatesLastRegions <- matrix("", ncol = 3, nrow = length(idcountyTable))
@@ -2255,7 +2315,7 @@ processRovquantOutput_bear2 <- function(
   
   
   
-  ## ------     5.1.6. ALL YEARS, PER SEX, PER COUNTY ------
+  ## ------     5.1.7. ALL YEARS, PER SEX, PER COUNTY ------
   
   NCountyEstimatesAllSex <- matrix("", ncol = n.years*3, nrow = length(idcountyTable)+1)
   row.names(NCountyEstimatesAllSex) <- c("", idcountyTable)

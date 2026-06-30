@@ -133,7 +133,7 @@ makeRovquantData_bear <- function(
   
   ##-- Merge Norwegian counties for practical reasons
   COUNTIES_AGGREGATED <- REGIONS %>%
-    mutate(id = case_when(
+    dplyr::mutate(id = case_when(
       county %in% c("Trøndelag", "Nordland") ~ "NO2",
       county %in% c("Troms", "Finnmark") ~ "NO1",
       county %in% c("Akershus","Agder", "Buskerud",
@@ -325,7 +325,31 @@ makeRovquantData_bear <- function(
   
   ## ------       1.2.3. PLOTS -----
   
-  ##-- [PD]: NEED TO ADD PLOTS OF HABITAT COVARIATES
+
+  pdf(file = file.path(working.dir, "figures", "HabitatCovariates.pdf"),
+      width = 18, height = 12)
+  
+  par(mfrow = c(1,2), mar = c(0,0,0,0))
+  
+  ##-- Dead recoveries
+  plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
+  plot(habitat$grid[ ,"dead.reco.trunc"], add = T, border = NA)
+  plot(st_geometry(COUNTRIES[1, ]), border = "gray10", col = NA, add = T)
+  
+  ##-- SkandObs
+  plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
+  plot(habitat$grid[ ,"skandObs.smooth"], add = T, border = NA)
+  plot(st_geometry(COUNTRIES[1, ]), border = "gray10", col = NA, add = T)
+  
+  graphics::segments(x0 = 830000, x1 = 830000,
+                     y0 = 6730000, y1 = 6730000 + 500000,
+                     col = grey(0.3), lwd = 4, lend = 2)
+  graphics::text( 750000,
+                  6730000+500000/2, 
+                  labels = "500 km",
+                  srt = 90,
+                  cex = 2)
+  dev.off()  
   
   
   
@@ -336,10 +360,16 @@ makeRovquantData_bear <- function(
   ## ------     2.1. GENERATE DETECTORS CHARACTERISTICS -----
   
   ##-- Generate raster of sub-detectors based on the study area
-  subdetectors.r <- raster::disaggregate(
-    x = habitat$habitat.rWthBuffer,
-    fact = raster::res(habitat$habitat.r)[1]/detectors$resolution.sub) %>%
-    mask(., studyArea)
+  # subdetectors.r <- raster::disaggregate(
+  #   x = habitat$habitat.rWthBuffer,
+  #   fact = raster::res(habitat$habitat.r)[1]/detectors$resolution.sub) %>%
+  #   mask(., studyArea)
+  
+  ##-- Generate raster of sub-detectors based on the pre-defined habitat raster and the study area extent a
+  subdetectors.r <- habitatRasterResolution$`1km`[["Countries"]]
+  subdetectors.r[subdetectors.r[ ] != 2] <- NA
+  subdetectors.r <- raster::crop(subdetectors.r,studyArea)  
+  
   
   ##-- Generate NGS detectors based on the raster of sub-detectors
   detectors <- makeSearchGrid( 
@@ -366,7 +396,7 @@ makeRovquantData_bear <- function(
                            fact = detectors$resolution/detectors$resolution.sub),
     fun = function(x){x>0})) %>%
     mutate( id = 1:nrow(.)) %>%
-    rename( "Detector" = Habitat)
+    rename( "Detector" = id)
 
   
   
