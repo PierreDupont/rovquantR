@@ -395,8 +395,9 @@ makeRovquantData_bear <- function(
     x = raster::aggregate( x = subdetectors.r,
                            fact = detectors$resolution/detectors$resolution.sub),
     fun = function(x){x>0})) %>%
-    mutate( id = 1:nrow(.)) %>%
-    rename( "Detector" = id)
+    mutate( id = 1:nrow(.),
+            Detector = 1) 
+    #rename( "Detector" = id)
 
   
   
