@@ -464,15 +464,20 @@ makeRovquantData_bear <- function(
   
   ## ------       2.2.3. EXTRACT PRESENCE OF OTHER SAMPLES ------
   
-  habitat.rWthBufferPol <- stars::st_as_stars(habitat$habitat.rWthBuffer) %>%
-    sf::st_as_sf(., 
-                 as_points = FALSE,
-                 merge = TRUE) %>%
-    dplyr::filter(Habitat %in% 1)
+  # habitat.rWthBufferPol <- stars::st_as_stars(habitat$habitat.rWthBuffer) %>%
+  #   sf::st_as_sf(., 
+  #                as_points = FALSE,
+  #                merge = TRUE) %>%
+  #   dplyr::filter(Habitat %in% 1)
 
   r.detector <- raster::aggregate( 
     subdetectors.r,
     fact = (detectors$resolution/detectors$resolution.sub))
+  
+  detectors.poly <-  stars::st_as_stars(r.detector) %>%
+    sf::st_as_sf(., 
+                 as_points = FALSE,
+                 merge = TRUE) 
   
   
   
@@ -483,7 +488,7 @@ makeRovquantData_bear <- function(
     ##-- ...based on monitoring season
     dplyr::filter(month %in% unlist(sampling.months)) %>%
     ##-- ... based on space 
-    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
+    sf::st_filter( .,detectors.poly, .predicate = st_intersects)
 
   # ##-- Rasterize at the detector level
   # r.list <- lapply(DATA$years, function(y){
@@ -536,7 +541,7 @@ makeRovquantData_bear <- function(
     ##-- ...based on monitoring season
     filter( month %in% unlist(sampling.months)) %>%
     ##-- ... based on space 
-    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
+    sf::st_filter( .,detectors.poly, .predicate = st_intersects)
   
   # ##-- Rasterize at the detector level
   # r.list <- lapply(years, function(y){
@@ -566,11 +571,11 @@ makeRovquantData_bear <- function(
   ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.02 
   habOwin <- spatstat.geom::as.owin(as.vector(raster::extent(r.detector)))
   ds.list <- lapply( DATA$years, function(y){
-    ##-- ROVBASE DATA 
+    ##-- Rovbase data
     pts <- sf::st_coordinates(rovbaseObs)[rovbaseObs$year %in% y, ]
-    ##-- SKANDOBS
+    ##-- SkandObs
     pts <- rbind(pts, sf::st_coordinates(skandObs)[skandObs$year %in% y, ])
-    ##-- SMOOTH AND RASTERIZE
+    ##-- Smooth & rasterize
     ds <- spatstat.geom::ppp(pts[ ,1], pts[ ,2], window = habOwin) %>%
       spatstat.explore::density.ppp(., adjust = 0.02) %>%    
       raster::raster(.)
@@ -578,8 +583,6 @@ makeRovquantData_bear <- function(
     ds <- ds1 <- raster::resample(ds, r.detector) #-- mask(ds,rasterToPolygons(habitat$habitat.rWthBuffer,function(x) x==1))
     threshold <- 0.1 / prod(raster::res(ds))      #-- number per 1 unit of the projected raster (meters)
     ds1[] <- ifelse(ds[] < threshold,0,1)
-    ds1 <- raster::mask(ds1, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
-    ds <- raster::mask(ds, raster::rasterToPolygons(habitat$habitat.rWthBuffer, function(x) x==1))
     
     return(list(ds,ds1))
   })
@@ -601,7 +604,7 @@ makeRovquantData_bear <- function(
   detCovs <- array(NA, c(n.detectors, 2, n.years))
   for(t in 1:n.years){
     detCovs[ ,1,t] <- detectors$detectors.df[ ,"roads"]
-  }
+  }#t
   detCovs[ ,2, ] <- detOtherSamples
   dimnames(detCovs) <- list( "detectors" = 1:n.detectors,
                              "covariates" = c("roads", "obs"),
