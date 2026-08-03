@@ -22,11 +22,8 @@
 #' @import raster
 #' @import dplyr
 #' @importFrom fasterize fasterize
-#' @importFrom adehabitatHR estUDm2spixdf kernelUD
-#' @importFrom stats density
 #' @importFrom grDevices adjustcolor dev.off pdf png grey
 #' @importFrom graphics axis abline par
-#' @importFrom stars st_as_stars
 #' @importFrom nimbleSCR scaleCoordsToHabitatGrid
 #' @importFrom abind abind
 #' @importFrom utils data
@@ -121,7 +118,7 @@ processRovquantOutput_bear2 <- function(
   COUNTIES_s$county[COUNTIES_s$county %in% c("Troms","Finnmark")] <- "Finnmark"
   COUNTIES_s$county[!COUNTIES_s$county %in% c("Finnmark","Trøndelag")] <- "Innlandet"
   COUNTIES_s <- COUNTIES_s %>%
-    group_by(county) %>%
+    dplyr::group_by(county) %>%
     dplyr::summarize() 
   
   COUNTIES_s <- sf::st_simplify(sf::st_as_sf(COUNTIES_s), preserveTopology = T, dTolerance = 500)
@@ -276,12 +273,12 @@ processRovquantOutput_bear2 <- function(
   }
   
   ##-- Remove buffer from the habitat
-  ## [PD] maybe remove?
+  # # [PD] maybe remove?
   # habitat.rWthBuffer <- habitat$habitat.rWthBuffer
   # habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
-  # searchedPolygon <- raster::rasterToPolygons( habitat.rWthBuffer,
-  #                                              dissolve = T,
-  #                                              function(x) x == 1)
+  searchedPolygon <- raster::rasterToPolygons( habitat$habitat.rWthBuffer,
+                                               dissolve = T,
+                                               function(x) x == 1)
   
   ##-- Habitat raster with extent used in the model
   habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
@@ -289,25 +286,37 @@ processRovquantOutput_bear2 <- function(
   
   ##-- Create 5km raster of carnivore regions for extraction
   rrRegions <- extraction.raster$Regions
-  areaRegionsTotal <- table(factorValues(rrRegions, rrRegions[]))*res(rrRegions)[1]*1e-6
-  rrRegions <- raster::mask(rrRegions, habitat$habitat.poly)
+  areaRegionsTotal <- table(raster::factorValues(rrRegions, rrRegions[]))*raster::res(rrRegions)[1]*1e-6
+  rrRegions <- raster::mask(rrRegions, searchedPolygon)
   rrRegions <- raster::crop(rrRegions, habitat$habitat.r)
  
-  ##-- Calculate studied area of each county
-  areaRegions <- table(factorValues(rrRegions,rrRegions[]))*res(rrRegions)[1]*1e-6
+  ##-- Calculate studied area of each region
+  areaRegions <- table(raster::factorValues(rrRegions,rrRegions[]))*raster::res(rrRegions)[1]*1e-6
   areaRegionsTotal <- areaRegionsTotal[names(areaRegionsTotal) %in% names(areaRegions)]
   percRegions <- round(areaRegions/areaRegionsTotal, 2)
   
-  ##-- Merge the percentages
-  percAllRegions <- c(percTotal, percCountries, percRegions, percCounties)
-  names(percAllRegions)[1] <- "Total"
-  
   ##-- Create 5km raster of counties for extraction
   rrCounties <- extraction.raster$Counties
-  rrCounties <- raster::mask(rrCounties, habitat$habitat.poly)
+  areaCountiesTotal <- table(raster::factorValues(rrCounties, rrCounties[]))*raster::res(rrCounties)[1]*1e-6
+  rrCounties <- raster::mask(rrCounties, searchedPolygon)
   rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
-  
+  areaCounties  <- table(raster::factorValues(rrCounties,rrCounties[]))*raster::res(rrCounties)[1]*1e-6
+  areaCountiesTotal <- areaCountiesTotal[names(areaCountiesTotal) %in% names(areaCounties)]
+  percCounties <- round(areaCounties/areaCountiesTotal, 2)
 
+  ##-- Calculate total studied area 
+  rrCountries <- extraction.raster$Countries
+  areaCountriesTotal <- table(raster::factorValues(rrCountries, rrCountries[]))*raster::res(rrCountries)[1]*1e-6
+  rrCountries <- raster::mask(rrCountries, searchedPolygon)
+  rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
+  areaCountries  <- table(raster::factorValues(rrCountries,rrCountries[]))*raster::res(rrCountries)[1]*1e-6
+  areaNorTotal <- areaCountriesTotal[names(areaCountriesTotal) %in% "Norway"]
+  percTotal <- round(sum(areaCountries)/sum(areaNorTotal),2)
+  
+  ##-- Merge the percentages
+  percAllRegions <- c(percTotal, percRegions, percCounties)
+  names(percAllRegions)[1] <- "Total"
+  
   ##-- Calculate density only if necessary
   ##-- Check that a file with that name does not already exist to avoid overwriting
   densTest <- TRUE
@@ -720,8 +729,8 @@ processRovquantOutput_bear2 <- function(
     
     ##-- Map insert
     par(mar = c(5,0,4,5))
-    plot(st_geometry(REGIONS), border = grey(0.5), col = grey(0.5), lwd = 0.1)
-    plot(st_geometry(REGIONS[REGIONS$region == cc, ]),
+    plot(sf::st_geometry(REGIONS), border = grey(0.5), col = grey(0.5), lwd = 0.1)
+    plot(sf::st_geometry(REGIONS[REGIONS$region == cc, ]),
          add = T, col = adjustcolor("red",0.5), border = "red")
   }#c
   dev.off()
@@ -1776,8 +1785,8 @@ processRovquantOutput_bear2 <- function(
 
 
 
-  # ## ------     4.8.3. SEX-RATIO MAPS ------
-  # 
+  ## ------     4.8.3. SEX-RATIO MAPS ------
+   
   # ##-- Convert densities from 25km2 (5*5 raster) to 100km2
   # SexRatio <- list()
   # for(t in 1:length(years)){
@@ -1848,7 +1857,7 @@ processRovquantOutput_bear2 <- function(
   # 
   # 
   # 
-  # 
+   
   ## ------     4.8.4. SEX-RATIO MAPS (SMOOTHED) ------
   
   # ##-- Set smoothing factor
@@ -2070,9 +2079,9 @@ processRovquantOutput_bear2 <- function(
   
   ## ------     5.1.3. LAST YEAR, PER SEX, PER REGION WITH PROPORTION OF AREA COVERED ------
   
-  NCarRegionEstimatesLast <- matrix("", ncol = 3, nrow = length(idregionTable))
+  NCarRegionEstimatesLast <- matrix("", ncol = 4, nrow = length(idregionTable))
   row.names(NCarRegionEstimatesLast) <- c(idregionTable)
-  colnames(NCarRegionEstimatesLast) <- c("Females","Males","Total")
+  colnames(NCarRegionEstimatesLast) <- c("Females","Males","Total","\\% Area")
   
   for(i in 1:length(idregionTable)){
     ##-- FEMALES
@@ -2095,7 +2104,7 @@ processRovquantOutput_bear2 <- function(
     
     ##-- AREA
     areaTest <- round(percAllRegions[idregionTable[i]]*100, digits = 0)
-    NCountyEstimatesLastRegions[idregionTable[i],"\\% Area"] <- ifelse(areaTest > 97, 100, areaTest)
+    NCarRegionEstimatesLast[idregionTable[i],"\\% Area"] <- ifelse(areaTest > 97, 100, areaTest)
   }#i
   
   ##-- ADJUST NAMES
@@ -2543,7 +2552,7 @@ processRovquantOutput_bear2 <- function(
             file = file.path(working.dir, "tables/PropDetectedIds.csv"))
   
   ##-- print .tex
-  print(xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDetected))),collapse = "")),
+  print(xtable::xtable(propDetected, type = "latex", align=paste(c("l",rep("c",ncol(propDetected))),collapse = "")),
         floating = FALSE, sanitize.text.function=function(x){x},
         add.to.row = list(list(seq(1,nrow(propDetected), by = 2)),"\\rowcolor[gray]{.96} "),
         file = file.path(working.dir, "tables/PropDetectedIds.tex"))
@@ -2628,7 +2637,7 @@ processRovquantOutput_bear2 <- function(
     addtorow$command <- c("\\rowcolor[gray]{.95}", 
                           "\\hline \\\\",
                           "\\rowcolor[gray]{.95}")
-    print(xtable( splitProp,
+    print(xtable::xtable( splitProp,
                   type = "latex",
                   align = paste(c("l",rep("c", ncol(splitProp))), collapse = "")),
           floating = FALSE,
@@ -2644,7 +2653,7 @@ processRovquantOutput_bear2 <- function(
     addtorow <- list()
     addtorow$pos <- list(2)
     addtorow$command <- c("\\rowcolor[gray]{.95}")
-    print(xtable( prop,
+    print(xtable::xtable( prop,
                   type = "latex",
                   align = paste(c("l",rep("c", ncol(prop))), collapse = "")),
           floating = FALSE,
