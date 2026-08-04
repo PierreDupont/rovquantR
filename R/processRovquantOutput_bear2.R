@@ -290,7 +290,7 @@ processRovquantOutput_bear2 <- function(
   areaCountriesTotal <- table(raster::factorValues(rrCountries, rrCountries[]))*(raster::res(rrCountries)[1]^2)*1e-6
   rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
   areaCountries <- table(raster::factorValues(rrCountries,rrCountries[]))*(raster::res(rrCountries)[1]^2)*1e-6
-  percTotal <- round(sum(areaCountries)/sum(areaNorTotal),2)
+  percTotal <- round(sum(areaCountries)/sum(areaCountriesTotal),2)
   
   ##-- Create 5km raster of carnivore regions in Norway for extraction
   rrRegions <- extraction.raster$Regions
