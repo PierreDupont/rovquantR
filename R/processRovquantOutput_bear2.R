@@ -276,20 +276,28 @@ processRovquantOutput_bear2 <- function(
   # # [PD] maybe remove?
   # habitat.rWthBuffer <- habitat$habitat.rWthBuffer
   # habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
-  searchedPolygon <- raster::rasterToPolygons( habitat$habitat.rWthBuffer,
-                                               dissolve = T,
-                                               function(x) x == 1)
+  # searchedPolygon <- raster::rasterToPolygons( habitat$habitat.rWthBuffer,
+  #                                              dissolve = T,
+  #                                              function(x) x == 1)
   
   ##-- Habitat raster with extent used in the model
   habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
                                      habitat$habitat.r)
   
-  ##-- Create 5km raster of carnivore regions for extraction
+  ##-- Calculate total studied area in Norway
+  rrCountries <- extraction.raster$Countries
+  rrCountries[!grepl("Norway", unlist(raster::factorValues(rrCountries, rrCountries[])))] <- NA
+  areaCountriesTotal <- table(raster::factorValues(rrCountries, rrCountries[]))*(raster::res(rrCountries)[1]^2)*1e-6
+  rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
+  areaCountries <- table(raster::factorValues(rrCountries,rrCountries[]))*(raster::res(rrCountries)[1]^2)*1e-6
+  percTotal <- round(sum(areaCountries)/sum(areaNorTotal),2)
+  
+  ##-- Create 5km raster of carnivore regions in Norway for extraction
   rrRegions <- extraction.raster$Regions
+  rrRegions[!grepl("Norway", unlist(raster::factorValues(extraction.raster$Countries, extraction.raster$Countries[])))] <- NA
   areaRegionsTotal <- table(raster::factorValues(rrRegions, rrRegions[]))*raster::res(rrRegions)[1]*1e-6
-  rrRegions <- raster::mask(rrRegions, searchedPolygon)
+  # rrRegions <- raster::mask(rrRegions, searchedPolygon)
   rrRegions <- raster::crop(rrRegions, habitat$habitat.r)
- 
   ##-- Calculate studied area of each region
   areaRegions <- table(raster::factorValues(rrRegions,rrRegions[]))*raster::res(rrRegions)[1]*1e-6
   areaRegionsTotal <- areaRegionsTotal[names(areaRegionsTotal) %in% names(areaRegions)]
@@ -297,22 +305,15 @@ processRovquantOutput_bear2 <- function(
   
   ##-- Create 5km raster of counties for extraction
   rrCounties <- extraction.raster$Counties
+  rrCounties[!grepl("Norway", unlist(raster::factorValues(extraction.raster$Countries, extraction.raster$Countries[])))] <- NA
   areaCountiesTotal <- table(raster::factorValues(rrCounties, rrCounties[]))*raster::res(rrCounties)[1]*1e-6
-  rrCounties <- raster::mask(rrCounties, searchedPolygon)
+  # rrCounties <- raster::mask(rrCounties, searchedPolygon)
   rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
+  ##-- Calculate studied area of each county
   areaCounties  <- table(raster::factorValues(rrCounties,rrCounties[]))*raster::res(rrCounties)[1]*1e-6
   areaCountiesTotal <- areaCountiesTotal[names(areaCountiesTotal) %in% names(areaCounties)]
   percCounties <- round(areaCounties/areaCountiesTotal, 2)
 
-  ##-- Calculate total studied area 
-  rrCountries <- extraction.raster$Countries
-  areaCountriesTotal <- table(raster::factorValues(rrCountries, rrCountries[]))*raster::res(rrCountries)[1]*1e-6
-  rrCountries <- raster::mask(rrCountries, searchedPolygon)
-  rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
-  areaCountries  <- table(raster::factorValues(rrCountries,rrCountries[]))*raster::res(rrCountries)[1]*1e-6
-  areaNorTotal <- areaCountriesTotal[names(areaCountriesTotal) %in% "Norway"]
-  percTotal <- round(sum(areaCountries)/sum(areaNorTotal),2)
-  
   ##-- Merge the percentages
   percAllRegions <- c(percTotal, percRegions, percCounties)
   names(percAllRegions)[1] <- "Total"
@@ -355,6 +356,7 @@ processRovquantOutput_bear2 <- function(
     inputRaster <- densityInputRegions$regions.r
     
     ##-- Subset to regions of interest
+    ## [PD]: not needed anymore, made redundant by filtering cells outside Norway when creating rrRegions 
     regions.names <- c("Region 1","Region 2","Region 3","Region 4","Region 5","Region 6","Region 7","Region 8")
     regionID <- densityInputRegions$regions.rgmx
     row.names(regionID) <- row.names(densityInputRegions$regions.rgmx)
@@ -369,6 +371,7 @@ processRovquantOutput_bear2 <- function(
       plot.check = F))
     
     ##-- Subset to Counties of interest
+    ## [PD]: not needed anymore, made redundant by filtering cells outside Norway when creating rrCounties
     county.names <- COUNTIES$county[COUNTIES$country == "NOR"]
     countyID <- densityInputCounties$regions.rgmx
     row.names(countyID) <- row.names(densityInputCounties$regions.rgmx)
