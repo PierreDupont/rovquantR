@@ -431,6 +431,7 @@ cleanRovbaseData <- function(
       !is.na(Year))
   
   
+  
   ##-- Filter out unusable samples
   numNoID_DR <- sum(is.na(DR$Id))                ## number of DR without ID
   numNoDate_DR <- sum(is.na(DR$Year))            ## number of DR without Date
@@ -525,6 +526,8 @@ cleanRovbaseData <- function(
   
   
   ##-----   2.6. SEX ASSIGNMENT -----
+  if(!engSpecies == "wolf"){
+    
   
   ID <- unique(as.character(DATA$Id))
   doubleSexID <- IdDoubleSex <- NULL  
@@ -561,7 +564,7 @@ cleanRovbaseData <- function(
     ##-- (0 == "unknown", 2 == "both sexes)
     doubleSexID[i] <- length(tab)
   }#i
-  
+  }
   
   
   ##-----   2.7. WOLF -----
@@ -586,21 +589,15 @@ cleanRovbaseData <- function(
     
     
     ############################################################################
-    
-    ### CHECK ###
-    
     ##-- Overwrite gender from Micke's data when available
     micke.sex <- unlist(lapply(DATA$Id,
                                function(i){ 
-                                 INDIVIDUAL_ID[INDIVIDUAL_ID$`Individ (Rovbase)` %in% i, "Sex"][1]
+                                 INDIVIDUAL_ID[INDIVIDUAL_ID$`Individ (Rovbase)` %in% i, "Sex"][1,]
                                }))
     DATA$Sex <- ifelse(!is.na(micke.sex), micke.sex, DATA$Sex)
     
     numOverwiteSex <- sum(unique(INDIVIDUAL_ID$`Individ (Rovbase)`) %in% DATA$Id)
     ############################################################################
-    
-    
-    
     
     ##-- THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2022/23.
     Pack_ID2023 <- suppressWarnings(readMostRecent( path = data.dir,
@@ -617,12 +614,6 @@ cleanRovbaseData <- function(
         Sex = ifelse(is.na(Sex), "unknown", Sex),
         Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
         Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex)) 
-    # Pack_ID2023 <- read.csv(file.path( data.dir,
-    #                                    "Genetiskt ID RM vargar 2223 Bilaga 4_ØF.csv"),
-    #                         fileEncoding = "latin1")  
-    # Pack_ID2023$Kon[Pack_ID2023$Kon %in% c("Tispe","Tik")] <- "female"
-    # Pack_ID2023$Kon[Pack_ID2023$Kon %in% "Hane"] <- "male"
-    
     
     ##-- THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2023/24.
     Pack_ID2024 <- suppressWarnings(readMostRecent( path = data.dir,
@@ -639,12 +630,6 @@ cleanRovbaseData <- function(
         Sex = ifelse(is.na(Sex), "unknown", Sex),
         Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
         Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex)) 
-    # Pack_ID2024 <- read.csv(file.path( data.dir,
-    #                                    "Bilaga_11.4_240424_ØF to Cyril.csv"),
-    #                         fileEncoding = "latin1")  
-    # Pack_ID2024$Kon[Pack_ID2024$Kon %in% c("Tispe","Tik")] <- "female"
-    # Pack_ID2024$Kon[Pack_ID2024$Kon %in% "Hane"] <- "male"
-    
     
     ##-- THIS IS THE PACK ID SENT BY ØYSTEIN FOR THE WINTER 2024/25.
     Pack_ID2025 <- suppressWarnings(readMostRecent( path = data.dir,
@@ -661,14 +646,23 @@ cleanRovbaseData <- function(
                      ifelse(any(c_across(Sex1:Sex4) %in% c("Hann","Hane")),
                             "male",
                             "unknown")))
-    # Pack_ID2025 <- read.csv(file.path( data.dir,
-    #                                    "RovbaseID for Rovquant estimates2025FromOystein.csv"),
-    #                         fileEncoding = "latin1")  
-    # ##-- Here we need to recreate the sex columns as Oystein gave me a list of ids only (losing the sex)
-    # Pack_ID2025$Sex <- apply(Pack_ID2025[ ,c("Sex1","Sex2","Sex3","Sex4")], 1, function(x) x[which(!x%in% "")][1])
-    # Pack_ID2025$Sex[Pack_ID2025$Sex %in% c("Tispe","Tik")] <- "female"
-    # Pack_ID2025$Sex[Pack_ID2025$Sex %in% "Hane"] <- "male"
     
+    ###
+    ##-- THIS IS THE PACK ID SENT BY ØYSTEIN FOR THE WINTER 2024/25.
+    Pack_ID2026 <- suppressWarnings(readMostRecent( path = data.dir,
+                                                    extension = ".csv",
+                                                    pattern = "ØF")) %>%
+      ##-- Rename columns to facilitate manipulation
+      dplyr::rename(., any_of(rename.list)) %>%
+      ##-- Turn potential factors into characters 
+      dplyr::mutate(across(where(is.factor), as.character)) %>%
+      ##-- Add some columns
+      dplyr::mutate( 
+        ##-- Fix unknown "Sex"
+        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
+        Sex = ifelse(is.na(Sex), "unknown", Sex),
+        Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
+        Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex)) 
     
     ##-- Make a simplified column to match the rovbase id given by Oystein in Linn's file
     DATA$IdSimplified <- unlist(lapply(strsplit(as.character(DATA$Id), " "), function(x) x[1]))
@@ -677,17 +671,60 @@ cleanRovbaseData <- function(
     ##-- check the sex in the pair data given by Linn and assign the sex to all detections 
     ##-- Overwrite sex 
     for(i in 1:nrow(Pack_ID2023)){
-      DATA$Sex[DATA$IdSimplified %in% Pack_ID2023$Rovbase.ID[i]] <- Pack_ID2023$SEx[i]
+      DATA$Sex[DATA$IdSimplified %in% Pack_ID2023$"Rovbase-ID"[i]] <- Pack_ID2023$Sex[i]
     }#i
     
     ##-- Overwrite sex 
     for(i in 1:nrow(Pack_ID2024)){
-      DATA$Sex[DATA$IdSimplified %in% Pack_ID2024$Rovbase.ID[i]] <- Pack_ID2024$Sex[i]
+      DATA$Sex[DATA$IdSimplified %in% Pack_ID2024$RovbaseID[i]] <- Pack_ID2024$Sex[i]
     }#i
     
     ##-- Overwrite sex 
     for(i in 1:nrow(Pack_ID2025)){
       DATA$Sex[DATA$IdSimplified %in% Pack_ID2025$IndividID[i]] <- Pack_ID2025$Sex[i]
+    }#i
+    
+    for(i in 1:nrow(Pack_ID2026)){
+      DATA$Sex[DATA$IdSimplified %in% Pack_ID2026$RovbaseID[i]] <- Pack_ID2026$Sex[i]
+    }#i
+    
+    
+    
+    ######
+    ID <- unique(as.character(DATA$Id))
+    doubleSexID <- IdDoubleSex <- NULL  
+    
+    counter <- 1
+    for(i in 1:length(ID)){
+      ##-- Subset data to individual i
+      tmp <- DATA$Sex[DATA$Id == ID[i]]
+      
+      ##-- Number of times individual i was assigned to each sex
+      tab <- table(tmp[tmp %in% c("female","male")])
+      
+      ##-- If conflicting sexes (ID identified as both "female" and "male")
+      if(length(tab) == 2){
+        ##-- If ID assigned the same number of times to the 2 sexes, assign to unknown
+        if(tab[1] == tab[2]){
+          DATA$Sex[DATA$Id == ID[i]] <- "unknown"
+        } else {
+          ##-- Otherwise pick the most common sex
+          DATA$Sex[DATA$Id == ID[i]] <- names(tab)[which(tab == max(tab))]
+        }
+        # print(paste("Warnings!!!", "Individuals", ID[i], "assigned to both sexes. Now assigned to", names(tab)[which(tab == max(tab))])) 
+        IdDoubleSex[counter] <- ID[i]
+        counter <- counter + 1
+      }
+      
+      ##-- If only one of "female" or "male" registered
+      if(length(tab) == 1){DATA$Sex[DATA$Id == ID[i]] <- names(tab)}
+      
+      ##-- If anything else registered : "unknown"
+      if(length(tab) == 0){DATA$Sex[DATA$Id == ID[i]] <- "unknown"}
+      
+      ##-- Track number of sexes assigned for this individual 
+      ##-- (0 == "unknown", 2 == "both sexes)
+      doubleSexID[i] <- length(tab)
     }#i
   }
   
@@ -698,6 +735,17 @@ cleanRovbaseData <- function(
   ##-- Split DATA into alive and dead.recovery datasets
   alive <- DATA[is.na(DATA$Death), ]
   dead.recovery <- DATA[!is.na(DATA$Death), ]
+  
+  #cm 
+  table(alive$Year)
+  alive <- alive[alive$Month %in%unlist(sampling.months),]
+  table(alive$Year,alive$Sex,alive$Month)
+  table(alive$Year,alive$Sex)
+  tmp <- alive[alive$Year %in% c(2025) &
+              alive$Month %in% c(12) & alive$Sex %in% "male",]
+  
+  tmp[tmp$DNAID %in% "D619762",]$Sex
+  alive[alive$Id %in% "UI421896 G36-25",]$Sex
   
   ##-- Add earlier detection index
   alive$detected.earlier <-
