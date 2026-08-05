@@ -271,15 +271,7 @@ processRovquantOutput_bear2 <- function(
                     ".\nusing niter = ", n.mcmc, " instead."))
     iter <- 1:n.mcmc
   }
-  
-  ##-- Remove buffer from the habitat
-  # # [PD] maybe remove?
-  # habitat.rWthBuffer <- habitat$habitat.rWthBuffer
-  # habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
-  # searchedPolygon <- raster::rasterToPolygons( habitat$habitat.rWthBuffer,
-  #                                              dissolve = T,
-  #                                              function(x) x == 1)
-  
+
   ##-- Habitat raster with extent used in the model
   habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
                                      habitat$habitat.r)
@@ -289,14 +281,15 @@ processRovquantOutput_bear2 <- function(
   rrCountries[!grepl("Norway", unlist(raster::factorValues(rrCountries, rrCountries[])))] <- NA
   areaCountriesTotal <- table(raster::factorValues(rrCountries, rrCountries[]))*(raster::res(rrCountries)[1]^2)*1e-6
   rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
+  rrCountries <- raster::mask(rrCountries, detectors$grid)
   areaCountries <- table(raster::factorValues(rrCountries,rrCountries[]))*(raster::res(rrCountries)[1]^2)*1e-6
   percTotal <- round(sum(areaCountries)/sum(areaCountriesTotal),2)
-  
+
   ##-- Create 5km raster of carnivore regions in Norway for extraction
   rrRegions <- extraction.raster$Regions
   rrRegions[!grepl("Norway", unlist(raster::factorValues(extraction.raster$Countries, extraction.raster$Countries[])))] <- NA
   areaRegionsTotal <- table(raster::factorValues(rrRegions, rrRegions[]))*raster::res(rrRegions)[1]*1e-6
-  # rrRegions <- raster::mask(rrRegions, searchedPolygon)
+  rrRegions <- raster::mask(rrRegions, detectors$grid)   ## mask to the studied area only (== no buffer)
   rrRegions <- raster::crop(rrRegions, habitat$habitat.r)
   ##-- Calculate studied area of each region
   areaRegions <- table(raster::factorValues(rrRegions,rrRegions[]))*raster::res(rrRegions)[1]*1e-6
@@ -307,7 +300,7 @@ processRovquantOutput_bear2 <- function(
   rrCounties <- extraction.raster$Counties
   rrCounties[!grepl("Norway", unlist(raster::factorValues(extraction.raster$Countries, extraction.raster$Countries[])))] <- NA
   areaCountiesTotal <- table(raster::factorValues(rrCounties, rrCounties[]))*raster::res(rrCounties)[1]*1e-6
-  # rrCounties <- raster::mask(rrCounties, searchedPolygon)
+  rrCounties <- raster::mask(rrCounties, detectors$grid)
   rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
   ##-- Calculate studied area of each county
   areaCounties  <- table(raster::factorValues(rrCounties,rrCounties[]))*raster::res(rrCounties)[1]*1e-6
@@ -346,37 +339,30 @@ processRovquantOutput_bear2 <- function(
     
     ## ------   1. PREPARE DENSITY EXTRACTION ------
     
-    ##-- Get the objects to run the density function
+    ##-- Get the region objects to run the density function
     densityInputRegions <- suppressWarnings(getDensityInput(
       regions = rrRegions,
       habitat = habitatPolygon5km,
-      s = resultsSXYZ_MF$sims.list$sxy[iter, , , ],
+      s = resultsSXYZ_MF$sims.list$sxy,
       plot.check = F))
     
-    inputRaster <- densityInputRegions$regions.r
-    
-    ##-- Subset to regions of interest
-    ## [PD]: not needed anymore, made redundant by filtering cells outside Norway when creating rrRegions 
-    regions.names <- c("Region 1","Region 2","Region 3","Region 4","Region 5","Region 6","Region 7","Region 8")
-    regionID <- densityInputRegions$regions.rgmx
-    row.names(regionID) <- row.names(densityInputRegions$regions.rgmx)
-    regionID <- as.matrix(regionID[row.names(regionID) %in% regions.names, ])
-    
-    
-    ##-- Get the objects to run the density function
+    ##-- Get the county objects to run the density function
     densityInputCounties <- suppressWarnings(getDensityInput(
       regions = rrCounties,
       habitat = habitatPolygon5km,
-      s = resultsSXYZ_MF$sims.list$sxy[iter, , , ],
+      s = resultsSXYZ_MF$sims.list$sxy[1:2, , , ],
       plot.check = F))
     
-    ##-- Subset to Counties of interest
-    ## [PD]: not needed anymore, made redundant by filtering cells outside Norway when creating rrCounties
-    county.names <- COUNTIES$county[COUNTIES$country == "NOR"]
-    countyID <- densityInputCounties$regions.rgmx
-    row.names(countyID) <- row.names(densityInputCounties$regions.rgmx)
-    countyID <- as.matrix(countyID[row.names(countyID) %in% county.names, ])
+    ##-- Combine both regions- and county-based matrices for a single extraction
+    regionID <- rbind(densityInputRegions$regions.rgmx,
+                       densityInputCounties$regions.rgmx)
     
+    ##-- Store reference raster for future plotting
+    inputRaster <- densityInputRegions$regions.r
+    
+    ##-- Remove unnecessary objects from memory
+    rm(list = c("densityInputCounties", "rrCounties", "rrCountries"))
+    gc(verbose = FALSE)
     
     
     ## ------   2. AC-BASED DENSITY (5km) ------
@@ -392,8 +378,8 @@ processRovquantOutput_bear2 <- function(
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
         display_progress = FALSE,
-        regionID = rbind(regionID,countyID),
-        returnPosteriorCells = F)
+        regionID = regionID,
+        returnPosteriorCells = FALSE)
     }#t
     names(ACdensity) <- years
     
@@ -413,7 +399,7 @@ processRovquantOutput_bear2 <- function(
         aliveStates = 2,
         display_progress = FALSE,
         regionID = rbind(regionID,countyID),
-        returnPosteriorCells = F)
+        returnPosteriorCells = FALSE)
     }#t
     names(ACdensityM) <- years
     
@@ -433,7 +419,7 @@ processRovquantOutput_bear2 <- function(
         aliveStates = 2,
         display_progress = FALSE,
         regionID = rbind(regionID,countyID),
-        returnPosteriorCells = F)
+        returnPosteriorCells = FALSE)
     }
     names(ACdensityF) <- years
     
@@ -452,19 +438,19 @@ processRovquantOutput_bear2 <- function(
                                   }))
     
     ##-- Rescale sigma to the raster resolution
-    sigma <- sigma/raster::res(rrRegions)[1]
+    sigma <- sigma/raster::res(inputRaster)[1]
     
     
     
     ## ------     3.1. MALE -----
     
-    IDMales <- which(resultsSXYZ_MF$sims.list$sex=="M")
+    IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
     
     UDdensityM <- list()
     for(t in 1:n.years){
       UDdensityM[[t]] <- GetSpaceUse(
-        sx = densityInputRegions$sx[ ,IDMales,t],
-        sy = densityInputRegions$sy[ ,IDMales,t],
+        sx = densityInputRegions$sx[iter,IDMales,t],
+        sy = densityInputRegions$sy[iter,IDMales,t],
         z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
         sigma = sigma[ ,IDMales],
         habitatxy = densityInputRegions$habitat.xy,
@@ -479,13 +465,13 @@ processRovquantOutput_bear2 <- function(
     
     ## ------     3.2. FEMALE -----
     
-    IDFemales <- which(resultsSXYZ_MF$sims.list$sex=="F")
+    IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
     
     UDdensityF <- list()
     for(t in 1:n.years){
       UDdensityF[[t]] <- GetSpaceUse(
-        sx = densityInputRegions$sx[ ,IDFemales,t],
-        sy = densityInputRegions$sy[ ,IDFemales,t],
+        sx = densityInputRegions$sx[iter,IDFemales,t],
+        sy = densityInputRegions$sy[iter,IDFemales,t],
         z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
         sigma = sigma[ ,IDFemales],
         habitatxy = densityInputRegions$habitat.xy,
@@ -503,8 +489,8 @@ processRovquantOutput_bear2 <- function(
     UDdensity <- list()
     for(t in 1:n.years){
       UDdensity[[t]] <- GetSpaceUse(
-        sx = densityInputRegions$sx[ , ,t],
-        sy = densityInputRegions$sy[ , ,t],
+        sx = densityInputRegions$sx[iter, ,t],
+        sy = densityInputRegions$sy[iter, ,t],
         z = resultsSXYZ_MF$sims.list$z[iter, ,t],
         sigma = sigma,
         habitatxy = densityInputRegions$habitat.xy,
@@ -660,6 +646,82 @@ processRovquantOutput_bear2 <- function(
   
   
   
+  ##-- Plot N  
+  # pdf(file = file.path(working.dir, "figures/Abundance_TimeSeries.pdf"),
+  #     width = 12, height = 8.5)
+  grDevices::png(filename = file.path(working.dir,"figures/Abundance_TimeSeries_UD.png"),
+                 width = 12, height = 8.5, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  
+  graphics::par(mar = c(5,5,1,1))
+  
+  n.detected <- apply(rbind(nimDataM$y.alive[ ,1, ],nimDataF$y.alive[ ,1, ]) > 0, 2, sum)
+  
+  ymax <- 10*(trunc(max(c(unlist(lapply(UDdensity, function(x)max(colSums(x$PosteriorRegions)))), n.detected))/10)+1)
+  
+  plot(-1000,
+       xlim = c(0.5, n.years + 0.5),
+       ylim = c(0,ymax),
+       xlab = "", ylab = paste("Number of bears"),
+       xaxt = "n", axes = F, cex.lab = 1.6)
+  graphics::axis(1, at = c(1:n.years), labels = years, cex.axis = 1.6)
+  graphics::axis(2, at = seq(0,ymax,20), labels = seq(0,ymax,20), cex.axis = 1.6)
+  graphics::abline(v = (0:n.years)+0.5, lty = 2)
+  graphics::abline(h = seq(0,ymax, by = 10), lty = 2, col = "gray90")
+  
+  for(t in 1:n.years){
+    ##-- FEMALES
+    plotQuantiles(x = colSums(UDdensityF[[t]]$PosteriorRegions),
+                  at = t - diffSex,
+                  width = 0.18,
+                  col = colSex[1])
+    
+    ##-- MALES
+    plotQuantiles(x = colSums(UDdensityM[[t]]$PosteriorRegions),
+                  at = t + diffSex,
+                  width = 0.18,
+                  col = colSex[2])
+    ##-- TOTAL
+    plotQuantiles(x = colSums(UDdensity[[t]]$PosteriorRegions),
+                  at = t,
+                  width = 0.4,
+                  col = colSex[3])
+    
+    ##-- ADD NUMBER OF INDIVIDUALS DETECTED
+    xx <- c(t-0.25,t+0.25,t+0.25,t-0.25)
+    yy <- c(n.detected[t]-1,n.detected[t]-1,n.detected[t]+1,n.detected[t]+1)
+    polygon(xx, yy, border = NA, col = "goldenrod1")
+  }#t
+  box()
+  
+  ##-- legend
+  par(xpd = TRUE)
+  xx <- c(0.6*n.years,0.72*n.years,0.82*n.years,0.92*n.years)#c(6.1,7.6,8.8,10) 
+  yy <- c(5,5,5,5)
+  labs <- c("Females", "Males", "Total", "Detected")
+  polygon(x = c(0.58*n.years,1.05*n.years,1.05*n.years,0.58*n.years),
+          y = c(-2.5,-2.5,12.5,12.5),
+          col = adjustcolor("white", alpha.f = 0.9),
+          border = "gray60")
+  
+  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 3.5, col =  adjustcolor(colSex,0.3))
+  points(x = xx[1:3], y = yy[1:3],  pch = 15, cex = 1.5, col =  adjustcolor(colSex,0.7))
+  
+  text(x = xx + 0.1, y = yy-1, labels = labs, cex = 1.2, pos = 4)
+  
+  polygon(x = c(xx[4]-0.3,xx[4]+0.1,xx[4]+0.1,xx[4]-0.3),
+          y = c(yy[4]-1,yy[4]-1,yy[4]+1,yy[4]+1),
+          col = "goldenrod1",
+          border = F)
+  
+  dev.off()
+  
+  ##-- Remove unnecessary objects from memory
+  rm(list = c("n.detected"))
+  gc(verbose = FALSE)
+  
+  
+  
   ## ------   4.3. ABUNDANCE per REGION ------
   
   regPlotNames <- c("Region 8","Region 7","Region 6","Region 5","Region 3")
@@ -740,7 +802,6 @@ processRovquantOutput_bear2 <- function(
   
   
   
-  ##----------------------------------------------------------------------------
   ## ------   4.4. VITAL RATES ------
 
   message("## Plotting vital rates...")
@@ -979,10 +1040,10 @@ processRovquantOutput_bear2 <- function(
 
 
 
-  # ## ------   4.5. POPULATION FLUXES IN/OUT NORWAY -----
-  # 
+  ## ------   4.5. POPULATION FLUXES IN/OUT NORWAY -----
+  
   # message("## Plotting population fluxes...")
-  # 
+   
   norRaster <- habitatRasterResolution$`5km`[["Countries"]]
   norRaster[norRaster[] != 2] <- NA
 
@@ -1422,7 +1483,7 @@ processRovquantOutput_bear2 <- function(
                heights = 1)
 
   for(c in 1:nrow(COUNTIES_s)){
-    par(mar=c(4,4,1,1), tck=0)
+    par(mar = c(4,4,1,1), tck = 0)
 
     plot(10, xlim = c(0.5, n.years+0.5), ylim = c(0,0.01), type ="n", xaxt="n",
          xlab = "Years", ylab = "Baseline detection probability")
@@ -1465,7 +1526,6 @@ processRovquantOutput_bear2 <- function(
 
 
 
-
   ## ------     4.6.2. p0 maps ------
 
   # pdf(file = file.path(working.dir, "figures", paste0("p0_maps.pdf")),
@@ -1473,31 +1533,31 @@ processRovquantOutput_bear2 <- function(
   grDevices::png(filename = file.path(working.dir, "figures/p0_maps.png"),
                  width = 10, height = 6, units = "in", pointsize = 12,
                  res = 300, bg = NA)
-
+  
   for(t in 1:n.years){
     par(mfrow = c(1,2))
-
+    
     ##-- FEMALE
     detectors$main.detector.sp$p0_F <-
       ilogit(logit(results_F$mean$p0[nimConstants$county,t]) +
                results_F$mean$betaDet[1] * nimDataF$detCovs[ ,1,t] +
                results_F$mean$betaDet[2] * nimDataF$detCovs[ ,2,t])
-
+    
     p0_F.R <- raster::rasterFromXYZ(cbind(detectors$main.detector.sp$main.cell.x,
                                           detectors$main.detector.sp$main.cell.y,
                                           detectors$main.detector.sp$p0_F))
-
+    
     raster::plot(p0_F.R,
                  main =  paste0("Females ", years[t]),
                  legend.args = list(text = 'p0',
                                     side = 4, font = 2, line = 2.5, cex = 0.8))
-
+    
     ##-- MALE
     detectors$main.detector.sp$p0_M <-
       ilogit(logit(results_M$mean$p0[nimConstants$county,t]) +
                results_M$mean$betaDet[1] * nimDataM$detCovs[ ,1,t] +
                results_M$mean$betaDet[2] * nimDataM$detCovs[ ,2,t])
-
+    
     p0_M.R <- raster::rasterFromXYZ(cbind(detectors$main.detector.sp$main.cell.x,
                                           detectors$main.detector.sp$main.cell.y,
                                           detectors$main.detector.sp$p0_M))
@@ -1507,7 +1567,6 @@ processRovquantOutput_bear2 <- function(
                                     side = 4, font = 2, line = 2.5, cex = 0.8))
   }#t
   dev.off()
-
 
 
 
@@ -1547,7 +1606,6 @@ processRovquantOutput_bear2 <- function(
   points(c(4,4), c(4,3), pch = 15, cex = 3, col = adjustcolor(colSex,0.7))
   text(c(5.3,5.3), c(4,3),  c("Females", "Males"), cex = 1.5, pos = 4)
   dev.off()
-
 
 
 
@@ -1596,49 +1654,48 @@ processRovquantOutput_bear2 <- function(
   }#t
   dev.off()
   
-  # 
-  # 
-  # # ##-- Plot Carnivore observations maps
-  # # pdf(file = file.path(working.dir, "figures", paste0("CarnivoreObs_maps_classic.pdf")),
-  # #     width = 18, height = 12)
-  # # grDevices::png(filename = file.path(working.dir, "figures/CarnivoreObs_maps_classic.png"),
-  # #     width = 18, height = 12, units = "in", pointsize = 12,
-  # #     res = 300, bg = NA)
-  # #
-  # # ##-- layout
-  # # mx <- rbind(c(1,rep(1:5, each = 2)),
-  # #             c(rep(1:5, each = 2), 5))
-  # # mx <- rbind(mx, mx + 5)
-  # # nf <- layout(mx,
-  # #              widths = c(rep(1,ncol(mx))),
-  # #              heights = rep(1,2))
-  # # par(mar = c(0,0,0,0))
-  # # for(t in 1:length(years)){
-  # #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
-  # #   image(mask(ds.brickCont[[t]],COUNTRIESsimpFig[1,]), add = TRUE, col = c("white","forestgreen"), legend = FALSE)
-  # #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = "gray80", col = NA, add = TRUE)
-  # #   
-  # #   mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
-  # #   
-  # #   if(t == n.years){
-  # #     segments(x0 = 830000, x1 = 830000,
-  # #              y0 = 6730000, y1 = 6730000 + 500000,
-  # #              col = grey(0.3), lwd = 4, lend = 2)
-  # #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
-  # #     
-  # #     ##-- LEGEND
-  # #     par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
-  # #     plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
-  # #   }#if
-  # # }#t
-  # # dev.off()
-  # 
-  # 
-  # 
-  # ## ------   4.7. DETECTABILITY ------
-  # 
-  # ## ------     4.7.1. SET-UP ------
-  # 
+ 
+  # ##-- Plot Carnivore observations maps
+  # pdf(file = file.path(working.dir, "figures", paste0("CarnivoreObs_maps_classic.pdf")),
+  #     width = 18, height = 12)
+  # grDevices::png(filename = file.path(working.dir, "figures/CarnivoreObs_maps_classic.png"),
+  #     width = 18, height = 12, units = "in", pointsize = 12,
+  #     res = 300, bg = NA)
+  #
+  # ##-- layout
+  # mx <- rbind(c(1,rep(1:5, each = 2)),
+  #             c(rep(1:5, each = 2), 5))
+  # mx <- rbind(mx, mx + 5)
+  # nf <- layout(mx,
+  #              widths = c(rep(1,ncol(mx))),
+  #              heights = rep(1,2))
+  # par(mar = c(0,0,0,0))
+  # for(t in 1:length(years)){
+  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
+  #   image(mask(ds.brickCont[[t]],COUNTRIESsimpFig[1,]), add = TRUE, col = c("white","forestgreen"), legend = FALSE)
+  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = "gray80", col = NA, add = TRUE)
+  #
+  #   mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
+  #
+  #   if(t == n.years){
+  #     segments(x0 = 830000, x1 = 830000,
+  #              y0 = 6730000, y1 = 6730000 + 500000,
+  #              col = grey(0.3), lwd = 4, lend = 2)
+  #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
+  #
+  #     ##-- LEGEND
+  #     par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
+  #     plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
+  #   }#if
+  # }#t
+  # dev.off()
+
+  
+  
+  ## ------   4.7. DETECTABILITY ------
+   
+  ## ------     4.7.1. SET-UP ------
+   
   # ##-- Create 5km raster for extraction
   # regions.r <- habitatRasterResolution$`5km`[["Regions"]]
   # regions.r <- raster::crop(regions.r, habitat$habitat.r)
@@ -1664,11 +1721,11 @@ processRovquantOutput_bear2 <- function(
   # 
   # ##-- Load detectability calculation
   # load(file.path(working.dir, "data/Detectability5km.RData"))
-  # 
-  # 
-  # 
-  # ## ------     4.7.2. PLOT DETECTABILITY MAPS -----
-  # 
+
+  
+  
+  ## ------     4.7.2. PLOT DETECTABILITY MAPS -----
+   
   # pdf(file = file.path(working.dir, "figures/Detectability_maps.pdf"),
   #     width = 10, height = 6)
   # grDevices::png(filename = file.path(working.dir, "figures/Detectability_maps.png"),
@@ -1750,9 +1807,9 @@ processRovquantOutput_bear2 <- function(
   #   }#if
   # }#t
   # dev.off()
-  # 
-  # 
-  # 
+
+  
+  
   ## ------   4.8. SEX-RATIO ------
 
   ## ------     4.8.1. SEX-RATIO BARS ------
@@ -1857,9 +1914,8 @@ processRovquantOutput_bear2 <- function(
   #   }#if
   # }#t
   # dev.off()
-  # 
-  # 
-  # 
+
+  
    
   ## ------     4.8.4. SEX-RATIO MAPS (SMOOTHED) ------
   
@@ -1930,7 +1986,6 @@ processRovquantOutput_bear2 <- function(
 
   
 
-  ##----------------------------------------------------------------------------
   
   ## ------ 5. TABLES -----
   
@@ -2026,9 +2081,10 @@ processRovquantOutput_bear2 <- function(
   
   ##-- print .tex
   row.names(NCarRegionEstimatesLast) <- c(paste0("\\hspace{0.1cm} ",idregionNOR),"TOTAL")
-  print(xtable::xtable(NCarRegionEstimatesLast, type = "latex",
-                       align = paste(c("l",rep("c",ncol(NCarRegionEstimatesLast))), collapse = "")),
-        sanitize.text.function=function(x){x},
+  print(xtable::xtable( NCarRegionEstimatesLast,
+                        type = "latex",
+                        align = paste(c("l",rep("c",ncol(NCarRegionEstimatesLast))), collapse = "")),
+        sanitize.text.function = function(x){x},
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
         file = file.path(working.dir, "tables/N_LastYearPerSex_region.tex"))
@@ -2121,12 +2177,14 @@ processRovquantOutput_bear2 <- function(
   
   ##-- print .tex
   row.names(NCarRegionEstimatesLast) <- c(paste0("\\hspace{0.1cm} ",idregionNOR),"TOTAL")
-  print(xtable::xtable(NCarRegionEstimatesLast, type = "latex",
+  print(xtable::xtable(NCarRegionEstimatesLast, 
+                       type = "latex",
                        align = paste(c("l",rep("c",ncol(NCarRegionEstimatesLast))), collapse = "")),
-        sanitize.text.function=function(x){x},
+        sanitize.text.function = function(x){x},
         floating = FALSE,
-        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast),by=2)),"\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_LastYearPerSex_region.tex"))
+        add.to.row = list(list(seq(1,nrow(NCarRegionEstimatesLast), by = 2)),
+                          "\\rowcolor[gray]{.95} "),
+        file = file.path(working.dir, "tables/N_LastYearPerSex_region_area.tex"))
   
   
   
@@ -2765,7 +2823,7 @@ processRovquantOutput_bear2 <- function(
   
   
   
-  ##----------------------------------------------------------------------------
+
   ## ------   5.3. VITAL RATES ------
 
   parameters <- c("rho","phi", "h", "w", "r")
@@ -2904,7 +2962,7 @@ processRovquantOutput_bear2 <- function(
 
   ## ------   5.4. DERIVED PARAMETERS FROM ABUNDANCE ------
 
-  ## ------     5.4.1. DERIVE SEX-RATIO ------
+  ## ------     5.4.1. SEX-RATIO ------
 
   ##-- REGION-SPECIFIC PROPORTION OF FEMALES
   PropFemale_regions <- list()
@@ -2928,15 +2986,15 @@ processRovquantOutput_bear2 <- function(
   row.names(propFemale_tab) <- idregionTable
   colnames(propFemale_tab) <- years
   for(t in 1:n.years){
-    for(c in 1:7){
+    for(c in 1:(length(idregionTable)-1)){
       propFemale_tab[idregionTable[c],t] <- getCleanEstimates(na.omit(PropFemale_regions[[t]][idregionTable[c], ]))
     }#c
-    propFemale_tab[8,t] <- getCleanEstimates(PropFemale[[t]])
+    propFemale_tab[length(idregionTable),t] <- getCleanEstimates(PropFemale[[t]])
   }#t
 
   ##-- print .tex
   row.names(propFemale_tab) <- c(paste0("\\hspace{0.1cm} ", idregionNOR), "TOTAL")
-  print(xtable( propFemale_tab,
+  print(xtable::xtable( propFemale_tab,
                 type = "latex",
                 align = paste(c("l",rep("c",ncol(propFemale_tab))),collapse = "")),
         floating = FALSE,
@@ -2947,7 +3005,7 @@ processRovquantOutput_bear2 <- function(
 
 
 
-  ## ------     5.4.2. DERIVE AVERAGE DENSITY ------
+  ## ------     5.4.2. AVERAGE DENSITY ------
 
   ##-- Format table
   averageDensity <- matrix(0, ncol = n.years, nrow = length(idregionTable))
@@ -2958,7 +3016,7 @@ processRovquantOutput_bear2 <- function(
   regionsLevels <- as.data.frame(raster::levels(rrRegions$Regions[[1]]))
 
   ##-- Fill in table
-  for(c in 1:7){
+  for(c in 1:(length(idregionTable)-1)){
     thisRegion <- regionsLevels$ID[regionsLevels$Regions == idregionTable[c]]
     thisArea <- sum(na.omit(rrRegions[ ] == thisRegion)) * 25
     for(t in 1:n.years){
@@ -3014,7 +3072,7 @@ processRovquantOutput_bear2 <- function(
 
 
 
-  ## ------   5.5. TABLE OTHERS ------
+  ## ------   5.5. OTHERS PARAMETERS ------
 
   parameters <- c("tau",
                   "betaDead","betaDens",
