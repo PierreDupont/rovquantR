@@ -332,23 +332,52 @@ makeRovquantData_bear <- function(
   par(mfrow = c(1,2), mar = c(0,0,0,0))
   
   ##-- Dead recoveries
-  plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
-  plot(habitat$grid[ ,"dead.reco.trunc"], add = T, border = NA)
-  plot(st_geometry(COUNTRIES[1, ]), border = "gray10", col = NA, add = T)
+  z1 <- habitat$grid[["dead.reco.trunc"]]
+  zlim1 <- range(z1, na.rm = TRUE)
+  cols1 <- hcl.colors(100, "Viridis")
+  brks1 <- seq(zlim1[1], zlim1[2], length.out = length(cols1) + 1)
+  
+  plot(sf::st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
+  plot( habitat$grid["dead.reco.trunc"],
+        add = TRUE,
+        border = NA,
+        pal = function(n) cols1,
+        breaks = brks1,
+        key.pos = NULL)
+  plot(sf::st_geometry(COUNTRIES[1, ]),border = "gray10", col = NA, add = TRUE)
+  
+  addColorBar( zlim = zlim1, cols = cols1,
+               y_pad = 0.15, x_pad = 0.55,
+               lab_name = "Dead recoveries", lab_cex = 1.5)
   
   ##-- SkandObs
-  plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
-  plot(habitat$grid[ ,"skandObs.smooth"], add = T, border = NA)
-  plot(st_geometry(COUNTRIES[1, ]), border = "gray10", col = NA, add = T)
+  z2 <- habitat$grid[["skandObs.smooth"]]
+  zlim2 <- range(z2, na.rm = TRUE)
+  cols2 <- hcl.colors(100, palette = "Viridis")
+  brks2 <- seq(zlim2[1], zlim2[2], length.out = length(cols2) + 1)
   
+  plot(sf::st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
+  plot( habitat$grid["skandObs.smooth"],
+        add = TRUE,
+        border = NA,
+        pal = function(n) cols2,
+        breaks = brks2,
+        key.pos = NULL)
+  plot(sf::st_geometry(COUNTRIES[1, ]), border = "gray10", col = NA, add = TRUE)
+  
+  addColorBar( zlim = zlim2, cols = cols2,
+               y_pad = 0.15, x_pad = 0.55,
+               lab_name = "Dead SkandObs", lab_cex = 1.5)
+  
+  ##-- Scale bar 
   graphics::segments(x0 = 830000, x1 = 830000,
-                     y0 = 6730000, y1 = 6730000 + 500000,
+                     y0 = 6600000, y1 = 6600000 + 500000,
                      col = grey(0.3), lwd = 4, lend = 2)
-  graphics::text( 750000,
-                  6730000+500000/2, 
+  graphics::text( 780000,
+                  6600000+500000/2, 
                   labels = "500 km",
                   srt = 90,
-                  cex = 2)
+                  cex = 1.5)
   dev.off()  
   
   

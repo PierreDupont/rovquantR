@@ -2056,14 +2056,14 @@ for(thisSex in c("Hann","Hunn")){
     for(c in 1:n.counties){
       for(t in 1:n.years){
         p01[c,t] ~ dunif(0,1)
-        p0[c,t] <- p01[c,t] *countyToggle[c,t]## toggle counties
+        p0[c,t] <- p01[c,t] * countyToggle[c,t]## toggle counties
       }#t
     }#c  
     
     for(c in 1:n.countries){
       for(t in 1:n.years){
         p01Oth[c,t] ~ dunif(0,1)
-        p0Oth[c,t] <- p01Oth[c,t] *countyToggleOth[c,t]## toggle countries
+        p0Oth[c,t] <- p01Oth[c,t] * countyToggleOth[c,t]## toggle countries
       }#t
     }#c  
     

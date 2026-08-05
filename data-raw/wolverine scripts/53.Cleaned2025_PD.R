@@ -1535,8 +1535,8 @@ if(plot.check){
 
 
 
-# ## ------         2.2.6.4. SMOOTH THE BINARY MAP ------
-# 
+## ------         2.2.6.4. SMOOTH THE BINARY MAP ------
+ 
 # ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.037 
 # habOwin <- spatstat.geom::as.owin(as.vector(extent(detectors$raster)))
 # cutoff <- 1
@@ -2527,7 +2527,7 @@ for(thisSex in sex){
     }#t
     
     
-    ##---------- DERIVED PARAMETERS ----------##
+    ##---- DERIVED PARAMETERS ----##
     
     for(t in 1:n.years){
       for(i in 1:n.individuals){ 
@@ -2968,9 +2968,7 @@ save( myHabitat.list,
 
 
 
-
 ##------------------------------------------------------------------------------
-
 
 ## ------ III. NIMBLE RUN ====
 
