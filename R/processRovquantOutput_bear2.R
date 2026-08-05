@@ -398,7 +398,7 @@ processRovquantOutput_bear2 <- function(
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
         display_progress = FALSE,
-        regionID = rbind(regionID,countyID),
+        regionID = regionID,
         returnPosteriorCells = FALSE)
     }#t
     names(ACdensityM) <- years
@@ -418,7 +418,7 @@ processRovquantOutput_bear2 <- function(
         IDmx = densityInputRegions$habitat.id,
         aliveStates = 2,
         display_progress = FALSE,
-        regionID = rbind(regionID,countyID),
+        regionID = regionID,
         returnPosteriorCells = FALSE)
     }
     names(ACdensityF) <- years
