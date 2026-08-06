@@ -367,7 +367,7 @@ makeRovquantData_bear <- function(
   
   addColorBar( zlim = zlim2, cols = cols2,
                y_pad = 0.15, x_pad = 0.55,
-               lab_name = "Dead SkandObs", lab_cex = 1.5)
+               lab_name = "SkandObs records", lab_cex = 1.5)
   
   ##-- Scale bar 
   graphics::segments(x0 = 830000, x1 = 830000,
