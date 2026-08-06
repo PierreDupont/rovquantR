@@ -420,7 +420,8 @@ processRovquantOutput_bear2 <- function(
         display_progress = FALSE,
         regionID = regionID,
         returnPosteriorCells = FALSE)
-    }
+    }#t
+    
     names(ACdensityF) <- years
     
     
@@ -456,7 +457,7 @@ processRovquantOutput_bear2 <- function(
         habitatxy = densityInputRegions$habitat.xy,
         aliveStates = 2,
         display_progress = FALSE,
-        regionID = regionID,
+        regionID = densityInputRegions$regions.rgmx,
         returnPosteriorCells = FALSE)
     }#t
     names(UDdensityM) <- years
@@ -477,7 +478,7 @@ processRovquantOutput_bear2 <- function(
         habitatxy = densityInputRegions$habitat.xy,
         aliveStates = 2,
         display_progress = FALSE,
-        regionID = regionID,
+        regionID = densityInputRegions$regions.rgmx,
         returnPosteriorCells = FALSE)
     }#t
     names(UDdensityF) <- years
@@ -496,7 +497,7 @@ processRovquantOutput_bear2 <- function(
         habitatxy = densityInputRegions$habitat.xy,
         aliveStates = 2,
         display_progress = FALSE,
-        regionID = regionID,
+        regionID = densityInputRegions$regions.rgmx,
         returnPosteriorCells = FALSE)
     }#t
     names(UDdensity) <- years
@@ -1841,6 +1842,7 @@ processRovquantOutput_bear2 <- function(
 
 
   ## ------     4.8.2. SEX-RATIO DISTANCE ------
+  
   ###--- TBD
 
 
@@ -3130,6 +3132,7 @@ processRovquantOutput_bear2 <- function(
 
   
   ## ------ 6. OUTPUT -----
+  
   out$YEARS <- years
   
   return(out)
