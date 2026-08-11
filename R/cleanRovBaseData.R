@@ -252,7 +252,7 @@ cleanRovbaseData <- function(
   ##-- Load raw excel file imported from rovbase 
   DR <- suppressWarnings(readMostRecent( path = data.dir,
                                          extension = ".xls",
-                                         pattern = "dead")) %>%
+                                         pattern = "dead_carnivores")) %>%
     ##-- Rename columns to facilitate manipulation
     dplyr::rename(., any_of(rename.list)) %>%
     ##-- Initial filters
