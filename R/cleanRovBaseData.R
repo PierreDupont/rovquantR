@@ -150,6 +150,17 @@ cleanRovbaseData <- function(
     rename.list <- r.list.internal
   }
   
+  ##-- Renaming list
+  if(is.null(rename.list)) {
+    if(engSpecies %in% c("wolf","wolverine")) {
+      if(!exists("r.list.internalWolf")) stop("Default 'rename.list' not available")
+      rename.list <- r.list.internalWolf
+    }else{
+      if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
+      rename.list <- r.list.internal
+    }
+  }
+  
   ##-- Load pre-processed habitat shapefiles
   data(REGIONS, envir = environment()) 
   
