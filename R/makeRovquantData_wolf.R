@@ -94,7 +94,7 @@ makeRovquantData_wolf <- function(
   if(is.null(max.det.dist)){max.det.dist <- 45000}
   if(is.null(resize.factor)){resize.factor <- 1}
   if(is.null(rename.list)) {
-    if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
+    #[CM] does work if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
     rename.list <- r.list.internalWolf
   }
   
@@ -178,18 +178,20 @@ makeRovquantData_wolf <- function(
   
   ## ------     1.1. GENERATE HABITAT CHARACTERISTICS ------
   ##-- Determine study area based on predefined extent
-  #[CM]use the same study area to align with previous analyses
+  #[CM] use the same study area to align with previous analyses
+  #[CM] new dataset added to the data package
   setwd("C:/My_documents/rovquant/analyses/Rgit/rovquantR/data")
   load("studyAreaWolf.rda")  
   studyArea <- myStudyArea.poly
   studyAreaExtent <- myStudyArea.extent
   
+  #[CM] Commented out
   # studyArea <- sf::st_crop( REGIONS,
   #                           xmin = x.extent[1], xmax = x.extent[2],
   #                           ymin = y.extent[1], ymax = y.extent[2]) %>%
   #   sf::st_collection_extract(., "POLYGON") %>%
   #   summarise()  
-  plot(studyArea$geometry)
+  # plot(studyArea$geometry)
   ##-- Make habitat from predefined Scandinavian raster of suitable habitat
   habitat <- makeHabitatFromRaster(
     poly = studyArea,
@@ -225,7 +227,7 @@ makeRovquantData_wolf <- function(
   ## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES ------
   ## ------       1.2.1. DENSITY OF PACKS/PAIRS ------
   ##-- Kernel of NGS detections of individuals in pairs
-  # move this to sex-specifi
+  #[CM] move this to be sex-specific as in previous analyses 
   # kern <- list()
   # habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
   # for(t in 1:n.years){
@@ -412,7 +414,9 @@ makeRovquantData_wolf <- function(
     dupDist[[t]] <- TRACKS_YEAR[[t]][dupIDs[[t]], ]$dist
     TRACKS_YEAR[[t]] <-  TRACKS_YEAR[[t]][-dupIDs[[t]], ]
   }#t
+  
   ##-- Combine all GPS tracks
+  # [CM] comment out this function. Use the same script than in previous analysis instead
   # TRACKS <- readTracks( data.dir = data.dir,
   #                       years = years,
   #                       sampling.months = sampling.months)
@@ -449,6 +453,7 @@ makeRovquantData_wolf <- function(
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
   DistAllRoads <- crop(DistAllRoads, studyArea)
+  # [CM] comment out this function. Use the same script than in previous analysis instead
   # DistAllRoads <- readMostRecent( path = file.path(data.dir, "Roads"), 
   #                                 extension = ".tif", 
   #                                 stack = FALSE)
@@ -488,6 +493,7 @@ makeRovquantData_wolf <- function(
   SNOW <- SNOW[[paste("X", years, "_", years+1, sep = "")]]
   SNOW <- raster::crop(SNOW, c(0,40,55,75))
   ##-- Load raster stack of snow cover
+  # [CM] comment out this function. Use the same script than in previous analysis instead
   # SNOW <- readMostRecent( path = file.path(data.dir, "Snow"), 
   #                         extension = ".tif", 
   #                         stack = TRUE)
@@ -529,7 +535,7 @@ makeRovquantData_wolf <- function(
                               pattern = "Skandobs")
   
   ##-- Replace scandinavian characters
-  colnames(skandObs) <- translateForeignCharacters(dat = colnames(skandObs))#,
+  colnames(skandObs) <- translateForeignCharacters(dat = colnames(skandObs))#,[CM]
                                                    #dir.translation = dir.analysis)
   
   skandObs <- skandObs %>%
@@ -564,7 +570,7 @@ makeRovquantData_wolf <- function(
   rovbaseObs$Sample_type <- translateForeignCharacters( dat = rovbaseObs$Proevetype)#,
                                                        # dir.translation = dir.analysis)
   
-  
+  # [CM] comment out readMultiples. Use the same script than in previous analysis instead
   ##-- Process Rovbase observations (all species)
   rovbaseObs <- rovbaseObs %>%
                 #readMultiples( path = file.path(data.dir, "AllSamples"),
@@ -592,7 +598,7 @@ makeRovquantData_wolf <- function(
       Species %in% c("Ulv"),
       ##-- ...based on sample type
       Sample_type %in% c( "Ekskrement","Har","Urin","Valpeekskrement (Ulv)","Sekret (Jerv)",
-                          "Saliv/Spytt"),#CM, "Loepeblod", "Vev"),
+                          "Saliv/Spytt"),#[CM] comment out , "Loepeblod", "Vev"),
       ##-- ...based on monitoring season
       month %in% unlist(sampling.months)
       # ##-- ... if sample was from the focal species and successfully genotyped 
@@ -607,7 +613,6 @@ makeRovquantData_wolf <- function(
   
   
   ## ------         2.2.6.3. COMBINE ROVBASE & SKANDOBS ------
-  
   ##-- Rasterize at the detector level
   r.list <- lapply(years, function(y){
     ##-- Rasterize Skandobs observations 
@@ -691,6 +696,7 @@ makeRovquantData_wolf <- function(
   detectors$covariates.others <- detCovsOth
   
   ##-- Merge with the detector grid
+  #[CM] didnt run commented out
   # detectors$grid <- dplyr::left_join(
   #   x = detectors$grid,
   #   y = detectors$detectors.df,
@@ -718,15 +724,13 @@ makeRovquantData_wolf <- function(
   ## ------   4. CREATE LOCAL OBJECTS -----
   
   ##-- Get local detectors
-  detectors$localObjects <- getLocalObjects(
+  detectors$localObjects <- getLocalObjects(#[CM] why not using nimbleSCR version?
     habitatMask = habitat$habitat.mx,
     coords = detectors$scaledCoords,
-    dmax = detectors$maxDist/habitat$resolution,
+    dmax = detectors$maxDist*1.4/habitat$resolution,
     resizeFactor = detectors$resize.factor,
     plot.check = F)
-  
-  
-  
+
   ## ------   5. SAVE STATE-SPACE CHARACTERISTICS -----
   
   save( habitat,
@@ -751,7 +755,7 @@ makeRovquantData_wolf <- function(
       Month %in% unlist(sampling.months),
       ##-- Subset to sex of interest
       Sex %in% sex) %>%
-    ##-- Filter based on space #[CM]
+    ##-- Filter based on space #[CM] use extent instead of the grid based as in previous analyses
   sf::st_filter( .,sf::st_as_sfc(myStudyArea.extent), .predicate = st_intersects)
     # sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
   
@@ -765,9 +769,8 @@ makeRovquantData_wolf <- function(
       Year %in% years,
       ##-- Subset to sex of interest
       Sex %in% sex) %>%
-    ##-- Filter based on space 
+    ##-- Filter based on space #[CM] use extent instead of the grid based as in previous analyses
     sf::st_filter( .,sf::st_as_sfc(myStudyArea.extent), .predicate = st_intersects)
-  
   #  sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
   
   
@@ -778,6 +781,7 @@ makeRovquantData_wolf <- function(
   
   message("Assigning DNA samples to GPS tracks... ")
   message("This can take several minutes... ")
+  #[CM] Couldnt get this to reproduce the results commented out 
   # data.alive <- assignSearchTracks(
   #   data = data.alive,
   #   tracks = TRACKS)
@@ -823,7 +827,7 @@ makeRovquantData_wolf <- function(
       data.alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID[which.min(dist)]
       data.alive$trackDist[i] <- min(dist)
     }
-    print(i)
+    #print(i)
   }
   
   
@@ -842,15 +846,7 @@ makeRovquantData_wolf <- function(
       structured = Collector_role1 %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
         !is.na(TrackRovbsID) &
         trackDist <= distanceThreshold)
-  # tmp <- data.alive[data.alive$Sex %in% "male",]
-  # sum(tmp$structured)
-  # 
-  # nrow(tmp)
-  # table(DNA$Collector_role
-  #       )
-  # table(tmp$Collector_other_role)
-  # table(tmp$Collector_role)
-  # sum(data.alive$structured[!data.alive$Sex %in%"male"])
+
   ## ------     6.4. ASSIGN SAMPLES TO DETECTORS -----
   data.alive1 <- data.alive
   ##-- ALL SAMPLES
@@ -869,92 +865,91 @@ makeRovquantData_wolf <- function(
   
   
   ## ------     6.5. PLOT NGS & DEAD RECOVERY MAPS ----- 
-  #[CM]
-  # ##-- layout
-  # L <- n.years
-  # if(L < 6){ nrows <- 1 } else{
-  #   if(L < 13){ nrows <- 2 } else {
-  #     if(L < 22){ nrows <- 3 } else {
-  #       if(L < 33){ nrows <- 4 } else {
-  #         nrows <- 5
-  #       }}}}
-  # ncols <- ceiling(L/nrows)
-  # 
-  # 
-  # ##-- NGS maps
-  # grDevices::png(filename = file.path(working.dir, "figures/NGS_TimeSeries.png"),
-  #                width = ncols*2, height = nrows*4,
-  #                units = "in", pointsize = 12,
-  #                res = 300, bg = NA)
-  # ##-- layout
-  # mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
-  # for(r in 1:nrows){
-  #   mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
-  #   mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
-  # }#r
-  # nf <- graphics::layout(mx,
-  #                        widths = c(rep(1,ncol(mx))),
-  #                        heights = rep(1,2))
-  # par(mar = c(0,0,0,0))
-  # 
-  # for(t in 1:length(years)){
-  #   ##-- Plot maps
-  #   plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
-  #   try(
-  #     plot( sf::st_geometry(data.alive$data.sp[data.alive$data.sp$Year == years[t], ]),
-  #           add = TRUE, col = "orange", pch = 3),
-  #     silent = TRUE)
-  #   plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
-  #   
-  #   ##-- Add year
-  #   graphics::mtext(text = years[t],
-  #                   side = 1, line = -18,
-  #                   adj = 0.18, cex = 1.2)
-  # }#t
-  # dev.off()
+  ##-- layout
+  L <- n.years
+  if(L < 6){ nrows <- 1 } else{
+    if(L < 13){ nrows <- 2 } else {
+      if(L < 22){ nrows <- 3 } else {
+        if(L < 33){ nrows <- 4 } else {
+          nrows <- 5
+        }}}}
+  ncols <- ceiling(L/nrows)
+
+
+  ##-- NGS maps
+  grDevices::png(filename = file.path(working.dir, "figures/NGS_TimeSeries.png"),
+                 width = ncols*2, height = nrows*4,
+                 units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  ##-- layout
+  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  for(r in 1:nrows){
+    mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
+    mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
+  }#r
+  nf <- graphics::layout(mx,
+                         widths = c(rep(1,ncol(mx))),
+                         heights = rep(1,2))
+  par(mar = c(0,0,0,0))
+
+  for(t in 1:length(years)){
+    ##-- Plot maps
+    plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
+    try(
+      plot( sf::st_geometry(data.alive$data.sp[data.alive$data.sp$Year == years[t], ]),
+            add = TRUE, col = "orange", pch = 3),
+      silent = TRUE)
+    plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
+
+    ##-- Add year
+    graphics::mtext(text = years[t],
+                    side = 1, line = -18,
+                    adj = 0.18, cex = 1.2)
+  }#t
+  dev.off()
   # 
   # 
   ##-- Dead recoveries maps
-  # grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
-  #                width = ncols*2, height = nrows*4,
-  #                units = "in", pointsize = 12,
-  #                res = 300, bg = NA)
-  # ##-- layout
-  # mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
-  # for(r in 1:nrows){
-  #   mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
-  #   mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
-  # }#r
-  # nf <- graphics::layout(mx,
-  #                        widths = c(rep(1,ncol(mx))),
-  #                        heights = rep(1,2))
-  # par(mar = c(0,0,0,0))
-  # 
-  # for(t in 1:length(years)){
-  #   ##-- Plot maps
-  #   plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
-  #   try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t] & 
-  #                                          data.dead$Legal, ]),
-  #              add = TRUE, 
-  #              col = "slateblue1",
-  #              pch = 3),
-  #        silent = TRUE)
-  #   try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]),
-  #              add = TRUE,
-  #              col = "slateblue4",
-  #              pch = 3),
-  #        silent = TRUE)
-  #   plot( sf::st_geometry(COUNTRIES),
-  #         border = "gray20",
-  #         col = NA,
-  #         add = TRUE)
-  #   
-  #   ##-- Add year
-  #   graphics::mtext(text = years[t],
-  #                   side = 1, line = -18,
-  #                   adj = 0.18, cex = 1.2)
-  # }#t
-  # dev.off()
+  grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
+                 width = ncols*2, height = nrows*4,
+                 units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  ##-- layout
+  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  for(r in 1:nrows){
+    mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
+    mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
+  }#r
+  nf <- graphics::layout(mx,
+                         widths = c(rep(1,ncol(mx))),
+                         heights = rep(1,2))
+  par(mar = c(0,0,0,0))
+
+  for(t in 1:length(years)){
+    ##-- Plot maps
+    plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
+    try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t] &
+                                           data.dead$Legal, ]),
+               add = TRUE,
+               col = "slateblue1",
+               pch = 3),
+         silent = TRUE)
+    try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t], ]),
+               add = TRUE,
+               col = "slateblue4",
+               pch = 3),
+         silent = TRUE)
+    plot( sf::st_geometry(COUNTRIES),
+          border = "gray20",
+          col = NA,
+          add = TRUE)
+
+    ##-- Add year
+    graphics::mtext(text = years[t],
+                    side = 1, line = -18,
+                    adj = 0.18, cex = 1.2)
+  }#t
+  dev.off()
   
   
   
@@ -1078,6 +1073,9 @@ makeRovquantData_wolf <- function(
     ## ------     7.4. GENERATE INDIVIDUAL-LEVEL COVARIATES ------ 
     
     ## ------       7.4.1. INDIVIDUAL STATE ------ 
+    ##[CM] Do the state assignement here instead of within cleanData function
+    ##[CM] State assignment based on NGS alive is challenging as we also need to do it for dead wolves. 
+    ##[CM] It is much easier to do it once we create the entire y dataframe
     ##-- Load most recent Micke's file
     INDIVIDUAL_ID <- suppressWarnings(readMostRecent( path = data.dir,
                                                       extension = ".xls",
@@ -1185,6 +1183,7 @@ makeRovquantData_wolf <- function(
     
     
     ##-- Consolidate all info on individual sex in one dataframe
+    #[CM] Commented out
     # ALL_SEX <- rbind( DATA[ ,c("IdSimplified","Sex")],
     #                   INDIVIDUAL_ID[ ,c("IdSimplified","Sex")],
     #                   Pack_ID2023[ ,c("IdSimplified","Sex")],
@@ -1208,8 +1207,8 @@ makeRovquantData_wolf <- function(
     #                              INDIVIDUAL_ID[INDIVIDUAL_ID$Id %in% i, "Sex"][1,]
     #                            }))
     # DATA$Sex <- ifelse(!is.na(micke.sex), micke.sex, DATA$Sex)
-    
-    #statut 
+    #
+    ##statut 
     # DATA$STATUS <- NA 
     # 
     # INDIVIDUAL_ID$STATUS_Numeric <- 1
@@ -1275,7 +1274,7 @@ makeRovquantData_wolf <- function(
     #                 DATA$Year %in% 2025 ] <- 3
     # }#i
     
-    
+    ##statut[CM] assignation of state to the y array
     INDIVIDUAL_ID$STATUS_Numeric <- 1
     INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% "Juvenile"] <- 2
     INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% c("Pair" )] <- 3
@@ -1302,10 +1301,8 @@ makeRovquantData_wolf <- function(
         }
       }#t
     }#i
-    # y.obsALL["UI406225",]
-    # which(ALLIDS %in% "UI413959")
+
     
-    ## FOR THE LAST YEAR GET TRHOUGH THE PAIR BASED-FILE FROM LINN.
     ##FOR THE LAST YEAR GET TRHOUGH THE PAIR BASED-FILE FROM LINN.
     for(i in 1:dim(y.obsALL)[1]){
       t <- length(years)
@@ -1355,13 +1352,7 @@ makeRovquantData_wolf <- function(
     
     y.status <- indSocialState
     
-    
-  # }#if
-  #   
-  #   
-  #   
-  #   
-  #   
+  # [CM] Commented out 
   #   # data.alive$data.sp$Status <- data.alive$data.sp$STATUS
   #   ##-- Turn status into factor for correct order
   #   # data.alive$data.sp$Status <- factor( data.alive$data.sp$Status,
@@ -1393,15 +1384,13 @@ makeRovquantData_wolf <- function(
   #     }
   #   }#i
   #   ####
-    # 
-    #    setwd("C:/Users/cymi/OneDrive - Norwegian University of Life Sciences/Desktop")
-    #   save(y.status,file="yData.RData")
-    # 
-    # #
-    # data.alive$data.sp[data.alive$data.sp$Id %in% "UI406225 G41-17 V774 +",]$Year
-    # 
+  ## Checks 
+  # setwd("C:/Users/cymi/OneDrive - Norwegian University of Life Sciences/Desktop")
+  # save(y.status,file="yData.RData")
+  # 
+  # #
+  # 
     ## ------       7.4.2. TRAP-RESPONSE ------ 
-    
     ##-- Make matrix of previous capture indicator
     detResponse <- makeTrapResponseCov(
       data = myFullData.sp$alive,
@@ -1417,6 +1406,8 @@ makeRovquantData_wolf <- function(
     
     ## ------     7.5. HAB DENSITY ------ 
     ##-- KERNEL OF INDIVIDUALS IN PAIRS
+    #[CM] Commented out 
+    #[CM] use the what we had in the previous script
     # kern <- list()
     # habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
     # for(t in 1:n.years){
@@ -1460,7 +1451,7 @@ makeRovquantData_wolf <- function(
     #   habDens[ ,t] <- scale(kern[[t]][habitat$habitat.r[ ] == 1])
     # } #t
     ##-- KERNEL OF INDIVIDUALS IN PAIRS
-    #[CM] improve by using both sex to construct the map.
+    #[CM] Future improvements => use both sex to construct the map.
     #[CM] few diffs because maps are constructed using all data since 2012 in "original" script
     kern <- list()
      habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
@@ -1981,7 +1972,60 @@ makeRovquantData_wolf <- function(
     
   }#thisSex
   
-  
+  #[CM] Sum of objects obtained from the Original script
+  #Male
+  # lapply(nimData, function(x) sum(x,na.rm=T))
+  # $detCountries
+  # [1] 5727
+  # $detCounties
+  # [1] 12461
+  # $y.max
+  # [1] 48
+  # $x.max
+  # [1] 29¨
+  #$detCountries
+  # [1] 5727
+  # $detCounties
+  # [1] 12461
+  # $y.max
+  # [1] 48
+  # $x.max
+  # [1] 29
+  # $detector.xy
+  # [1] 112192
+  # $lowerHabCoords
+  # [1] 28813
+  # $upperHabCoords
+  # [1] 30623
+  # $habitatGrid
+  # [1] 409965
+  # $habDens
+  # [1] 1.085243e-14
+  # $trapCovsOth
+  # [1] 14801.96
+  # $trapCovs
+  # [1] 3.42
+  # $trials
+  # [1] 322400
+  # $n.individuals
+  # [1] 1957
+  # $n.detectors
+  # [1] 3224
+  # $n.years
+  # [1] 10
+  # $numHabWindows
+  # [1] 905
+  # $idResponse
+  # [1] 2006
+  # $y.aliveOth
+  # [1] -187766
+  # $z
+  # [1] 14791
+  # $x.deadculled
+  # [1] 316
+  # 
+  # $x.deadOther
+  # [1] 57
   ## ------   8. RETURN IMPORTANT INFOS FOR REPORT ------
   
   return(list( SPECIES = "Wolf",
@@ -1990,4 +2034,7 @@ makeRovquantData_wolf <- function(
                SEX = sex,
                DATE = DATE))
 }
+
+
+
 

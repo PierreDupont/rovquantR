@@ -145,10 +145,10 @@ cleanRovbaseData <- function(
   }
   
   ##-- Renaming list
-  if(is.null(rename.list)) {#[CM]
+  if(is.null(rename.list)) {#[CM] this if(!exists) didnt run on my machine
     # if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
     
-    if(engSpecies == "wolf"){#[CM]Swith uses of columns sex for wolf reproducibility
+    if(engSpecies == "wolf"){#[CM] Swith uses of columns sex for wolf reproducibility with previous analyses
       rename.list <- r.list.internalWolf
     }else{
     rename.list <- r.list.internal
@@ -433,7 +433,7 @@ cleanRovbaseData <- function(
   ##-- If this is the wolf data, we first consolidate all the info we have about
   ##-- individual sex abd status from the different data sources.
   if(engSpecies == "wolf"){
-    
+    ##[CM] did not comment out this part here, but it could be commented out as state assignment is based on the entire y.obs
     ##-- Add simplified ID column
     DATA <- DATA %>%
       dplyr::mutate(IdSimplified = unlist(lapply(strsplit(Id, " "), function(x) x[1])))
@@ -567,6 +567,13 @@ cleanRovbaseData <- function(
                                function(i){ 
                                  INDIVIDUAL_ID[INDIVIDUAL_ID$Id %in% i, "Sex"][1,]
                                }))
+    
+    micke.sex[micke.sex %in% "0"] <- NA
+    micke.sex[micke.sex %in% names(table(micke.sex))[3]] <- NA
+    micke.sex[micke.sex %in% "Hona"] <- "Hunn"
+    micke.sex[micke.sex %in% "Hane"] <- "Hann"
+    table(!is.na(micke.sex))
+    
     DATA$Sex <- ifelse(!is.na(micke.sex), micke.sex, DATA$Sex)
     
     #statut 
@@ -637,28 +644,16 @@ cleanRovbaseData <- function(
     
   }#if
 
-  # DATA[DATA$IdSimplified %in% "UI421911",]
-  # 
-  # Pack_ID2025[Pack_ID2025$IdSimplified %in% "UI421911",]
-  # DATA[DATA$IdSimplified %in% "UI421911",]$Year
-  # DATA[DATA$IdSimplified %in% "UI421911" & 
-  #        DATA$Year %in% 2024 ]
-  # which(Pack_ID2025$IdSimplified %in% "UI421911" )
-  # 
-  # tmp <- DATA[DATA$Id %in% "UI408742 G31-18 V745 +",]
-  # tmp[,c("STATUS","Year")]
-  # 
+
   ##-- Loop over all individuals
   ID <- unique(as.character(DATA$Id))
   doubleSexID <- IdDoubleSex <- NULL  
   counter <- 1
   for(i in 1:length(ID)){
     ##-- Subset data to individual i
-    # if(engSpecies == "wolf"){
-    #   tmp <- ALL_SEX$Sex[ALL_SEX$IdSimplified == unlist(lapply(strsplit(ID[i], " "), function(x) x[1]))]
-    # } else {
+   
       tmp <- DATA$Sex[DATA$Id == ID[i]]
-    # }
+
     
     ##-- Number of times individual i was assigned to each sex
     tab <- table(tmp[tmp %in% c("female","male")])
@@ -694,22 +689,8 @@ cleanRovbaseData <- function(
   
   ##-- Split DATA into alive and dead.recovery datasets
   alive <- DATA[is.na(DATA$Death), ]
-  #[CM] 
-  # table(alive$Year)
-  # alive <- alive[alive$Month %in%unlist(sampling.months),]
-  # table(alive$Year,alive$Sex,alive$Month)
-  # table(alive$Year,alive$Sex)
-  # tmp <- alive[alive$Year %in% c(2025) &
-  #                alive$Month %in% c(12) & alive$Sex %in% "male",]
-  # 
-  # tmp[tmp$DNAID %in% "D619762",]$Sex
-  # alive[alive$Id %in% "UI421896 G36-25",]$Sex
-  # 
-   dead.recovery <- DATA[!is.na(DATA$Death), ]
+  dead.recovery <- DATA[!is.na(DATA$Death), ]
   
-   # table(dead.recovery$Year,dead.recovery$Sex)
-   # table(dead.recovery$Year,dead.recovery$Sex,dead.recovery$Month)
-   
   ##-- Add earlier detection index
   alive$detected.earlier <-
     unlist(lapply(1:nrow(alive),
