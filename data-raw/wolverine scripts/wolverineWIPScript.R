@@ -80,6 +80,14 @@ data.dir <- file.path(dir.dropbox, "wolverine/2025/Data")
 working.dir <- file.path(dir.dropbox, "wolverine/2025/Test_OLD")
 
 
+## ------ SOURCE THE REQUIRED FUNCTIONS ------
+
+source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
+sourceDirectory(dir.function, modifiedOnly = FALSE)
+#sourceDirectory(dir.function.nimble, modifiedOnly = FALSE)
+load(file.path(dir.dropbox,"DATA/MISC DATA/age.lookup.table.RData"))
+
+
 ##------------------------------------------------------------------------------
 
 ## ------ 0.SET ANALYSIS CHARACTERISTICS -----
@@ -124,9 +132,9 @@ YEARS <- lapply(years, function(x)c(x,x+1))
 
 ## ------ I. LOAD AND SELECT DATA ------
 
-## ------ 1. HABITAT DATA ------
+## ------   1. HABITAT DATA ------
 
-## ------    1.1. LOAD RAW SHAPEFILES ------
+## ------     1.1. LOAD RAW SHAPEFILES ------
 
 ## POLYGONS OF THE REGION
 GLOBALMAP <- st_read(file.path( dir.dropbox,
@@ -173,7 +181,7 @@ ggplot(COUNTIES_AGGREGATED) +
 
 
 
-## ------    1.2. CREATE STUDY AREA POLYGON ------
+## ------     1.2. CREATE STUDY AREA POLYGON ------
 
 ## CREATE STUDY AREA POLYGON BASED ON COUNTRY NAMES
 if(!is.null(HABITAT$countries)){
@@ -199,9 +207,9 @@ if(plot.check){
 
 
 
-## ------ 2. NGS DATA ------
+## ------   2. NGS DATA ------
 
-## ------    2.1. LOAD ROVBASE FILES ------
+## ------     2.1. LOAD ROVBASE FILES ------
 
 ## NGS data from RovBase
 DNA <- read.csv( file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20251121/dna_wolverines.csv"),
@@ -247,7 +255,7 @@ rm(list = c("rovbaseObs1", "rovbaseObs2", "rovbaseObs3"))#, "rovbaseObs4"))
 
 
 
-## ------    2.2. TRANSLATE SCANDINAVIAN CHARACTERS ------
+## ------     2.2. TRANSLATE SCANDINAVIAN CHARACTERS ------
 
 colnames(DNA) <- translateForeignCharacters(dat=colnames(DNA))
 ## Drop a column that makes cleanDataNew to fail
@@ -260,9 +268,9 @@ rovbaseObs$Proevetype <- translateForeignCharacters(dat=rovbaseObs$Proevetype)
 
 
 
-## ------ 3. SEARCH EFFORT DATA ------
+## ------   3. SEARCH EFFORT DATA ------
 
-## ------    3.1. GPS SEARCH TRACKS ------
+## ------     3.1. GPS SEARCH TRACKS ------
 
 ## LOAD GPS SEARCH TRACKS
 TRACKS_SINGLE <- read_sf(paste(dir.dropbox,
@@ -349,7 +357,7 @@ if(plot.check){
 
 
 
-## ------    3.2. DISTANCE TO ROADS ------
+## ------     3.2. DISTANCE TO ROADS ------
 
 ## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
 DistAllRoads <- raster(file.path( dir.dropbox,
@@ -370,7 +378,7 @@ if(plot.check){
 
 
 
-## ------    3.3. DAYS OF SNOW ------
+## ------     3.3. DAYS OF SNOW ------
 
 ## SEASONAL MAPS (CREATED IN TEMP/CM/GIS/snowMODIS)
 SNOW <- stack(file.path( dir.dropbox, 
@@ -2564,15 +2572,13 @@ save(myHabitat.list, myDetectors, COUNTRIES, myStudyArea.poly,
 
 ## ------ III. MAKE THE SINGLE SEASON SCR MODEL ------
 
-## MAKE THE SINGLE SEASON SCR MODEL ###
+## -----  1. SCR MODEL CODE ------
 
 modelCode1 <- nimbleCode({
   
-  ##-----------------------------## 
-  ##------ SPATIAL PROCESS ------##  
-  ##-----------------------------##  
+
+  ##------ SPATIAL PROCESS ------ 
   betaDens  ~ dnorm(0.0,0.01)
-  
   habIntensity[1:numHabWindows] <- exp(betaDens * denCounts[1:numHabWindows])
   sumHabIntensity <- sum(habIntensity[1:numHabWindows])
   logHabIntensity[1:numHabWindows] <- log(habIntensity[1:numHabWindows])
@@ -2586,17 +2592,11 @@ modelCode1 <- nimbleCode({
       logSumIntensity = logSumHabIntensity,
       habitatGrid = habitatGrid[1:y.max,1:x.max],
       numGridRows =  y.max,
-      numGridCols = x.max
-      
-    )
+      numGridCols = x.max)
   }#i
   
-  
-  ##-------------------------------## 
-  ##----- DEMOGRAPHIC PROCESS -----## 
-  ##-------------------------------##    
-  
-  
+
+  ##----- DEMOGRAPHIC PROCESS -----
   pResponse ~ dunif(0, 1)
   psi ~ dunif(0, 1)
   for(i in 1:n.individuals){ 
@@ -2604,14 +2604,13 @@ modelCode1 <- nimbleCode({
     z[i] ~ dbern(psi)	
   }#t 
   
-  
-  ##-----------------------------##
-  ##----- DETECTION PROCESS -----## 
-  ##-----------------------------##
+  ##----- DETECTION PROCESS -----
   sigma ~ dunif(0,4)
+  
   for(c in 1:n.covs){
     betaCovs[c] ~ dunif(-5,5)
   }
+  
   
   for(c in 1:n.covsOth){
     betaCovsOth[c] ~ dunif(-5,5)
@@ -2670,34 +2669,23 @@ modelCode1 <- nimbleCode({
       betaCov = betaCovsOth[1:n.covsOth],
       BetaResponse = betaResponseOth,
       detResponse = detResponse[i])
-    
   }#i
   
-  
-  ##----------------------------------------## 
-  ##---------- DERIVED PARAMETERS ----------##
-  ##----------------------------------------##
-  
+
+  ##---------- DERIVED PARAMETERS --------
   N <- sum(z[1:n.individuals])
-  
 })
 
 
-ch <- 1
-###
+
+## ------- 2. SCRize NIMBLE INPUT DATA ------
+
 for(ch in 1:4){
-  
-  
   for(t in 1:nYears){ 
     for(thisSex in c("Hann","Hunn")){
       
-      
-      
       load( file.path(working.dir, modelName, thisSex,
                       paste0(modelName, thisSex,"_Chain", ch, ".RData")))
-      
-      # load(file.path(working.dir, modelName,
-      #                paste0(modelName,"Chain", ch, ".RData")))
       
       ## GET WHICH INDIVIDUAL IS DETECTED       
       detectedStruc <- apply(nimData$nbDetections,2,function(x) x>0)
@@ -2778,39 +2766,30 @@ for(ch in 1:4){
       
       ## psi
       nimInits$psi <-  runif(1,0.4,0.6)
-      # sigma
+      
+      ## sigma
       nimInits$sigma <-  runif(1,1,2)
-      # trapBetas
+      
+      ## betaCovs
       nimInits$betaCovs <- nimInits$betaCovs[,t]
       nimInits$betaCovsOth <- nimInits$betaCovsOth[,t]
       
-      # trapBetas
-      #nimInits$detResponse <- nimInits$detResponse[t]
+      ## betaResponse
       nimInits$betaResponse <- nimInits$betaResponse[t]
       nimInits$betaResponseOth <- nimInits$betaResponseOth[t]
+
+      nimData$detCountries <- nimData$detCountries[ ,t]
       
-      # beta.dens
-      #nimInits$betaDens <- nimInits$betaDens#[t]
-      
-      
-      ## parameter for the latent detRespons covariate
-      #nimInits$detRespone <-  runif(1,0.4,0.6)
-      # nimInits$probAdult  <-  runif(1,0.4,0.6)
-      nimData$detCountries <- nimData$detCountries[,t]
-      
-      
-      # get the new number of indivudals 
+      ## Nimble constants
       nimConstants$n.individuals <- nrow(nimInits$sxy)
       
-      
-      ##Nimble parameters
+      ## Nimble parameters
       nimParams <- c("N", "psi", "pResponse","p0Oth","betaCovsOth","betaResponseOth",
                      "p0", "sigma", "betaDens", "betaCovs","betaResponse","betaResponseOth")
       
-      modelCode <- modelCode1
-      nimParams2 <- c(
-        "z", "sxy")
+      nimParams2 <- c("z", "sxy")
       
+      modelCode <- modelCode1
       
       save(nimData,
            nimConstants,
@@ -2822,13 +2801,12 @@ for(ch in 1:4){
            file = file.path(working.dir, modelName, thisSex, Snapshot,
                             paste0("Snap",years[t],"_",modelName, thisSex,"_Chain", ch, ".RData")))
     }#c
-    
   }
-  
-  
 }
 
 
+
+##-- Test
 model <- nimbleModel( code = modelCode,
                       constants = nimConstants,
                       data = nimData,
@@ -2836,24 +2814,6 @@ model <- nimbleModel( code = modelCode,
                       check = F,       
                       calculate = F)  
 model$calculate()
-
-
-
-
-model$calculate("y.alive")
-which(is.infinite(model$logProb_y.alive), arr.ind = TRUE)
-which(is.infinite(model$logProb_z), arr.ind = TRUE)
-which(is.infinite(model$logProb_z), arr.ind = TRUE)
-
-model$calculate("sxy")
-which(model$sxy == -Inf, arr.ind = TRUE)
-model$calculate("z")
-
-model$calculate("dispSigma")
-model$calculate("p0")
-model$calculate("y.dead")
-
-cmodel <- compileNimble(model)
 
 
 
