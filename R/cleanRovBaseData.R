@@ -124,10 +124,10 @@ cleanRovbaseData <- function(
       sampling.months <- list(4:11)
     } else {
       if (engSpecies == "wolf") {
-        sampling.months <- list(c(10:12),c(1:3))
+        sampling.months <- list(10:12,1:3)
       } else {
         if (engSpecies == "wolverine") {
-          sampling.months <- list(c(10:12),c(1:4))
+          sampling.months <- list(12,1:6)
         } else {
           stop("No default setting available for the monitoring period of this species. \n You must specify the monitoring season months through the 'sampling.months' argument.")
         }
@@ -146,12 +146,6 @@ cleanRovbaseData <- function(
   
   ##-- Renaming list
   if(is.null(rename.list)) {
-    if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
-    rename.list <- r.list.internal
-  }
-  
-  ##-- Renaming list
-  if(is.null(rename.list)) {
     if(engSpecies %in% c("wolf","wolverine")) {
       if(!exists("r.list.internalWolf")) stop("Default 'rename.list' not available")
       rename.list <- r.list.internalWolf
@@ -163,6 +157,7 @@ cleanRovbaseData <- function(
   
   ##-- Load pre-processed habitat shapefiles
   data(REGIONS, envir = environment()) 
+  data(GLOBALMAP, envir = environment()) 
   
   ##-- data info
   DATE <- getMostRecent(path = data.dir, pattern = "DNA")
@@ -229,11 +224,8 @@ cleanRovbaseData <- function(
       ##-- Fix unknown "Id"
       Id = ifelse(Id %in% "", NA, Id),
       ##-- Fix unknown "Sex"
-      Sex = ifelse(Sex %in% "Ukjent" | is.na(Sex), "unknown" , Sex),
+      Sex = ifelse(Sex %in% c("Ukjent","") | is.na(Sex), "unknown" , Sex),
       Sex = ifelse(Sex %in% "Hunn", "female", Sex),
-      Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
-    ##-- Filter to the focal years
-    dplyr::filter(., Year %in% years)
   
   ##-- Number of NGS samples
   NGS_samples <- table(DNA$Sex, DNA$Year, useNA = "ifany")
@@ -667,7 +659,7 @@ cleanRovbaseData <- function(
     dead.recovery <- dead.recovery %>%
       dplyr::filter(!grepl(pattern = "Påskutt", x = Outcome))
 
-    ##-- Reemove additional dead recoveries flagged by Henrik Brøseth (email from the 18/12/2024)
+    ##-- Remove additional dead recoveries flagged by Henrik Brøseth (email from the 18/12/2024)
     dead.recovery <- dead.recovery %>% 
       dplyr::filter(!RovbaseID %in% c("M495994","M524051","M524052","M524053"))
 

@@ -55,8 +55,10 @@ makeRovquantData_wolverine <- function(
   working.dir = getwd(),
   
   ##-- data
-  years = NULL,
-  sex = c("female","male"),
+  years = NULL
+  ,
+  sex = c("female","male")
+  ,
   aug.factor = 0.8,
   sampling.months = list(12,1:6),
   
@@ -88,8 +90,8 @@ makeRovquantData_wolverine <- function(
   if(is.null(max.det.dist)){max.det.dist <- 84000}
   if(is.null(resize.factor)){resize.factor <- 1}
   if(is.null(rename.list)) {
-    if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
-    rename.list <- r.list.internal
+    if(!exists("r.list.internalWolf")) stop("Default 'rename.list' not available")
+    rename.list <- r.list.internalWolf
   }  
   
   ##-- Set up list of Habitat characteristics
@@ -128,22 +130,30 @@ makeRovquantData_wolverine <- function(
   ##-- Merge counties for practical reasons
   COUNTIES_AGGREGATED <- REGIONS %>%
     dplyr::mutate(id = case_when(
-      county %in% c("Norrbotten") ~ 1,
-      county %in% c("Västerbotten") ~ 2,
+      ## Sweden
       county %in% c("Blekinge","Dalarna","Gävleborg","Gotland","Halland","Jämtland",
                     "Jönköping","Kalmar","Kronoberg","Örebro","Östergötland","Skåne",
                     "Södermanland","Stockholm","Uppsala","Värmland","Västernorrland",
                     "Västmanland","Västra Götaland") ~ 3,
+      county %in% c("Norrbotten") ~ 1,
+      county %in% c("Västerbotten") ~ 2,
+      ## Norway
       county %in% c("Agder","Akershus","Buskerud","Innlandet","Møre og Romsdal",
                     "Oppland","Oslo","Østfold","Rogaland","Vestland","Telemark",
                     "Vestfold") ~ 4,
       county %in% c("Trøndelag") ~ 5,
-      county %in% c("Finnmark") ~ 6,
       county %in% c("Nordland") ~ 7,
-      county %in% c("Troms") ~ 8)) %>%
+      county %in% c("Troms") ~ 8,
+      county %in% c("Finnmark") ~ 6,)) %>%
     dplyr::group_by(id) %>%
     dplyr::summarize()
 
+  ##-- Get Norrbotten borders
+  COUNTIESNorrbotten <- REGIONS %>%
+    dplyr::filter(county %in% "Norrbotten") %>%
+    dplyr::group_by(county) %>%
+    dplyr::summarize()
+  
   
 
   ## ------   2. NGS DATA -----
@@ -166,11 +176,6 @@ makeRovquantData_wolverine <- function(
   }
   DATA$years <- years
   n.years <- length(years)
-
-  ##-- list years with or without sampling in Norrbotten
-  yearsSampledNorrb <- c(2016:2018,2023)
-  yearsNotSampled <- years[!years %in% yearsSampledNorrb]
-  whichYearsNotSampled <- which(years %in% yearsNotSampled)
   
   ##-- Filter NGS samples for dates
   myFullData.sp$alive <- myFullData.sp$alive %>%
@@ -179,6 +184,18 @@ makeRovquantData_wolverine <- function(
       Year %in% years,
       ##-- Subset to monitoring period
       Month %in% unlist(sampling.months))
+
+  ##-- Filter out detections in Norrbotten except in 2016:18 and 2023
+  ##-- list years with or without sampling in Norrbotten
+  yearsSampledNorrb <- c(2016:2018,2023)
+  yearsNotSampled <- years[!years %in% yearsSampledNorrb]
+  whichYearsNotSampled <- which(years %in% yearsNotSampled)
+  ##-- Identify detections collected in Norrbotten 
+  is.Norr <- as.numeric(st_intersects(myFullData.sp$alive, COUNTIESNorrbotten))
+  ##-- Filter out detections in Norrbotten in years without sampling
+  myFullData.sp$alive <- myFullData.sp$alive %>%
+    dplyr::filter(!(Year %in% yearsNotSampled & is.Norr %in% 1))
+  
   
   ##-- Filter Dead recoveries for dates
   myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
@@ -206,6 +223,10 @@ makeRovquantData_wolverine <- function(
     dplyr::summarize() %>% 
     sf::st_intersection(., REGIONS) %>%
     sf::st_as_sf()
+  
+  ##-- Get study area extent
+  studyArea.extent <- st_bbox(extent(studyArea))
+  st_crs(studyArea.extent) <- st_crs(studyArea)
   
   ##-- Make habitat from predefined Scandinavian raster of suitable habitat
   habitat <- makeHabitatFromRaster(
@@ -324,9 +345,10 @@ makeRovquantData_wolverine <- function(
     sf::st_simplify( dTolerance = 500)
   
   ##-- Create an index of detectors in Norrbotten
-  distDetsCounties <- sf::st_distance( detectors$main.detector.sp,
-                                   COUNTIESAroundNorrbotten,
-                                   byid = T)
+  distDetsCounties <- sf::st_distance(
+    detectors$main.detector.sp,
+    COUNTIESAroundNorrbotten,
+    byid = T)
   detsNorrbotten <- which(apply(distDetsCounties, 1, which.min) == 3)
   
   
@@ -391,7 +413,9 @@ makeRovquantData_wolverine <- function(
                         years = years,
                         sampling.months = sampling.months) %>%
     ##-- Filter out irrelevant tracks
-    dplyr::filter(Jerv == "1")
+    dplyr::filter(Jerv == "1") %>%
+    ##-- Subset to the study area
+    st_intersection(., st_as_sfc(studyArea.extent)) 
   
   ##-- Extract length of GPS search track per detector grid cell
   detTracks <- matrix(0, nrow = n.detectors, ncol = n.years)
@@ -410,53 +434,6 @@ makeRovquantData_wolverine <- function(
   ##-- Put into "nimble2SCR" format
   colnames(detTracks) <- paste0("tracks.", years)
   detectors$detectors.df <- cbind.data.frame(detectors$detectors.df, detTracks)
-  
-  
-  
-  # ##-- Plot check
-  # if(plot.check){
-  #   par(mfrow = c(2,2))
-  #   ## Length of tracks searched per year
-  #   lengthPerYear <- unlist(lapply(years,function(x) sum(TRACKS$Length[TRACKS$Year == x])/1000))
-  #   names(lengthPerYear) <- years
-  #   barplot(lengthPerYear, ylab = "Track length (km)", main = "Length of tracks searched per year")
-  # 
-  #   ## Number of tracks searched per year
-  #   numPerYear <- unlist(lapply(years,function(x) sum(TRACKS$Year == x)))
-  #   names(numPerYear) <- years
-  #   barplot(numPerYear, ylab = "Number of tracks", main = "Number of tracks searched per year")
-  # 
-  #   ## Length of tracks duplicated per year
-  #   dupdist <- unlist(lapply(dupDist,function(x) sum(x)/1000))
-  #   names(dupdist) <- years
-  #   barplot(dupdist,ylab = "Track length (km)", main = "Length of tracks duplicated per year")
-  # 
-  #   ## Number of tracks duplicated per year
-  #   dup <- unlist(lapply(dupIDs,length))
-  #   names(dup) <- years
-  #   barplot(dup, ylab = "Number of tracks", main = "Number of tracks duplicated per year")
-  # }
-  # ##-- save 
-  # save( TRACKS, file = file.path(working.dir, "data/searchTracks.RData"))
-  # load(file = file.path(working.dir, "data/searchTracks.RData"))
-  #
-  #
-  # ##-- Extract length of GPS search track per detector grid cell
-  # detTracks <- matrix(0, nrow = n.detectors, ncol = n.years)
-  # #TRACKS.r <- list()
-  # for(t in 1:n.years){
-  #   intersection <- TRACKS %>%
-  #     dplyr::filter(Year == years[t]) %>%
-  #     sf::st_intersection(detectors$grid, .) %>%
-  #     dplyr::mutate(LEN = st_length(.)) %>%
-  #     sf::st_drop_geometry() %>%
-  #     dplyr::group_by(id) %>%
-  #     dplyr::summarise(transect_L = sum(LEN)) ##-- Get total length searched in each detector grid cell
-  #   detTracks[intersection$id,t] <- as.numeric(intersection$transect_L)
-  #   # TRACKS.r[[t]] <- detectors$raster
-  #   # TRACKS.r[[t]][detectors$raster[] %in% 1] <- detTracks[ ,t]
-  #   # print(t)
-  # }#t
 
   
   
@@ -498,12 +475,11 @@ makeRovquantData_wolverine <- function(
   
   ## ------       2.2.5. EXTRACT DAYS OF SNOW ------
   
-  # [PD] NEW SNOW FILE FROM ASUN!
-  # SNOW <- stack(paste0(dir.dropbox,"/DATA/GISData/SNOW/ModisSnowCover0.1degrees/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
-  SNOW <- stack(file.path(data.dir,"Snow/AverageSnowCoverModisSeason2008_2024_Wolf.tif"))
+  ##-- Average snow from December to June (the official monitoring period for Norway&Sweden)
+  SNOW <- stack(file.path(data.dir,"Snow/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
   
-  ##-- RENAME THE LAYERS
-  names(SNOW) <- paste(2008:2023, (2008:2023) + 1, sep = "_")
+  # ##-- RENAME THE LAYERS
+  # names(SNOW) <- paste(years, (years) + 1, sep = "_")
   
   ##-- SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
   SNOW <- SNOW[[paste("X", years, "_", years + 1, sep = "")]]
@@ -555,8 +531,8 @@ makeRovquantData_wolverine <- function(
     sf::st_transform(., sf::st_crs(REGIONS)) %>%
     sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
  
- # dplyr::filter(!is.na(as.numeric(sf::st_intersects(., habitat.rWthBufferPol))))
 
+  
   ## ------         2.2.6.2. ROVBASE ------
   
   # ##-- Load the last Rovbase data files
@@ -657,7 +633,6 @@ makeRovquantData_wolverine <- function(
   r.rovbaseBinary <- brick(lapply(r.list,function(x) x[[4]]))
   r.rovbaseContinuous <- brick(lapply(r.list,function(x) x[[3]]))
   
-  
   ##-- Combine both rasters
   r.SkandObsRovbaseBinary <- r.rovbaseBinary + r.skandObsBinary
   for(t in 1:n.years){
@@ -715,8 +690,8 @@ makeRovquantData_wolverine <- function(
   
   
   
-  # ## ------         2.2.6.4. SMOOTH THE BINARY MAP ------
-  # 
+  ## ------         2.2.6.4. SMOOTH THE BINARY MAP ------
+   
   # ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.037 
   # habOwin <- spatstat.geom::as.owin(as.vector(extent(detectors$raster)))
   # cutoff <- 1
@@ -884,24 +859,24 @@ makeRovquantData_wolverine <- function(
   
   
 
-  ## ------     6.3. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016:18 and 2023 ------
-  
-  ##-- Get Norrbotten borders
-  COUNTIESNorrbotten <- REGIONS %>%
-    dplyr::filter(county %in% "Norrbotten") %>%
-    dplyr::group_by(county) %>%
-    dplyr::summarize()
-  
-  ##-- Identify detections collected in Norrbotten 
-  is.Norr <- as.numeric(st_intersects(data.alive, COUNTIESNorrbotten))
-
-  # ##-- Check how many detections are removed per year
-  # table(data.alive$Year[data.alive$Year %in% yearsNotSampled & is.Norr %in% 1])
-  # sum(data.alive$Year %in% yearsNotSampled & is.Norr %in% 1)
-  
-  ##-- Filter out detections in Norrbotten in years without sampling
-  data.alive <- data.alive %>%
-    dplyr::filter(!(Year %in% yearsNotSampled & is.Norr %in% 1))
+  # ## ------     6.3. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016:18 and 2023 ------
+  # 
+  # ##-- Get Norrbotten borders
+  # COUNTIESNorrbotten <- REGIONS %>%
+  #   dplyr::filter(county %in% "Norrbotten") %>%
+  #   dplyr::group_by(county) %>%
+  #   dplyr::summarize()
+  # 
+  # ##-- Identify detections collected in Norrbotten 
+  # is.Norr <- as.numeric(st_intersects(data.alive, COUNTIESNorrbotten))
+  # 
+  # # ##-- Check how many detections are removed per year
+  # # table(data.alive$Year[data.alive$Year %in% yearsNotSampled & is.Norr %in% 1])
+  # # sum(data.alive$Year %in% yearsNotSampled & is.Norr %in% 1)
+  # 
+  # ##-- Filter out detections in Norrbotten in years without sampling
+  # data.alive <- data.alive %>%
+  #   dplyr::filter(!(Year %in% yearsNotSampled & is.Norr %in% 1))
 
   
   
