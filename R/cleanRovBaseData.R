@@ -226,6 +226,9 @@ cleanRovbaseData <- function(
       ##-- Fix unknown "Sex"
       Sex = ifelse(Sex %in% c("Ukjent","") | is.na(Sex), "unknown" , Sex),
       Sex = ifelse(Sex %in% "Hunn", "female", Sex),
+      Sex = ifelse(Sex %in% "Hann", "male", Sex)) %>%
+    ##-- Filter to the focal years
+    dplyr::filter(., Year %in% years)
   
   ##-- Number of NGS samples
   NGS_samples <- table(DNA$Sex, DNA$Year, useNA = "ifany")
@@ -236,7 +239,6 @@ cleanRovbaseData <- function(
                                paste0(engSpecies, "_Raw NGS Samples_",
                                       years[1]," to ", years[length(years)],
                                       ".csv")))
-  
   
   ##-- Number of individuals detected alive
   NGS_ids <- apply(table(DNA$Sex, DNA$Year, DNA$Id, useNA = "ifany"), c(1,2), function(x)sum(x>0))
@@ -285,7 +287,7 @@ cleanRovbaseData <- function(
       ##-- Fix unknown "Id"
       Id = ifelse(Id %in% "", NA, Id),
       ##-- Fix unknown "Sex"
-      Sex = ifelse(Sex %in% "Ukjent" | is.na(Sex), "unknown" , Sex),
+      Sex = ifelse(Sex %in% c("Ukjent","") | is.na(Sex), "unknown" , Sex),
       Sex = ifelse(Sex %in% "Hunn", "female", Sex),
       Sex = ifelse(Sex %in% "Hann", "male", Sex),
       ##-- Identify legal deaths
@@ -611,6 +613,10 @@ cleanRovbaseData <- function(
   alive <- DATA[is.na(DATA$Death), ]
   dead.recovery <- DATA[!is.na(DATA$Death), ]
   
+  
+  
+  ## -----   2.9. PREVIOUSLY DETECTED -----
+  
   ##-- Add earlier detection index
   alive$detected.earlier <-
     unlist(lapply(1:nrow(alive),
@@ -652,16 +658,14 @@ cleanRovbaseData <- function(
       pattern = "Remove dead")
     
     dead.recovery <- dead.recovery %>%
-      dplyr::filter(!RovbaseID %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID))
-    
-    ##-- Remove un-verified dead recoveries 
-    ##-- ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
-    dead.recovery <- dead.recovery %>%
-      dplyr::filter(!grepl(pattern = "Påskutt", x = Outcome))
-
-    ##-- Remove additional dead recoveries flagged by Henrik Brøseth (email from the 18/12/2024)
-    dead.recovery <- dead.recovery %>% 
-      dplyr::filter(!RovbaseID %in% c("M495994","M524051","M524052","M524053"))
+      dplyr::filter(
+        ##-- Remove suspect dead recoveries according to Henrik
+        !RovbaseID %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID),
+        ##-- Remove un-verified dead recoveries 
+        ##-- ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
+        !grepl(pattern = "Påskutt", x = Outcome),
+        ##-- Remove additional dead recoveries flagged by Henrik Brøseth (email from the 18/12/2024)
+        !RovbaseID %in% c("M495994","M524051","M524052","M524053"))
 
     ##-- Remove pups killed before recruitment based on weight (cf. Henrik)
     ##-- 1) remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
@@ -782,8 +786,8 @@ cleanRovbaseData <- function(
   }))
   samples.to.remove <- unlist(ghosts)
   
-  ##-- Remove flagged NGS detections after dead recovery
-  alive <- alive[!rownames(alive) %in% samples.to.remove, ]
+  # ##-- Remove flagged NGS detections after dead recovery
+  # alive <- alive[!rownames(alive) %in% samples.to.remove, ]
   
   
   
