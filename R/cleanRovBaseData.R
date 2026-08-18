@@ -642,16 +642,20 @@ cleanRovbaseData <- function(
   
   if(engSpecies == "wolverine"){
 
-    ##-- Remove suspect NGS samples according to Henrik
+    ##-- Load suspect NGS samples according to Henrik
     SUSPECT_NGS_SAMPLES <- readMostRecent(
       path = data.dir,
       extension = ".xlsx",
       pattern = "Remove ngs")
     
     alive <- alive %>%
-      dplyr::filter(!DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB))
+      dplyr::filter(
+        ##-- Remove suspect dead recoveries according to Henrik
+        !DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB),
+        ##-- Remove additional dead recoveries flagged by Eva Hedmark (email from the 18/12/2024)
+        !DNAID %in% c("D608410", "D608411", "D605997"))
     
-    ##-- Remove suspect dead recoveries according to Henrik
+    ##-- Load suspect dead recoveries according to Henrik
     SUSPECT_DeadRecoSAMPLES <- readMostRecent(
       path = data.dir,
       extension = ".xlsx",
