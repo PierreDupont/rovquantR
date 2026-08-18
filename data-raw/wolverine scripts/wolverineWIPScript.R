@@ -112,12 +112,9 @@ DETECTORS = list( detSubResolution = 2000,
                   detDeadResolution = 15000)
 
 ## DATA GENERATION
-DETECTIONS = list( maxDetDist = 40000,
+DETECTIONS = list( maxDetDist = 84000,
                    resizeFactor = 1,
                    aug.factor = 0.8)
-
-## OUTPUT PLOTS
-OUTPUT = list(mapResolution = 10000)
 
 ## MISCELLANEOUS
 plot.check = TRUE
@@ -1678,9 +1675,11 @@ for(thisSex in c("Hann","Hunn")){
   dim(y.ar.ALIVEOth)
   dim(y.ar.ALIVEStruc)
   dim(y.ar.ALIVE)
+  
   ## RESIZE DETECTION ARRAYS TO MAKE SURE THEY HAVE THE SAME DIMENSIONS
   y.ar.ALIVEOthers <- y.ar.ALIVEStructured <- y.ar.ALIVE
   y.ar.ALIVEOthers[] <- y.ar.ALIVEStructured[] <- 0
+  
   ## FILL IN THE Y ARRAYS 
   y.ar.ALIVEOthers[dimnames(y.ar.ALIVEOth)[[1]],,] <- y.ar.ALIVEOth
   y.ar.ALIVEStructured[dimnames(y.ar.ALIVEStruc)[[1]],,] <- y.ar.ALIVEStruc
@@ -1712,39 +1711,7 @@ for(thisSex in c("Hann","Hunn")){
       max.distance = DETECTIONS$maxDetDist,
       method = "pairwise",
       plot.check = F)
-    
-    # ## PLOT INDIVIDUALS THAT DO HAVE DETECTIONS FURTHER AWAY THAN THRESHOLD DISTANCE
-    # if(plot.check){
-    #   par(mfrow = c(1,1))
-    #   if(sum(distances[[t]]$y.flagged) > 0){
-    #     affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
-    #     count <- 0
-    #     for(i in affected.ids){
-    #       count <- count+1
-    #       plot(st_geometry(myStudyArea), main = paste("t: ",t,"     i: ", names(affected.ids)[count], sep = ""))
-    #       scalebar(2*DETECTIONS$maxDetDist, xy = c(800000,6700000), type = "bar", divs = 2, below = "km",
-    #                label = c(0, DETECTIONS$maxDetDist/1000, DETECTIONS$maxDetDist/500), cex = 0.8, adj = c(0.5,-0.9))
-    #       plot(st_geometry(COUNTRIES), add = T)
-    #       plot(st_geometry(myDetectors$main.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
-    #       
-    #       tmp <- myFilteredData.sp$alive[myFilteredData.sp$alive$Id == dimnames(y.ar.ALIVE)[[1]][i] &
-    #                                        myFilteredData.sp$alive$Year == years[t], ]
-    #       tmp <- tmp[order(tmp$Date), ]
-    #       tmp.xy <- st_coordinates(tmp)
-    #       n.det <- nrow(tmp.xy)
-    #       
-    #       plot(st_geometry(tmp), col = "pink", pch = 16, cex = 1,add=T)
-    #       arrows(x0 = tmp.xy[1:(n.det-1),1], y0 = tmp.xy[1:(n.det-1),2],
-    #              x1 = tmp.xy[2:n.det,1], y1 = tmp.xy[2:n.det,2],
-    #              length = 0.1, lwd = 1)
-    #       plot(st_geometry(myDetectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0), ]), pch = 16, col = "red",add=T)
-    #       
-    #       tmp2 <- myDetectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
-    #       plot(st_geometry(tmp2), add = T, col = "blue", pch = 13, cex = 1.5, lwd = 1)
-    #     }#i
-    #   }#if
-    # }#if
-    
+
     ## REMOVE DETECTIONS THAT ARE FURTHER THAN THE THRESHOLD
     y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
     y.ar.ALIVEOthers[,,t] <- y.ar.ALIVEOthers[,,t] * (1-distances[[t]]$y.flagged)
@@ -1859,7 +1826,7 @@ for(thisSex in c("Hann","Hunn")){
   
   ## ------ III.MODEL SETTING & RUNNING ------- 
   
-  ## ------ 1. NIMBLE MODEL DEFINITION ------
+  ## ------   1. NIMBLE MODEL DEFINITION ------
   
   modelCode <- nimbleCode({
     
@@ -2031,7 +1998,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 2. NIMBLE CONSTANTS ------
+  ## ------   2. NIMBLE CONSTANTS ------
   
   nimConstants <- list( n.individuals = dim(y.alive)[1],
                         n.detectors = dim(y.alive)[2],  
@@ -2047,9 +2014,9 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 3. NIMBLE INITS ------
+  ## ------   3. NIMBLE INITS ------
   
-  ## ------    3.1. GENERATE z KNOWN VALUES ------
+  ## ------     3.1. GENERATE z KNOWN VALUES ------
   
   z <- apply(y.alive, c(1,3), function(x) any(x>0))
   z <- ifelse(z, 2, NA)
@@ -2063,7 +2030,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    3.2. GENERATE z INITIAL values ------
+  ## ------     3.2. GENERATE z INITIAL values ------
   
   z.init <- t(apply(z, 1, function(zz){
     out <- zz
@@ -2080,7 +2047,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    3.3. GENERATE detResponse INITIAL VALUES ------
+  ## ------     3.3. GENERATE detResponse INITIAL VALUES ------
   
   ## LATENT VARIABLE DET RESPONSE
   detResponse <- already.detected 
@@ -2091,7 +2058,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 4. NIMBLE DATA ------
+  ## ------   4. NIMBLE DATA ------
   
   nimData <- list( z = z,   
                    y.alive = y.alive,
@@ -2110,7 +2077,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 5. NIMBLE PARAMETERS ------
+  ## ------   5. NIMBLE PARAMETERS ------
   
   nimParams <- c("N", "betaDens", "lambda", "dmean",
                  "omeg1", "gamma", "phi",
@@ -2122,9 +2089,9 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 6. CONVERT TO CACHED DETECTORS & SPARSE MATRIX ------
+  ## ------   6. CONVERT TO CACHED DETECTORS & SPARSE MATRIX ------
   
-  ## ------    6.1. RESCALE COORDINATES  ------
+  ## ------     6.1. RESCALE COORDINATES ------
   
   ## HABITAT
   ScaledLowerCoords <- scaleCoordsToHabitatGrid(
@@ -2153,7 +2120,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    6.2. CREATE CACHED DETECTORS OBJECTS ------
+  ## ------     6.2. CREATE CACHED DETECTORS OBJECTS ------
   
   ## [CM] reduce multiplicator to 3 ?????
   maxDistReCalc <- 2.1 * DETECTIONS$maxDetDist 
@@ -2545,7 +2512,6 @@ for(thisSex in c("Hann","Hunn")){
 
 
 
-
 ## ------   10. SAVE NECESSARY OBJECTS ------
 
 # load(file.path(working.dir, modelName, "myFilteredData.RData"))
@@ -2572,7 +2538,7 @@ save(myHabitat.list, myDetectors, COUNTRIES, myStudyArea.poly,
 
 ## ------ III. MAKE THE SINGLE SEASON SCR MODEL ------
 
-## -----  1. SCR MODEL CODE ------
+## ------   1. SCR MODEL CODE ------
 
 modelCode1 <- nimbleCode({
   
@@ -2678,7 +2644,7 @@ modelCode1 <- nimbleCode({
 
 
 
-## ------- 2. SCRize NIMBLE INPUT DATA ------
+## ------   2. SCRize NIMBLE INPUT DATA ------
 
 for(ch in 1:4){
   for(t in 1:nYears){ 
@@ -8924,53 +8890,9 @@ dev.off()
 
 ##------------------------------------------------------------------------------
 ## ------ V. PROCESS OPSCR OUTPUT ------
-
-myVars <- list( 
-  ## WORKING DIRECTORY & MODEL NAME
-  # WD = "C:/My_documents/NIMBLE/WOLVERINE",
-  WD = file.path(dir.dropbox,"wolverine/CM/2025"),
-  modelName = "54.Cleaned2025",
-  
-  ## HABITAT SPECIFICATIONS
-  HABITAT = list( countries =  c("SWE","NOR"),
-                  habResolution = 20000,
-                  habBuffer = 60000),
-  
-  ## NGS DATA SPECIFICATIONS
-  DATA = list( years = 2015:2024, #2014:2023
-               species = c("Jerv"),              
-               sex = c("Hann","Hunn"),                   
-               sampling.months = list(12,1:6)),   
-  ## list(10:12,1:4), list(1:XXX), list(XX:XX,YY:YY)
-  
-  # DETECTORS SPECIFICATIONS
-  DETECTORS = list( detSubResolution = 2000,
-                    detResolution = 10000,
-                    detDeadResolution = 15000),
-  
-  # DATA GENERATION 
-  DETECTIONS = list( maxDetDist = 40000,
-                     resizeFactor = 3,
-                     aug.factor = 0.8),
-  
-  ## OUTPUT PLOTS 
-  OUTPUT = list(mapResolution = 10000),
-  
-  ## MISCELLANEOUS
-  plot.check = TRUE)
-
-
-years <- DATA$years
-nYears <- length(years)
-YEARS <- lapply(years, function(x)c(x,x+1))
-
-if(is.null(modelName))stop("YOU SHOULD PROBABLY CHOOSE A NAME FOR THIS ANALYSIS/MODEL")
-if(is.null(WD))stop("YOU SHOULD PROBABLY CHOOSE A WORKING DIRECTORY FOR THIS ANALYSIS/MODEL")
-if(!dir.exists(file.path(WD, modelName))){dir.create(file.path(WD, modelName))}
-
-## ------ I.LOAD AND SELECT DATA ------
-## ------ 1. HABITAT DATA ------
-## ------    1.1.LOAD RAW SHAPEFILES ------
+## ------   1. LOAD & SELECT DATA ------
+## ------     1.1. HABITAT DATA ------
+## ------       1.1.1. LOAD RAW SHAPEFILES ------
 ## POLYGONS OF THE REGION
 GLOBALMAP <- st_read(paste(dir.dropbox,"/DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp",sep="")) ## Map of Scandinavia (including Finland & parts of Russia)
 GLOBALMAP <- GLOBALMAP[GLOBALMAP$area > 80000000, ]
@@ -9015,7 +8937,7 @@ ggplot(COUNTIES_AGGREGATED) +
   geom_sf(aes(fill = id)) +
   geom_sf_label(aes(label = id))
 
-## ------    1.2.CREATE STUDY AREA POLYGON ------
+## ------       1.2.1. CREATE STUDY AREA POLYGON ------
 ## CREATE STUDY AREA POLYGON BASED ON COUNTY & COMMUNES IDs
 # if(!is.null(HABITAT$countyNames)){
 #    myStudyArea <- COMMUNES[COMMUNES$NAME_1 %in% HABITAT$countyNames, ]
@@ -9069,7 +8991,7 @@ if(plot.check){
   plot(st_geometry(myStudyArea), add = TRUE, col ="red")
 }
 
-## ------ 2. LOAD NECESSARY OBJECTS ------
+## ------     1.2. LOAD NECESSARY OBJECTS ------
 # LOAD OBJECTS
 load(file.path(WD, modelName, "NecessaryObjects.RData" ))
 #load the habitat 
@@ -9117,8 +9039,8 @@ if(!dir.exists(file.path(WDTables))){dir.create(WDTables)}
 
 
 
-## ------  8. TABLES OF #NGS SAMPLES, #DEAD RECOVERIES & #IDs DETECTED ------
-## ------    8.1 OVERALL NUMBERS ------
+## ------   2. TABLES OF #NGS SAMPLES, #DEAD RECOVERIES & #IDs DETECTED ------
+## ------     2.1 OVERALL NUMBERS ------
 load(file.path(WD, modelName, "Hunn",paste(modelName,"_NGSData.RData", sep="")))
 load(file.path(WD, modelName, "Hann",paste(modelName,"_NGSData.RData", sep="")))
 
@@ -9258,8 +9180,8 @@ which(NGSStructured$DNAID%in%idPublic)
 # points(NGSStructured[which(NGSStructured$DNAID%in%idPublic),],pch=16)
 
 
-## ------    8.2. TABLE 1 NGS SAMPLES YEAR/COUNTRIES/SEX------
-## ------      8.2.1 ALL------
+## ------     2.2. TABLE 1 NGS SAMPLES YEAR/COUNTRIES/SEX------
+## ------       2.2.1 ALL------
 NGSCountrySEX <- matrix("", ncol = nYears*2, nrow = 4)
 row.names(NGSCountrySEX) <- c("","Norway","Sweden","Total")
 colnames(NGSCountrySEX) <- unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) ))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
@@ -9301,7 +9223,7 @@ sum(as.numeric(NGSCountrySEX["Total",]))
 sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "F"]))
 sum(as.numeric(NGSCountrySEX["Total",NGSCountrySEX[1,]%in% "M"]))
 
-## ------      8.2.2 PER OBSERVATION PROCESS------
+## ------       2.2.2 PER OBSERVATION PROCESS------
 NGSCountrySEXoBS <- matrix("", ncol = nYears*2+1, nrow = 7)
 row.names(NGSCountrySEXoBS) <- c("",rep(c("Norway","Sweden","Total"),each=2))
 colnames(NGSCountrySEXoBS) <- c("",unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) )))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
@@ -9395,8 +9317,8 @@ tmp
 write.csv(tmp,file= file.path(WDTables,paste("Unstructured2020_2022.csv",sep="")))
 
 
-## ------    8.4. TABLE 2 NGS ID YEAR/COUNTRIES/SEX ------
-## ------      8.4.1 ALL ------
+## ------     2.4. TABLE 2 NGS ID YEAR/COUNTRIES/SEX ------
+## ------       2.4.1 ALL ------
 
 NGSidCountrySEX <- matrix("", ncol = nYears*2, nrow = 4)
 row.names(NGSidCountrySEX) <- c("","Norway","Sweden","Total")
@@ -9454,7 +9376,7 @@ write.csv(NGSidCountryTotal,file = file.path(WDTables,paste("TotalIdDetected.csv
 ### PRINT A CSV TABLE WITH THE NUMBER OF TOTAL IDS PER YEAR PER SEX
 
 
-## ------      8.4.2 PER OBSERVATION PROCESS------
+## ------       2.4.2 PER OBSERVATION PROCESS------
 NGSCountrySEXoBSid <- matrix("", ncol = nYears*2+1, nrow = 7)
 row.names(NGSCountrySEXoBSid) <- c("",rep(c("Norway","Sweden","Total"),each=2))
 colnames(NGSCountrySEXoBSid) <- c("",unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")) )))#unlist(lapply(YEARS,function(x) c(x[2],x[2])))#
@@ -9516,7 +9438,7 @@ print(xtable(NGSCountrySEXoBSid, type = "latex",
 
 
 
-## ------    8.5. TABLE 3 DEAD CAUSE ID YEAR/COUNTRIES/SEX ------
+## ------     2.5. TABLE 3 DEAD CAUSE ID YEAR/COUNTRIES/SEX ------
 DeadidCountrySEX <- matrix(0, ncol = nYears*2+1, nrow = 6)
 row.names(DeadidCountrySEX) <- c("","other","other","legal culling","legal culling","")
 colnames(DeadidCountrySEX) <- c("",unlist(lapply(YEARS,function(x) c(paste(x,collapse = "/"),paste(x,collapse = "/")))))#c("",unlist(lapply(YEARS,function(x) c(x[2],x[2]))))#
@@ -9635,11 +9557,11 @@ print(xtable(DeadidCountrySEX, type = "latex",
 # plot(COUNTRIES$geometry)
 # plot(tmp$geometry,add=T,col="red",pch=16)
 
-## ------    8.6. GET THE DETECTED INDIVIDUALS ------
+## ------     2.6. GET THE DETECTED INDIVIDUALS ------
 n.detected <- read.csv(file.path(WDTables, paste("TotalIdDetected.csv",sep="")))
 n.detected <- n.detected[1,2:ncol(n.detected)]
 
-## ------    8.7. SUMMARY DETECTED INDIVIDUALS PER COUNTIES ------
+## ------     2.7. SUMMARY DETECTED INDIVIDUALS PER COUNTIES ------
 # myFilteredData.sp$alive$COUNTIES  <- st_intersects(myFilteredData.sp$alive[,1], COUNTIES_AGGREGATED[,1])
 # myFilteredData.sp$alive$COUNTIES <- as.numeric(myFilteredData.sp$alive$COUNTIES)
 # 
@@ -9730,7 +9652,7 @@ n.detected <- n.detected[1,2:ncol(n.detected)]
 
 
 
-## ------ II.GET THE MCMC ESTIMATES  -----
+## ------ 3.GET THE MCMC ESTIMATES  -----
 ## ------  1.GET AND COMPILE BITES ------
 # COMPILE CHARACTERISTICS 
 bitesize <- 250
@@ -15499,12 +15421,10 @@ myVars <- list(
                   habBuffer = 60000),
   
   ## NGS DATA SPECIFICATIONS
-  DATA = list( years = 2015:2024, #2014:2023
-               species = c("Jerv"),              
-               sex = c("Hann","Hunn"),                   
-               sampling.months = list(12,1:6)),   
-  ## list(10:12,1:4), list(1:XXX), list(XX:XX,YY:YY)
-  
+  DATA = list( years = 2015:2024, 
+               species = "Jerv",              
+               sex = c("Hann","Hunn")),   
+
   # DETECTORS SPECIFICATIONS
   DETECTORS = list( detSubResolution = 2000,
                     detResolution = 10000,
@@ -15513,14 +15433,7 @@ myVars <- list(
   # DATA GENERATION 
   DETECTIONS = list( maxDetDist = 40000,
                      resizeFactor = 3,
-                     aug.factor = 0.8),
-  
-  ## OUTPUT PLOTS 
-  OUTPUT = list(mapResolution = 10000),
-  
-  ## MISCELLANEOUS
-  plot.check = TRUE)
-
+                     aug.factor = 0.8))
 
 years <- DATA$years
 nYears <- length(years)

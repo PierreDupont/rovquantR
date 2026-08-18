@@ -35,7 +35,7 @@ gc()
 
 ## Ctrl + Shift + F10 (to restart R session)
 #pak::pak("PierreDupont/rovquantR@devel")
-#devtools::install_github("PierreDupont/rovquantR@devel")
+devtools::install_github("PierreDupont/rovquantR@devel")
 
 
 ## ------ LOAD REQUIRED LIBRARIES ------

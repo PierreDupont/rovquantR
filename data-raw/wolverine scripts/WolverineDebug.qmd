@@ -1,0 +1,653 @@
+---
+title: "rovquantR - Wolverine debugging"
+author: "Pierre Dupont"
+format: html
+editor: visual
+---
+
+## Introduction
+
+This document presents the process of tracking down the differences between the Wolverine data considered when using the **rovquantR** package and last year's analysis.
+
+## Set-up Working Environment
+
+```{r}
+rm(list=ls())
+gc()
+
+library(rovquantR)
+library(sf)
+library(raster)
+library(dplyr)
+```
+
+First, we need to set-up some basic variables:
+
+```{r}
+years <- 2015:2024
+sampling.months <- list(12,1:6)
+yearsSampledNorrb <- c(2016:2018,2023,2024)
+```
+
+Next, we can load a shapefile of the **COUNTIES** used for the sample assignment. Note that the current **rovquantR** package uses a slightly different shapefile for the **COUNTIES** leading to marginally different samples designation to counties/countries (+ or - 2-3 samples). This is tolerable and not the problem we are exploring here.
+
+```{r}
+source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
+source("C:/My_documents/RovQuant/Source/CleanDataNew2sf.R")
+source("C:/My_documents/RovQuant/Source/FilterDatasf.R")
+source("C:/My_documents/RovQuant/Source/MakeHabitatFromRastersf.R")
+
+load(file.path(dir.dropbox,"/DATA/MISC DATA/age.lookup.table.RData"))
+
+COMMUNES_NOR <- st_read(file.path(dir.dropbox, "DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))
+COMMUNES_SWE <- st_read(file.path(dir.dropbox, "DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))
+COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
+COUNTIES <- COMMUNES %>%
+  group_by(NAME_1) %>%
+  summarize()
+COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten", ]
+```
+
+## Filtered Data Comparison
+
+### **rovquantR** data
+
+Now we can load the data cleaned by the **rovquantR** package. At this stage, the data still contains :
+
+1.  samples in Norrbotten in years without sampling
+
+2.  samples outside the years considered for this analysis
+
+3.  samples outside the monitoring period
+
+```{r}
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Test_rovquantR"
+
+myFullData.sp <- readMostRecent( 
+  path = file.path(working.dir,"data"),
+  pattern = "CleanData_wolverine",
+  extension = ".RData") 
+
+dim(myFullData.sp$alive)
+```
+
+Now, we can load the data cleaned by the **rovquantR** package. At this stage, the data still contains :
+
+1.  samples outside Norway and Sweden
+
+2.  samples in Norrbotten in years without sampling
+
+3.  samples outside the years considered for this analysis
+
+4.  samples outside the monitoring period
+
+5.  samples with unknown sex
+
+```{r}
+##-- Filter NGS samples
+myFullData.sp$alive <- myFullData.sp$alive %>%
+  dplyr::filter(
+    ##-- Subset to years of interest
+    Year %in% years,
+    ##-- Subset to monitoring period
+    Month %in% unlist(sampling.months), 
+    ##-- Remove samples with unknown sex
+    Sex %in% c("male","female"),
+    ##-- Subset to samples collected in Norway and Sweden
+    Country_sf %in% c("(N)","(S)"))
+    #Country_sample %in% c("(N)","(S)"))
+dim(myFullData.sp$alive)
+```
+
+Here too, the way to sub-sample the data can lead to marginally different results (but within the tolerance margin). If it is based on the country registered in **RovBase** ('**Country_sample**'), 14 more samples are kept compared to when using a filter based on the overlap with the **COUNTRY** shapefile ('**Country_sf**').
+
+We also need to remove samples in Norrbotten in years without systematic sampling:
+
+```{r}
+##-- Identify samples removed 
+yearsNotSampled <- years[!years %in% yearsSampledNorrb]
+##-- Identify detections collected in Norrbotten 
+is.Norr2 <- as.numeric(st_intersects(myFullData.sp$alive, COUNTIESNorrbotten))
+sum(is.Norr2, na.rm = T)
+table(myFullData.sp$alive$Year[(myFullData.sp$alive$Year %in% yearsNotSampled & is.Norr2 %in% 1)])
+
+##-- Filter out detections in Norrbotten in years without sampling
+test2 <- myFullData.sp$alive %>%
+  dplyr::filter(!(Year %in% yearsNotSampled & is.Norr2 %in% 1))
+dim(test2)
+
+##-- Identify detections still in Norrbotten 
+is.Norr2 <- as.numeric(st_intersects(test2, COUNTIESNorrbotten))
+sum(is.Norr2, na.rm = T)
+table(test2$Year[is.Norr2 %in% 1])
+table(test2$Year[is.na(is.Norr2)])
+table(test2$Year)
+```
+
+### '**54.Cleaned2025**' data
+
+We can now load the filtered data for last year's analysis ('**54.Cleaned2025**') for comparison:
+
+```{r}
+load("C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/CM/2025/54.Cleaned2025/myFilteredData_original.RData")
+dim(myFilteredData.sp$alive)
+dim(myFilteredData.sp$dead.recovery)
+extent(myFilteredData.sp$alive)
+is.Norr <- as.numeric(st_intersects(
+  myFilteredData.sp$alive,
+  COUNTIESNorrbotten))
+sum(is.Norr, na.rm = T)
+table(myFilteredData.sp$alive$Year[!is.na(is.Norr)])
+table(myFilteredData.sp$alive$Year[is.na(is.Norr)])
+table(myFilteredData.sp$alive$Year)
+```
+
+### Data differences
+
+We see that differences in the number of NGS samples retained are spread across years and within/outside Norrbotten:
+
+```{r}
+##-- Differences in data after filtering 
+
+##-- Total number of NGS samples
+nrow(test2) - nrow(myFilteredData.sp$alive)
+
+##-- Number of samples kept in Norrbotten
+sum(is.Norr2, na.rm = T) - sum(is.Norr,na.rm=T)
+
+##-- Number of samples in Norrbotten (kept) per year
+table(test2$Year[is.Norr2 %in% 1])-table(myFilteredData.sp$alive$Year[!is.na(is.Norr)]) 
+
+##-- Number of samples outside of Norrbotten
+table(test2$Year[is.na(is.Norr2)])-table(myFilteredData.sp$alive$Year[is.na(is.Norr)])
+
+##-- Number of samples overall
+table(test2$Year)-table(myFilteredData.sp$alive$Year)
+```
+
+## Debugging
+
+### Data cleaning and filtering
+
+In this section, we will track down the additional samples kept by the **rovquantR** package and try to identify when they are removed during the data processing of last year.
+
+#### Problematic samples
+
+We start by listing all problematic samples:
+
+```{r}
+##-- Identify how many samples are in the NEW but not OLD data
+sum(!test2$DNAID %in% myFilteredData.sp$alive$DNAID)
+
+##-- Store samples that are in the NEW but not OLD data
+Probs <- test2[!test2$DNAID %in% myFilteredData.sp$alive$DNAID, ]
+table(Probs$Year)
+```
+
+#### Load raw data
+
+Then, we will copy-paste and go through the different steps from last year's script ('**54.Cleaned2025TestPDScript.R**') and check when and why these additional samples are removed.
+
+The first step is to load the raw files exported from Rovbase and used in last year's analysis. The first one is the NGS file.
+
+*At this point,* *all "problematic" samples are still in the NGS dataset*:
+
+```{r}
+DNA <- read.csv( 
+  file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20251121/dna_wolverines.csv"),
+  fileEncoding = "latin1") 
+all(Probs$DNAID %in% DNA$DNAID..Prøve.)
+```
+
+We can also check that these samples are not present in the dead recovery data:
+
+```{r}
+DEAD <- read.csv( 
+  file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20251121/dead_carnivores.csv"),
+  fileEncoding = "latin1") 
+sum(Probs$DNAID %in% DEAD$DNAID)
+```
+
+We can also check that none of these "problematic" samples are in the suspect samples flagged by Henrik Brøseth:
+
+```{r}
+## DNA samples to be removed from Henrik (no samples to be removed from Sweden)
+SUSPECT_NGS_SAMPLES <- read.csv( file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/Remove ngs samples list wolverine 2024.csv"),
+                                 fileEncoding = "latin1") 
+SUSPECT_NGS_SAMPLES_2025 <- read.csv( file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20251121/Additional samples to add to the Remove ngs samples list wolverine from Norway 2025.csv"),
+                                      fileEncoding = "latin1")
+SUSPECT_NGS_SAMPLES <- rbind(SUSPECT_NGS_SAMPLES, SUSPECT_NGS_SAMPLES_2025)  # rbind file from last year with the one from 2025
+sum(Probs$DNAID %in% SUSPECT_NGS_SAMPLES$DNAID_RB)
+
+## DEAD RECOVERIES to be removed from Henrik  --> Only file from 2024, NO ADDITIONAL INDIVIDUALS IN 2025.
+SUSPECT_DeadRecoSAMPLES <- read.csv( file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20241023/Remove dead recoveries list wolverine 2024.csv"),
+                                     fileEncoding = "latin1") 
+sum(Probs$RovbaseID %in% SUSPECT_DeadRecoSAMPLES$Rovbase_ID)
+```
+
+Then, we translate column names, and remove potential dead recoveries from the NGS file.
+
+*All "problematic" samples are still in the NGS dataset*.
+
+```{r}
+##-- TRANSLATE SCANDINAVIAN CHARACTERS 
+colnames(DNA) <- translateForeignCharacters( 
+  dat = colnames(DNA))
+## Drop a column that makes cleanDataNew to fail
+DNA <- DNA[ ,-which(colnames(DNA)%in% "Kjoenn..Individ.")]
+colnames(DEAD) <- translateForeignCharacters(
+  dat = colnames(DEAD))
+all(Probs$DNAID %in% DNA$DNAID..Proeve.)
+
+##-- CLEAN & FILTER NGS DATA
+## Remove DEAD entries from the DNA data [HB]
+DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
+all(Probs$DNAID %in% DNA$DNAID..Proeve.)
+
+##-- Remove un-verified dead recoveries [HB]
+## ("Påskutt ikke belastet kvote" & "Påskutt belastet kvote")
+DEAD <- DEAD[!grepl(pattern = "Påskutt", x = as.character(DEAD$Utfall)), ]
+any(Probs$DNAID %in% DEAD$DNAID)
+```
+
+#### CleanDataNew( )
+
+The next step is the '**CleanDataNew2sf( )**' function.
+
+*All "problematic" samples are still in the NGS dataset*.
+
+```{r}
+##-- CLEAN NGS & DEAD RECOVERY DATA 
+myCleanedData.sp <- CleanDataNew2sf( 
+  dna_samples = DNA,
+  dead_recoveries = DEAD,
+  species_id = "Jerv",
+  country_polygon = COUNTRIES,
+  threshold_month = unlist(sampling.months)[1],
+  keep_dead = T,
+  age.label.lookup = age.lookup.table)
+
+sum(Probs$DNAID %in% myCleanedData.sp$DNAID)
+```
+
+#### FilterData( )
+
+The next step is the **'FilterDatasf( )'** function. First, we try with the **COUNTRY** shapefile provided in the **rovquantR** package (i.e. without lakes).
+
+**This DOES NOT remove any "problematic" samples from the NGS data !!!!**
+
+```{r}
+data("COUNTRIES")
+
+myStudyArea_NEW <- COUNTRIES[COUNTRIES$ISO %in% c("SWE","NOR"), ]
+myStudyArea_NEW$id <- 1
+myStudyArea_NEW <- myStudyArea_NEW %>% group_by(id) %>% summarize()
+
+
+### ====    1.2. FILTER DATA ====
+
+myFullData_NEW <- FilterDatasf(
+  myData = myCleanedData.sp,
+  poly = myStudyArea_NEW,
+  dead.recovery = T ,
+  sex = c("Hann","Hunn"), 
+  setSex = T)
+
+dim(myFullData_NEW$alive)
+table(myFullData_NEW$alive$Year)
+sum(Probs$DNAID %in% myFullData_NEW$alive$DNAID)
+any(Probs$DNAID %in% myFullData_NEW$dead.recovery$DNAID)
+```
+
+Next, we try with the old **COUNTRY** shapefiles (with lakes).
+
+**This removes 125 "problematic" samples from the NGS data !!!!**
+
+```{r}
+##-- POLYGONS OF THE REGION 
+GLOBALMAP <- st_read(file.path( dir.dropbox, 
+                                "DATA/GISData/vegetation/Countries_waterHumans25000000m2_multimulti.shp"))  
+GLOBALMAP <- GLOBALMAP[GLOBALMAP$area > 80000000, ] 
+GLOBALMAP <- st_crop(GLOBALMAP, st_bbox(extent(c(-70000,1200000,5100000,8080000)))) 
+
+##-- POLYGONS OF SWEDEN & NORWAY 
+COUNTRIES <- GLOBALMAP[GLOBALMAP$ISO %in% c("SWE","NOR"), ] 
+COUNTRIES <- COUNTRIES %>% 
+  group_by(ISO) %>% 
+  summarize() 
+
+myStudyArea <- COUNTRIES[COUNTRIES$ISO %in% c("SWE","NOR"), ] 
+myStudyArea$id <- 1 
+myStudyArea <- myStudyArea %>% group_by(id) %>% summarize()   
+
+
+### ====    1.2. FILTER DATA ====  
+
+myFullData.sp <- FilterDatasf( 
+  myData = myCleanedData.sp,
+  poly = myStudyArea,
+  dead.recovery = T,
+  sex = c("Hann","Hunn"),
+  setSex = T)  
+
+dim(myFullData.sp$alive) 
+table(myFullData.sp$alive$Year)  
+sum(Probs$DNAID %in% myFullData.sp$alive$DNAID) 
+any(Probs$DNAID %in% myFullData.sp$dead.recovery$DNAID)  
+```
+
+#### Flagged samples
+
+Next, we remove NGS samples and dead recoveries flagged by Henrik.
+
+*No "problematic" samples are removed at this step.*
+
+```{r}
+## REMOVE SUSPECT SAMPLES ACCORDING TO HENRIK (THERE ARE NOT SUSPECT SAMPLES IN SWEDEN)
+myFullData.sp$alive$DNAID <- as.character(myFullData.sp$alive$DNAID)
+myFullData.sp$alive <- myFullData.sp$alive[!(myFullData.sp$alive$DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB)), ]
+dim(myFullData.sp$alive)
+
+## REMOVE SUSPECT DEAD RECOVERIES ACCORDING TO HENRIK
+myFullData.sp$dead.recovery$DNAID <- as.character(myFullData.sp$dead.recovery$DNAID)
+myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[!(myFullData.sp$dead.recovery$RovBaseId %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID)), ]
+dim(myFullData.sp$dead.recovery)
+```
+
+At this point, we remove manually three pup samples flagged by Eva Hedmark in an email.
+
+**This removes the last 3 "problematic" samples in 'myFullData.sp\$alive'!!!!!**
+
+```{r}
+## REMOVE CUBS OF THE YEAR ACCORDING TO EVA HEDMARK (email 23/11/2025, document with explanation in AQEG Dropbox\AQEG Team Folder\RovQuant\DATA\RovbaseData\ROVBASE DOWNLOAD 20251121)
+myFullData.sp$alive <- myFullData.sp$alive[!(myFullData.sp$alive$DNAID %in% c("D608410", "D608411", "D605997")),]
+
+any(Probs$DNAID %in% myFullData.sp$alive$DNAID)
+sum(Probs$DNAID %in% myFullData.sp$alive$DNAID)
+```
+
+Following are several steps to remove individuals with multiple dead recoveries. This does not change anything.
+
+```{r}
+## Remove individuals that died twice
+myFullData.sp$dead.recovery$Id <- as.character(myFullData.sp$dead.recovery$Id)
+IdDoubleDead <- myFullData.sp$dead.recovery$Id[duplicated(myFullData.sp$dead.recovery$Id)]
+
+if(length(IdDoubleDead) > 0){
+  duplicatedDeath <- NULL
+  for(i in IdDoubleDead){
+    tmp  <- which(myFullData.sp$dead.recovery$Id == i & is.na(myFullData.sp$dead.recovery$DeathCause_2))
+    if(length(tmp)==0){tmp  <- which(myFullData.sp$dead.recovery$Id == i)[-2]}##[CM] remove the second record.
+    duplicatedDeath <- c(duplicatedDeath, tmp)
+  }#i
+  myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-duplicatedDeath, ]
+}#if
+
+## Dead recoveries flagged by Henrik that should always be removed (email from the 18/12/2024)
+myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[!myFullData.sp$dead.recovery$RovBaseId %in% c("M495994", "M524051", "M524052", "M524053"),]
+
+
+## Remove pups killed before recruitment based on weight (cf. Henrik)
+## 1) Remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
+sum(myFullData.sp$dead.recovery$Alder.pa.doedt.individ %in% "Unge" &
+      myFullData.sp$dead.recovery$Month > 2 &
+      myFullData.sp$dead.recovery$Month < 12)
+
+myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-which(myFullData.sp$dead.recovery$Alder.pa.doedt.individ %in% "Unge" &
+                                                                    myFullData.sp$dead.recovery$Month > 2 &
+                                                                    myFullData.sp$dead.recovery$Month < 12),]
+
+
+## 2) Remove individuals that have a weight >0 and <4 between March and November format the weight correctly
+myFullData.sp$dead.recovery$Helvekt <- as.character(myFullData.sp$dead.recovery$Helvekt)
+myFullData.sp$dead.recovery$Slaktevekt <- as.character(myFullData.sp$dead.recovery$Slaktevekt)
+
+##-- Convert to decimals
+myFullData.sp$dead.recovery$Helvekt <- as.numeric(gsub(",", ".", myFullData.sp$dead.recovery$Helvekt))
+myFullData.sp$dead.recovery$Slaktevekt <- as.numeric(gsub(",", ".", myFullData.sp$dead.recovery$Slaktevekt))
+
+##-- Get the two weight columns together.
+myFullData.sp$dead.recovery$weight <- ifelse(!is.na(myFullData.sp$dead.recovery$Helvekt),
+                                             myFullData.sp$dead.recovery$Helvekt,
+                                             myFullData.sp$dead.recovery$Slaktevekt)
+
+##-- Assign negative values to nas to avoid issues
+myFullData.sp$dead.recovery$weight[is.na(myFullData.sp$dead.recovery$weight)] <- -999
+dim(myFullData.sp$dead.recovery)
+
+##-- check how many dead reco we remove and remove if more than 0
+if(sum(myFullData.sp$dead.recovery$weight > 0 &
+       myFullData.sp$dead.recovery$weight < 4 &
+       myFullData.sp$dead.recovery$Month < 12 &
+       myFullData.sp$dead.recovery$Month > 2)>0){
+  myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery[-which(myFullData.sp$dead.recovery$weight > 0 &
+                                                                      myFullData.sp$dead.recovery$weight < 4 &
+                                                                      myFullData.sp$dead.recovery$Month < 12 &
+                                                                      myFullData.sp$dead.recovery$Month > 2),]
+}
+
+##-- check how many dead reco with a weight of 0 kg and recovered between march and november
+if(sum(myFullData.sp$dead.recovery$Age %in% 0 &
+       myFullData.sp$dead.recovery$Month < 12 &
+       myFullData.sp$dead.recovery$Month > 2)>0){
+  myFullData.sp$dead.recovery[myFullData.sp$dead.recovery$Age %in% 0 &
+                                myFullData.sp$dead.recovery$Month < 12 &
+                                myFullData.sp$dead.recovery$Month > 2,  ]
+}
+
+sum(Probs$DNAID %in% myFullData.sp$dead.recovery$DNAID)
+```
+
+The next step is removing samples outside of the monitoring period and years of interest.
+
+```{r}
+### ====    1.3. FILTER NGS & DEAD RECOVERY DATA ====
+
+myFilteredData.sp <- myFullData.sp
+
+## Subset to years of interest
+myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Year %in% years, ]
+sum(Probs$DNAID %in% myFilteredData.sp$alive$DNAID)
+
+myFilteredData.sp$dead.recovery <- myFilteredData.sp$dead.recovery[myFilteredData.sp$dead.recovery$Year %in% years, ]
+sum(Probs$DNAID %in% myFilteredData.sp$dead.recovery$DNAID)
+
+## Subset to months of interest
+myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month %in% unlist(sampling.months), ]
+sum(Probs$DNAID %in% myFilteredData.sp$alive$DNAID)
+
+dim(myFilteredData.sp$alive)
+table(myFilteredData.sp$alive$Year)
+```
+
+#### Samples in Norrbotten
+
+The next step is removing samples in Norrbotten in years without systematic sampling.
+
+*All remaining "problematic" samples are still in the NGS dataset*.
+
+```{r}
+COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten", ]
+yearsSampledNorrb <- c(2016:2018,2023,2024)
+is.Norr <- as.numeric(st_intersects(myFilteredData.sp$alive, COUNTIESNorrbotten))
+
+## Remove samples in Norrbotten in years not sampled
+myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$alive$Year %in% yearsSampledNorrb & !is.na(is.Norr)), ]
+
+dim(myFilteredData.sp$alive)
+table(myFilteredData.sp$alive$Year)
+sum(Probs$DNAID %in% myFilteredData.sp$alive$DNAID)
+```
+
+Finally we check the dimensions and distribution of samples of the saved NGS dataset to make sure they correspond:
+
+```{r}
+load(file.path(dir.dropbox,
+               "wolverine/CM/2025/54.Cleaned2025/myFilteredData_original.RData"))
+
+dim(myFilteredData.sp$alive)
+table(myFilteredData.sp$alive$Year)
+```
+
+#### Conclusion
+
+The discrepancy comes from the shapefile used to filter out samples outside of Norway/Sweden. In the old version, **125 NGS sample**s fall into lakes (within Norway or Sweden) and are thus removed.
+
+In addition, **3 NGS samples** are removed manually after being flagged by Eva Hedmark.
+
+We need to :
+
+1.  check which shapefile to use (should we keep removing samples falling into lakes?)
+
+2.  add the removal of pup NGS samples to the **makeRovquantData_wolverine( )** function.
+
+## Generate Habitat
+
+Here, we compare the habitat characteristics if they are generated with or without the **128 NGS samples**. For this, we first need to finish the filtering steps for the data according to **rovquantR**:
+
+```{r}
+## REMOVE SUSPECT SAMPLES ACCORDING TO HENRIK (THERE ARE NOT SUSPECT SAMPLES IN SWEDEN)
+myFullData_NEW$alive$DNAID <- as.character(myFullData_NEW$alive$DNAID)
+myFullData_NEW$alive <- myFullData_NEW$alive[!(myFullData_NEW$alive$DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB)), ]
+## REMOVE SUSPECT DEAD RECOVERIES ACCORDING TO HENRIK
+myFullData_NEW$dead.recovery$DNAID <- as.character(myFullData_NEW$dead.recovery$DNAID)
+myFullData_NEW$dead.recovery <- myFullData_NEW$dead.recovery[!(myFullData_NEW$dead.recovery$RovBaseId %in% as.character(SUSPECT_DeadRecoSAMPLES$Rovbase_ID)), ]
+
+# ## REMOVE CUBS OF THE YEAR ACCORDING TO EVA HEDMARK (email 23/11/2025, document with explanation in AQEG Dropbox\AQEG Team Folder\RovQuant\DATA\RovbaseData\ROVBASE DOWNLOAD 20251121)
+# myFullData_NEW$alive <- myFullData_NEW$alive[!(myFullData_NEW$alive$DNAID %in% c("D608410","D608411","D605997")), ]
+
+## Remove individuals that died twice
+myFullData_NEW$dead.recovery$Id <- as.character(myFullData_NEW$dead.recovery$Id)
+IdDoubleDead <- myFullData_NEW$dead.recovery$Id[duplicated(myFullData_NEW$dead.recovery$Id)]
+if(length(IdDoubleDead) > 0){
+  duplicatedDeath <- NULL
+  for(i in IdDoubleDead){
+    tmp  <- which(myFullData_NEW$dead.recovery$Id == i & is.na(myFullData_NEW$dead.recovery$DeathCause_2))
+    if(length(tmp)==0){tmp  <- which(myFullData_NEW$dead.recovery$Id == i)[-2]}##[CM] remove the second record.
+    duplicatedDeath <- c(duplicatedDeath, tmp)
+  }#i
+  myFullData_NEW$dead.recovery <- myFullData_NEW$dead.recovery[-duplicatedDeath, ]
+}#if
+
+## Dead recoveries flagged by Henrik that should always be removed (email from the 18/12/2024)
+myFullData_NEW$dead.recovery <- myFullData_NEW$dead.recovery[!myFullData_NEW$dead.recovery$RovBaseId %in% c("M495994", "M524051", "M524052", "M524053"), ]
+
+## Remove pups killed before recruitment based on weight (cf. Henrik)
+## 1) Remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
+myFullData_NEW$dead.recovery <- myFullData_NEW$dead.recovery[-which(myFullData_NEW$dead.recovery$Alder.pa.doedt.individ %in% "Unge" &
+myFullData_NEW$dead.recovery$Month > 2 &
+myFullData_NEW$dead.recovery$Month < 12), ]
+
+## 2) Remove individuals that have a weight >0 and <4 between March and November format the weight correctly
+myFullData_NEW$dead.recovery$Helvekt <- as.character(myFullData_NEW$dead.recovery$Helvekt)
+myFullData_NEW$dead.recovery$Slaktevekt <- as.character(myFullData_NEW$dead.recovery$Slaktevekt)
+
+##-- Convert to decimals
+myFullData_NEW$dead.recovery$Helvekt <- as.numeric(gsub(",", ".", myFullData_NEW$dead.recovery$Helvekt))
+myFullData_NEW$dead.recovery$Slaktevekt <- as.numeric(gsub(",", ".", myFullData_NEW$dead.recovery$Slaktevekt))
+
+##-- Get the two weight columns together.
+myFullData_NEW$dead.recovery$weight <- ifelse(
+  !is.na(myFullData_NEW$dead.recovery$Helvekt),
+  myFullData_NEW$dead.recovery$Helvekt,
+  myFullData_NEW$dead.recovery$Slaktevekt)
+
+##-- Assign negative values to nas to avoid issues
+myFullData_NEW$dead.recovery$weight[is.na(myFullData_NEW$dead.recovery$weight)] <- -999
+##-- check how many dead reco we remove and remove if more than 0
+if(sum(myFullData_NEW$dead.recovery$weight > 0 &
+       myFullData_NEW$dead.recovery$weight < 4 &
+       myFullData_NEW$dead.recovery$Month < 12 &
+       myFullData_NEW$dead.recovery$Month > 2)>0){
+  myFullData_NEW$dead.recovery <- myFullData_NEW$dead.recovery[
+    -which(myFullData_NEW$dead.recovery$weight > 0 &                                      myFullData_NEW$dead.recovery$weight < 4 &                                      myFullData_NEW$dead.recovery$Month < 12 &                                      myFullData_NEW$dead.recovery$Month > 2), ]
+}
+##-- Check how many dead reco with a weight of 0 kg and recovered between march and november
+if(sum(myFullData_NEW$dead.recovery$Age %in% 0 &
+       myFullData_NEW$dead.recovery$Month < 12 &
+       myFullData_NEW$dead.recovery$Month > 2)>0){
+  myFullData_NEW$dead.recovery[
+    myFullData_NEW$dead.recovery$Age %in% 0 &
+    myFullData_NEW$dead.recovery$Month < 12 &
+    myFullData_NEW$dead.recovery$Month > 2,  ]
+}
+
+### ====    1.3. FILTER NGS & DEAD RECOVERY DATA ====
+myFilteredData_NEW <- myFullData_NEW
+## Subset to years of interest
+myFilteredData_NEW$alive <- myFilteredData_NEW$alive[myFilteredData_NEW$alive$Year %in% years, ]
+myFilteredData_NEW$dead.recovery <- myFilteredData_NEW$dead.recovery[myFilteredData_NEW$dead.recovery$Year %in% years, ]
+## Subset to months of interest
+myFilteredData_NEW$alive <- myFilteredData_NEW$alive[myFilteredData_NEW$alive$Month %in% unlist(sampling.months), ]
+
+## Remove samples in Norrbotten in years not sampled
+COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten", ]
+yearsSampledNorrb <- c(2016:2018,2023,2024)
+is.Norr <- as.numeric(st_intersects(myFilteredData_NEW$alive, COUNTIESNorrbotten))
+myFilteredData_NEW$alive <- myFilteredData_NEW$alive[- which(!myFilteredData_NEW$alive$Year %in% yearsSampledNorrb & !is.na(is.Norr)), ]
+
+dim(myFilteredData_NEW$alive)
+table(myFilteredData_NEW$alive$Year)
+```
+
+Another difference comes from the shapefile used to delineate the borders of Sweden. Using 'REGIONS' instead of 'COUNTRIES' leads to including more area and in particular a tiny part of Finland in the habitat.
+
+```{r}
+## DELINEATE A BUFFER AROUND ALL DETECTIONS 
+myBufferedArea_NEW <- st_buffer( 
+  myFilteredData_NEW$alive,                              
+  dist = 60000 * 1.4) %>%   
+  mutate(id = 1) %>% 
+  group_by(id) %>%
+  summarize() 
+
+myStudyArea_NEW <- st_intersection(
+  myBufferedArea_NEW,
+  myStudyArea_NEW) %>% 
+  group_by(id) %>% 
+  summarize()
+
+area_NEW <- st_area(myStudyArea_NEW)/1e6
+area_NEW
+```
+
+```{r}
+myBufferedArea <- st_buffer( 
+  myFilteredData.sp$alive,
+  dist = 60000 * 1.4) %>%
+  mutate(id = 1) %>%
+  group_by(id) %>% 
+  summarize()
+
+myStudyArea <- st_intersection(myBufferedArea,myStudyArea)
+area_OLD <- st_area(myStudyArea)/1e6
+area_OLD
+
+##-- Difference between "new" and "old" study areas
+area_diff <- area_NEW - area_OLD
+```
+
+In the end, the difference in study areas is `{r}area_diff` square kilometers.
+
+```{r}
+plot(st_geometry(GLOBALMAP))
+plot(st_geometry(myStudyArea), border = "firebrick4", add = TRUE)
+plot(st_geometry(myStudyArea_NEW), border = "navyblue", add = TRUE)
+```
+
+```{r}
+myHabitat <- MakeHabitatFromRastersf( 
+  poly = myStudyArea,
+  habitat.r = habitatRasters[["Habitat"]],
+  buffer = 60000,                               
+  plot.check = F)
+sum(myHabitat$habitat.r[]==1)
+
+myHabitat_NEW <- MakeHabitatFromRastersf( 
+  poly = myStudyArea_NEW,
+  habitat.r = habitatRasters[["Habitat"]],
+  buffer = 60000,                               
+  plot.check = F)
+sum(myHabitat_NEW$habitat.r[]==1)
+
+```

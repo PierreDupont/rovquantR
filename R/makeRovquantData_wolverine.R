@@ -55,10 +55,8 @@ makeRovquantData_wolverine <- function(
   working.dir = getwd(),
   
   ##-- data
-  years = NULL
-  ,
-  sex = c("female","male")
-  ,
+  years = NULL,
+  sex = c("female","male"),
   aug.factor = 0.8,
   sampling.months = list(12,1:6),
   
@@ -121,6 +119,7 @@ makeRovquantData_wolverine <- function(
   ##-- Load pre-defined habitat rasters and shapefiles
   data(habitatRasters, envir = environment()) 
   data(REGIONS, envir = environment())
+  data(COUNTRIES, envir = environment())
   
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
@@ -183,7 +182,9 @@ makeRovquantData_wolverine <- function(
       ##-- Subset to years of interest
       Year %in% years,
       ##-- Subset to monitoring period
-      Month %in% unlist(sampling.months))
+      Month %in% unlist(sampling.months), 
+      ##-- Subset to samples collected in Norway and Sweden
+      myFullData.sp$alive$Country_sample %in% c("(N)","(S)"))
 
   ##-- Filter out detections in Norrbotten except in 2016:18 and 2023
   ##-- list years with or without sampling in Norrbotten
@@ -221,7 +222,7 @@ makeRovquantData_wolverine <- function(
     dplyr::mutate(id = 1) %>%
     dplyr::group_by(id) %>% 
     dplyr::summarize() %>% 
-    sf::st_intersection(., REGIONS) %>%
+    sf::st_intersection(., COUNTRIES) %>%
     sf::st_as_sf()
   
   ##-- Get study area extent
