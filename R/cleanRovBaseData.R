@@ -650,9 +650,9 @@ cleanRovbaseData <- function(
     
     alive <- alive %>%
       dplyr::filter(
-        ##-- Remove suspect dead recoveries according to Henrik
+        ##-- Remove suspectNGS samples according to Henrik
         !DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB),
-        ##-- Remove additional dead recoveries flagged by Eva Hedmark (email from the 18/12/2024)
+        ##-- Remove pup samples flagged by Eva Hedmark (email 23/11/2025)
         !DNAID %in% c("D608410", "D608411", "D605997"))
     
     ##-- Load suspect dead recoveries according to Henrik
