@@ -11,7 +11,7 @@ This document presents the process of tracking down the differences between the 
 
 ## Set-up Working Environment
 
-```{r}
+```{r, echo=FALSE, eval=TRUE, message= FALSE}
 rm(list=ls())
 gc()
 
@@ -23,7 +23,7 @@ library(dplyr)
 
 First, we need to set-up some basic variables:
 
-```{r}
+```{r, message=FALSE}
 years <- 2015:2024
 sampling.months <- list(12,1:6)
 yearsSampledNorrb <- c(2016:2018,2023,2024)
@@ -31,14 +31,15 @@ yearsSampledNorrb <- c(2016:2018,2023,2024)
 
 Next, we can load a shapefile of the **COUNTIES** used for the sample assignment. Note that the current **rovquantR** package uses a slightly different shapefile for the **COUNTIES** leading to marginally different samples designation to counties/countries (+ or - 2-3 samples). This is tolerable and not the problem we are exploring here.
 
-```{r}
+```{r, message=FALSE, echo=FALSE}
 source("C:/My_documents/RovQuant/Temp/PD/myWorkingDirectories.R")
 source("C:/My_documents/RovQuant/Source/CleanDataNew2sf.R")
 source("C:/My_documents/RovQuant/Source/FilterDatasf.R")
 source("C:/My_documents/RovQuant/Source/MakeHabitatFromRastersf.R")
-
 load(file.path(dir.dropbox,"/DATA/MISC DATA/age.lookup.table.RData"))
+```
 
+```{r, warning=FALSE,message=FALSE}
 COMMUNES_NOR <- st_read(file.path(dir.dropbox, "DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp"))
 COMMUNES_SWE <- st_read(file.path(dir.dropbox, "DATA/GISData/scandinavian_border/SWE_adm2_UTM33.shp"))
 COMMUNES <- rbind(COMMUNES_NOR, COMMUNES_SWE)
@@ -67,7 +68,9 @@ myFullData.sp <- readMostRecent(
   path = file.path(working.dir,"data"),
   pattern = "CleanData_wolverine",
   extension = ".RData") 
+```
 
+```{r}
 dim(myFullData.sp$alive)
 ```
 
@@ -501,7 +504,7 @@ We need to :
 
 2.  add the removal of pup NGS samples to the **makeRovquantData_wolverine( )** function.
 
-## Generate Habitat
+## Habitat Comparison
 
 Here, we compare the habitat characteristics if they are generated with or without the **128 NGS samples**. For this, we first need to finish the filtering steps for the data according to **rovquantR**:
 
@@ -650,4 +653,34 @@ myHabitat_NEW <- MakeHabitatFromRastersf(
   plot.check = F)
 sum(myHabitat_NEW$habitat.r[]==1)
 
+```
+
+## Detectors Comparison
+
+Here, we compare the habitat characteristics if they are generated with or without the **128 NGS samples**. For this, we first need to finish the filtering steps for the data according to **rovquantR**:
+
+## Input Data Comparison
+
+Finally, we compare the processed inputs
+
+```{r}
+## Load NGS data from rovquantR
+load(file.path(dir.dropbox,
+               "wolverine/2025/Test_rovquantR/nimbleInFiles/female/nimbleInput_2026-08-18_female_1.RData")) 
+nimData_NEW <- nimData
+nimConstants_NEW <- nimConstants
+lapply(nimData_NEW,dim)
+lapply(nimData_NEW,sum)
+
+
+## Load NGS data from last year
+load(file.path(dir.dropbox,
+               "wolverine/CM/2025/54.Cleaned2025/Hunn/54.Cleaned2025Hunn_Chain1.RData")) 
+nimData_OLD <- nimData
+nimConstants_OLD <- nimConstants
+lapply(nimData_OLD,dim)
+lapply(nimData_OLD,sum)
+lapply(nimConstants_OLD,sum)
+
+rm(list = c("nimData","nimConstants"))
 ```

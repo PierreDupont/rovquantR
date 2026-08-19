@@ -201,7 +201,7 @@ cleanRovbaseData <- function(
       ##-- Filter to the focal species
       Species %in% norSpecies,
       ##-- Filter dead recoveries (HB for the last wolverine analysis)
-      !substr(RovbaseID_sample,1,1) %in% "M"
+      !substr(RovbaseID,1,1) %in% "M"
     ) %>%
     ##-- Remove any duplicates
     dplyr::distinct(., .keep_all = TRUE) %>%

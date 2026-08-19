@@ -162,6 +162,7 @@ makeRovquantData_wolverine <- function(
     path = file.path(working.dir, "data"),
     pattern = "CleanData_wolverine")
   
+  
   ##-- Load the most recent clean wolverine data from RovBase
   myFullData.sp <- readMostRecent( 
     path = file.path(working.dir,"data"),
@@ -203,6 +204,7 @@ makeRovquantData_wolverine <- function(
     ##-- Subset to years of interest
     dplyr::filter(Year %in% years)
   
+
   
   
   ##----------------------------------------------------------------------------
