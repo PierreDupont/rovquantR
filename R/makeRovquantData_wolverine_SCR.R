@@ -509,7 +509,7 @@ makeRovquantData_wolverine_SCR <- function(
                    monitoring.season = ifelse( month < unlist(sampling.months)[1],
                                                year - 1, year)) %>%
     ##-- Filter based on monitoring season
-    dplyr::filter( month %in% unlist(sampling.months)
+    dplyr::filter( month %in% unlist(sampling.months),
                    monitoring.season %in% years) %>%
     ##-- Turn into spatial points object
     sf::st_as_sf(., coords = c("longitude","latitude")) %>%
