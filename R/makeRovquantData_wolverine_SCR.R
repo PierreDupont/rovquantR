@@ -983,8 +983,8 @@ makeRovquantData_wolverine_SCR <- function(
     
     ##-- Make sure all detection arrays have the same dimensions
     y.ar.ALIVEOthers <- y.ar.ALIVEStructured <- matrix( 0,
-                                                        ncol = ncol(y.ar$y.ar)
-                                                        nrow = nrow(y.ar$y.ar)
+                                                        ncol = ncol(y.ar$y.ar),
+                                                        nrow = nrow(y.ar$y.ar),
                                                         dimnames = dimnames(y.ar$y.ar))
     ##-- Fill in the y arrays
     y.ar.ALIVEOthers[dimnames(y.arOth$y.ar)[[1]], ] <- y.arOth$y.ar
