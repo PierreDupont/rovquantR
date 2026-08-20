@@ -261,7 +261,7 @@ dbinomLocal_normalWolverine <- nimbleFunction(
 
 #' @rdname dbinomLocal_normalWolverine
 #' @export
-dbinomLocal_normalWolverine <- nimbleFunction(
+rbinomLocal_normalWolverine <- nimbleFunction(
   run = function( n = double(0, default = 1),
                   detNums = double(0, default = -999),
                   detIndices = double(1),
