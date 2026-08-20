@@ -187,9 +187,9 @@ makeRovquantData_wolverine <- function(
       ##-- Subset to samples collected in Norway and Sweden
       myFullData.sp$alive$Country_sample %in% c("(N)","(S)"))
   
-  ##-- Filter out detections in Norrbotten except in 2016:18 and 2023
+  ##-- Filter out detections in Norrbotten except in 2016:18 and after 2023
   ##-- list years with or without sampling in Norrbotten
-  yearsSampledNorrb <- c(2016:2018,2023)
+  yearsSampledNorrb <- c(2016:2018,2023:as.numeric(format(Sys.Date(), "%Y")))
   yearsNotSampled <- years[!years %in% yearsSampledNorrb]
   whichYearsNotSampled <- which(years %in% yearsNotSampled)
   ##-- Identify detections collected in Norrbotten 
