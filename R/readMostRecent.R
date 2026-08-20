@@ -74,7 +74,7 @@ readMostRecent <- function(
   ##-- function to read the most recent .xls or .xlsx file
   if(length(grep("xls", extension, ignore.case = T)) > 0){
     data <- readxl::read_excel( path = file.path(path, infiles[lastFile]),
-                                guess_max = 50000, ...)
+                                guess_max = 100000, ...)
   }
   
   ##-- function to load and return the most recent .RData file

@@ -524,8 +524,13 @@ makeRovquantData_wolverine <- function(
                    year = as.numeric(format(date,"%Y")),
                    month = as.numeric(format(date,"%m")),
                    species = stringi::stri_trans_general(species, "Latin-ASCII"),
-                   monitoring.season = ifelse( month < unlist(sampling.months)[1],
-                                               year, year + 1)) %>%
+                   monitoring.season = ifelse( month > unlist(sampling.months)[1],
+                                               year, year-1)) %>%
+    ## [PD] the version above corresponds to last year's analysis ("54.Cleaned2025TestPDScript.R")
+    ## It is wrong because it does nothing. Only samples collected AFTER December get their year changed (i.e. no samples at all).
+    ## Below is the correct version, similar to what we do in cleanRovbaseData():
+    ## monitoring.season = ifelse( month < unlist(sampling.months)[1],
+    ##                             year - 1, year)) %>%
     ##-- Filter based on monitoring season
     dplyr::filter( month %in% unlist(sampling.months)) %>%
     ##-- Turn into spatial points object
@@ -537,24 +542,6 @@ makeRovquantData_wolverine <- function(
   
   
   ## ------         2.2.6.2. ROVBASE ------
-  
-  # ##-- Load the last Rovbase data files
-  # rovbaseObs1 <- readMostRecent( 
-  #   path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
-  #   extension = ".xlsx",
-  #   pattern = "RIB2810202415264376")
-  # rovbaseObs2 <- readMostRecent( 
-  #   path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
-  #   extension = ".xlsx",
-  #   pattern = "RIB28102024152348493")
-  # rovbaseObs3 <- readMostRecent( 
-  #   path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
-  #   extension = ".xlsx",
-  #   pattern = "RIB28102024152447860")
-  # rovbaseObs4 <- readMostRecent( 
-  #   path = file.path(data.dir,"ALL SPECIES IN SEPERATE YEARS"),
-  #   extension = ".xlsx",
-  #   pattern = "RIB28102024152538742")
   
   ##-- Process Rovbase observations (all species)
   rovbaseObs <- readMultiples( 
@@ -573,8 +560,13 @@ makeRovquantData_wolverine <- function(
       Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
       year = as.numeric(format(Date,"%Y")),
       month = as.numeric(format(Date,"%m")),
-      monitoring.season = ifelse(month < unlist(sampling.months)[1],
-                                 year, year+1)) %>%
+      monitoring.season = ifelse( month > unlist(sampling.months)[1],
+                                  year, year-1)) %>%
+    ## [PD] the version above corresponds to last year's analysis ("54.Cleaned2025TestPDScript.R")
+    ## It is wrong because it does nothing. Only samples collected AFTER December get their year changed (i.e. no samples at all).
+    ## Below is the correct version, similar to what we do in cleanRovbaseData():
+    ## monitoring.season = ifelse( month < unlist(sampling.months)[1],
+    ##                             year - 1, year)) %>%
     ##-- Filter out unusable samples
     dplyr::filter( 
       ##-- Filter out samples without coordinates,...
@@ -583,7 +575,7 @@ makeRovquantData_wolverine <- function(
       # Species %in% c("Bjorn","Fjellrev","Gaupe","Hund","Jerv","Rodrev","Ulv"),
       ##-- ...based on sample type
       Sample_type %in% c( "Ekskrement","Har","Urin","Valpeekskrement (Ulv)","Sekret (Jerv)",
-                          "Saliv/Spytt", "Loepeblod", "Vev"),
+                          "Saliv/Spytt","Loepeblod","Blod","Vev"),
       ##-- ...based on monitoring season
       month %in% unlist(sampling.months),
       ##-- ... if sample was from the focal species and successfully genotyped 
@@ -593,9 +585,6 @@ makeRovquantData_wolverine <- function(
     sf::st_set_crs(. , sf::st_crs(REGIONS)) %>%
     ##-- Filter based on space 
     sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
-  
-  # ##-- Remove un-necessary objects
-  # rm(list = c("rovbaseObs1","rovbaseObs2","rovbaseObs3","rovbaseObs4"))
   
   
   
@@ -738,14 +727,14 @@ makeRovquantData_wolverine <- function(
   
   ##-- MANUALLY FIND THE HAIR SAMPLES & COLOR THE CELL.
   tmpyr <- unique(tmpHair$Year)
-  for( i in 1:length(tmpyr)){
-    t <- which(years %in% tmpyr)
+  for(i in 1:length(tmpyr)){
+    t <- which(years %in% tmpyr[i])
     whereHair <- raster::extract( r.SkandObsRovbaseBinary[[t]],
-                                  tmpHair,
+                                  tmpHair[tmpHair$Year %in% tmpyr[i], ],
                                   cellnumbers = T)
     r.SkandObsRovbaseBinary[[t]][whereHair[ ,1]] <- 1
   }#t
-  
+
   
   
   ## ------         2.2.6.6. ASSIGN THE COVARIATE ------
@@ -1016,18 +1005,18 @@ makeRovquantData_wolverine <- function(
   
   ## ------     6.4. SEPARATE MORTALITY CAUSES ------
   
-  ##-- Identify legal mortality causes
-  MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
-  whichLegalCauses <- unlist(lapply(c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske"),
-                                    function(x)grep(x,MortalityNames)))
-  legalCauses <- MortalityNames[whichLegalCauses]
-  
-  ##-- Identify legal dead recoveries based on mortality causes
-  data.dead <- data.dead %>%
-    mutate(legal = Death_cause %in% legalCauses)
-  
-  
-  ##-- Plot check
+  # ##-- Identify legal mortality causes
+  # MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
+  # whichLegalCauses <- unlist(lapply(c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske"),
+  #                                   function(x)grep(x,MortalityNames)))
+  # legalCauses <- MortalityNames[whichLegalCauses]
+  # 
+  # ##-- Identify legal dead recoveries based on mortality causes
+  # data.dead <- data.dead %>%
+  #   mutate(legal = Death_cause %in% legalCauses)
+  # 
+  # 
+  # ##-- Plot check
   # if(plot.check){
   #   # par(mfrow = c(1,3))
   #   # for(t in 1:n.years){
@@ -1053,7 +1042,7 @@ makeRovquantData_wolverine <- function(
   #   # }#t
   #    
   #   
-  #   ##-- Plot dtemporal trends
+  #   ##-- Plot temporal trends
   #   
   #   ##-- Number of detections
   #   pdf(file = file.path(working.dir, "figures/TRENDDetections.pdf"))
@@ -1400,29 +1389,16 @@ makeRovquantData_wolverine <- function(
     ## ------     7.4. GENERATE INDIVIDUAL-LEVEL COVARIATES ------
     
     ##-- Make matrix of previous capture indicator
-    already.detected <- makeTrapResponseCov(
+    detResponse <- makeTrapResponseCov(
       data = myFullData.sp$alive,
       data.dead = myFullData.sp$dead.recovery)
     
     ##-- Subset to focal years
-    already.detected <- already.detected[ ,dimnames(already.detected)[[2]] %in% dimnames(y.ar$y.ar)[[3]]]
+    detResponse <- detResponse[ ,dimnames(detResponse)[[2]] %in% dimnames(y.ar$y.ar)[[3]]]
     
     ##-- Subset to focal individuals
-    already.detected <- already.detected[dimnames(already.detected)[[1]] %in% dimnames(y.ar$y.ar)[[1]], ]
-    
-    ##-- Set first detection for augmented individuals to NA
-    already.detected[rownames(already.detected) %in% "Augmented",1]  <- NA
-    
-    # ##-- Plot an image of the matrix
-    # if(plot.check){
-    #   par(mfrow = c(1,1))
-    #   barplot(colSums(apply(y.ar$y.ar, c(1,3), function(x) any(x>0))))
-    #   barplot(colSums(already.detected), add = TRUE, col = "gray40")
-    #   legend( x = 0, y = 250, 
-    #           legend = c("newly Det", "already Det"),
-    #           fill = c("gray80", "gray40"))
-    # }
-    
+    detResponse <- detResponse[dimnames(detResponse)[[1]] %in% dimnames(y.ar$y.ar)[[1]], ]
+  
     
     
     ## ------     7.5. AUGMENT DETECTION HISTORIES -----
@@ -1445,9 +1421,12 @@ makeRovquantData_wolverine <- function(
                                            replace.value = 0)
     
     ##-- INDIVIDUAL COVARIATES
-    already.detected <- makeAugmentation( y = already.detected,
+    detResponse <- makeAugmentation( y = detResponse,
                                           aug.factor = aug.factor,
                                           replace.value = 0)
+    
+    ##-- Set first detection for augmented individuals to NA
+    detResponse[rownames(detResponse) %in% "Augmented",1]  <- NA
     
     
     
@@ -1575,16 +1554,16 @@ makeRovquantData_wolverine <- function(
         
         for(t in 1:n.years){
           
-          y.alive[i,1:nMaxDetectors,t] ~ dbin_LESS_Cached_MultipleCovResponse(  
+          y.alive[i,1:maxDetNums,t] ~ dbin_LESS_Cached_MultipleCovResponse(  
             sxy = sxy[i,1:2,t],
             sigma = sigma[t],
             nbDetections = nbDetections[i,t],
-            yDets = yDets[i,1:nMaxDetectors,t],
-            detector.xy =  detector.xy[1:n.detectors,1:2],
+            yDets = yDets[i,1:maxDetNums,t],
+            detector.xy = detector.xy[1:n.detectors,1:2],
             trials = trials[1:n.detectors],
-            detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
+            detectorIndex = detectorIndex[1:n.cellsSparse,1:numLocalIndicesMax],
             nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
-            ResizeFactor = ResizeFactor,
+            ResizeFactor = resizeFactor,
             maxNBDets = maxNBDets,
             habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
             indicator = isAlive[i,t],
@@ -1595,16 +1574,36 @@ makeRovquantData_wolverine <- function(
             BetaResponse = betaResponse[t],
             detResponse = detResponse[i,t])
           
-          y.aliveOth[i,1:nMaxDetectorsOth,t] ~ dbin_LESS_Cached_MultipleCovResponse(
+          # y[i,1:nMaxDetectors,t] ~ dbinomLocal_normalWolverine(  
+          #   detNums = nbDetections[i,t],
+          #   detIndices = yDets[i,1:nMaxDetectors,t],
+          #   size = trials[1:n.detectors],
+          #   p0 = p0[1:n.counties,t],
+          #   sigma = sigma[t],
+          #   sxy = sxy[i,1:2,t],
+          #   trapCoords =  detector.xy[1:n.detectors,1:2],
+          #   localTrapsIndices  = detectorIndex[1:n.cellsSparse,1:maxNBDets],
+          #   localTrapsNum  = nDetectorsLESS[1:n.cellsSparse],
+          #   resizeFactor = ResizeFactor,
+          #   lengthYCombined = maxNBDets,
+          #   habitatGrid = habitatIDDet[1:y.maxDet,1:x.maxDet],
+          #   indicator = isAlive[i,t],
+          #   trapCovsIntercept = detCounties[1:n.detectors],
+          #   trapCovs = detCovs[1:n.detectors,t,1:n.covs],
+          #   trapBetas = betaCovs[1:n.covs,t],
+          #   indBeta = betaResponse[t],
+          #   indCov = detResponse[i,t])
+          
+          y.aliveOth[i,1:maxDetNumsOth,t] ~ dbin_LESS_Cached_MultipleCovResponse(
             sxy = sxy[i,1:2,t],
             sigma = sigma[t],
             nbDetections = nbDetectionsOth[i,t],
-            yDets = yDetsOth[i,1:nMaxDetectorsOth,t],
+            yDets = yDetsOth[i,1:maxDetNumsOth,t],
             detector.xy = detector.xy[1:n.detectors,1:2],
             trials = trials[1:n.detectors],
-            detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
+            detectorIndex = detectorIndex[1:n.cellsSparse,1:numLocalIndicesMax],
             nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
-            ResizeFactor = ResizeFactor,
+            ResizeFactor = resizeFactor,
             maxNBDets = maxNBDets,
             habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
             indicator = isAlive[i,t],
@@ -1623,7 +1622,7 @@ makeRovquantData_wolverine <- function(
       
       for(i in 1:n.individuals){ 
         isAlive[i,1] <- (z[i,1] == 2) 
-        for(t in 1:(n.years-1)){
+        for(t in 1:(n.years - 1)){
           isAlive[i,t+1] <- (z[i,t+1] == 2) 
         }
       }
@@ -1640,7 +1639,7 @@ makeRovquantData_wolverine <- function(
       n.individuals = dim(y.sparse$y)[1],
       n.detectors = nrow(detectors$scaledCoords),
       n.habWindows = nrow(habitat$scaledLowerCoords),
-      n.years =  dim(y.sparse$y)[3], 
+      n.years = dim(y.sparse$y)[3], 
       n.covs = dim(detCovs)[3],
       n.covs.Oth = dim(detCovsOth)[3],
       n.countries = max(detCountries),
@@ -1652,9 +1651,10 @@ makeRovquantData_wolverine <- function(
       x.max = dim(detectors$localObjects$habitatGrid)[2],
       numLocalIndicesMax = detectors$localObjects$numLocalIndicesMax,
       maxDetNums = y.sparse$maxDetNums,
-      maxDetNumsOth = y.sparseOth$maxDetNums,
-      lengthYCombined = y.sparse$lengthYCombined,
-      lengthYCombined.Oth = y.sparseOth$lengthYCombined)
+      maxDetNumsOth = y.sparseOth$maxDetNums)
+    #,
+      #lengthYCombined = y.sparse$lengthYCombined,
+      #lengthYCombined.Oth = y.sparseOth$lengthYCombined)
     
     
     
@@ -1690,7 +1690,7 @@ makeRovquantData_wolverine <- function(
       detCountries = detCountries,
       detCovs = detCovs,
       detCovsOth = detCovsOth,
-      detResponse = already.detected,
+      detResponse = detResponse,
       denCounts = denCounts,
       localDetIndices = detectors$localObjects$localIndices,
       localDetNum = detectors$localObjects$numLocalIndices,
@@ -1728,7 +1728,7 @@ makeRovquantData_wolverine <- function(
     
     detResponse.inits <- nimData$detResponse
     detResponse.inits[is.na(detResponse.inits)] <- rbinom(sum(is.na(detResponse.inits)),1,0.5)
-    detResponse.inits[!is.na(already.detected)] <- NA
+    detResponse.inits[!is.na(detResponse)] <- NA
     
     
     
@@ -1983,13 +1983,13 @@ makeRovquantData_wolverine <- function(
       nimData$nbDetectionsOth  <- c(nimData$nbDetectionsOth, rep(0,M))
       
       ##-- yDets 
-      nimData$yDets <- nimData$yDets[detected[,t],,t]
+      nimData$yDets <- nimData$yDets[detected[ ,t], ,t]
       nimData$yDets <- rbind(nimData$yDets, matrix(0,nrow =M, nimConstants$nMaxDetectors))
-      nimData$yDetsOth <- nimData$yDetsOth[detected[,t],,t]
+      nimData$yDetsOth <- nimData$yDetsOth[detected[ ,t], ,t]
       nimData$yDetsOth <- rbind(nimData$yDetsOth, matrix(0,nrow =M, nimConstants$nMaxDetectorsOth))
       
       ##-- z
-      nimData$z <- nimData$z[detected[,t],t]  
+      nimData$z <- nimData$z[detected[ ,t],t]  
       nimData$z[nimData$z %in% c(2)] <- 1 # ALIVE IDS BECOMES 1
       nimData$z <- c(nimData$z, rep(NA,M))
       
@@ -1997,7 +1997,7 @@ makeRovquantData_wolverine <- function(
       nimData$sxy <- NULL
       
       ##-- detResponse 
-      nimData$detResponse <- nimData$detResponse[detected[,t],t]
+      nimData$detResponse <- nimData$detResponse[detected[ ,t],t]
       nimData$detResponse  <- c(nimData$detResponse, rep(NA,M))## HERE IT IS ASSUMING IT IS A LATENT INDIVIDUAL COVARIATE
       
       ##-- detCovs
@@ -2005,7 +2005,7 @@ makeRovquantData_wolverine <- function(
       nimData$detCovsOth <- nimData$detCovsOth[ ,t, ]
       
       ##-- density covariate
-      nimData$denCounts <- nimData$denCounts[,1]
+      nimData$denCounts <- nimData$denCounts[ ,1]
       
       ##-- detCountries
       nimData$detCountries <- nimData$detCountries[ ,t]
