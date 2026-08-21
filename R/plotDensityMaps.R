@@ -44,6 +44,8 @@ plotDensityMaps <- function(
     labels = NULL,
     x.labels = NULL,
     y.labels = NULL,
+    x.names = NULL,
+    y.names = NULL,
     caption = NULL,
     export.raster = TRUE,
     name = "UD_Density")
@@ -59,21 +61,21 @@ plotDensityMaps <- function(
     species <- "bear" 
     engSpecies <- "brown bear"
     norSpecies <- "brunbjørn"
-    }
+  }
   if(sum(grep("wolf", species, ignore.case = T)) > 0|
      sum(grep("wolves", species, ignore.case = T)) > 0|
      sum(grep("ulv", species, ignore.case = T)) > 0) {
     species <- "wolf" 
     engSpecies <- "wolf" 
     norSpecies <- "ulven"
-    }
+  }
   if(sum(grep("wolverine", species, ignore.case = T))>0|
      sum(grep("jerv", species, ignore.case = T))>0|
      sum(grep("järv", species, ignore.case = T))>0) {
     species <- "wolverine" 
     engSpecies <- "wolverine" 
     norSpecies <- "jerv"
-    }
+  }
   
   ##-- Convert densities to the desired density unit (usually inds.100km-2)
   conversionFactor <- unit/( raster::res(input)[1]/1000)^2
@@ -105,6 +107,11 @@ plotDensityMaps <- function(
   yLims <- raster::extent(background)[3:4]
   yRange <- diff(yLims)
   
+  # xLims <- par("usr")[1:2]
+  # xRange <- diff(xLims)
+  # yLims <- par("usr")[3:4]
+  # yRange <- diff(yLims)
+  base_cex <- par("din")[1]/6
   
   ##-- Density maps time series
   if("time.series" %in% type){
@@ -155,9 +162,14 @@ plotDensityMaps <- function(
       
       ##-- Add year if available
       if(!is.null(names(estimates))){
-        graphics::mtext(text = names(estimates)[t],
-                        side = 1, line = -5,
-                        adj = 0.12, cex = 1)
+        if(is.null(x.names)){x.names = 0.1}
+        if(is.null(y.names)){y.names = 0.1}
+        graphics::text(
+          x = xLims[1] + x.names * xRange,
+          y = yLims[1] + y.names * yRange,
+          labels = names(estimates)[t],
+          font = 2,
+          cex = base_cex*1.2)
       }
       
       ##-- Add legend
@@ -169,18 +181,18 @@ plotDensityMaps <- function(
         graphics::text(
           x = legend.x - 0.04 * xRange,
           y = legend.y,
-          labels = "500 km", srt = 90, cex = 1.4)
+          labels = "500 km", srt = 90, cex = base_cex*1.2)
         raster::plot( density[[t]],
                       legend.only = T, breaks = cuts,
                       col = col, legend.width = 2,
                       axis.args = list( at = round(seq(0, max-0.04, length.out = 4), digits = 1),
                                         labels = round(seq(0, max-0.04, length.out = 4), digits = 1),
-                                        cex.axis = 1.2,
+                                        cex.axis = base_cex,
                                         line = 0),
                       smallplot = c(0.81, 0.86, 0.1, 0.5), 
                       legend.args = list( text = legendName,
                                           side = 2, font = 1,
-                                          line = 0, cex = 1))
+                                          line = 0, cex = base_cex/1.2))
       }#if
       
       #-- Export rasters
@@ -218,7 +230,7 @@ plotDensityMaps <- function(
     if(!is.null(names(estimates))){
       mtext(text = names(estimates)[t],
             side = 1, line = -25,
-            adj = 0.25, cex = 1, font = 2)
+            adj = 0.25, cex = base_cex/1.2, font = 2)
     }
     
     ##-- Add legend
@@ -232,18 +244,18 @@ plotDensityMaps <- function(
     graphics::text(
       x = legend.x - 0.05 * xRange,
       y = legend.y,
-      labels = "500 km", srt = 90, cex = 1.2)
+      labels = "500 km", srt = 90, cex = base_cex)
     
     raster::plot( density[[t]],
                   legend.only = T, breaks = cuts,
                   col = col, legend.width = 1.5,
                   axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                     labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                    cex.axis = 1.2),
+                                    cex.axis = base_cex),
                   smallplot = c(0.88, 0.90, 0.2, 0.4),
                   legend.args = list( text = legendName,
                                       side = 2, font = 1,
-                                      line = 0, cex = 0.9))
+                                      line = 0, cex = base_cex/1.3))
     dev.off()
   }
   
@@ -277,29 +289,33 @@ plotDensityMaps <- function(
                     legend.width = 2,
                     axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                       labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                      cex.axis = 1.2),
+                                      cex.axis = base_cex),
                     smallplot = c(0.80, 0.83, 0.25, 0.45),
                     legend.args = list( text = legendName,
                                         side = 2, font = 1,
-                                        line = 0, cex = 1))
+                                        line = 0, cex = base_cex/1.2))
       
       ##-- Add km scale 
       addScale(x = 0.75, y = 0.25, size = 500000)
-
+      
       ##-- Add species silhouette 
       addPNG( x = 0.8, y = 0.5, name = species, size = 0.15)
       
       ##-- Add flags 
-      if(!is.null(labels)){addPopSize( x = x.labels, y = y.labels, labels = labels)}
+      if(!is.null(labels)){
+        addPopSize( x = x.labels,
+                    y = y.labels,
+                    labels = labels)
+      }
       
       ##-- Add caption
       if(is.null(caption)){
-      mtext(text = paste0("Density map and estimated ", engSpecies,
-                          "\nabundance range in ",
-                          names(estimates)[length(density)]),
-            side = 1, line = 2, adj = 0.5, cex = 1.2, font = 2)
+        mtext(text = paste0("Density map and estimated ", engSpecies,
+                            "\nabundance range in ",
+                            names(estimates)[length(density)]),
+              side = 1, line = 2, adj = 0.5, cex = base_cex, font = 2)
       } else {
-        mtext(text = caption, side = 1, line = 2, adj = 0.5, cex = 1.2, font = 2)
+        mtext(text = caption, side = 1, line = 2, adj = 0.5, cex = base_cex, font = 2)
       }
       dev.off()
     }
@@ -327,7 +343,7 @@ plotDensityMaps <- function(
       plot( sf::st_geometry(background),
             border = "gray40", col = NA, add = TRUE)
       
-
+      
       ##-- Add colour scale 
       raster::plot( density[[t]],
                     legend.only = T,
@@ -336,11 +352,11 @@ plotDensityMaps <- function(
                     legend.width = 2,
                     axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                       labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
-                                      cex.axis = 1.2),
+                                      cex.axis = base_cex),
                     smallplot = c(0.80, 0.83, 0.25, 0.45),
                     legend.args = list( text = legendName,
                                         side = 2, font = 1,
-                                        line = 0, cex = 1))
+                                        line = 0, cex = base_cex/1.2))
       
       ##-- Add km scale 
       addScale(x = 0.75, y = 0.25, size = 500000)
@@ -353,13 +369,13 @@ plotDensityMaps <- function(
       
       ##-- Add caption
       if(is.null(caption)){
-      mtext(text = paste0("Kart som viser tetthet av ", norSpecies,
-                          " med \nintervall for estimert antall ", norSpecies,
-                          " i ", names(estimates)[length(density)]),
-            side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
-        } else {
-          mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = 1.2, font = 2)
-        }
+        mtext(text = paste0("Kart som viser tetthet av ", norSpecies,
+                            " med \nintervall for estimert antall ", norSpecies,
+                            " i ", names(estimates)[length(density)]),
+              side = 1,line = 2, adj = 0.5, cex = base_cex, font = 2)
+      } else {
+        mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = base_cex, font = 2)
+      }
       dev.off()
     }
   }

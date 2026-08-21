@@ -100,6 +100,12 @@ makeRovquantData(
   data.dir = data.dir,
   working.dir = working.dir)
 
+## Load and explore input data
+load(file.path(working.dir,"nimbleInFiles/female/nimbleInput_2026-08-20_female_1.RData")) 
+nimData_NEW <- nimData
+nimConstants_NEW <- nimConstants
+lapply(nimData_NEW,dim)
+lapply(nimData_NEW,sum)
 
 
 ##------------------------------------------------------------------------------

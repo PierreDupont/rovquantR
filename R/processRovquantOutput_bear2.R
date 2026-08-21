@@ -524,7 +524,7 @@ processRovquantOutput_bear2 <- function(
   ##-- Plot parameters
   diffSex <- 0.2
   colSex <- c("firebrick2", "deepskyblue2", "black")
-  colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
+  colCause  <- c("#E69F00","#009E73")
   
   
   
@@ -557,11 +557,13 @@ processRovquantOutput_bear2 <- function(
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES[1, ],
-    type = c("time.series", "last.year","summary","summary_NOR"),
+    type = c("time.series","last.year","summary","summary_NOR"),
     species = "bear",
     labels = list("nor" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")]),
     x.labels = 0.3,
     y.labels = 0.8,
+    x.names = 0.2,
+    y.names = 0.5,
     path = working.dir,
     name = "UD_Density")
   

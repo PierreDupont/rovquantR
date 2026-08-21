@@ -818,7 +818,7 @@ makeRovquantData_wolverine <- function(
   save( detectors,
         file = file.path( working.dir,"data",
                           paste0("Detectors_wolverine_", DATE, ".RData")))
-  
+
   
   
   ## ------   6. FILTER DATA -----
@@ -1246,7 +1246,7 @@ makeRovquantData_wolverine <- function(
   save( data.alive, data.dead,
         file = file.path( working.dir, "data",
                           paste0("FilteredData_wolverine_", DATE, ".RData")))
-  
+
   
   
   ## ------   7. GENERATE DETECTION HISTORY ------
@@ -1337,19 +1337,23 @@ makeRovquantData_wolverine <- function(
         method = "pairwise",
         plot.check = F)
       
-      ##-- Remove detections that are further then the threshold
-      #y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
-      y.ar.ALIVEOthers[ , ,t] <- y.ar.ALIVEOthers[ , ,t] * (1-distances[[t]]$y.flagged)
-      y.ar.ALIVEStructured[ , ,t] <- y.ar.ALIVEStructured[ , ,t] * (1-distances[[t]]$y.flagged)
-      
-      ##-- Remove detections also in data.alive$data.sp to run getSInits later
-      affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
-      idd <- names(affected.ids)
-      for(i in 1:length(idd)){
-        detIds <- which(distances[[t]]$y.flagged[idd[i], ] > 0)
-        data.alive$data.sp <- data.alive$data.sp %>%
-          dplyr::filter(!(Id %in% idd[i] & Detector %in% detIds & Year %in% years[t]))
-      }#i
+      ##-- If any detection flagged
+      if(sum(distances[[t]]$y.flagged) > 0){
+        
+        ##-- Remove detections that are further than the threshold
+        #y.ar.ALIVE[,,t] <- y.ar.ALIVE[,,t] * (1-distances[[t]]$y.flagged)
+        y.ar.ALIVEOthers[ , ,t] <- y.ar.ALIVEOthers[ , ,t] * (1-distances[[t]]$y.flagged)
+        y.ar.ALIVEStructured[ , ,t] <- y.ar.ALIVEStructured[ , ,t] * (1-distances[[t]]$y.flagged)
+        
+        ##-- Remove detections also in data.alive$data.sp to run getSInits later
+        affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
+        idd <- names(affected.ids)
+        for(i in 1:length(idd)){
+          detIds <- which(distances[[t]]$y.flagged[idd[i], ] > 0)
+          data.alive$data.sp <- data.alive$data.sp %>%
+            dplyr::filter(!(Id %in% idd[i] & Detector %in% detIds & Year %in% years[t]))
+        }#i
+      }#if
       
       # ##-- Plot individuals with detections further than the threshold distance
       # if(plot.check){
