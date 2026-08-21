@@ -371,7 +371,7 @@ load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNew
 
 
 ##-- Save necessary data in the right folder (./data)
-use_data(fromto, age.lookup.table, r.list.internal,r.list.internalWolf internal = TRUE, overwrite = TRUE)
+use_data(fromto, age.lookup.table, r.list.internal,r.list.internalWolf, internal = TRUE, overwrite = TRUE)
 use_data(COUNTIES, overwrite = TRUE)
 use_data(REGIONS, overwrite = TRUE)
 use_data(COUNTRIES, overwrite = TRUE)
