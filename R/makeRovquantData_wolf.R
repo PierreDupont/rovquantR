@@ -115,7 +115,7 @@ makeRovquantData_wolf <- function(
                 sampling.months = sampling.months)
   
   
-  
+  print("this is the good one")
   ## ---------------------------------------------------------------------------
   
   ## ------ I. LOAD AND SELECT DATA ------
@@ -443,7 +443,6 @@ makeRovquantData_wolf <- function(
   detectors$detectors.df <- cbind.data.frame(detectors$detectors.df, detTracks)
   
   
-  
   ## ------       2.2.4. EXTRACT DISTANCES TO ROADS ------
   
   ##-- Load map of distance to roads (1km resolution)
@@ -535,7 +534,7 @@ makeRovquantData_wolf <- function(
                               pattern = "Skandobs")
   
   ##-- Replace scandinavian characters
-  colnames(skandObs) <- translateForeignCharacters(dat = colnames(skandObs))#,[CM]
+  colnames(skandObs) <- rovquantR::translateForeignCharacters(dat = colnames(skandObs))#,[CM]
                                                    #dir.translation = dir.analysis)
   
   skandObs <- skandObs %>%
@@ -673,6 +672,7 @@ makeRovquantData_wolf <- function(
   detSnow <- round(scale(detSnow), digits = 2)
   detRoads <- round(scale(detRoads), digits = 2)
   detTracks <- round(scale(detTracks), digits = 2)
+  print(paste(round(colSums(detTracks),digits=2)))
   
   ##-- STRUCTURED 
   detCovs <- array(NA, c(dim(detTracks)[1], 2, dim(detTracks)[2]))

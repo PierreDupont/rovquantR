@@ -180,10 +180,10 @@ processRovquantOutput_wolf <- function(
     ##-- Compile MCMC bites
     gc(verbose = FALSE)
     nimOutput_F <- collectMCMCbites( 
-      path = file.path(working.dir, "nimbleOutFiles1/female"),
+      path = file.path(working.dir, "nimbleOutFiles/female"),
       burnin = nburnin,
       thin = thin, 
-      thin2 = thin2,pattern = "mcmcSamples")
+      thin2 = thin2)
     
     ##-- Traceplots
     gc(verbose = FALSE)
@@ -220,7 +220,7 @@ processRovquantOutput_wolf <- function(
     ##-- Compile MCMC bites
     gc(verbose = FALSE)
     nimOutput_M <- collectMCMCbites( 
-      path = file.path(working.dir, "nimbleOutFiles1/male"),
+      path = file.path(working.dir, "nimbleOutFiles/male"),
       burnin = nburnin,
       thin = thin, 
       thin2 = thin2)
@@ -652,6 +652,7 @@ processRovquantOutput_wolf <- function(
   }#t
   write.csv( NGSidCountryTotal,
              file = file.path( working.dir, "tables/TotalIdDetected.csv"))
+  
   n.detected <- NGSidCountryTotal
   
   
