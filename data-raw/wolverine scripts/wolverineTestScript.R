@@ -38,6 +38,7 @@ gc()
 devtools::install_github("PierreDupont/rovquantR@devel")
 
 
+
 ## ------ LOAD REQUIRED LIBRARIES ------
 
 library(rovquantR)
@@ -106,6 +107,7 @@ nimData_NEW <- nimData
 nimConstants_NEW <- nimConstants
 lapply(nimData_NEW,dim)
 lapply(nimData_NEW,sum)
+
 
 
 ##------------------------------------------------------------------------------

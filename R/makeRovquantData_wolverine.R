@@ -50,7 +50,7 @@ NULL
 #' @rdname makeRovquantData_wolverine
 #' @export
 makeRovquantData_wolverine <- function(
-    ##-- paths
+  ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
   
@@ -117,9 +117,10 @@ makeRovquantData_wolverine <- function(
   ## ------   1. HABITAT DATA -----
   
   ##-- Load pre-defined habitat rasters and shapefiles
-  data(habitatRasters, envir = environment()) 
-  data(REGIONS, envir = environment())
-  data(COUNTRIES, envir = environment())
+  data("habitatRasters", envir = environment()) 
+  data("REGIONS", envir = environment())
+  data("COUNTRIES", envir = environment())
+  data("GLOBALMAP", envir = environment())
   
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
@@ -185,7 +186,20 @@ makeRovquantData_wolverine <- function(
       ##-- Subset to monitoring period
       Month %in% unlist(sampling.months), 
       ##-- Subset to samples collected in Norway and Sweden
-      myFullData.sp$alive$Country_sample %in% c("(N)","(S)"))
+      myFullData.sp$alive$Country_sf %in% c("(N)","(S)")) 
+    
+  ##-- Filter NGS samples outside the GLOBAL MAP
+  ##-- [PD]: should be removed!!
+  ##-- This removes 125 samples falling into lakes
+  myStudyArea <- GLOBALMAP %>% 
+    dplyr::filter(ISO %in% c("SWE","NOR")) %>%
+    mutate(id = 1) %>% 
+    group_by(id) %>% 
+    summarize() 
+  
+  myFullData.sp$alive <- myFullData.sp$alive %>% 
+    dplyr::filter(!is.na(as.numeric(st_intersects(., myStudyArea))))
+  
   
   ##-- Filter out detections in Norrbotten except in 2016:18 and after 2023
   ##-- list years with or without sampling in Norrbotten
@@ -734,7 +748,7 @@ makeRovquantData_wolverine <- function(
                                   cellnumbers = T)
     r.SkandObsRovbaseBinary[[t]][whereHair[ ,1]] <- 1
   }#t
-
+  
   
   
   ## ------         2.2.6.6. ASSIGN THE COVARIATE ------
@@ -760,7 +774,7 @@ makeRovquantData_wolverine <- function(
                              "years" = years,
                              "covariates" = c("tracks", "snow"))
   
-  detCovsOth <- array(NA, c(dim(detTracks)[1],dim(detTracks)[2], 3))
+  detCovsOth <- array(NA, c(dim(detTracks)[1], dim(detTracks)[2], 3))
   detCovsOth[,,1] <- detSnow
   detCovsOth[,,2] <- matrix(detRoads,length(detRoads),n.years)
   detCovsOth[,,3] <- detOtherSamples
@@ -818,7 +832,7 @@ makeRovquantData_wolverine <- function(
   save( detectors,
         file = file.path( working.dir,"data",
                           paste0("Detectors_wolverine_", DATE, ".RData")))
-
+  
   
   
   ## ------   6. FILTER DATA -----
@@ -851,7 +865,7 @@ makeRovquantData_wolverine <- function(
   
   
   
-  ## ------     6.3. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016:18 and 2023 ------
+  ## ------     6.3. FILTER OUT DETECTIONS IN NORRBOTTEN EXCEPT IN 2016:18 and after 2023 ------
   
   # ##-- Get Norrbotten borders
   # COUNTIESNorrbotten <- REGIONS %>%
@@ -1152,7 +1166,7 @@ makeRovquantData_wolverine <- function(
   
   
   
-  ## ------     6.7. PLOT NGS and DEAD RECOVERY MAPS ----- 
+  ## ------     6.7. PLOT NGS & DEAD RECOVERY MAPS ----- 
   
   ##-- layout
   L <- n.years
@@ -1246,7 +1260,7 @@ makeRovquantData_wolverine <- function(
   save( data.alive, data.dead,
         file = file.path( working.dir, "data",
                           paste0("FilteredData_wolverine_", DATE, ".RData")))
-
+  
   
   
   ## ------   7. GENERATE DETECTION HISTORY ------
@@ -1327,7 +1341,7 @@ makeRovquantData_wolverine <- function(
     
     distances <- list()
     for(t in 1:n.years){
-
+      
       ##-- Identify detections further than maxDist
       print(paste0("------ ", t ," -------"))
       distances[[t]] <- checkDistanceDetections( 
@@ -1402,7 +1416,7 @@ makeRovquantData_wolverine <- function(
     
     ##-- Subset to focal individuals
     detResponse <- detResponse[dimnames(detResponse)[[1]] %in% dimnames(y.ar$y.ar)[[1]], ]
-  
+    
     
     
     ## ------     7.5. AUGMENT DETECTION HISTORIES -----
@@ -1426,8 +1440,8 @@ makeRovquantData_wolverine <- function(
     
     ##-- INDIVIDUAL COVARIATES
     detResponse <- makeAugmentation( y = detResponse,
-                                          aug.factor = aug.factor,
-                                          replace.value = 0)
+                                     aug.factor = aug.factor,
+                                     replace.value = 0)
     
     ##-- Set first detection for augmented individuals to NA
     detResponse[rownames(detResponse) %in% "Augmented",1]  <- NA
@@ -1450,107 +1464,92 @@ makeRovquantData_wolverine <- function(
     
     modelCode <- nimbleCode({
       
-      ##------ SPATIAL PROCESS ------##  
+      ## ----- SPATIAL PROCESS ------ 
       
       dmean ~ dunif(0,100)
       lambda <- 1/dmean
-      betaDens ~ dnorm(0.0,0.01)
       
-      habIntensity[1:numHabWindows] <- exp(betaDens * denCounts[1:numHabWindows])
-      sumHabIntensity <- sum(habIntensity[1:numHabWindows])
-      logHabIntensity[1:numHabWindows] <- log(habIntensity[1:numHabWindows])
+      betaDens ~ dnorm(0.0,0.01)
+      habIntensity[1:n.habWindows] <- exp(betaDens * denCounts[1:n.habWindows])
+      sumHabIntensity <- sum(habIntensity[1:n.habWindows])
+      logHabIntensity[1:n.habWindows] <- log(habIntensity[1:n.habWindows])
       logSumHabIntensity <- log(sumHabIntensity)
       
       for(i in 1:n.individuals){
         sxy[i, 1:2, 1] ~ dbernppAC(
-          lowerCoords = lowerHabCoords[1:numHabWindows, 1:2],
-          upperCoords = upperHabCoords[1:numHabWindows, 1:2],
-          logIntensities = logHabIntensity[1:numHabWindows],
+          lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
+          upperCoords = upperHabCoords[1:n.habWindows,1:2],
+          logIntensities = logHabIntensity[1:n.habWindows],
           logSumIntensity = logSumHabIntensity,
           habitatGrid = habitatGrid[1:y.max,1:x.max],
           numGridRows = y.max,
           numGridCols = x.max)
-      }#i
-      
-      for(t in 2:n.years){
-        for(i in 1:n.individuals){
+        
+        for(t in 2:n.years){
           sxy[i, 1:2, t] ~ dbernppACmovement_exp(
-            lowerCoords = lowerHabCoords[1:numHabWindows, 1:2],
-            upperCoords = upperHabCoords[1:numHabWindows, 1:2],
-            s = sxy[i, 1:2, t-1],
+            lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
+            upperCoords = upperHabCoords[1:n.habWindows,1:2],
+            s = sxy[i,1:2,t-1],
             lambda = lambda,
-            baseIntensities = habIntensity[1:numHabWindows],
+            baseIntensities = habIntensity[1:n.habWindows],
             habitatGrid =  habitatGrid[1:y.max,1:x.max],
             numGridRows = y.max,
             numGridCols = x.max,
-            numWindows= numHabWindows)
+            numWindows = n.habWindows)
         }#i  
       }#t
       
       
-      ##----- DEMOGRAPHIC PROCESS -----##
+      ## ----- DEMOGRAPHIC PROCESS -----
       
       omeg1[1:2] ~ ddirch(alpha[1:2])   
       
       for(t in 1:(n.years-1)){
-        # PRIORS 
         gamma[t] ~ dunif(0,1)
         phi[t] ~ dunif(0,1)
         
-        # "UNBORN"
-        omega[1,1,t] <- 1-gamma[t]
-        omega[1,2,t] <- gamma[t]
-        omega[1,3,t] <- 0
-        # "Alive"
-        omega[2,1,t] <- 0
-        omega[2,2,t] <- phi[t]
-        omega[2,3,t] <- 1-phi[t]
-        # "Dead"
-        omega[3,1,t] <- 0
-        omega[3,2,t] <- 0
-        omega[3,3,t] <- 1
+        omega[1,1:3,t] <- c(1-gamma[t],gamma[t],0)  # "Unborn"
+        omega[2,1:3,t] <- c(0,phi[t],1-phi[t])      # "Alive"
+        omega[3,1:3,t] <- c(0,0,1)                  # "Dead"
       }#t
-      
       
       for(i in 1:n.individuals){ 
         z[i,1] ~ dcat(omeg1[1:2]) 
         for(t in 1:(n.years-1)){
           z[i,t+1] ~ dcat(omega[z[i,t],1:3,t]) 
-        }#i 								
-      }#t 
+        }#t 								
+      }#i
       
       
-      ##----- DETECTION PROCESS -----## 
+      ## ----- DETECTION PROCESS ----- 
       
       pResponse ~ dunif(0, 1)
       
       for(t in 1:n.years){
+        
         sigma[t] ~ dunif(0,4)
-        for(c in 1:n.covs){
-          betaCovs[c,t] ~ dunif(-5,5)
-        }
-        
-        for(c in 1:n.covsOth){
-          betaCovsOth[c,t] ~ dunif(-5,5)
-        }
-        
         betaResponse[t] ~ dunif(-5,5)
         betaResponseOth[t] ~ dunif(-5,5)
-      }
-      
-      for(c in 1:n.counties){
-        for(t in 1:n.years){
+        
+        for(c in 1:n.covs){
+          betaCovs[c,t] ~ dunif(-5,5)
+        }#c
+        
+        for(c in 1:n.covs.Oth){
+          betaCovsOth[c,t] ~ dunif(-5,5)
+        }#c
+        
+        for(c in 1:n.counties){
           p01[c,t] ~ dunif(0,1)
-          p0[c,t] <- p01[c,t] *countyToggle[c,t]## toggle counties
-        }#t
-      }#c  
-      
-      for(c in 1:n.countries){
-        for(t in 1:n.years){
+          p0[c,t] <- p01[c,t] * countyToggle[c,t]         ## toggle counties
+        }#c  
+        
+        for(c in 1:n.countries){
           p01Oth[c,t] ~ dunif(0,1)
-          p0Oth[c,t] <- p01Oth[c,t] *countyToggleOth[c,t]## toggle countries
-        }#t
-      }#c  
+          p0Oth[c,t] <- p01Oth[c,t] * countryToggle[c,t] ## toggle countries
+        }#c  
+      }#t
+      
       
       for(i in 1:n.individuals){
         
@@ -1558,78 +1557,78 @@ makeRovquantData_wolverine <- function(
         
         for(t in 1:n.years){
           
-          y.alive[i,1:maxDetNums,t] ~ dbin_LESS_Cached_MultipleCovResponse(  
-            sxy = sxy[i,1:2,t],
-            sigma = sigma[t],
-            nbDetections = nbDetections[i,t],
-            yDets = yDets[i,1:maxDetNums,t],
-            detector.xy = detector.xy[1:n.detectors,1:2],
-            trials = trials[1:n.detectors],
-            detectorIndex = detectorIndex[1:n.cellsSparse,1:numLocalIndicesMax],
-            nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
-            ResizeFactor = resizeFactor,
-            maxNBDets = maxNBDets,
-            habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
-            indicator = isAlive[i,t],
-            p0State = p0[1:n.counties,t],
-            detCountries = detCounties[1:n.detectors],
-            detCov = detCovs[1:n.detectors,t,1:n.covs],
-            betaCov = betaCovs[1:n.covs,t],
-            BetaResponse = betaResponse[t],
-            detResponse = detResponse[i,t])
-          
-          # y[i,1:nMaxDetectors,t] ~ dbinomLocal_normalWolverine(  
-          #   detNums = nbDetections[i,t],
-          #   detIndices = yDets[i,1:nMaxDetectors,t],
-          #   size = trials[1:n.detectors],
-          #   p0 = p0[1:n.counties,t],
-          #   sigma = sigma[t],
+          # y.alive[i,1:maxDetNums,t] ~ dbin_LESS_Cached_MultipleCovResponse(  
           #   sxy = sxy[i,1:2,t],
-          #   trapCoords =  detector.xy[1:n.detectors,1:2],
-          #   localTrapsIndices  = detectorIndex[1:n.cellsSparse,1:maxNBDets],
-          #   localTrapsNum  = nDetectorsLESS[1:n.cellsSparse],
-          #   resizeFactor = ResizeFactor,
-          #   lengthYCombined = maxNBDets,
-          #   habitatGrid = habitatIDDet[1:y.maxDet,1:x.maxDet],
+          #   sigma = sigma[t],
+          #   nbDetections = nbDetections[i,t],
+          #   yDets = detIndices[i,1:maxDetNums,t],
+          #   detector.xy = detector.xy[1:n.detectors,1:2],
+          #   trials = trials[1:n.detectors],
+          #   detectorIndex = detectorIndex[1:n.habWindows,1:numLocalIndicesMax],
+          #   nDetectorsLESS = nDetectorsLESS[1:n.habWindows],
+          #   ResizeFactor = resizeFactor,
+          #   maxNBDets = maxDetNums,
+          #   habitatID = habitatIDDet[1:y.max,1:x.max],
           #   indicator = isAlive[i,t],
-          #   trapCovsIntercept = detCounties[1:n.detectors],
-          #   trapCovs = detCovs[1:n.detectors,t,1:n.covs],
-          #   trapBetas = betaCovs[1:n.covs,t],
-          #   indBeta = betaResponse[t],
-          #   indCov = detResponse[i,t])
+          #   p0State = p0[1:n.counties,t],
+          #   detCountries = detCounties[1:n.detectors],
+          #   detCov = detCovs[1:n.detectors,t,1:n.covs],
+          #   betaCov = betaCovs[1:n.covs,t],
+          #   BetaResponse = betaResponse[t],
+          #   detResponse = detResponse[i,t])
           
-          y.aliveOth[i,1:maxDetNumsOth,t] ~ dbin_LESS_Cached_MultipleCovResponse(
-            sxy = sxy[i,1:2,t],
+          y[i,1:maxDetNums,t] ~ dbinomLocal_normalWolverine(
+            detNums = detNums[i,t],
+            detIndices = detIndices[i,1:maxDetNums,t],
+            size = size[1:n.detectors],
+            p0 = p0[1:n.counties,t],
             sigma = sigma[t],
-            nbDetections = nbDetectionsOth[i,t],
-            yDets = yDetsOth[i,1:maxDetNumsOth,t],
-            detector.xy = detector.xy[1:n.detectors,1:2],
-            trials = trials[1:n.detectors],
-            detectorIndex = detectorIndex[1:n.cellsSparse,1:numLocalIndicesMax],
-            nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
-            ResizeFactor = resizeFactor,
-            maxNBDets = maxNBDets,
-            habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
+            s = sxy[i,1:2,t],
+            trapCoords = detector.xy[1:n.detectors,1:2],
+            localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
+            localTrapsNum = localDetNum[1:n.habWindows],
+            resizeFactor = resizeFactor,
+            lengthYCombined = maxDetNums,
+            habitatGrid = habitatGrid[1:y.max,1:x.max],
             indicator = isAlive[i,t],
-            p0State = p0Oth[1:n.countries,t],
-            detCountries = detCountries[1:n.detectors,t],
-            detCov = detCovsOth[1:n.detectors,t,1:n.covsOth],
-            betaCov = betaCovsOth[1:n.covsOth,t],
-            BetaResponse = betaResponseOth[t],
-            detResponse = detResponse[i,t])
+            trapCovsIntercept = detCounties[1:n.detectors],
+            trapCovs = detCovs[1:n.detectors,t,1:n.covs],
+            trapBetas = betaCovs[1:n.covs,t],
+            indBeta = betaResponse[t],
+            indCov = detResponse[i,t])
+          
+          y.Oth[i,1:maxDetNumsOth,t] ~ dbinomLocal_normalWolverine(
+            detNums = detNumsOth[i,t],
+            detIndices = detIndicesOth[i,1:maxDetNumsOth,t],
+            size = size[1:n.detectors],
+            p0 = p0Oth[1:n.countries,t],
+            sigma = sigma[t],
+            s = sxy[i,1:2,t],
+            trapCoords = detector.xy[1:n.detectors,1:2],
+            localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
+            localTrapsNum = localDetNum[1:n.habWindows],
+            resizeFactor = resizeFactor,
+            lengthYCombined = maxDetNumsOth,
+            habitatGrid = habitatGrid[1:y.max,1:x.max],
+            indicator = isAlive[i,t],
+            trapCovsIntercept = detCountries[1:n.detectors,t],
+            trapCovs = detCovsOth[1:n.detectors,t,1:n.covs.Oth],
+            trapBetas = betaCovsOth[1:n.covs.Oth,t],
+            indBeta = betaResponseOth[t],
+            indCov = detResponse[i,t])
         }#t
       }#i
       
       
       
-      ##---------- DERIVED PARAMETERS ----------##
+      ## ----- DERIVED PARAMETERS -----
       
       for(i in 1:n.individuals){ 
-        isAlive[i,1] <- (z[i,1] == 2) 
-        for(t in 1:(n.years - 1)){
-          isAlive[i,t+1] <- (z[i,t+1] == 2) 
-        }
-      }
+        for(t in 1:n.years){
+          isAlive[i,t] <- (z[i,t] == 2) 
+        }#t
+      }#i
+      
       for(t in 1:n.years){
         N[t] <- sum(isAlive[1:n.individuals,t])
       }#t
@@ -1657,8 +1656,8 @@ makeRovquantData_wolverine <- function(
       maxDetNums = y.sparse$maxDetNums,
       maxDetNumsOth = y.sparseOth$maxDetNums)
     #,
-      #lengthYCombined = y.sparse$lengthYCombined,
-      #lengthYCombined.Oth = y.sparseOth$lengthYCombined)
+    #lengthYCombined = y.sparse$lengthYCombined,
+    #lengthYCombined.Oth = y.sparseOth$lengthYCombined)
     
     
     
@@ -1805,9 +1804,9 @@ makeRovquantData_wolverine <- function(
                       c(nimConstants$n.counties, dim(y.alive)[3])),
         "betaResponse" = stats::runif(dim(y.alive)[3], -0.1, 0.1),
         "betaCovs" = array(stats::runif(dim(detCovs)[3], -0.1, 0.1),
-                           c(dim(detCovsOth)[3], n.years)),
+                           c(dim(detCovs)[3], n.years)),
         "p01Oth" = array(stats::runif(18, 0, 0.2),
-                         c(nimConstants$n.countries+1, dim(y.alive)[3])),
+                         c(nimConstants$n.countries, dim(y.alive)[3])),
         "betaResponseOth" = stats::runif(dim(y.alive)[3], -0.1, 0.1),
         "betaCovsOth" = array(stats::runif(dim(detCovsOth)[3], -0.1, 0.1),
                               c(dim(detCovsOth)[3], n.years))) 
@@ -1829,23 +1828,23 @@ makeRovquantData_wolverine <- function(
   
   ## ------ III. CREATE SCR DATA ------
   
-  ## ------   1. SCR MODEL CODE ------
+  ## ------   1. SCR NIMBLE MODEL DEFINITION ------
   
   modelCode1 <- nimbleCode({
     
     ##------ SPATIAL PROCESS ------ 
     
     betaDens  ~ dnorm(0.0,0.01)
-    habIntensity[1:numHabWindows] <- exp(betaDens * denCounts[1:numHabWindows])
-    sumHabIntensity <- sum(habIntensity[1:numHabWindows])
-    logHabIntensity[1:numHabWindows] <- log(habIntensity[1:numHabWindows])
+    habIntensity[1:n.habWindows] <- exp(betaDens * denCounts[1:n.habWindows])
+    sumHabIntensity <- sum(habIntensity[1:n.habWindows])
+    logHabIntensity[1:n.habWindows] <- log(habIntensity[1:n.habWindows])
     logSumHabIntensity <- log(sumHabIntensity)
     
     for(i in 1:n.individuals){
       sxy[i,1:2] ~ dbernppAC(
-        lowerCoords = lowerHabCoords[1:numHabWindows,1:2],
-        upperCoords = upperHabCoords[1:numHabWindows,1:2],
-        logIntensities = logHabIntensity[1:numHabWindows],
+        lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
+        upperCoords = upperHabCoords[1:n.habWindows,1:2],
+        logIntensities = logHabIntensity[1:n.habWindows],
         logSumIntensity = logSumHabIntensity,
         habitatGrid = habitatGrid[1:y.max,1:x.max],
         numGridRows = y.max,
@@ -1874,63 +1873,63 @@ makeRovquantData_wolverine <- function(
       betaCovs[c] ~ dunif(-5,5)
     }
     
-    for(c in 1:n.covsOth){
+    for(c in 1:n.covs.Oth){
       betaCovsOth[c] ~ dunif(-5,5)
     }
     
     for(c in 1:n.counties){
       p01[c] ~ dunif(0,1)
-      p0[c] <- p01[c] * countyToggle[c]## toggle counties
+      p0[c] <- p01[c] * countyToggle[c]         ## toggle counties
     }#c  
     
     for(c in 1:n.countries){
       p01Oth[c] ~ dunif(0,1)
-      p0Oth[c] <- p01Oth[c] * countyToggleOth[c]## toggle countries
+      p0Oth[c] <- p01Oth[c] * countryToggle[c]  ## toggle countries
     }#c  
     
     for(i in 1:n.individuals){
       
       detResponse[i] ~ dbern(pResponse)
       
-      y.alive[i,1:nMaxDetectors] ~ dbin_LESS_Cached_MultipleCovResponse( 
-        sxy = sxy[i,1:2],
+      y[i,1:maxDetNums] ~ dbinomLocal_normalWolverine(
+        detNums = detNums[i],
+        detIndices = detIndices[i,1:maxDetNums],
+        size = size[1:n.detectors],
+        p0 = p0[1:n.counties],
         sigma = sigma,
-        nbDetections = nbDetections[i],
-        yDets = yDets[i,1:nMaxDetectors],
-        detector.xy = detector.xy[1:n.detectors,1:2],
-        trials = trials[1:n.detectors],
-        detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
-        nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
-        ResizeFactor = ResizeFactor,
-        maxNBDets = maxNBDets,
-        habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
+        s = sxy[i,1:2],
+        trapCoords = detector.xy[1:n.detectors,1:2],
+        localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
+        localTrapsNum = localDetNum[1:n.habWindows],
+        resizeFactor = resizeFactor,
+        lengthYCombined = maxDetNums,
+        habitatGrid = habitatGrid[1:y.max,1:x.max],
         indicator = z[i],
-        p0State = p0[1:n.counties],
-        detCountries = detCounties[1:n.detectors],
-        detCov = detCovs[1:n.detectors,1:n.covs],
-        betaCov = betaCovs[1:n.covs],
-        BetaResponse = betaResponse,
-        detResponse = detResponse[i])
+        trapCovsIntercept = detCounties[1:n.detectors],
+        trapCovs = detCovs[1:n.detectors,1:n.covs],
+        trapBetas = betaCovs[1:n.covs],
+        indBeta = betaResponse,
+        indCov = detResponse[i])
       
-      y.aliveOth[i,1:nMaxDetectorsOth] ~ dbin_LESS_Cached_MultipleCovResponse(
-        sxy = sxy[i,1:2],
+      y.Oth[i,1:maxDetNumsOth] ~ dbinomLocal_normalWolverine(
+        detNums = detNumsOth[i],
+        detIndices = detIndicesOth[i,1:maxDetNumsOth],
+        size = size[1:n.detectors],
+        p0 = p0Oth[1:n.countries],
         sigma = sigma,
-        nbDetections = nbDetectionsOth[i],
-        yDets = yDetsOth[i,1:nMaxDetectorsOth],
-        detector.xy =  detector.xy[1:n.detectors,1:2],
-        trials = trials[1:n.detectors],
-        detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
-        nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
-        ResizeFactor = ResizeFactor,
-        maxNBDets = maxNBDets,
-        habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
+        s = sxy[i,1:2],
+        trapCoords = detector.xy[1:n.detectors,1:2],
+        localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
+        localTrapsNum = localDetNum[1:n.habWindows],
+        resizeFactor = resizeFactor,
+        lengthYCombined = maxDetNumsOth,
+        habitatGrid = habitatGrid[1:y.max,1:x.max],
         indicator = z[i],
-        p0State = p0Oth[1:n.countries],
-        detCountries = detCountries[1:n.detectors],
-        detCov = detCovsOth[1:n.detectors,1:n.covsOth],
-        betaCov = betaCovsOth[1:n.covsOth],
-        BetaResponse = betaResponseOth,
-        detResponse = detResponse[i])
+        trapCovsIntercept = detCountries[1:n.detectors],
+        trapCovs = detCovsOth[1:n.detectors,1:n.covs.Oth],
+        trapBetas = betaCovsOth[1:n.covs.Oth],
+        indBeta = betaResponseOth,
+        indCov = detResponse[i])
     }#i
     
     
@@ -1944,9 +1943,11 @@ makeRovquantData_wolverine <- function(
   
   ## ------   2. SCRize NIMBLE INPUT DATA ------
   
-  t <- n.years
   for(thisSex in c("female","male")){
+    
+    ## [PD] : For now, I am only creating the last year's SCR dataset (faster)
     #for(t in 1:n.years){ 
+    t <- n.years
     
     message(paste0("Preparing SCR input for sex: ", thisSex, "... "))
     
@@ -1957,59 +1958,69 @@ makeRovquantData_wolverine <- function(
                        paste0("nimbleInput_", DATE, "_", thisSex, "_", c, ".RData")))
       
       ##-- Identify detected individuals     
-      detectedStruc <- apply(nimData$nbDetections,2,function(x) x>0)
-      detectedOth <- apply(nimData$nbDetectionsOth,2,function(x) x>0)
+      detectedStruc <- apply(nimData$detNums,2,function(x) x > 0)
+      detectedOth <- apply(nimData$detNumsOth,2,function(x) x > 0)
       detected <- detectedOth + detectedStruc
       detected <- detected > 0
       n.detected <- sum(detected[ ,t])    ## Number of detected ids that year
-      M <- n.detected * 3                 ## Decide the augmentation factor here
+      n.augmented <- n.detected * 2       ## Decide the augmentation factor here
       
       
       ## ------     2.1. NIMBLE DATA ------
       
       ##-- y.alive
-      nimData$y.alive <- nimData$y.alive[detected[ ,t], ,t]  
-      nimData$y.alive <- rbind( nimData$y.alive,
-                                matrix( 0,
-                                        nrow = M,
-                                        nimConstants$nMaxDetectors))
+      nimData$y <- nimData$y[detected[ ,t], ,t]  
+      nimData$y <- rbind( nimData$y,
+                          matrix( 0,
+                                  nrow = n.augmented,
+                                  ncol = nimConstants$maxDetNums))
       
-      nimData$y.aliveOth <- nimData$y.aliveOth[detected[ ,t], ,t]  
-      nimData$y.aliveOth <- rbind( nimData$y.aliveOth,
-                                   matrix( 0,
-                                           nrow = M,
-                                           nimConstants$nMaxDetectorsOth))
+      nimData$y.Oth <- nimData$y.Oth[detected[ ,t], ,t]  
+      nimData$y.Oth <- rbind( nimData$y.Oth,
+                              matrix( 0,
+                                      nrow = n.augmented,
+                                      ncol = nimConstants$maxDetNumsOth))
       
-      ##-- nbDetections 
-      nimData$nbDetections <- nimData$nbDetections[detected[,t],t]
-      nimData$nbDetections  <- c(nimData$nbDetections, rep(0,M))
-      nimData$nbDetectionsOth <- nimData$nbDetectionsOth[detected[,t],t]
-      nimData$nbDetectionsOth  <- c(nimData$nbDetectionsOth, rep(0,M))
+      ##-- detNums 
+      nimData$detNums <- nimData$detNums[detected[ ,t],t]
+      nimData$detNums  <- c(nimData$detNums, rep(0,n.augmented))
+      nimData$detNumsOth <- nimData$detNumsOth[detected[ ,t],t]
+      nimData$detNumsOth  <- c(nimData$detNumsOth, rep(0,n.augmented))
       
-      ##-- yDets 
-      nimData$yDets <- nimData$yDets[detected[ ,t], ,t]
-      nimData$yDets <- rbind(nimData$yDets, matrix(0,nrow =M, nimConstants$nMaxDetectors))
-      nimData$yDetsOth <- nimData$yDetsOth[detected[ ,t], ,t]
-      nimData$yDetsOth <- rbind(nimData$yDetsOth, matrix(0,nrow =M, nimConstants$nMaxDetectorsOth))
+      ##-- detIndices 
+      nimData$detIndices <- nimData$detIndices[detected[ ,t], ,t]
+      nimData$detIndices <- rbind( nimData$detIndices,
+                                   matrix(0, 
+                                          nrow = n.augmented,
+                                          ncol = nimConstants$maxDetNums))
+      nimData$detIndicesOth <- nimData$detIndicesOth[detected[ ,t], ,t]
+      nimData$detIndicesOth <- rbind( nimData$detIndicesOth, 
+                                      matrix( 0,
+                                              nrow = n.augmented,
+                                              ncol = nimConstants$maxDetNumsOth))
       
       ##-- z
       nimData$z <- nimData$z[detected[ ,t],t]  
       nimData$z[nimData$z %in% c(2)] <- 1 # ALIVE IDS BECOMES 1
-      nimData$z <- c(nimData$z, rep(NA,M))
+      nimData$z <- c(nimData$z, rep(NA,n.augmented))
+      
+      ## [PD]: alternative
+      nimData$z <- c(rep(1,n.detected), rep(NA,n.augmented))
+      
       
       ##-- sxy 
       nimData$sxy <- NULL
       
       ##-- detResponse 
       nimData$detResponse <- nimData$detResponse[detected[ ,t],t]
-      nimData$detResponse  <- c(nimData$detResponse, rep(NA,M))## HERE IT IS ASSUMING IT IS A LATENT INDIVIDUAL COVARIATE
+      nimData$detResponse <- c(nimData$detResponse, rep(NA,n.augmented))
       
       ##-- detCovs
       nimData$detCovs <- nimData$detCovs[ ,t, ]
       nimData$detCovsOth <- nimData$detCovsOth[ ,t, ]
       
       ##-- density covariate
-      nimData$denCounts <- nimData$denCounts[ ,1]
+      nimData$denCounts <- nimData$denCounts
       
       ##-- detCountries
       nimData$detCountries <- nimData$detCountries[ ,t]
@@ -2018,12 +2029,12 @@ makeRovquantData_wolverine <- function(
       
       ## ------     2.2. NIMBLE CONSTANTS ------
       
-      ##-- countyToggle to toggle off norbotten
+      ##-- countyToggle to toggle off Norbotten
       nimConstants$countyToggle <- nimConstants$countyToggle[ ,t]
       nimConstants$countyToggleOth <- nimConstants$countyToggleOth[ ,t]
       
       ##-- number of individuals
-      nimConstants$n.individuals <- M
+      nimConstants$n.individuals <- n.detected + n.augmented
       
       
       
@@ -2031,16 +2042,18 @@ makeRovquantData_wolverine <- function(
       
       ##-- z
       nimInits$z <- nimInits$z[detected[,t],t]  
-      nimInits$z <- c(nimInits$z, rbinom(M,1,0.5))
+      nimInits$z <- c(nimInits$z, rbinom(n.augmented,1,0.5))
+      ## [PD]: alternative
+      nimInits$z <- c(rep(NA,n.detected), rbinom(n.augmented,1,0.5))
       
       ##-- detResponse
-      nimInits$detResponse <- c( rep(NA, sum(detected[ ,t])),
-                                 rbinom(M,1,0.5))   ## HERE IT IS TREATED AS A LATENT COVARIATE
+      nimInits$detResponse <- c( rep(NA, n.detected),
+                                 rbinom(n.augmented,1,0.5))   ## HERE IT IS TREATED AS A LATENT COVARIATE
       
       ##-- sxy 
       nimInits$sxy <- nimInits$sxy[detected[ ,t], ,t]  
       nimInits$sxy <- rbind( nimInits$sxy,              ## GIVE ACS FROM DETECTED INDIVIDUALS TO AUGMENTED IDS. 
-                             nimInits$sxy[sample(nimInits$sxy, M, replace = T), ])
+                             nimInits$sxy[sample(nimInits$sxy, n.augmented, replace = T), ])
       
       ##-- p0
       nimInits$p01 <- nimInits$p01[ ,t]
@@ -2064,8 +2077,10 @@ makeRovquantData_wolverine <- function(
       
       ## ------     2.4. NIMBLE INITS ------
       
-      nimParams <- c("N", "psi", "pResponse","p0Oth","betaCovsOth","betaResponseOth",
-                     "p0", "sigma", "betaDens", "betaCovs","betaResponse","betaResponseOth")
+      nimParams <- c("N", "betaDens", "psi", 
+                     "pResponse", "betaResponse", "sigma", 
+                     "p0", "betaCovs", "betaResponse",
+                     "p0Oth", "betaCovsOth","betaResponseOth")
       
       nimParams2 <- c("z", "sxy")
       
@@ -2075,21 +2090,20 @@ makeRovquantData_wolverine <- function(
       
       modelCode <- modelCode1
       
-      save(nimData,
-           nimConstants,
-           y.dead,
-           nimParams,
-           nimParams2,
-           modelCode,
-           nimInits,
-           file = file.path( working.dir, "nimbleInFiles", thisSex,
-                             paste0("SCRinput", years[t], "_", DATE, "_", thisSex, "_", c, ".RData")))
+      save( modelCode,
+            nimData,
+            nimConstants,
+            nimInits,
+            nimParams,
+            nimParams2,
+            file = file.path( working.dir, "nimbleInFiles", thisSex,
+                              paste0("SCRinput", years[t], "_", DATE, "_", thisSex, "_", c, ".RData")))
     }#c
   }#thisSex
   
   
   
-  ##------------------------------------------------------------------------------
+  ##----------------------------------------------------------------------------
   
   ## ------ IV. RETURN IMPORTANT INFOS FOR REPORT ------
   
@@ -2098,5 +2112,9 @@ makeRovquantData_wolverine <- function(
                YEARS = years,
                SEX = sex,
                DATE = DATE))
+  
+  
+  
+  ##----------------------------------------------------------------------------
 }
 
