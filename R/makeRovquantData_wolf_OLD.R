@@ -94,8 +94,8 @@ makeRovquantData_wolf <- function(
   if(is.null(max.det.dist)){max.det.dist <- 45000}
   if(is.null(resize.factor)){resize.factor <- 1}
   if(is.null(rename.list)) {
-    #[CM] does work if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
-    rename.list <- r.list.internalWolf
+    if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
+    rename.list <- r.list.internal
   }
   
   ##-- Set up list of Habitat characteristics
@@ -115,7 +115,7 @@ makeRovquantData_wolf <- function(
                 sampling.months = sampling.months)
   
   
-  print("this is the good one")
+  
   ## ---------------------------------------------------------------------------
   
   ## ------ I. LOAD AND SELECT DATA ------
@@ -143,7 +143,7 @@ makeRovquantData_wolf <- function(
     dplyr::group_by(id) %>%
     dplyr::summarise()
   
-  plot(COUNTIES_AGGREGATED$geometry)
+  
   
   ## ------   2. NGS DATA -----
   
@@ -177,21 +177,14 @@ makeRovquantData_wolf <- function(
   message("Preparing habitat characteristics... ")
   
   ## ------     1.1. GENERATE HABITAT CHARACTERISTICS ------
-  ##-- Determine study area based on predefined extent
-  #[CM] use the same study area to align with previous analyses
-  #[CM] new dataset added to the data package
-  setwd("C:/My_documents/rovquant/analyses/Rgit/rovquantR/data")
-  load("studyAreaWolf.rda")  
-  studyArea <- myStudyArea.poly
-  studyAreaExtent <- myStudyArea.extent
   
-  #[CM] Commented out
-  # studyArea <- sf::st_crop( REGIONS,
-  #                           xmin = x.extent[1], xmax = x.extent[2],
-  #                           ymin = y.extent[1], ymax = y.extent[2]) %>%
-  #   sf::st_collection_extract(., "POLYGON") %>%
-  #   summarise()  
-  # plot(studyArea$geometry)
+  ##-- Determine study area based on predefined extent
+  studyArea <- sf::st_crop( REGIONS,
+                            xmin = x.extent[1], xmax = x.extent[2],
+                            ymin = y.extent[1], ymax = y.extent[2]) %>%
+    sf::st_collection_extract(., "POLYGON") %>%
+    summarise()  
+  
   ##-- Make habitat from predefined Scandinavian raster of suitable habitat
   habitat <- makeHabitatFromRaster(
     poly = studyArea,
@@ -199,6 +192,7 @@ makeRovquantData_wolf <- function(
     buffer = habitat$buffer,
     plot.check = FALSE) %>%
     append(habitat,.)
+  
   ##-- Retrieve number of habitat windows 
   isHab <- habitat$habitat.r[] == 1
   n.habWindows <- habitat$n.habWindows <- sum(isHab)
@@ -225,51 +219,51 @@ makeRovquantData_wolf <- function(
   
   
   ## ------     1.2. GENERATE HABITAT-LEVEL COVARIATES ------
+  
   ## ------       1.2.1. DENSITY OF PACKS/PAIRS ------
-  ##-- Kernel of NGS detections of individuals in pairs
-  #[CM] move this to be sex-specific as in previous analyses 
-  # kern <- list()
-  # habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
-  # for(t in 1:n.years){
-  #   ##-- Subset the NGS data to individuals in packs/pairs this year
-  #   data.pairs.t <- myFullData.sp$alive %>%
-  #     dplyr::filter( Year == years[t],
-  #                    STATUS %in% c(3,4),
-  #                    Sex=="male")
-  #   
-  #   ##-- Get mean coordinates of packs
-  #   IDs <- unique(data.pairs.t$IdSimplified)
-  #   m.xy <- matrix(NA, nrow = length(IDs), ncol = 2)
-  #   colnames(m.xy) <- c("x","y")
-  #   for(i in 1:length(IDs)){
-  #     m.xy[i, ] <- data.pairs.t %>%
-  #       dplyr::filter( IdSimplified == IDs[i]) %>%
-  #       st_coordinates(.) %>%
-  #       colMeans(.)
-  #   }#i
-  #   
-  #   ##-- Check if some coordinates are missing  
-  #   if(sum(is.na(m.xy[ ,1])) > 0){m.xy <- m.xy[!is.na(m.xy[ ,1]), ]}
-  #   
-  #   ##-- Turn into .sf
-  #   locationsFamily <- st_as_sf( as.data.frame(m.xy),
-  #                                coords = c("x","y"),
-  #                                crs = st_crs(habitat$habitat.sp))
-  #   locationsFamily$id <- rep(1, nrow(locationsFamily))
-  #   
-  #   ##-- Calculate kernel of detections
-  #   kern[[t]] <- raster(estUDm2spixdf(kernelUD( 
-  #     as(locationsFamily[ ,"id"], "Spatial"), 
-  #     h = 15000,
-  #     grid = as(habitat$habitat.r, 'SpatialPixels'))))
-  #   
-  #   ##-- Plot check
-  #   plot(kern[[t]], main = years[t])
-  #   plot(habitat$habitat.poly$geometry, add = T, col = NA)
-  #   
-  #   ##-- Scale covariate
-  #   habDens[ ,t] <- scale(kern[[t]][habitat$habitat.r[ ] == 1])
-  # } #t
+  
+  ##-- Kernel of NGS detections of individuals in pairs 
+  kern <- list()
+  habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
+  for(t in 1:n.years){
+    ##-- Subset the NGS data to individuals in packs/pairs this year
+    data.pairs.t <- myFullData.sp$alive %>%
+      dplyr::filter( Year == years[t],
+                     Status %in% c("Pair", "Family group"))
+    
+    ##-- Get mean coordinates of packs
+    IDs <- unique(data.pairs.t$IdSimplified)
+    m.xy <- matrix(NA, nrow = length(IDs), ncol = 2)
+    colnames(m.xy) <- c("x","y")
+    for(i in 1:length(IDs)){
+      m.xy[i, ] <- data.pairs.t %>%
+        dplyr::filter( IdSimplified == IDs[i]) %>%
+        st_coordinates(.) %>%
+        colMeans(.)
+    }#i
+    
+    ##-- Check if some coordinates are missing  
+    if(sum(is.na(m.xy[ ,1])) > 0){m.xy <- m.xy[!is.na(m.xy[ ,1]), ]}
+    
+    ##-- Turn into .sf
+    locationsFamily <- st_as_sf( as.data.frame(m.xy),
+                                 coords = c("x","y"),
+                                 crs = st_crs(habitat$habitat.sp))
+    locationsFamily$id <- rep(1, nrow(locationsFamily))
+    
+    ##-- Calculate kernel of detections
+    kern[[t]] <- raster(estUDm2spixdf(kernelUD( 
+      as(locationsFamily[ ,"id"], "Spatial"), 
+      h = 15000,
+      grid = as(habitat$habitat.r, 'SpatialPixels'))))
+    
+    ##-- Plot check
+    plot(kern[[t]], main = years[t])
+    plot(habitat$habitat.poly$geometry, add = T, col = NA)
+    
+    ##-- Scale covariate
+    habDens[ ,t] <- scale(kern[[t]][habitat$habitat.r[ ] == 1])
+  } #t
   
   
   
@@ -347,87 +341,19 @@ makeRovquantData_wolf <- function(
   ## ------       2.2.3. EXTRACT GPS TRACKS LENGTHS ------
   
   message("Cleaning GPS tracks... ")
-  TRACKS_MULTI <- sf::read_sf(file.path(data.dir, "Tracks/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20250422.shp")) %>%
-    ##-- Process dates
-    dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
-                   Mth = as.numeric(format(Dato,"%m")),
-                   Yr = as.numeric(format(Dato,"%Y")),
-                   Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
-    ##-- Filter out irrelevant tracks
-    dplyr::filter( Helikopter == "0",      ## Remove helicopter tracks
-                   Year %in% years & Mth %in% unlist(sampling.months))
-
-  ##-- LOAD GPS SEARCH TRACKS FROM BOUVET (EXPORT 2025)
-  TRACKS_SINGLE_25 <- sf::read_sf(file.path(data.dir, "Tracks/XX_eksport_rovquant_aktivitetslogg_alle_spor_multilinestring_20250422.shp")) %>%
-    ##-- Process dates
-    dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
-                   Mth = as.numeric(format(Dato,"%m")),
-                   Yr = as.numeric(format(Dato,"%Y")),
-                   Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
-    ##-- Filter out irrelevant tracks
-    dplyr::filter( Yr < 2020,
-                   Helikopter == "0",      ## Remove helicopter tracks
-                   Year %in% years & Mth %in% unlist(sampling.months))
-
-  ##-- LOAD GPS SEARCH TRACKS FROM BOUVET (EXPORT 2026)
-  TRACKS_SINGLE_26 <- sf::read_sf(file.path(data.dir, "Tracks/XX_eksport_rovquant_aktivitetslogg_alle_spor_linestring_20260420.shp")) %>%
-    ##-- Process dates
-    dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
-                   Mth = as.numeric(format(Dato,"%m")),
-                   Yr = as.numeric(format(Dato,"%Y")),
-                   Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
-    ##-- Filter out irrelevant tracks
-    dplyr::filter( Helikopter == "0",      ## Remove helicopter tracks
-                   Year %in% years & Mth %in% unlist(sampling.months))
-
-  ## COMBINE ALL TRACKS
-  ALL_TRACKS <- rbind(TRACKS_SINGLE_25, TRACKS_SINGLE_26, TRACKS_MULTI)
-  rm(list = c("TRACKS_SINGLE_25", "TRACKS_SINGLE_26", "TRACKS_MULTI"))
-
-  ## Check
-  ## SELECT TRACKS YEAR
-  dupIDs <- dupDist <- length <- TRACKS_YEAR <- TRACKS_YEAR.sp <- list()
-  for(t in 1:length(years)){
-    ## SUBSET GPS TRACKS TO THE SAMPLING PERIOD
-    TRACKS_1 <- ALL_TRACKS[ALL_TRACKS$Yr%in% years[t] &
-                             ALL_TRACKS$Mth%in%sampling.months[[1]], ]
-    TRACKS_2 <- ALL_TRACKS[ALL_TRACKS$Yr%in% (years[t]+1) &
-                             ALL_TRACKS$Mth%in%sampling.months[[2]], ]
-    TRACKS <- rbind(TRACKS_1, TRACKS_2)
-    ## SIMPLIFY TRACKS SHAPES
-    ## SUBSET TRACKS TO THE STUDY AREA
-    TRACKS <- st_intersection(TRACKS, st_as_sfc(studyAreaExtent))
-    ## NAME TRACKS
-    TRACKS$ID <- 1:nrow(TRACKS)
-    TRACKS_YEAR[[t]] <- TRACKS
-    # calculate length to identify duplicates
-    TRACKS_YEAR[[t]]$dist <- st_length(TRACKS_YEAR[[t]], byid = T)
-    # calculate centroids to also identify tracks that could have the same length but in different location
-    TRACKS_YEAR[[t]]$centroidx <-  st_coordinates(st_centroid(TRACKS_YEAR[[t]]))[,1]
-    df <- data.frame(ID = TRACKS_YEAR[[t]]$ID,
-                     Dato = TRACKS_YEAR[[t]]$Dato,
-                     Person = TRACKS_YEAR[[t]]$Person,
-                     dist = TRACKS_YEAR[[t]]$dist,
-                     centroidx = TRACKS_YEAR[[t]]$centroidx)
-    dupIDs[[t]] <- duplicated(df[ ,2:5])# find duplicates based on person, distance and date
-    dupIDs[[t]] <- df$ID[dupIDs[[t]]]
-    dupDist[[t]] <- TRACKS_YEAR[[t]][dupIDs[[t]], ]$dist
-    TRACKS_YEAR[[t]] <-  TRACKS_YEAR[[t]][-dupIDs[[t]], ]
-  }#t
   
   ##-- Combine all GPS tracks
-  # [CM] comment out this function. Use the same script than in previous analysis instead
-  # TRACKS <- readTracks( data.dir = data.dir,
-  #                       years = years,
-  #                       sampling.months = sampling.months)
+  TRACKS <- readTracks( data.dir = data.dir,
+                        years = years,
+                        sampling.months = sampling.months)
   
   ##-- Extract length of GPS search track per detector grid cell
   detTracks <- matrix(0, nrow = n.detectors, ncol = n.years)
   ##-- Set-up progress bar
   pb = utils::txtProgressBar( min = 1, max = n.years, initial = 0, style = 3)
   for(t in 1:n.years){
-    intersection <- TRACKS_YEAR[[t]] %>%
-      #dplyr::filter(Year == years[t]) %>%
+    intersection <- TRACKS %>%
+      dplyr::filter(Year == years[t]) %>%
       sf::st_intersection(detectors$grid, .) %>%
       dplyr::mutate(LEN = st_length(.)) %>%
       sf::st_drop_geometry() %>%
@@ -443,21 +369,21 @@ makeRovquantData_wolf <- function(
   detectors$detectors.df <- cbind.data.frame(detectors$detectors.df, detTracks)
   
   
+  
   ## ------       2.2.4. EXTRACT DISTANCES TO ROADS ------
   
   ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster(file.path(data.dir, "Roads/MinDistAllRoads1km.tif"))
-  
-  r <- fasterize(studyArea, DistAllRoads)
-  r[!is.na(r)] <- DistAllRoads[!is.na(r)]
-  DistAllRoads <- r
-  DistAllRoads <- crop(DistAllRoads, studyArea)
-  # [CM] comment out this function. Use the same script than in previous analysis instead
-  # DistAllRoads <- readMostRecent( path = file.path(data.dir, "Roads"), 
-  #                                 extension = ".tif", 
-  #                                 stack = FALSE)
+  DistAllRoads <- readMostRecent( path = file.path(data.dir, "Roads"), 
+                                  extension = ".tif", 
+                                  stack = FALSE)
   
   ##-- Fasterize to remove values that fall in the sea
+  r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
+  r[!is.na(r)] <- DistAllRoads[!is.na(r)]
+  DistAllRoads <- r
+  DistAllRoads <- raster::crop(DistAllRoads, studyArea)
+  rm(list = c("r"))
+  
   ##-- Aggregate to match the detectors resolution
   DistAllRoads <- raster::aggregate( 
     x = DistAllRoads,
@@ -483,19 +409,11 @@ makeRovquantData_wolf <- function(
   
   
   ## ------       2.2.5. EXTRACT DAYS OF SNOW ------
-  SNOW <- stack(file.path(data.dir, "Snow/AverageSnowCoverModisSeason2016_2026_Wolf.tif"))
-
-  ## RENAME THE LAYERS
-  names(SNOW) <- paste(years,(years)+1, sep = "_")
-
-  ## SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
-  SNOW <- SNOW[[paste("X", years, "_", years+1, sep = "")]]
-  SNOW <- raster::crop(SNOW, c(0,40,55,75))
+  
   ##-- Load raster stack of snow cover
-  # [CM] comment out this function. Use the same script than in previous analysis instead
-  # SNOW <- readMostRecent( path = file.path(data.dir, "Snow"), 
-  #                         extension = ".tif", 
-  #                         stack = TRUE)
+  SNOW <- readMostRecent( path = file.path(data.dir, "Snow"), 
+                          extension = ".tif", 
+                          stack = TRUE)
   
   ##-- Select snow data corresponding to the monitoring period
   SNOW <- SNOW[[paste("X", years, "_", years + 1, sep = "")]]
@@ -534,8 +452,7 @@ makeRovquantData_wolf <- function(
                               pattern = "Skandobs")
   
   ##-- Replace scandinavian characters
-  colnames(skandObs) <- rovquantR::translateForeignCharacters(dat = colnames(skandObs))#,[CM]
-                                                   #dir.translation = dir.analysis)
+  colnames(skandObs) <- translateForeignCharacters(data = colnames(skandObs))
   
   skandObs <- skandObs %>%
     ##-- Extract important info (e.g. month, year)
@@ -543,8 +460,8 @@ makeRovquantData_wolf <- function(
                    year = as.numeric(format(date,"%Y")),
                    month = as.numeric(format(date,"%m")),
                    species = stringi::stri_trans_general(species, "Latin-ASCII"),
-                   monitoring.season = ifelse(month < 12,#[CM]UPDATE to 10 #unlist(sampling.months)[1],
-                                              year-1, year)) %>%
+                   monitoring.season = ifelse( month < unlist(sampling.months)[1],
+                                               year-1, year)) %>%
     ##-- Filter based on monitoring season
     dplyr::filter( month %in% unlist(sampling.months)) %>%
     ##-- Turn into spatial points object
@@ -556,24 +473,10 @@ makeRovquantData_wolf <- function(
   
   
   ## ------         2.2.6.2. ROVBASE ------
-  rovbaseObs1 <- read_xlsx(file.path(data.dir, "AllSamples/RIB1804202607011165.xlsx"))
-  rovbaseObs2 <- read_xlsx(file.path(data.dir, "AllSamples/RIB1804202607015508.xlsx"))
-  rovbaseObs3 <- read_xlsx(file.path(data.dir, "AllSamples/RIB18042026065900566.xlsx"))
-  rovbaseObs4 <- read_xlsx(file.path(data.dir, "AllSamples/RIB18042026070006976.xlsx"))
   
-  rovbaseObs <- rbind(rovbaseObs1,rovbaseObs2,rovbaseObs3,rovbaseObs4)
-  rm(list = c("rovbaseObs1", "rovbaseObs2", "rovbaseObs3", "rovbaseObs4"))
-  
-  colnames(rovbaseObs) <- rovquantR::translateForeignCharacters( dat = colnames(rovbaseObs))#,
-                                                      # dir.translation = dir.analysis)
-  rovbaseObs$Sample_type <- rovquantR::translateForeignCharacters( dat = rovbaseObs$Proevetype)#,
-                                                       # dir.translation = dir.analysis)
-  
-  # [CM] comment out readMultiples. Use the same script than in previous analysis instead
   ##-- Process Rovbase observations (all species)
-  rovbaseObs <- rovbaseObs %>%
-                #readMultiples( path = file.path(data.dir, "AllSamples"),
-                               #extension = ".xlsx") %>%
+  rovbaseObs <- readMultiples( path = file.path(data.dir, "AllSamples"),
+                               extension = ".xlsx") %>%
     ##-- Rename columns to facilitate manipulation
     dplyr::rename(., any_of(rename.list)) %>%
     ##-- Extract important info (e.g. month, year, country of collection)
@@ -582,29 +485,29 @@ makeRovquantData_wolf <- function(
       across(where(is.factor), as.character),
       ##-- Deal with Scandinavian characters
       Species = stringi::stri_trans_general(Species, "Latin-ASCII"),
-      # Sample_type = translateForeignCharacters(dat=Sample_type,dir.analysis),
+      Sample_type = translateForeignCharacters(data = Sample_type),
       ##-- Deal with dates
       Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
       year = as.numeric(format(Date,"%Y")),
       month = as.numeric(format(Date,"%m")),
-      monitoring.season = ifelse(month < 12,#[CM]UPDATE to 10 #unlist(sampling.months)[1],
+      monitoring.season = ifelse(month < unlist(sampling.months)[1],
                                  year-1, year)) %>%
     ##-- Filter out unusable samples
     dplyr::filter( 
       ##-- Filter out samples without coordinates,...
-      !is.na(North_UTM33),
+      !is.na(East_UTM33),
       ##-- ...based on species
       Species %in% c("Ulv"),
       ##-- ...based on sample type
       Sample_type %in% c( "Ekskrement","Har","Urin","Valpeekskrement (Ulv)","Sekret (Jerv)",
-                          "Saliv/Spytt"),#[CM] comment out , "Loepeblod", "Vev"),
+                          "Saliv/Spytt", "Loepeblod", "Vev"),
       ##-- ...based on monitoring season
       month %in% unlist(sampling.months)
       # ##-- ... if sample was from the focal species and successfully genotyped 
       # !(Species %in% "Ulv" & !is.na(Id))
     ) %>%
     ##-- Turn into spatial points object
-    sf::st_as_sf( ., coords = c("Oest (UTM33/SWEREF99 TM)","North_UTM33")) %>%
+    sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
     sf::st_set_crs(. , sf::st_crs(REGIONS)) %>%
     ##-- Filter based on space 
     sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
@@ -612,6 +515,7 @@ makeRovquantData_wolf <- function(
   
   
   ## ------         2.2.6.3. COMBINE ROVBASE & SKANDOBS ------
+  
   ##-- Rasterize at the detector level
   r.list <- lapply(years, function(y){
     ##-- Rasterize Skandobs observations 
@@ -672,7 +576,6 @@ makeRovquantData_wolf <- function(
   detSnow <- round(scale(detSnow), digits = 2)
   detRoads <- round(scale(detRoads), digits = 2)
   detTracks <- round(scale(detTracks), digits = 2)
-  print(paste(round(colSums(detTracks),digits=2)))
   
   ##-- STRUCTURED 
   detCovs <- array(NA, c(dim(detTracks)[1], 2, dim(detTracks)[2]))
@@ -696,12 +599,11 @@ makeRovquantData_wolf <- function(
   detectors$covariates.others <- detCovsOth
   
   ##-- Merge with the detector grid
-  #[CM] didnt run commented out
-  # detectors$grid <- dplyr::left_join(
-  #   x = detectors$grid,
-  #   y = detectors$detectors.df,
-  #   by = "id")
-  # 
+  detectors$grid <- dplyr::left_join(
+    x = detectors$grid,
+    y = detectors$detectors.df,
+    by = "id")
+  
   
   
   ## ------   3. RESCALE COORDINATES ------
@@ -724,13 +626,15 @@ makeRovquantData_wolf <- function(
   ## ------   4. CREATE LOCAL OBJECTS -----
   
   ##-- Get local detectors
-  detectors$localObjects <- getLocalObjects(#[CM] why not using nimbleSCR version?
+  detectors$localObjects <- getLocalObjects(
     habitatMask = habitat$habitat.mx,
     coords = detectors$scaledCoords,
-    dmax = detectors$maxDist*1.4/habitat$resolution,
+    dmax = detectors$maxDist/habitat$resolution,
     resizeFactor = detectors$resize.factor,
     plot.check = F)
-
+  
+  
+  
   ## ------   5. SAVE STATE-SPACE CHARACTERISTICS -----
   
   save( habitat,
@@ -755,9 +659,8 @@ makeRovquantData_wolf <- function(
       Month %in% unlist(sampling.months),
       ##-- Subset to sex of interest
       Sex %in% sex) %>%
-    ##-- Filter based on space #[CM] use extent instead of the grid based as in previous analyses
-  sf::st_filter( .,sf::st_as_sfc(myStudyArea.extent), .predicate = st_intersects)
-    # sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
+    ##-- Filter based on space 
+    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
   
   
   
@@ -769,9 +672,8 @@ makeRovquantData_wolf <- function(
       Year %in% years,
       ##-- Subset to sex of interest
       Sex %in% sex) %>%
-    ##-- Filter based on space #[CM] use extent instead of the grid based as in previous analyses
-    sf::st_filter( .,sf::st_as_sfc(myStudyArea.extent), .predicate = st_intersects)
-  #  sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
+    ##-- Filter based on space 
+    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
   
   
   
@@ -781,56 +683,11 @@ makeRovquantData_wolf <- function(
   
   message("Assigning DNA samples to GPS tracks... ")
   message("This can take several minutes... ")
-  #[CM] Couldnt get this to reproduce the results commented out 
-  # data.alive <- assignSearchTracks(
-  #   data = data.alive,
-  #   tracks = TRACKS)
-  # rm(list = c("TRACKS"))
-  TRACKSSimple_sf <- list()
-  for(t in 1:length(years)){
-    TRACKS_YEAR[[t]]$RovbsID <- as.character(TRACKS_YEAR[[t]]$RovbaseID)
-    TRACKS_YEAR[[t]]$RovbasID <- 1:length(TRACKS_YEAR[[t]]$RovbaseID)
-    TRACKSSimple_sf[[t]] <- TRACKS_YEAR[[t]]
-  }
   
-  data.alive$TrackRovbsID <- NA
-  data.alive$trackDist <- NA
-  ## ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
-  dnatemp <- st_as_sf(data.alive)
-  ## CREATE A BUFFER AROUND EACH DETECTION
-  tmp <-  st_buffer(dnatemp, dist=750)
-  # 
-  for(i in 1:nrow(data.alive)){
-    # INTERSECT POINT WITH TRACKS,
-    t <- which(years %in% tmp[i, ]$Year)
-    whichSameDate <- which(as.character(TRACKSSimple_sf[[t]]$Dato)==as.character(data.alive$Date[i]))
-    tmpTRACKS <- st_intersection(TRACKSSimple_sf[[t]][whichSameDate,], tmp[i,])
-
-    if(nrow(tmpTRACKS)==0){next}
-
-    # FIND THE CLOSEST TRACK
-    dist <- st_distance(dnatemp[i,], tmpTRACKS, by_element = F)
-
-    # MAKE SURE THE SAMPLE WAS COLLECTED AT THE SAME TIME THAN THE TRACK
-    # IF NO MATCHING DATE ASSIGN TO NA?
-    if(length(dist)==0){
-      data.alive$TrackRovbsID[i] <- NA
-      data.alive$trackDist[i] <- NA
-    }
-    # IF MATCHING DATE ASSING TO THAT TRACK
-    if(length(dist)==1){
-      data.alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID
-      data.alive$trackDist[i] <- dist
-    }
-    # IF SEVERAL MATCHING DATES ASSING TO THE CLOSEST OF THE MATCHING TRACKS
-    if(length(dist)>1){
-      data.alive$TrackRovbsID[i] <- tmpTRACKS$RovbsID[which.min(dist)]
-      data.alive$trackDist[i] <- min(dist)
-    }
-    #print(i)
-  }
-  
-  
+  data.alive <- assignSearchTracks(
+    data = data.alive,
+    tracks = TRACKS)
+  rm(list = c("TRACKS"))
   
   
   ## ------       6.3.2. ASSIGN SAMPLES TO OPPORTUNISTIC OR STRUCTURED ------
@@ -841,14 +698,16 @@ makeRovquantData_wolf <- function(
   data.alive <- data.alive %>%
     dplyr::mutate(
       ##-- Collector column was replaced by two columns, merging them now...
-      Collector_role1 = ifelse(is.na(Collector_other_role), Collector_role, Collector_other_role),
+      Collector_role = ifelse(is.na(Collector_other_role), Collector_role, Collector_other_role),
       ##-- Identify samples collected during structured sampling 
-      structured = Collector_role1 %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
-        !is.na(TrackRovbsID) &
+      structured = Collector_role %in% c("Statsforvalteren","Länsstyrelsen","SNO","Fylkesmannen") &
+        !is.na(trackID) &
         trackDist <= distanceThreshold)
-
+  
+  
+  
   ## ------     6.4. ASSIGN SAMPLES TO DETECTORS -----
-  data.alive1 <- data.alive
+  
   ##-- ALL SAMPLES
   data.alive <- assignDetectors( 
     data = data.alive,                
@@ -865,6 +724,7 @@ makeRovquantData_wolf <- function(
   
   
   ## ------     6.5. PLOT NGS & DEAD RECOVERY MAPS ----- 
+  
   ##-- layout
   L <- n.years
   if(L < 6){ nrows <- 1 } else{
@@ -874,8 +734,8 @@ makeRovquantData_wolf <- function(
           nrows <- 5
         }}}}
   ncols <- ceiling(L/nrows)
-
-
+  
+  
   ##-- NGS maps
   grDevices::png(filename = file.path(working.dir, "figures/NGS_TimeSeries.png"),
                  width = ncols*2, height = nrows*4,
@@ -891,7 +751,7 @@ makeRovquantData_wolf <- function(
                          widths = c(rep(1,ncol(mx))),
                          heights = rep(1,2))
   par(mar = c(0,0,0,0))
-
+  
   for(t in 1:length(years)){
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
@@ -900,15 +760,15 @@ makeRovquantData_wolf <- function(
             add = TRUE, col = "orange", pch = 3),
       silent = TRUE)
     plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
-
+    
     ##-- Add year
     graphics::mtext(text = years[t],
                     side = 1, line = -18,
                     adj = 0.18, cex = 1.2)
   }#t
   dev.off()
-  # 
-  # 
+  
+  
   ##-- Dead recoveries maps
   grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
                  width = ncols*2, height = nrows*4,
@@ -924,13 +784,13 @@ makeRovquantData_wolf <- function(
                          widths = c(rep(1,ncol(mx))),
                          heights = rep(1,2))
   par(mar = c(0,0,0,0))
-
+  
   for(t in 1:length(years)){
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
-    try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t] &
+    try( plot( sf::st_geometry(data.dead[data.dead$Year == years[t] & 
                                            data.dead$Legal, ]),
-               add = TRUE,
+               add = TRUE, 
                col = "slateblue1",
                pch = 3),
          silent = TRUE)
@@ -943,7 +803,7 @@ makeRovquantData_wolf <- function(
           border = "gray20",
           col = NA,
           add = TRUE)
-
+    
     ##-- Add year
     graphics::mtext(text = years[t],
                     side = 1, line = -18,
@@ -1059,11 +919,8 @@ makeRovquantData_wolf <- function(
         idd <- names(affected.ids)
         for(i in 1:length(idd)){
           detIds <- which(distances[[t]]$y.flagged[idd[i], ] > 0)
-          tmp <- data.alive$data.sp %>%#
-            dplyr::filter(!(Id %in% idd[i] &
-                              Detector %in% detIds &
-                              Year %in% years[t]))
-          data.alive$data.sp <- tmp#[CM] for whatever reasons i need this extra step
+          data.alive$data.sp <- data.alive$data.sp %>%
+            dplyr::filter(!(Id %in% idd[i] & Detector %in% detIds & Year %in% years[t]))
         }#i
       }#if
     }#t
@@ -1073,324 +930,39 @@ makeRovquantData_wolf <- function(
     ## ------     7.4. GENERATE INDIVIDUAL-LEVEL COVARIATES ------ 
     
     ## ------       7.4.1. INDIVIDUAL STATE ------ 
-    ##[CM] Do the state assignement here instead of within cleanData function
-    ##[CM] State assignment based on NGS alive is challenging as we also need to do it for dead wolves. 
-    ##[CM] It is much easier to do it once we create the entire y dataframe
-    ##-- Load most recent Micke's file
-    INDIVIDUAL_ID <- suppressWarnings(readMostRecent( path = data.dir,
-                                                      extension = ".xls",
-                                                      pattern = "Grouping")) %>%
-      ##-- Rename columns to facilitate manipulation
-      dplyr::rename(., any_of(rename.list),
-                    IdSimplified = "ROVBASE_IndividID") %>%
-      ##-- Turn potential factors into characters 
-      dplyr::mutate(across(where(is.factor), as.character)) %>%
-      ##-- Add some columns
-      dplyr::mutate( 
-        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
-        Sex = ifelse(is.na(Sex), "unknown", Sex),
-        Sex = ifelse(Sex %in% "Hona", "female", Sex),
-        Sex = ifelse(Sex %in% "Hane", "male", Sex),
-        Year = 2021)  
     
+    ##-- Turn status into factor for correct order
+    data.alive$data.sp$Status <- factor( data.alive$data.sp$Status,
+                                         levels = c("Juvenile", "Pair", "Family group"))
     
-    ##-- THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2022/23.
-    Pack_ID2023 <- suppressWarnings(readMostRecent( path = data.dir,
-                                                    extension = ".xls",
-                                                    pattern = "Genetiskt ID")) %>%
-      ##-- Rename columns to facilitate manipulation
-      dplyr::rename(.,
-                    any_of(rename.list),
-                    IdSimplified = "Rovbase-ID") %>%
-      ##-- Turn potential factors into characters
-      dplyr::mutate(across(where(is.factor), as.character)) %>%
-      ##-- Add some columns
-      dplyr::mutate(
-        ##-- Add status 
-        Status = "Pair",
-        ##-- Fix unknown "Sex"
-        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
-        Sex = ifelse(is.na(Sex), "unknown", Sex),
-        Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
-        Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex),
-        Year = 2022)
+    ##-- Make a table of individuals states per year
+    ##-- 1: no info
+    ##-- 2: Juvenile
+    ##-- 3: Pair
+    ##-- 4: Family group
+    tmp <- apply( table(data.alive$data.sp$Id,
+                        data.alive$data.sp$Status,
+                        data.alive$data.sp$Year),
+                  c(1,3),
+                  function(x)ifelse(any(x>0), which(x>0), 0)) + 1
     
+    ##-- Resize to match detection array
+    y.obs <- y.status <- matrix(1, nrow = nrow(y.ar.DEAD), ncol = ncol(y.ar.DEAD))
+    dimnames(y.obs) <- dimnames(y.ar.DEAD)
+    y.obs[dimnames(tmp)[[1]], ] <- tmp
+    y.obs[y.obs > 3] <- 3
     
-    ##-- THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2023/24.
-    Pack_ID2024 <- suppressWarnings(readMostRecent( path = data.dir,
-                                                    extension = ".xls",
-                                                    pattern = "Bilaga_")) %>%
-      ##-- Rename columns to facilitate manipulation
-      dplyr::rename(.,
-                    IdSimplified = "RovbaseID",
-                    any_of(rename.list)) %>%
-      ##-- Turn potential factors into characters
-      dplyr::mutate(across(where(is.factor), as.character)) %>%
-      ##-- Add some columns
-      dplyr::mutate(
-        ##-- Add status 
-        Status = "Pair",
-        ##-- Fix unknown "Sex"
-        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
-        Sex = ifelse(is.na(Sex), "unknown", Sex),
-        Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
-        Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex),
-        Year = 2023)
-    
-    
-    ##-- THIS IS THE PACK ID SENT BY ØYSTEIN FOR THE WINTER 2024/25.
-    Pack_ID2025 <- suppressWarnings(readMostRecent( path = data.dir,
-                                                    extension = ".xls",
-                                                    pattern = "FromOystein")) %>%
-      ##-- Rename columns to facilitate manipulation
-      dplyr::rename(.,
-                    any_of(rename.list),
-                    IdSimplified = "IndividID") %>%
-      ##-- Turn potential factors into characters
-      dplyr::mutate( across(where(is.factor), as.character),
-                     Year = 2024,
-                     Status = "Pair") %>%
-      dplyr::rowwise() %>%
-      dplyr::mutate(
-        ##-- Fix unknown "Sex"
-        Sex = ifelse(any(c_across(Sex1:Sex4) %in% c("Tispe","Tik")),
-                     "female",
-                     ifelse(any(c_across(Sex1:Sex4) %in% c("Hann","Hane")),
-                            "male",
-                            "unknown")))
-    
-    
-    ##-- THIS IS THE PACK ID SENT BY ØYSTEIN FOR THE WINTER 2024/25.
-    Pack_ID2026 <- suppressWarnings(readMostRecent( path = data.dir,
-                                                    extension = ".csv",
-                                                    pattern = "RovbaseID ØF")) %>%
-      ##-- Rename columns to facilitate manipulation
-      dplyr::rename(.,
-                    IdSimplified = "RovbaseID",
-                    any_of(rename.list)) %>%
-      ##-- Turn potential factors into characters
-      dplyr::mutate(across(where(is.factor), as.character)) %>%
-      ##-- Add some columns
-      dplyr::mutate(
-        ##-- Add status 
-        Status = "Pair",
-        ##-- Fix unknown "Sex"
-        Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
-        Sex = ifelse(is.na(Sex), "unknown", Sex),
-        Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
-        Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex),
-        Year = 2025)
-    
-    
-    ##-- Consolidate all info on individual sex in one dataframe
-    #[CM] Commented out
-    # ALL_SEX <- rbind( DATA[ ,c("IdSimplified","Sex")],
-    #                   INDIVIDUAL_ID[ ,c("IdSimplified","Sex")],
-    #                   Pack_ID2023[ ,c("IdSimplified","Sex")],
-    #                   Pack_ID2024[ ,c("IdSimplified","Sex")],
-    #                   Pack_ID2025[ ,c("IdSimplified","Sex")],
-    #                   Pack_ID2026[ ,c("IdSimplified","Sex")])
-    # 
-    # 
-    ##-- Consolidate all info on individual status in one dataframe
-    # ALL_STATUS <- rbind( INDIVIDUAL_ID[ ,c("IdSimplified","Year","Status")],
-    #                      Pack_ID2023[ ,c("IdSimplified","Year","Status")],
-    #                      Pack_ID2024[ ,c("IdSimplified","Year","Status")],
-    #                      Pack_ID2025[ ,c("IdSimplified","Year","Status")],
-    #                      Pack_ID2026[ ,c("IdSimplified","Year","Status")]) 
-    ##-- Merge with detection data 
-    # DATA <- DATA %>%
-    #   left_join(., ALL_STATUS, by = c("IdSimplified","Year"))
-    #overwrite Sex with Micke info
-    # micke.sex <- unlist(lapply(DATA$Id,
-    #                            function(i){ 
-    #                              INDIVIDUAL_ID[INDIVIDUAL_ID$Id %in% i, "Sex"][1,]
-    #                            }))
-    # DATA$Sex <- ifelse(!is.na(micke.sex), micke.sex, DATA$Sex)
-    #
-    ##statut 
-    # DATA$STATUS <- NA 
-    # 
-    # INDIVIDUAL_ID$STATUS_Numeric <- 1
-    # INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% "Juvenile"] <- 2
-    # INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% c("Pair" )] <- 3
-    # INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% c("Family group")] <- 4
-    # 
-    # # indIDRovBase <- unlist(lapply(strsplit(DATA$IdSimplified," "), function(x) x[1]))
-    # ALLIDS <- c(unique(DATA$IdSimplified))
-    # # ALLIDS <- c(unique(DATA$Id))
-    # 
-    # # y.obsALL <- matrix(1, nrow = length(ALLIDS), ncol = dim(y.ar.ALIVE)[3]+1)
-    # # yrs <- c(years[1]-1, years)
-    # # dimnames(y.obsALL) <- list(ALLIDS, yrs)
-    # nyears <- years
-    # yrs <- c(years[1]-1, years)
-    # t=1
-    # for(i in 1:length(ALLIDS)[1]){
-    #   for(t in 1:(length(years+1))){
-    #     tmp <- unique(INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$`ReprodYear (May 1 year y - Apr 30 y+1)` == yrs[t] & 
-    #                                                  INDIVIDUAL_ID$IdSimplified == ALLIDS[i]])
-    #     if(length(tmp) > 0){
-    #       if(length(tmp) > 1){
-    #         # print(tmp)
-    #         tmp <- tmp[1]
-    #       }
-    #       DATA$STATUS[DATA$IdSimplified %in% ALLIDS[i] & DATA$Year %in% yrs[t]] <- tmp
-    #     }
-    #   }#t
-    # }#i
-    # # 
-    # # tmp <- DATA[DATA$IdSimplified %in% ALLIDS[i] & DATA$Year %in% years[t],]
-    # # tmp1 <- INDIVIDUAL_ID[INDIVIDUAL_ID$`ReprodYear (May 1 year y - Apr 30 y+1)` == yrs[t] & 
-    # #                                INDIVIDUAL_ID$IdSimplified == ALLIDS[i],]
-    # # tmp1$`ReprodYear (May 1 year y - Apr 30 y+1)`
-    # # 
-    # numOverwiteSex <- sum(unique(INDIVIDUAL_ID$Id) %in% DATA$Id)
-    # #overwrite Sex with pack id info
-    # for(i in 1:nrow(Pack_ID2023)){
-    #   DATA$Sex[DATA$IdSimplified %in% Pack_ID2023$IdSimplified[i]] <- Pack_ID2023$Sex[i]
-    #   DATA$STATUS[DATA$IdSimplified %in% Pack_ID2023$IdSimplified[i] & 
-    #                 DATA$Year %in% 2022 ] <- 3
-    #   
-    # }#i
-    # 
-    # ##-- Overwrite sex 
-    # for(i in 1:nrow(Pack_ID2024)){
-    #   DATA$Sex[DATA$IdSimplified %in% Pack_ID2024$IdSimplified[i]] <- Pack_ID2024$Sex[i]
-    #   DATA$STATUS[DATA$IdSimplified %in% Pack_ID2024$IdSimplified[i] & 
-    #                 DATA$Year %in% 2023 ] <- 3
-    # }#i
-    # 
-    # ##-- Overwrite sex 
-    # for(i in 1:nrow(Pack_ID2025)){
-    #   DATA$Sex[DATA$IdSimplified %in% Pack_ID2025$IdSimplified[i]] <- Pack_ID2025$Sex[i]
-    #   DATA$STATUS[DATA$IdSimplified %in% Pack_ID2025$IdSimplified[i] & 
-    #                 DATA$Year %in% 2024 ] <- 3
-    # }#i
-    # 
-    # for(i in 1:nrow(Pack_ID2026)){
-    #   DATA$Sex[DATA$IdSimplified %in% Pack_ID2026$IdSimplified[i]] <- Pack_ID2026$Sex[i]
-    #   DATA$STATUS[DATA$IdSimplified %in% Pack_ID2026$IdSimplified[i] & 
-    #                 DATA$Year %in% 2025 ] <- 3
-    # }#i
-    
-    ##statut[CM] assignation of state to the y array
-    INDIVIDUAL_ID$STATUS_Numeric <- 1
-    INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% "Juvenile"] <- 2
-    INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% c("Pair" )] <- 3
-    INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% c("Family group")] <- 4
-    
-    ## FOR THE LAST YEAR GET THROUGH THE PAIR BASED-FILE FROM LINN.
-    indIDRovBase <- unlist(lapply(strsplit(y.ar$Id.vector," "), function(x) x[1]))
-    
-    ALLIDS <- c(unique(indIDRovBase))
-    
-    y.obsALL <- matrix(1, nrow = length(ALLIDS), ncol = dim(y.ar$y.ar)[3]+1)
-    yrs <- c(years[1]-1, years)
-    dimnames(y.obsALL) <- list(ALLIDS, yrs)
-    for(i in 1:dim(y.obsALL)[1]){
-      for(t in 1:(length(years)+1)){
-        tmp <- unique(INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$`ReprodYear (May 1 year y - Apr 30 y+1)` == yrs[t] & 
-                                                     INDIVIDUAL_ID$IdSimplified == ALLIDS[i]])
-        if(length(tmp) > 0){
-          if(length(tmp) > 1){
-            print(tmp)
-            tmp <- tmp[1]
-          }
-          y.obsALL[i,t] <- tmp
-        }
-      }#t
-    }#i
-
-    
-    ##FOR THE LAST YEAR GET TRHOUGH THE PAIR BASED-FILE FROM LINN.
-    for(i in 1:dim(y.obsALL)[1]){
-      t <- length(years)
-      
-      #linn's 2023 file
-      tmp <- Pack_ID2023[Pack_ID2023$IdSimplified %in% ALLIDS[i],]
-      if(nrow(tmp) > 0){
-        y.obsALL[i,t-2] <- 3
-      }
-      
-      #linn's 2024 file
-      tmp <-  Pack_ID2024[Pack_ID2024$IdSimplified %in% ALLIDS[i],]
-      if(nrow(tmp) > 0){
-        y.obsALL[i,t-1] <- 3
-      }
-      
-      #linn's 2025 file
-      tmp <-  Pack_ID2025[Pack_ID2025$IdSimplified %in% ALLIDS[i],]
-      if(nrow(tmp) > 0){
-        y.obsALL[i,t] <- 3
-      }
-      
-      #linn's 2026 file
-      tmp <- Pack_ID2026[Pack_ID2026$IdSimplified %in% ALLIDS[i],]
-      if(nrow(tmp) > 0){
-        y.obsALL[i,t+1] <- 3
-      }
-    }#i
-    
-    ## subset y.obs for the individuals present in y.ar
-    indID <- unlist(lapply(strsplit(y.ar$Id.vector, " "),
-                           function(x)x[1]))
-    y.obs <- y.obsALL[indID, ]
-    #y.obs.family <- y.obs
-    y.obs[y.obs == 4] <- 3
-    y.obs <- y.obs[ ,as.character(years)]
-    
-    indSocialState <- matrix(1, nrow = dim(y.ar$y.ar)[1], 
-                             ncol = dim(y.ar$y.ar)[3])
-    dimnames(indSocialState) <- list(dimnames(y.ar$y.ar)[[1]],
-                                     years) 
-    for(i in 1:dim(indSocialState)[1]){
+    ##-- For the model, set status to 2 from the first time it is "pair" or "family group" to the last occasion
+    for(i in 1:dim(y.status)[1]){
       if(any(y.obs[i, ] >= 3)){
-        indSocialState[i, min(which(y.obs[i, ] >= 3)):dim(y.ar$y.ar)[3]] <- 2
+        y.status[i, min(which(y.obs[i, ] >= 3)):ncol(y.status)] <- 2
       }
     }#i
     
-    y.status <- indSocialState
     
-  # [CM] Commented out 
-  #   # data.alive$data.sp$Status <- data.alive$data.sp$STATUS
-  #   ##-- Turn status into factor for correct order
-  #   # data.alive$data.sp$Status <- factor( data.alive$data.sp$Status,
-  #   #                                      levels = c("Juvenile", "Pair", "Family group"))
-  #   # 
-  #   ##-- Make a table of individuals states per year
-  #   ##-- 1: no info
-  #   ##-- 2: Juvenile
-  #   ##-- 3: Pair
-  #   ##-- 4: Family group
-  #   # tmp <- apply( table(data.alive$data.sp$Id,
-  #   #                     data.alive$data.sp$Status,
-  #   #                     data.alive$data.sp$Year),
-  #   #               c(1,3),
-  #   #               function(x)ifelse(any(x>0), which(x>0), 0)) #+ 1
-  #   
-  #   ##-- Resize to match detection array
-  #   y.obs <- y.status <- matrix(1, nrow = nrow(y.ar.DEAD), ncol = ncol(y.ar.DEAD))
-  #   dimnames(y.obs) <- dimnames(y.ar.DEAD)
-  #   y.obs[dimnames(tmp)[[1]], ] <- tmp
-  #   y.obs[y.obs > 2] <- 3
-  #   
-  #   ##-- For the model, set status to 2 from the first time it is "pair" or "family group" to the last occasion
-  #   dimnames(y.status)[1] <- list(dimnames(y.ar$y.ar)[[1]]) 
-  #   
-  #   for(i in 1:dim(y.status)[1]){
-  #     if(any(y.obs[i, ] >= 3)){
-  #       y.status[i, min(which(y.obs[i, ] >= 3)):ncol(y.status)] <- 2
-  #     }
-  #   }#i
-  #   ####
-  ## Checks 
-  # setwd("C:/Users/cymi/OneDrive - Norwegian University of Life Sciences/Desktop")
-  # save(y.status,file="yData.RData")
-  # 
-  # #
-  # 
+    
     ## ------       7.4.2. TRAP-RESPONSE ------ 
+    
     ##-- Make matrix of previous capture indicator
     detResponse <- makeTrapResponseCov(
       data = myFullData.sp$alive,
@@ -1400,95 +972,10 @@ makeRovquantData_wolf <- function(
     detResponse <- detResponse[ ,dimnames(detResponse)[[2]] %in% dimnames(y.ar$y.ar)[[3]]]
     
     ##-- Subset to focal individuals
-    #detResponse <- detResponse[dimnames(detResponse)[[1]] %in% dimnames(y.ar$y.ar)[[1]], ]
-    detResponse <- detResponse[ dimnames(y.ar$y.ar)[[1]], ]
+    detResponse <- detResponse[dimnames(detResponse)[[1]] %in% dimnames(y.ar$y.ar)[[1]], ]
     
-    dimnames(detResponse)[[1]]%in%
-    dimnames(y.ar$y.ar)[[1]]
-    ## ------     7.5. HAB DENSITY ------ 
-    ##-- KERNEL OF INDIVIDUALS IN PAIRS
-    #[CM] Commented out 
-    #[CM] use the what we had in the previous script
-    # kern <- list()
-    # habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
-    # for(t in 1:n.years){
-    #   ##-- Subset the NGS data to individuals in packs/pairs this year
-    #   data.pairs.t <- myFullData.sp$alive %>%
-    #     dplyr::filter( Year == years[t],
-    #                    STATUS %in% c(3,4),
-    #                    Sex=="male")
-    #   
-    #   ##-- Get mean coordinates of packs
-    #   IDs <- unique(data.pairs.t$IdSimplified)
-    #   m.xy <- matrix(NA, nrow = length(IDs), ncol = 2)
-    #   colnames(m.xy) <- c("x","y")
-    #   for(i in 1:length(IDs)){
-    #     m.xy[i, ] <- data.pairs.t %>%
-    #       dplyr::filter( IdSimplified == IDs[i]) %>%
-    #       st_coordinates(.) %>%
-    #       colMeans(.)
-    #   }#i
-    #   
-    #   ##-- Check if some coordinates are missing  
-    #   if(sum(is.na(m.xy[ ,1])) > 0){m.xy <- m.xy[!is.na(m.xy[ ,1]), ]}
-    #   
-    #   ##-- Turn into .sf
-    #   locationsFamily <- st_as_sf( as.data.frame(m.xy),
-    #                                coords = c("x","y"),
-    #                                crs = st_crs(habitat$habitat.sp))
-    #   locationsFamily$id <- rep(1, nrow(locationsFamily))
-    #   
-    #   ##-- Calculate kernel of detections
-    #   kern[[t]] <- raster(estUDm2spixdf(kernelUD( 
-    #     as(locationsFamily[ ,"id"], "Spatial"), 
-    #     h = 15000,
-    #     grid = as(habitat$habitat.r, 'SpatialPixels'))))
-    #   
-    #   ##-- Plot check
-    #   plot(kern[[t]], main = years[t])
-    #   plot(habitat$habitat.poly$geometry, add = T, col = NA)
-    #   
-    #   ##-- Scale covariate
-    #   habDens[ ,t] <- scale(kern[[t]][habitat$habitat.r[ ] == 1])
-    # } #t
-    ##-- KERNEL OF INDIVIDUALS IN PAIRS
-    #[CM] Future improvements => use both sex to construct the map.
-    #[CM] few diffs because maps are constructed using all data since 2012 in "original" script
-    kern <- list()
-     habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
-    IDS <- unlist(lapply(strsplit(as.character(myFullData.sp$alive$Id) , " "), function(x)x[1])) 
-    for(t in 1:n.years){
-      id.fam <- which(y.obsALL[ ,as.character(years[t]-1)] 
-                      %in%
-                        c(3,4), arr.ind = T)
-      ## [PD] ADDED THE IF STATEMENT HERE AS A BANDAID UNTIL WE HAVE THE FINAL FILE FROM LINN
-      if(length(id.fam) > 0){
-        m.xy <- matrix(NA, nrow = length(id.fam), ncol = 2)
-        colnames(m.xy) <- c("x","y")
-        for(i in 1:length(id.fam)){
-          tmp <- myFullData.sp$alive[IDS == row.names(y.obsALL)[i] & 
-                                       myFullData.sp$alive$Sex %in% thisSex  , ]
-          m.xy[i, ] <- colMeans(st_coordinates(tmp))
-        }
-        if(sum(is.na(m.xy[,1]))>0){
-          m.xy <- m.xy[!is.na(m.xy[ ,1]), ]
-        }
-      }
-      locationsFamily <- st_as_sf( as.data.frame(m.xy),
-                                   coords = c("x","y"),
-                                   crs = st_crs(habitat$habitat.sp))
-      locationsFamily$id <- rep(1, nrow(locationsFamily))
-      kern[[t]] <- raster(estUDm2spixdf(kernelUD( as(locationsFamily[ ,"id"],"Spatial"),
-                                                  h = 15000,
-                                                  grid = as(habitat$habitat.r, 'SpatialPixels'))))
-      habDens[ ,t] <- scale(kern[[t]][habitat$habitat.r[ ]==1])
-    }#t
     
-    ##-- Check 
-    for(t in 1:n.years){
-      plot(kern[[t]], main = years[t])
-      plot(habitat$habitat.poly$geometry, add = T, col = NA)
-    }#t
+    
     ## ------     7.6. AUGMENT DETECTION HISTORIES -----
     
     ##-- Data arrays
@@ -1973,60 +1460,7 @@ makeRovquantData_wolf <- function(
     
   }#thisSex
   
-  #[CM] Sum of objects obtained from the Original script
-  #Male
-  # lapply(nimData, function(x) sum(x,na.rm=T))
-  # $detCountries
-  # [1] 5727
-  # $detCounties
-  # [1] 12461
-  # $y.max
-  # [1] 48
-  # $x.max
-  # [1] 29¨
-  #$detCountries
-  # [1] 5727
-  # $detCounties
-  # [1] 12461
-  # $y.max
-  # [1] 48
-  # $x.max
-  # [1] 29
-  # $detector.xy
-  # [1] 112192
-  # $lowerHabCoords
-  # [1] 28813
-  # $upperHabCoords
-  # [1] 30623
-  # $habitatGrid
-  # [1] 409965
-  # $habDens
-  # [1] 1.085243e-14
-  # $trapCovsOth
-  # [1] 14801.96
-  # $trapCovs
-  # [1] 3.42
-  # $trials
-  # [1] 322400
-  # $n.individuals
-  # [1] 1957
-  # $n.detectors
-  # [1] 3224
-  # $n.years
-  # [1] 10
-  # $numHabWindows
-  # [1] 905
-  # $idResponse
-  # [1] 2006
-  # $y.aliveOth
-  # [1] -187766
-  # $z
-  # [1] 14791
-  # $x.deadculled
-  # [1] 316
-  # 
-  # $x.deadOther
-  # [1] 57
+  
   ## ------   8. RETURN IMPORTANT INFOS FOR REPORT ------
   
   return(list( SPECIES = "Wolf",
@@ -2035,7 +1469,4 @@ makeRovquantData_wolf <- function(
                SEX = sex,
                DATE = DATE))
 }
-
-
-
 

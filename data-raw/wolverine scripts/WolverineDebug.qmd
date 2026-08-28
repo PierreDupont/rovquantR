@@ -666,11 +666,12 @@ Finally, we compare the processed inputs
 ```{r}
 ## Load NGS data from rovquantR
 load(file.path(dir.dropbox,
-               "wolverine/2025/Test_rovquantR/nimbleInFiles/female/nimbleInput_2026-08-18_female_1.RData")) 
+               "wolverine/2025/Test_rovquantR/nimbleInFiles/female/nimbleInput_2026-08-26_female_1.RData")) 
 nimData_NEW <- nimData
 nimConstants_NEW <- nimConstants
 lapply(nimData_NEW,dim)
 lapply(nimData_NEW,sum)
+lapply(nimConstants_NEW,sum)
 
 
 ## Load NGS data from last year

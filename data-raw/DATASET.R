@@ -33,8 +33,8 @@ if(Sys.info()['user'] == 'pierredupont') {
   dir.dropbox <- "/Users/pierredupont/Dropbox (AQEG)/AQEG Team Folder/RovQuant/"
 }
 if(Sys.info()['user'] == 'cymi') {
-  dir.git <- "C:/My_documents/rovquant/"
-  dir.dropbox <- "C:/Users/cymi/Dropbox (Old)/AQEG Dropbox/AQEG Team Folder/RovQuant" 
+  dir.git <- "C:/My_documents/rovquant/analyses/Rgit/RovQuant/"
+  dir.dropbox <- "C:/Users/cymi/AQEG Dropbox/AQEG Team Folder/RovQuant"
 }
 if(Sys.info()['user'] == 'richbi') {
   dir.git <- "C:/Users/richbi/OneDrive - Norwegian University of Life Sciences/PROJECTS/RovQuant"
@@ -214,8 +214,8 @@ r.list.internalWolf = c(
   Death_cause = "Bakgrunn/årsak",
   Death_method = "Bakgrunn/årsak metode",
   Death_purpose = "Bakgrunn/årsak formål",
-  DNAID = "DNAID (Prøve)",                          #[PD]
-  DNAID_analysis = "DNAID (Analyse)",                #[PD]
+  DNAID = "DNAID (Prøve)",                        #[PD]
+  DNAID_analysis = "DNAID (Analyse)",             #[PD]
   EventID = "HendelseID",
   East_Original = "Øst (opprinnelig)",
   East_RT90 = "Øst (RT90)",

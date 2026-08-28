@@ -438,22 +438,37 @@ cleanRovbaseData <- function(
       dplyr::mutate(IdSimplified = unlist(lapply(strsplit(Id, " "), function(x) x[1])))
     
     ##-- Load most recent Micke's file
+    # INDIVIDUAL_ID <- suppressWarnings(readMostRecent( path = data.dir,
+    #                                                   extension = ".xls",
+    #                                                   pattern = "_ID Grouping")) %>%
+    #   ##-- Rename columns to facilitate manipulation
+    #   dplyr::rename(.,
+    #                 any_of(rename.list),
+    #                 Year = "ReprodYear (May 1 year y - Apr 30 y+1)") %>%
+    #   ##-- Turn potential factors into characters
+    #   dplyr::mutate(across(where(is.factor), as.character)) %>%
+    #   ##-- Add some columns
+    #   dplyr::mutate(
+    #     IdSimplified = unlist(lapply(strsplit(Id, " "), function(x) x[1])),
+    #     Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
+    #     Sex = ifelse(is.na(Sex), "unknown", Sex),
+    #     Sex = ifelse(Sex %in% "Hona", "female", Sex),
+    #     Sex = ifelse(Sex %in% "Hane", "male", Sex))
     INDIVIDUAL_ID <- suppressWarnings(readMostRecent( path = data.dir,
                                                       extension = ".xls",
-                                                      pattern = "_ID Grouping")) %>%
+                                                      pattern = "Grouping")) %>%
       ##-- Rename columns to facilitate manipulation
-      dplyr::rename(.,
-                    any_of(rename.list),
-                    Year = "ReprodYear (May 1 year y - Apr 30 y+1)") %>%
-      ##-- Turn potential factors into characters
+      dplyr::rename(., any_of(rename.list),
+                    IdSimplified = "ROVBASE_IndividID") %>%
+      ##-- Turn potential factors into characters 
       dplyr::mutate(across(where(is.factor), as.character)) %>%
       ##-- Add some columns
-      dplyr::mutate(
-        IdSimplified = unlist(lapply(strsplit(Id, " "), function(x) x[1])),
+      dplyr::mutate( 
         Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
         Sex = ifelse(is.na(Sex), "unknown", Sex),
         Sex = ifelse(Sex %in% "Hona", "female", Sex),
-        Sex = ifelse(Sex %in% "Hane", "male", Sex))
+        Sex = ifelse(Sex %in% "Hane", "male", Sex),
+        Year = 2021)  
     
     
     ##-- THIS IS THE PACK ID SENT BY LINN FOR THE WINTER 2022/23.
@@ -522,10 +537,30 @@ cleanRovbaseData <- function(
                             "unknown")))
     
     
-    ##-- THIS IS THE PACK ID SENT BY ØYSTEIN FOR THE WINTER 2024/25.
+    ##-- THIS IS THE PACK ID SENT BY ØYSTEIN FOR THE WINTER 2025/26.
+    # Pack_ID2026 <- suppressWarnings(readMostRecent( path = data.dir,
+    #                                                   extension = ".xls",
+    #                                                   pattern = "Bilaga 4")) %>%
+    #   ##-- Rename columns to facilitate manipulation
+    #   dplyr::rename(.,
+    #                 IdSimplified = "RovbaseID",
+    #                 any_of(rename.list)) %>%
+    #   ##-- Turn potential factors into characters
+    #   dplyr::mutate(across(where(is.factor), as.character)) %>%
+    #   ##-- Add some columns
+    #   dplyr::mutate(
+    #     ##-- Add status 
+    #     Status = "Pair",
+    #     ##-- Fix unknown "Sex"
+    #     Sex = ifelse(Sex %in% "Okänt", "unknown", Sex),
+    #     Sex = ifelse(is.na(Sex), "unknown", Sex),
+    #     Sex = ifelse(Sex %in% c("Tispe","Tik"), "female", Sex),
+    #     Sex = ifelse(Sex %in% c("Hann","Hane"), "male", Sex),
+    #     Year = 2025)
+    # ##-- THIS IS THE PACK ID SENT BY ØYSTEIN FOR THE WINTER 2024/25.
     Pack_ID2026 <- suppressWarnings(readMostRecent( path = data.dir,
-                                                      extension = ".xls",
-                                                      pattern = "Bilaga 4")) %>%
+                                                    extension = ".csv",
+                                                    pattern = "RovbaseID ØF")) %>%
       ##-- Rename columns to facilitate manipulation
       dplyr::rename(.,
                     IdSimplified = "RovbaseID",
@@ -544,26 +579,92 @@ cleanRovbaseData <- function(
         Year = 2025)
     
     
-    ##-- Consolidate all info on individual sex in one dataframe
-    ALL_SEX <- rbind( DATA[ ,c("IdSimplified","Sex")],
-                      INDIVIDUAL_ID[ ,c("IdSimplified","Sex")],
-                      Pack_ID2023[ ,c("IdSimplified","Sex")],
-                      Pack_ID2024[ ,c("IdSimplified","Sex")],
-                      Pack_ID2025[ ,c("IdSimplified","Sex")],
-                      Pack_ID2026[ ,c("IdSimplified","Sex")])
+    # ##-- Consolidate all info on individual sex in one dataframe
+    # ALL_SEX <- rbind( DATA[ ,c("IdSimplified","Sex")],
+    #                   INDIVIDUAL_ID[ ,c("IdSimplified","Sex")],
+    #                   Pack_ID2023[ ,c("IdSimplified","Sex")],
+    #                   Pack_ID2024[ ,c("IdSimplified","Sex")],
+    #                   Pack_ID2025[ ,c("IdSimplified","Sex")],
+    #                   Pack_ID2026[ ,c("IdSimplified","Sex")])
+    # 
+    # 
+    # ##-- Consolidate all info on individual status in one dataframe
+    # ALL_STATUS <- rbind( INDIVIDUAL_ID[ ,c("IdSimplified","Year","Status")],
+    #                      Pack_ID2023[ ,c("IdSimplified","Year","Status")],
+    #                      Pack_ID2024[ ,c("IdSimplified","Year","Status")],
+    #                      Pack_ID2025[ ,c("IdSimplified","Year","Status")],
+    #                      Pack_ID2026[ ,c("IdSimplified","Year","Status")]) 
+    # 
+    # ##-- Merge with detection data 
+    # DATA <- DATA %>% left_join(., ALL_STATUS, by = c("IdSimplified","Year"))
     
+    ##-- Overwrite Sex with Micke info
+    micke.sex <- unlist(lapply(DATA$Id,
+                               function(i){ 
+                                 INDIVIDUAL_ID[INDIVIDUAL_ID$Id %in% i, "Sex"][1,]
+                               }))
     
-    ##-- Consolidate all info on individual status in one dataframe
-    ALL_STATUS <- rbind( INDIVIDUAL_ID[ ,c("IdSimplified","Year","Status")],
-                         Pack_ID2023[ ,c("IdSimplified","Year","Status")],
-                         Pack_ID2024[ ,c("IdSimplified","Year","Status")],
-                         Pack_ID2025[ ,c("IdSimplified","Year","Status")],
-                         Pack_ID2026[ ,c("IdSimplified","Year","Status")]) 
+    micke.sex[micke.sex %in% "0"] <- NA
+    micke.sex[micke.sex %in% names(table(micke.sex))[3]] <- NA
+    micke.sex[micke.sex %in% "Hona"] <- "Hunn"
+    micke.sex[micke.sex %in% "Hane"] <- "Hann"
+
+    DATA$Sex <- ifelse(!is.na(micke.sex), micke.sex, DATA$Sex)
     
-    ##-- Merge with detection data 
-    DATA <- DATA %>%
-      left_join(., ALL_STATUS, by = c("IdSimplified","Year"))
+    ##-- Status 
+    DATA$STATUS <- NA 
+    
+    INDIVIDUAL_ID$STATUS_Numeric <- 1
+    INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% "Juvenile"] <- 2
+    INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% "Pair"] <- 3
+    INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$Status %in% "Family group"] <- 4
+    
+    ALLIDS <- c(unique(DATA$IdSimplified))
+    
+    nyears <- years
+    yrs <- c(years[1]-1, years)
+    for(i in 1:length(ALLIDS)[1]){
+      for(t in 1:(length(years+1))){
+        tmp <- unique(INDIVIDUAL_ID$STATUS_Numeric[INDIVIDUAL_ID$`ReprodYear (May 1 year y - Apr 30 y+1)` == yrs[t] & 
+                                                     INDIVIDUAL_ID$IdSimplified == ALLIDS[i]])
+        if(length(tmp) > 0){
+          if(length(tmp) > 1){
+            tmp <- tmp[1]
+          }
+          DATA$STATUS[DATA$IdSimplified %in% ALLIDS[i] & DATA$Year %in% yrs[t]] <- tmp
+        }
+      }#t
+    }#i
+
+    ##-- Overwrite Sex with pack id info from 2023
+    for(i in 1:nrow(Pack_ID2023)){
+      DATA$Sex[DATA$IdSimplified %in% Pack_ID2023$IdSimplified[i]] <- Pack_ID2023$Sex[i]
+      DATA$STATUS[DATA$IdSimplified %in% Pack_ID2023$IdSimplified[i] & 
+                    DATA$Year %in% 2022 ] <- 3
+    }#i
+    
+    ##-- Overwrite sex with 2024 info
+    for(i in 1:nrow(Pack_ID2024)){
+      DATA$Sex[DATA$IdSimplified %in% Pack_ID2024$IdSimplified[i]] <- Pack_ID2024$Sex[i]
+      DATA$STATUS[DATA$IdSimplified %in% Pack_ID2024$IdSimplified[i] & 
+                    DATA$Year %in% 2023 ] <- 3
+    }#i
+    
+    ##-- Overwrite sex with 2025 info
+    for(i in 1:nrow(Pack_ID2025)){
+      DATA$Sex[DATA$IdSimplified %in% Pack_ID2025$IdSimplified[i]] <- Pack_ID2025$Sex[i]
+      DATA$STATUS[DATA$IdSimplified %in% Pack_ID2025$IdSimplified[i] & 
+                    DATA$Year %in% 2024 ] <- 3
+    }#i
+    
+    ##-- Overwrite sex with 2026 info
+    for(i in 1:nrow(Pack_ID2026)){
+      DATA$Sex[DATA$IdSimplified %in% Pack_ID2026$IdSimplified[i]] <- Pack_ID2026$Sex[i]
+      DATA$STATUS[DATA$IdSimplified %in% Pack_ID2026$IdSimplified[i] & 
+                    DATA$Year %in% 2025 ] <- 3
+    }#i
   }#if
+  
   
   ##-- Loop over all individuals
   ID <- unique(as.character(DATA$Id))
@@ -571,11 +672,11 @@ cleanRovbaseData <- function(
   counter <- 1
   for(i in 1:length(ID)){
     ##-- Subset data to individual i
-    if(engSpecies == "wolf"){
-      tmp <- ALL_SEX$Sex[ALL_SEX$IdSimplified == unlist(lapply(strsplit(ID[i], " "), function(x) x[1]))]
-    } else {
+    # if(engSpecies == "wolf"){
+    #   tmp <- ALL_SEX$Sex[ALL_SEX$IdSimplified == unlist(lapply(strsplit(ID[i], " "), function(x) x[1]))]
+    # } else {
       tmp <- DATA$Sex[DATA$Id == ID[i]]
-    }
+    # }
     
     ##-- Number of times individual i was assigned to each sex
     tab <- table(tmp[tmp %in% c("female","male")])
