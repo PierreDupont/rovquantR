@@ -51,7 +51,7 @@
 NULL
 #' @rdname makeRovquantData_wolf
 #' @export
-makeRovquantData_wolf <- function(
+makeRovquantData_wolf_OLD <- function(
   ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
