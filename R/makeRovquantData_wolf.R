@@ -564,9 +564,9 @@ makeRovquantData_wolf <- function(
   rovbaseObs <- rbind(rovbaseObs1,rovbaseObs2,rovbaseObs3,rovbaseObs4)
   rm(list = c("rovbaseObs1", "rovbaseObs2", "rovbaseObs3", "rovbaseObs4"))
   
-  colnames(rovbaseObs) <- translateForeignCharacters( dat = colnames(rovbaseObs))#,
+  colnames(rovbaseObs) <- rovquantR::translateForeignCharacters( dat = colnames(rovbaseObs))#,
                                                       # dir.translation = dir.analysis)
-  rovbaseObs$Sample_type <- translateForeignCharacters( dat = rovbaseObs$Proevetype)#,
+  rovbaseObs$Sample_type <- rovquantR::translateForeignCharacters( dat = rovbaseObs$Proevetype)#,
                                                        # dir.translation = dir.analysis)
   
   # [CM] comment out readMultiples. Use the same script than in previous analysis instead
@@ -1400,10 +1400,11 @@ makeRovquantData_wolf <- function(
     detResponse <- detResponse[ ,dimnames(detResponse)[[2]] %in% dimnames(y.ar$y.ar)[[3]]]
     
     ##-- Subset to focal individuals
-    detResponse <- detResponse[dimnames(detResponse)[[1]] %in% dimnames(y.ar$y.ar)[[1]], ]
+    #detResponse <- detResponse[dimnames(detResponse)[[1]] %in% dimnames(y.ar$y.ar)[[1]], ]
+    detResponse <- detResponse[ dimnames(y.ar$y.ar)[[1]], ]
     
-    
-    
+    dimnames(detResponse)[[1]]%in%
+    dimnames(y.ar$y.ar)[[1]]
     ## ------     7.5. HAB DENSITY ------ 
     ##-- KERNEL OF INDIVIDUALS IN PAIRS
     #[CM] Commented out 
