@@ -642,7 +642,7 @@ makeRovquantData_wolverine <- function(
   ##-- Combine both rasters
   r.SkandObsRovbaseBinary <- r.rovbaseBinary + r.skandObsBinary
   for(t in 1:n.years){
-    r.SkandObsRovbaseBinary[[t]][r.SkandObsRovbaseBinary[[t]][]>1 ] <- 1
+    r.SkandObsRovbaseBinary[[t]][r.SkandObsRovbaseBinary[[t]][] > 1] <- 1
   }
   
   
@@ -696,45 +696,7 @@ makeRovquantData_wolverine <- function(
   
   
   
-  ## ------         2.2.6.4. SMOOTH THE BINARY MAP ------
-  
-  # ##-- We tried adjust = 0.05, 0.037,0.02 and decided to go for 0.037 
-  # habOwin <- spatstat.geom::as.owin(as.vector(extent(detectors$raster)))
-  # cutoff <- 1
-  # ds.list <- lapply(years,function(y){
-  #   ## ROVBASE DATA 
-  #   pts <- st_coordinates(rovbaseObs.sp)[rovbaseObs.sp$monitoring.season %in% y,]
-  #   ## SKANDOBS
-  #   pts <- rbind(pts, st_coordinates(skandObs)[skandObs$monitoring.season %in% y,] )
-  #   ## SMOOTH AND RASTERIZE
-  #   p <-  spatstat.geom::ppp(pts[,1], pts[,2], window = habOwin)
-  #   ds <- density(p, adjust=0.02) #---change bandwith (smoothing) with "adjust
-  #   ds <- raster::raster(ds)
-  #   
-  #   ds <- ds1 <- raster::resample(ds, detectors$raster) #mask(ds,rasterToPolygons(myHabitat.list$habitat.rWthBuffer,function(x) x==1))
-  #   threshold <- 0.1 / prod(res(ds)) #--number per 1 unit of the projected raster (meters)
-  #   ds1[] <- ifelse(ds[]<threshold,0,1)
-  #   ds1 <- mask(ds1, habitat.rWthBufferPol)
-  #   ds <- mask(ds, habitat.rWthBufferPol)
-  #   
-  #   return(list(ds,ds1))
-  # })
-  # 
-  # ds.brick <- brick(lapply(ds.list, function(x) x[[1]]))
-  # ds.brickCont <- brick(lapply(ds.list, function(x) x[[2]]))
-  # names(ds.brick) <- names(ds.brickCont) <-years
-  # 
-  # ##-- Plot check
-  # if(plot.check){
-  #   par(mfrow = c(1,3))
-  #   plot(r.SkandObsRovbaseBinary[[t]], main = "Raw Binary", axes = F, box = F)
-  #   plot(ds.brick[[t]], main = "Smoothed", axes = F, box = F)
-  #   plot(ds.brickCont[[t]], main = "Binary after smoothing", axes = F, box = F)
-  # }
-  
-  
-  
-  ## ------         2.2.6.5. IDENTIFY CELLS WITH HAIR TRAPS AS OPPORTUNISTIC ------
+  ## ------         2.2.6.4. IDENTIFY CELLS WITH HAIR TRAPS AS OPPORTUNISTIC ------
   
   ##-- IDENTIFY HAIR SAMPLES
   tmpHair <- myFullData.sp$alive %>% dplyr::filter(hairTrap)
@@ -751,7 +713,7 @@ makeRovquantData_wolverine <- function(
   
   
   
-  ## ------         2.2.6.6. ASSIGN THE COVARIATE ------
+  ## ------         2.2.6.5. ASSIGN THE COVARIATE ------
   
   detOtherSamples <- matrix(0, nrow = n.detectors, ncol = n.years)
   detOtherSamples[ ,1:n.years] <- raster::extract( r.SkandObsRovbaseBinary,
