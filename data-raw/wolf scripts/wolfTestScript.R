@@ -33,7 +33,7 @@ gc()
 
 ## ------ INSTALL 'rovquantR' FROM GITHUB ------
 
-devtools::install_github("PierreDupont/rovquantR")
+devtools::install_github("PierreDupont/rovquantR@devel")
 
 ## Ctrl + Shift + F10 (to restart R session)
 
@@ -51,10 +51,10 @@ library(nimbleSCR)
 ##-- DATA DIRECTORY
 ##-- Directory containing the raw data necessary for the analysis
 ##-- (NB: This is NOT the working directory; NOTHING SHOULD BE SAVED/WRITTEN IN THIS DIRECTORY)
-data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2025/Data"
+data.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2026/Data"
 
 ##-- WORKING DIRECTORY (= main folder for the analysis)
-working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2025/Test_rovquantR"
+working.dir <- "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolf/2026/Test_rovquantR"
 
 
 
@@ -77,9 +77,11 @@ cleanRovbaseData(
 
 makeRovquantData(    
   species = "wolf",
-  years = 2015:2024,
+  years = 2016:2025,
   data.dir = data.dir,
   working.dir = working.dir)
+
+
 
 
 

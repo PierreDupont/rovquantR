@@ -675,8 +675,7 @@ makeRovquantData_wolf <- function(
   detSnow <- round(scale(detSnow), digits = 2)
   detRoads <- round(scale(detRoads), digits = 2)
   detTracks <- round(scale(detTracks), digits = 2)
-  print(paste(round(colSums(detTracks),digits=2)))
-  
+
   ##-- STRUCTURED 
   detCovs <- array(NA, c(dim(detTracks)[1], 2, dim(detTracks)[2]))
   detCovs[ ,1, ] <- detTracks
