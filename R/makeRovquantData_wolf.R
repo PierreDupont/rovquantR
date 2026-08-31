@@ -47,6 +47,7 @@
 #' @importFrom stats runif
 #' @importFrom stringi stri_trans_general 
 #' @importFrom utils data
+#' @importFrom readxl read_excel
 #' 
 NULL
 #' @rdname makeRovquantData_wolf
@@ -558,10 +559,10 @@ makeRovquantData_wolf <- function(
   
   ## ------         2.2.6.2. ROVBASE ------
   
-  rovbaseObs1 <- read_xlsx(file.path(data.dir, "AllSamples/RIB1804202607011165.xlsx"))
-  rovbaseObs2 <- read_xlsx(file.path(data.dir, "AllSamples/RIB1804202607015508.xlsx"))
-  rovbaseObs3 <- read_xlsx(file.path(data.dir, "AllSamples/RIB18042026065900566.xlsx"))
-  rovbaseObs4 <- read_xlsx(file.path(data.dir, "AllSamples/RIB18042026070006976.xlsx"))
+  rovbaseObs1 <- read_excel(file.path(data.dir, "AllSamples/RIB1804202607011165.xlsx"))
+  rovbaseObs2 <- read_excel(file.path(data.dir, "AllSamples/RIB1804202607015508.xlsx"))
+  rovbaseObs3 <- read_excel(file.path(data.dir, "AllSamples/RIB18042026065900566.xlsx"))
+  rovbaseObs4 <- read_excel(file.path(data.dir, "AllSamples/RIB18042026070006976.xlsx"))
   
   rovbaseObs <- rbind(rovbaseObs1,rovbaseObs2,rovbaseObs3,rovbaseObs4)
   rm(list = c("rovbaseObs1", "rovbaseObs2", "rovbaseObs3", "rovbaseObs4"))
