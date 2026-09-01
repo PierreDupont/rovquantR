@@ -85,7 +85,7 @@ makeRovquantData_wolverine <- function(
   if(is.null(max.move.dist)){max.move.dist <- 250000}
   if(is.null(detector.res)){detector.res <- 10000}
   if(is.null(subdetector.res)){subdetector.res <- 2000}
-  if(is.null(max.det.dist)){max.det.dist <- 84000}
+  if(is.null(max.det.dist)){max.det.dist <- 40000}
   if(is.null(resize.factor)){resize.factor <- 1}
   if(is.null(rename.list)) {
     if(!exists("r.list.internalWolf")) stop("Default 'rename.list' not available")
@@ -144,7 +144,7 @@ makeRovquantData_wolverine <- function(
       county %in% c("Trøndelag") ~ 5,
       county %in% c("Nordland") ~ 7,
       county %in% c("Troms") ~ 8,
-      county %in% c("Finnmark") ~ 6,)) %>%
+      county %in% c("Finnmark") ~ 6)) %>%
     dplyr::group_by(id) %>%
     dplyr::summarize()
   
@@ -1122,9 +1122,9 @@ makeRovquantData_wolverine <- function(
     data.alive$data.sp$Detector[whichDets[i]] <- which(detectors$main.detector.sp$main.cell.id == thisDet)
   }#i
   
-  ##-- SHOULD NOT BE ANY INDIVIDUAL DETECTED IN NORRBOTTEN NOW 
-  sum(data.alive$data.sp$sub.detector[!data.alive$data.sp$Year %in% yearsSampledNorrb] %in% subDetsNorrbotten)
-  sum(data.alive$data.sp$Detector[!data.alive$data.sp$Year %in% yearsSampledNorrb] %in% detsNorrbotten)
+  # ##-- SHOULD NOT BE ANY INDIVIDUAL DETECTED IN NORRBOTTEN NOW 
+  # sum(data.alive$data.sp$sub.detector[!data.alive$data.sp$Year %in% yearsSampledNorrb] %in% subDetsNorrbotten)
+  # sum(data.alive$data.sp$Detector[!data.alive$data.sp$Year %in% yearsSampledNorrb] %in% detsNorrbotten)
   
   
   
@@ -1135,9 +1135,7 @@ makeRovquantData_wolverine <- function(
   if(L < 6){ nrows <- 1 } else{
     if(L < 13){ nrows <- 2 } else {
       if(L < 22){ nrows <- 3 } else {
-        if(L < 33){ nrows <- 4 } else {
-          nrows <- 5
-        }}}}
+        if(L < 33){ nrows <- 4 } else { nrows <- 5 }}}}
   ncols <- ceiling(L/nrows)
   
   
@@ -1182,7 +1180,7 @@ makeRovquantData_wolverine <- function(
   mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
   for(r in 1:nrows){
     mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
-    mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
+    mx[r*2, ] <- c(rep(1:ncols, each = 2), ncols) + (r-1)*ncols
   }#r
   nf <- graphics::layout(mx,
                          widths = c(rep(1,ncol(mx))),
@@ -1219,7 +1217,8 @@ makeRovquantData_wolverine <- function(
   
   ## ------     6.8. SAVE FILTERED DATA ----- 
   
-  save( data.alive, data.dead,
+  save( data.alive,
+        data.dead,
         file = file.path( working.dir, "data",
                           paste0("FilteredData_wolverine_", DATE, ".RData")))
   

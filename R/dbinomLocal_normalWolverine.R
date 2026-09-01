@@ -231,13 +231,14 @@ dbinomLocal_normalWolverine <- nimbleFunction(
     logProb <- 0.0 
     detIndices1 <- c(detIndices1, 0)
     count <- 1 
-    
+    n.covs <- dim(trapCovs)[2]
+
     for(r in 1:localTrapsNum[sID]){
       
       d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
       pZero <- ilogit(logit(p0[trapCovsIntercept[theseLocalTraps[r]]]) +
                         indBeta * indCov +
-                        inprod(trapBetas, trapCovs[theseLocalTraps[r], ]))
+                        sum(trapBetas[1:n.covs] * trapCovs[theseLocalTraps[r],1:n.covs]))
       p <- pZero * exp(alpha * d2)
       
       if(theseLocalTraps[r] == detIndices1[count]){ 
