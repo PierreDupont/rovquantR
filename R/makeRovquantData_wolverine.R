@@ -68,7 +68,7 @@ makeRovquantData_wolverine <- function(
   ##-- detectors
   detector.res = 10000,
   subdetector.res = 2000,
-  max.det.dist = 84000,
+  max.det.dist = 40000,
   resize.factor = 1,
   
   ##-- Miscellanious
@@ -100,7 +100,7 @@ makeRovquantData_wolverine <- function(
   ##-- Set up list of Detectors characteristics
   detectors <- list( resolution = detector.res,
                      resolution.sub = subdetector.res,
-                     maxDist = max.det.dist,
+                     maxDist = max.det.dist,                      ## [PD] : need to rethink the maxDist criteria
                      resize.factor = resize.factor)
   
   ##-- Set up list of Data characteristics
@@ -730,16 +730,16 @@ makeRovquantData_wolverine <- function(
   detTracks <- round(scale(detTracks), digits = 2)
   
   detCovs <- array(NA, c(dim(detTracks)[1], dim(detTracks)[2], 2))
-  detCovs[,,1] <- detTracks
-  detCovs[,,2] <- detSnow
+  detCovs[ , ,1] <- detTracks
+  detCovs[ , ,2] <- detSnow
   dimnames(detCovs) <- list( "detectors" = 1:n.detectors,
                              "years" = years,
                              "covariates" = c("tracks", "snow"))
   
   detCovsOth <- array(NA, c(dim(detTracks)[1], dim(detTracks)[2], 3))
-  detCovsOth[,,1] <- detSnow
-  detCovsOth[,,2] <- matrix(detRoads,length(detRoads),n.years)
-  detCovsOth[,,3] <- detOtherSamples
+  detCovsOth[ , ,1] <- detSnow
+  detCovsOth[ , ,2] <- matrix(detRoads,length(detRoads),n.years)
+  detCovsOth[ , ,3] <- detOtherSamples
   dimnames(detCovsOth) <- list( "detectors" = 1:n.detectors,
                                 "years" = years,
                                 "covariates" = c("snow", "roads", "obs"))
@@ -779,7 +779,7 @@ makeRovquantData_wolverine <- function(
   detectors$localObjects <- getLocalObjects(
     habitatMask = habitat$habitat.mx,
     coords = detectors$scaledCoords,
-    dmax = detectors$maxDist/habitat$resolution,
+    dmax = (detectors$maxDist * 2.1)/habitat$resolution,  ## [PD] : need to rethink the maxDist criteria
     resizeFactor = detectors$resize.factor,
     plot.check = F)
   
@@ -1308,7 +1308,7 @@ makeRovquantData_wolverine <- function(
       distances[[t]] <- checkDistanceDetections( 
         y = y.ar$y.ar[ , ,t], 
         detector.xy = detectors$detectors.df[ ,c("x","y")], 
-        max.distance = detectors$maxDist,
+        max.distance = detectors$maxDist,    ## [PD] : need to rethink the maxDist criteria
         method = "pairwise",
         plot.check = F)
       

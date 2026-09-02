@@ -90,11 +90,11 @@ source(file.path(dir.git, "Temp/CM/functions/Nimble/dbin_LESS_Cached_MultipleCov
 
 ##------------------------------------------------------------------------------
 
-## ------ 0.SET ANALYSIS CHARACTERISTICS -----
+## ------ 0. SET ANALYSIS CHARACTERISTICS -----
 
 myVars <- list(
   ## WORKING DIRECTORY & MODEL NAME
-  WD = file.path(dir.dropbox,"wolverine/CM/2025"),
+  WD = "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/wolverine/2025/Test_OLD",
   modelName = "54.Cleaned2025",
   
   ## HABITAT SPECIFICATIONS
@@ -140,11 +140,11 @@ if(!dir.exists(file.path(myVars$WD, myVars$modelName))){
 
 ##------------------------------------------------------------------------------
 
-## ------ I.LOAD AND SELECT DATA ------
+## ------ I. LOAD AND SELECT DATA ------
 
-## ------ 1. HABITAT DATA ------
+## ------   1. HABITAT DATA ------
 
-## ------    1.1. LOAD RAW SHAPEFILES ------
+## ------     1.1. LOAD RAW SHAPEFILES ------
 
 ##-- POLYGONS OF THE REGION
 GLOBALMAP <- file.path( dir.dropbox,
@@ -191,7 +191,7 @@ COUNTIES_AGGREGATED$id <- COUNTIES_AGGREGATE$id
 
 
 
-## ------    1.2. CREATE STUDY AREA POLYGON ------
+## ------     1.2. CREATE STUDY AREA POLYGON ------
 
 ##-- CREATE STUDY AREA POLYGON BASED ON COUNTRY NAMES
 if(!is.null(myVars$HABITAT$countries)){
@@ -206,7 +206,7 @@ if(!is.null(myVars$HABITAT$countries)){
     st_intersection(., GLOBALMAP)
 }
 
-myStudyArea$id <- myStudyArea %>%
+myStudyArea <- myStudyArea %>%
   mutate(id = 1) %>%
   group_by(id) %>% 
   summarize()
@@ -221,9 +221,9 @@ if(myVars$plot.check){
 
 
 
-## ------ 2. NGS DATA ------
+## ------   2. NGS DATA ------
 
-## ------    2.1. LOAD ROVBASE FILES ------
+## ------     2.1. LOAD ROVBASE FILES ------
 
 ## NGS data from RovBase
 DNA <- read.csv( file.path(dir.dropbox, "DATA/RovbaseData/ROVBASE DOWNLOAD 20251121/dna_wolverines.csv"),
@@ -269,7 +269,7 @@ rm(list = c("rovbaseObs1", "rovbaseObs2", "rovbaseObs3"))
 
 
 
-## ------    2.2. TRANSLATE SCANDINAVIAN CHARACTERS ------
+## ------     2.2. TRANSLATE SCANDINAVIAN CHARACTERS ------
 
 ## Drop a column that makes cleanDataNew to fail
 colnames(DNA) <- translateForeignCharacters(dat=colnames(DNA), dir.translation = dir.analysis )
@@ -283,9 +283,9 @@ rovbaseObs$Proevetype <- translateForeignCharacters(dat=rovbaseObs$Proevetype, d
 
 
 
-## ------ 3. SEARCH EFFORT DATA ------
+## ------   3. SEARCH EFFORT DATA ------
 
-## ------    3.1. GPS SEARCH TRACKS ------
+## ------     3.1. GPS SEARCH TRACKS ------
 
 ## LOAD GPS SEARCH TRACKS
 TRACKS_SINGLE <- read_sf(file.path(dir.dropbox,
@@ -341,7 +341,7 @@ for(t in 1:nYears){
 
 
 
-## ------    3.2. DISTANCE TO ROADS ------
+## ------     3.2. DISTANCE TO ROADS ------
 
 ## LOAD MAP OF DISTANCES TO ROADS (1km resolution)
 DistAllRoads <- raster(file.path( dir.dropbox,
@@ -355,7 +355,7 @@ DistAllRoads <- crop(DistAllRoads, myStudyArea)
 
 
 
-## ------    3.3. DAYS OF SNOW ------
+## ------     3.3. DAYS OF SNOW ------
 
 ## SEASONAL MAPS (CREATED IN TEMP/CM/GIS/snowMODIS)
 SNOW <- stack(file.path( dir.dropbox, 
@@ -369,7 +369,7 @@ SNOW <- raster::crop(SNOW, c(0,40,55,75))
 
 
 
-## ------    3.4. LOAD SCANDINAVIAN 20KM HABITAT ------
+## ------     3.4. LOAD SCANDINAVIAN 20KM HABITAT ------
 
 load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/Habitat20km.RData"))
 load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewSweCounties.RData"))
@@ -378,9 +378,9 @@ load(file.path(dir.dropbox,"DATA/GISData/spatialDomain/HabitatAllResolutionsNewS
 
 ##------------------------------------------------------------------------------
 
-## ------ II.CREATE SCR DATA ------
+## ------ II. CREATE SCR DATA ------
 
-## ------ 1. CLEAN & FILTER NGS DATA ------
+## ------   1. CLEAN & FILTER NGS DATA ------
 
 ## Remove DEAD entries from the DNA data [HB]
 DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
@@ -390,7 +390,7 @@ DNA <- DNA[substr(DNA$RovbaseID..Proeve.,1,1) != "M", ]
 DEAD <- DEAD[!grepl(pattern = "Påskutt", x = as.character(DEAD$Utfall)), ]
 
 
-## ------    1.1. CLEAN NGS & DEAD RECOVERY DATA ------
+## ------     1.1. CLEAN NGS & DEAD RECOVERY DATA ------
 
 myCleanedData.sp <- CleanDataNew2sf( 
   dna_samples = DNA,
@@ -403,7 +403,7 @@ myCleanedData.sp <- CleanDataNew2sf(
 
 
 
-## ------    1.2. FILTER DATA ------
+## ------     1.2. FILTER DATA ------
 
 myFullData.sp <- FilterDatasf(
   myData = myCleanedData.sp,
@@ -412,15 +412,12 @@ myFullData.sp <- FilterDatasf(
   sex = c("Hann","Hunn"), 
   setSex = T)
 
-
 ## REMOVE SUSPECT SAMPLES ACCORDING TO HENRIK (THERE ARE NOT SUSPECT SAMPLES IN SWEDEN)
 myFullData.sp$alive$DNAID <- as.character(myFullData.sp$alive$DNAID)
 myFullData.sp$alive <- myFullData.sp$alive[!(myFullData.sp$alive$DNAID %in% as.character(SUSPECT_NGS_SAMPLES$DNAID_RB)), ]
-dim(myFullData.sp$alive)
 
 ##EXPORT THE DATA
 myFullData.spSaved <- myFullData.sp
-
 
 ## REMOVE SUSPECT DEAD RECOVERIES ACCORDING TO HENRIK
 myFullData.sp$dead.recovery$DNAID <- as.character(myFullData.sp$dead.recovery$DNAID)
@@ -495,7 +492,7 @@ if(sum(myFullData.sp$dead.recovery$Age %in% 0 &
 
 
 
-## ------    1.3. FILTER NGS & DEAD RECOVERY DATA ------
+## ------     1.3. FILTER NGS & DEAD RECOVERY DATA ------
 
 myFilteredData.sp <- myFullData.sp
 
@@ -509,7 +506,7 @@ myFilteredData.sp$alive <- myFilteredData.sp$alive[myFilteredData.sp$alive$Month
 
 
 
-## ------    1.4. SUBSET DETECTIONS IN NORRBOTTEN IN ALL YEARS EXCEPT 2017, 2018 and 2019 ------ 
+## ------     1.4. SUBSET DETECTIONS IN NORRBOTTEN IN ALL YEARS EXCEPT 2017, 2018 and 2019 ------ 
 
 COUNTIESNorrbotten <- COUNTIES[COUNTIES$NAME_1 %in% "Norrbotten", ]
 yearsSampledNorrb <- c(2016:2018,2023,2024)
@@ -521,30 +518,30 @@ myFilteredData.sp$alive <- myFilteredData.sp$alive[- which(!myFilteredData.sp$al
 
 
 
-## ------    1.5. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
+## ------     1.5. SEPARATE STRUCTURED & OPPORTUNISTIC SAMPLING ------
 
-## ------      1.5.1. ASSIGN SAMPLES TO TRACKS ------
-
-## ASSIGN ROVBASE ID AND SIMPLIFY TRACKS
-myFilteredData.sp$alive$TrackRovbsID <- NA
-myFilteredData.sp$alive$TrackDist <- NA
-TRACKSSimple_sf <- list()
-for(t in 1:nYears){+
-    TRACKS_YEAR[[t]]$RovbsID <- as.character(TRACKS_YEAR[[t]]$RovbaseID)
-    TRACKS_YEAR[[t]]$RovbasID <- 1:length(TRACKS_YEAR[[t]]$RovbsID)
-    TRACKSSimple_sf[[t]] <- TRACKS_YEAR[[t]]
-}
-
-## ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
-dnatemp <- st_as_sf(myFilteredData.sp$alive)
-
-## CREATE A BUFFER AROUND EACH DETECTION
-# tmp <-  st_buffer(dnatemp, dist = 750)
+## ------       1.5.1. ASSIGN SAMPLES TO TRACKS ------
+ 
+# ## ASSIGN ROVBASE ID AND SIMPLIFY TRACKS
+# myFilteredData.sp$alive$TrackRovbsID <- NA
+# myFilteredData.sp$alive$TrackDist <- NA
+# TRACKSSimple_sf <- list()
+# for(t in 1:nYears){
+#     TRACKS_YEAR[[t]]$RovbsID <- as.character(TRACKS_YEAR[[t]]$RovbaseID)
+#     TRACKS_YEAR[[t]]$RovbasID <- 1:length(TRACKS_YEAR[[t]]$RovbsID)
+#     TRACKSSimple_sf[[t]] <- TRACKS_YEAR[[t]]
+# }
+# 
+# ## ASSIGN EACH SAMPLE TO THE CLOSEST TRACK
+# dnatemp <- st_as_sf(myFilteredData.sp$alive)
+# 
+# ## CREATE A BUFFER AROUND EACH DETECTION
+# tmp <- st_buffer(dnatemp, dist = 750)
 # for(i in 1:nrow(myFilteredData.sp$alive)){
 #    ## MAKE SURE THE SAMPLE WAS COLLECTED AT THE SAME TIME THAN THE TRACK
 #    t <- which(years %in% tmp[i,]$Year)
 #    whichSameDate <- which(as.character(TRACKSSimple_sf[[t]]$Dato)==as.character(myFilteredData.sp$alive$Date[i]))
-#    
+# 
 #    ## INTERSECT POINT WITH TRACKS
 #    tmpTRACKS <- st_intersection(TRACKSSimple_sf[[t]][whichSameDate,], tmp[i, ])
 # 
@@ -572,7 +569,7 @@ dnatemp <- st_as_sf(myFilteredData.sp$alive)
 #    print(i)
 #    #if(is.na(myFilteredData.sp$alive$TrackRovbsID[i])){print(i)}
 # }#i
-#
+# 
 # ## SAVE FOR FASTER LOADING
 # save( myFilteredData.sp,
 #       file = file.path(myVars$WD, myVars$modelName, "myFilteredData_original.RData"))
@@ -580,7 +577,7 @@ load(file.path(myVars$WD, myVars$modelName, "myFilteredData_original.RData"))
 
 
 
-## ------      1.5.2. SPLIT MYFILTERED DATA TO OPPORTUNISTIC & STRUCTURED ------
+## ------       1.5.2. SPLIT MYFILTERED DATA TO OPPORTUNISTIC & STRUCTURED ------
 
 distanceThreshold <- 500
 
@@ -602,7 +599,7 @@ myFilteredData.spOthers <- myFilteredData.sp$alive[!whichStructured, ]
 
 
 
-## ------    1.6. SEPARATE MORTALITY CAUSES ------ 
+## ------     1.6. SEPARATE MORTALITY CAUSES ------ 
 
 ## DEFINE LEGAL MORTALITY
 MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$DeathCause))
@@ -619,9 +616,9 @@ Other.death <- myFilteredData.sp$dead.recovery[!myFilteredData.sp$dead.recovery$
 
 
 
-## ------ 2. GENERATE HABITAT ------
+## ------   2. GENERATE HABITAT ------
 
-## ------    2.1. REDUCE THE AREA OF THE STATE-SPACE BASED ON DETECTIONS ------
+## ------     2.1. REDUCE THE AREA OF THE STATE-SPACE BASED ON DETECTIONS ------
 
 ## DELINEATE A BUFFER AROUND ALL DETECTIONS 
 myBufferedArea <- st_buffer( myFilteredData.sp$alive,
@@ -635,7 +632,7 @@ myStudyArea <- st_intersection(myBufferedArea, myStudyArea)
 
 
 
-## ------    2.2. GENERATE HABITAT CHARACTERISTICS FROM THE NEW HABITAT DEFINITION ------
+## ------     2.2. GENERATE HABITAT CHARACTERISTICS FROM THE NEW HABITAT DEFINITION ------
 
 myHabitat <- MakeHabitatFromRastersf( 
   poly = myStudyArea,
@@ -664,7 +661,7 @@ for(i in 1:nrow(scaledHabGridCenters)){
 
 
 
-## ------    2.3. SUBSET DETECTIONS BASED ON HABITAT EXTENT ------ 
+## ------     2.3. SUBSET DETECTIONS BASED ON HABITAT EXTENT ------ 
 
 ## Remove samples outside the STUDY AREA #[CM]
 myStudyArea$idd <- 1
@@ -687,7 +684,7 @@ myFilteredData.sp$alive$Id <- as.character(myFilteredData.sp$alive$Id)
 
 
 
-## ------    2.4. GENERATE HABITAT-LEVEL COVARIATES ------
+## ------     2.4. GENERATE HABITAT-LEVEL COVARIATES ------
 
 ## ------       2.4.1. DEN COUNTS ------
 
@@ -708,9 +705,9 @@ denCounts <- round(scale(denCounts), digits = 2)
 
 
 
-## ------ 3. GENERATE DETECTORS ------
+## ------   3. GENERATE DETECTORS ------
 
-## ------    3.1. GENERATE DETECTORS CHARACTERISTICS ------
+## ------     3.1. GENERATE DETECTORS CHARACTERISTICS ------
 
 ## GENERATE SUB-DETECTORS BASED ON THE STUDY AREA
 habitat.subdetectors <- disaggregate(
@@ -749,9 +746,9 @@ upperDetCoords <- detector.xy + 0.5 * myVars$DETECTORS$detResolution
 
 
 
-## ------    3.2. GENERATE DETECTOR-LEVEL COVARIATES ------
+## ------     3.2. GENERATE DETECTOR-LEVEL COVARIATES ------
 
-## ------      3.2.1. EXTRACT COUNTRIES ------
+## ------       3.2.1. EXTRACT COUNTRIES ------
 
 dist <- st_distance(myDetectors$main.detector.sp, COUNTRIES, by_element = F )
 detCountries <- apply(dist,1, function(x) which.min(x))
@@ -759,7 +756,7 @@ detCountries <- as.numeric(as.factor(detCountries))
 
 
 
-## ------      3.2.2. EXTRACT COUNTIES ------
+## ------       3.2.2. EXTRACT COUNTIES ------
 
 dist <- st_distance(myDetectors$main.detector.sp, COUNTIES_AGGREGATED, by_element = F )
 detCounties <- apply(dist, 1, function(x) which.min(x))
@@ -769,7 +766,7 @@ detCounties <- as.numeric(as.factor(detCounties))
 
 
 
-## ------      3.2.3. EXTRACT GPS TRACKS LENGTHS ------
+## ------       3.2.3. EXTRACT GPS TRACKS LENGTHS ------
 
 ## INITIALIZE MATRIX OF GPS TRACKS LENGTH FOR EACH DETECTOR & YEAR
 detectorGrid.r <- rasterFromXYZ(cbind(st_coordinates(myDetectors$main.detector.sp),
@@ -798,7 +795,7 @@ for(t in 1:nYears){
 
 
 
-## ------      3.2.4. EXTRACT DISTANCES TO ROADS ------
+## ------       3.2.4. EXTRACT DISTANCES TO ROADS ------
 
 ## AGGREGATE TO MATCH THE DETECTORS RESOLUTION
 DistAllRoads <- aggregate( DistAllRoads,
@@ -817,7 +814,7 @@ detRoads[isna] <- tmp
 
 
 
-## ------      3.2.5. EXTRACT DAYS OF SNOW ------
+## ------       3.2.5. EXTRACT DAYS OF SNOW ------
 
 ## EXTRACT SNOW 
 detSnow <- matrix(0, nrow = dim(myDetectors$main.detector.sp)[1], ncol = nYears)
@@ -831,9 +828,9 @@ detSnow[isna,1:nYears] <- tmp
 
 
 
-## ------      3.2.6. EXTRACT PRESENCE OF OTHER SAMPLES ------
+## ------       3.2.6. EXTRACT PRESENCE OF OTHER SAMPLES ------
 
-## ------        3.2.6.1. SKANDOBS ------
+## ------         3.2.6.1. SKANDOBS ------
 
 ## GET TIME 
 skandObs$date1 <- as.POSIXct(strptime(skandObs$date, "%Y-%m-%d"))
@@ -873,7 +870,7 @@ r.skandObsSamplesContinuous <- brick(lapply(r.list,function(x) x[[2]]))
 
 
 
-## ------        3.2.6.2. ROVBASE ------
+## ------         3.2.6.2. ROVBASE ------
 
 ## GET ALL SAMPLES COLLECTED
 rovbaseObs <- rovbaseObs[!is.na(rovbaseObs$`Nord (UTM33/SWEREF99 TM)`), ]
@@ -920,7 +917,7 @@ r.OtherSamplesContinuous <- brick(lapply(r.list, function(x) x[[2]]))
 
 
 
-## ------        3.2.6.3. COMBINE ROVBASE & SKANDOBS ------
+## ------         3.2.6.3. COMBINE ROVBASE & SKANDOBS ------
 
 r.SkandObsOtherSamplesBinary <- r.OtherSamplesBinary + r.skandObsSamplesBinary
 for(t in 1:nYears){
@@ -929,7 +926,7 @@ for(t in 1:nYears){
 
 
 
-## ------        3.2.6.5. COLOR CELLS WHERE HAIR TRAP COLLECTED ------
+## ------         3.2.6.4. COLOR CELLS WHERE HAIR TRAP COLLECTED ------
 
 ## IDENTIFY HAIR SAMPLES
 tmpHair <- myFilteredData.sp$alive[which(myFilteredData.sp$alive$DNAID %in% HairTrapSamples$DNAID), ]
@@ -946,7 +943,7 @@ for(i in 1:length(tmpyr)){
 
 
 
-## ------        3.2.6.7. ASSIGN THE COVARIATE ------
+## ------         3.2.6.5. ASSIGN THE COVARIATE ------
 
 detOtherSamples <- matrix(0, nrow = n.detectors, ncol = nYears)
 detOtherSamples[ ,1:nYears] <- raster::extract( r.SkandObsOtherSamplesBinary,
@@ -954,7 +951,7 @@ detOtherSamples[ ,1:nYears] <- raster::extract( r.SkandObsOtherSamplesBinary,
 
 
 
-## ------      3.2.7. SCALE & ROUND DETECTOR-LEVEL COVARIATES ------
+## ------       3.2.7. SCALE & ROUND DETECTOR-LEVEL COVARIATES ------
 
 detSnow <- round(scale(detSnow), digits = 2)
 detRoads <- round(scale(detRoads), digits = 2)
@@ -971,9 +968,7 @@ detCovsOth[ , ,3] <- detOtherSamples
 
 
 
-## ------ 4. GENERATE y DETECTION ARRAYS ------
-
-## ------    4.1. ASSIGN SAMPLES TO DETECTORS ------
+## ------   4. ASSIGN SAMPLES TO DETECTORS ------
 
 ## ALL SAMPLES
 myData.alive <- AssignDetectors_v3sf( 
@@ -1002,6 +997,9 @@ myData.dead <- AssignDetectors_v3sf(
   myDetectors = myDetectors.dead$main.detector.sp,
   radius = myVars$DETECTORS$detResolution)
 
+
+
+## ------   5. FIX DETECTIONS IN NORRBOTTEN ------
 
 ##-- [PD] fixed assignment to sub-detectors in Norrbotten
 ##-- Identify sub-detectors inside Norrbotten
@@ -1064,10 +1062,13 @@ for(i in 1:length(whichdetsOther)){
 
 
 
-## ------    4.2. SAVE PREPARED DATA ------
+## ------   6. SAVE FILTERED DATA ------
 
-# save( myData.alive, myData.aliveStruc, myData.aliveOthers, myData.dead,
-#       file = file.path(myVars$WD, myVars$modelName, "myFilteredData.RData"))
+save( myData.alive,
+      myData.aliveStruc,
+      myData.aliveOthers, 
+      myData.dead,
+      file = file.path(myVars$WD, myVars$modelName, "myFilteredData.RData"))
 
 ## [CM] NEEDS THIS OTHERWISE THE LOOPS OVERWRITES THE SEX
 myData.aliveALL <- myData.alive
@@ -1077,13 +1078,13 @@ myData.deadALL <- myData.dead
 
 
 
-## ------    4.3. GENERATE DETECTION HISTORY (FOR BOTH SEXES) ------
+## ------   7. GENERATE DETECTION HISTORY (FOR BOTH SEXES) ------
 
 for(thisSex in c("Hann","Hunn")){
   
   message(paste0("Preparing individual detection histories for sex: ", thisSex, "... "))
   
-  ## ------    4.4. FILTER DATA BY SEX ------
+  ## ------     7.1. FILTER DATA BY SEX ------
   
   # load(file.path(myVars$WD, myVars$modelName, "myFilteredData.RData"))
   
@@ -1105,7 +1106,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    4.5. GENERATE NGS & DEAD RECOVERIES : y.alive[i,j,t] & y.dead[i,t] ------
+  ## ------     7.2. GENERATE NGS & DEAD RECOVERIES : y.alive[i,j,t] & y.dead[i,t] ------
   
   ## ALL SAMPLES
   y.ar <- MakeYsf( myData = myData.alive$myData.sp,
@@ -1159,7 +1160,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    4.6. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------
+  ## ------     7.3. CHECK DISTANCES BETWEEN DETECTIONS WITHIN A YEAR ------
   
   distances <- list()
   for(t in 1:nYears){
@@ -1190,9 +1191,9 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    4.7. GENERATE INDIVIDUAL-LEVEL COVARIATES ------
+  ## ------     7.4. GENERATE INDIVIDUAL-LEVEL COVARIATES ------
   
-  ## ------      4.7.1. TRAP-RESPONSE ------
+  ## ------       7.4.1. TRAP-RESPONSE ------
   
   ## Make matrix of previous capture indicator
   already.detected <- MakeTrapResponseCovsf(
@@ -1207,7 +1208,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    4.8. MAKE AUGMENTATION ------
+  ## ------     7.5. MAKE AUGMENTATION ------
   
   ## DATA ARRAYS
   y.alive <- MakeAugmentation(
@@ -1240,9 +1241,9 @@ for(thisSex in c("Hann","Hunn")){
   
   ##------------------------------------------------------------------------------
   
-  ## ------ III.MODEL SETTING & RUNNING ------- 
+  ## ------ III. MODEL SETTING & RUNNING ------- 
   
-  ## ------ 1. NIMBLE MODEL DEFINITION ------
+  ## ------   1. NIMBLE MODEL DEFINITION ------
   
   modelCode <- nimbleCode({
     
@@ -1392,7 +1393,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 2. NIMBLE CONSTANTS ------
+  ## ------   2. NIMBLE CONSTANTS ------
   
   nimConstants <- list( n.individuals = dim(y.alive)[1],
                         n.detectors = dim(y.alive)[2],  
@@ -1408,9 +1409,9 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 3. NIMBLE INITS ------
+  ## ------   3. NIMBLE INITS ------
   
-  ## ------    3.1. GENERATE z KNOWN VALUES ------
+  ## ------     3.1. GENERATE z KNOWN VALUES ------
   
   z <- apply(y.alive, c(1,3), function(x) any(x>0))
   z <- ifelse(z, 2, NA)
@@ -1424,7 +1425,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    3.2. GENERATE z INITIAL values ------
+  ## ------     3.2. GENERATE z INITIAL values ------
   
   z.init <- t(apply(z, 1, function(zz){
     out <- zz
@@ -1441,7 +1442,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    3.3. GENERATE detResponse INITIAL VALUES ------
+  ## ------     3.3. GENERATE detResponse INITIAL VALUES ------
   
   detResponse <- already.detected 
   detResponse[rownames(detResponse) %in% "Augmented" ,1]  <- NA
@@ -1451,7 +1452,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 4. NIMBLE DATA ------
+  ## ------   4. NIMBLE DATA ------
   
   nimData <- list( z = z,   
                    y.alive = y.alive,
@@ -1470,7 +1471,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 5. NIMBLE PARAMETERS ------
+  ## ------   5. NIMBLE PARAMETERS ------
   
   nimParams <- c("N", "betaDens", "lambda", "dmean",
                  "omeg1", "gamma", "phi",
@@ -1482,9 +1483,9 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 6. CONVERT TO CACHED DETECTORS & SPARSE MATRIX ------
+  ## ------   6. CONVERT TO CACHED DETECTORS & SPARSE MATRIX ------
   
-  ## ------    6.1. RESCALE COORDINATES  ------
+  ## ------     6.1. RESCALE COORDINATES  ------
   
   ## HABITAT
   ScaledLowerCoords <- scaleCoordsToHabitatGrid(
@@ -1513,7 +1514,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    6.2. CREATE CACHED DETECTORS OBJECTS ------
+  ## ------     6.2. CREATE CACHED DETECTORS OBJECTS ------
   
   ## [CM] reduce multiplicator to 3 ?????
   maxDistReCalc <- 2.1 * myVars$DETECTIONS$maxDetDist 
@@ -1539,7 +1540,7 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------    6.3. TRANSFORM Y TO SPARSE MATRICES ------
+  ## ------     6.3. TRANSFORM Y TO SPARSE MATRICES ------
   
   ## STRUCTURED
   SparseY <- GetSparseY(y.aliveStructured)
@@ -1561,9 +1562,9 @@ for(thisSex in c("Hann","Hunn")){
   
   
   
-  ## ------ 7. NIMBLE INITS (CONTINUED) ------
+  ## ------   7. NIMBLE INITS (CONTINUED) ------
   
-  ## ------    7.1.GENERATE sxy INITIAL VALUES ------
+  ## ------     7.1.GENERATE sxy INITIAL VALUES ------
   
   ## Project death to the next year
   myData.deadProj <- myData.dead[ ,c("Id","Year")]
@@ -1597,42 +1598,38 @@ for(thisSex in c("Hann","Hunn")){
     sd = 4,
     movementMethod = "dbernppACmovement_normal")
   
-  ## RESCALE sxy INITIAL VALUES 
-  sxy.initscaled <- scaleCoordsToHabitatGrid(
-    coordsData = sxy.init,
-    coordsHabitatGridCenter = myHabitat$habitat.xy,
-    scaleToGrid = F)$coordsDataScaled
   
   
-  
-  ## ------ 9. LIST NIMBLE INITS & SAVE NIMBLE INPUTS ------
+  ## ------   8. LIST NIMBLE INITS & SAVE NIMBLE INPUTS ------
   
   for(c in 1:4){
     
     ## ------  9.1. LIST NIMBLE INITS ------
-    nimInits <- list( "sxy" = sxy.init,
-                      "dmean" = runif(1,0,10),
-                      "z" = z.init,
-                      "omeg1" = c(0.5,0.5),
-                      "gamma" = runif(dim(y.alive)[3]-1,0,1),
-                      "p01" = array(runif(18,0,0.2),
-                                    c(nimConstants$n.counties, dim(y.alive)[3])),
-                      "p01Oth" = array(runif(18,0,0.2),
-                                       c(nimConstants$n.countries+1, dim(y.alive)[3])),
-                      "sigma" = runif(nYears,1,4),
-                      "betaDens" = runif(1,-0.1,0.1),
-                      "betaCovs" = array( runif(dim(detCovs)[3],-0.1,0.1),
-                                          c(dim(detCovsOth)[3], nYears)),
-                      "betaCovsOth" = array( runif(dim(detCovsOth)[3],-0.1,0.1),
-                                             c(dim(detCovsOth)[3], nYears)),
-                      "betaResponseOth" = runif(dim(y.alive)[3], -0.1, 0.1),
-                      "betaResponse" = runif(dim(y.alive)[3], -0.1, 0.1),
-                      "detResponse" = InitsDetResponse,
-                      "pResponse"  = runif(1, 0.4, 0.5),
-                      "phi" = runif(dim(y.alive)[3]-1,0.1,0.3))
+    nimInits <- list( 
+      "sxy" = sxy.init,
+      "dmean" = runif(1,0,10),
+      "z" = z.init,
+      "omeg1" = c(0.5,0.5),
+      "gamma" = runif(dim(y.alive)[3]-1,0,1),
+      "p01" = array(runif(18,0,0.2),
+                    c(nimConstants$n.counties, dim(y.alive)[3])),
+      "p01Oth" = array(runif(18,0,0.2),
+                       c(nimConstants$n.countries+1, dim(y.alive)[3])),
+      "sigma" = runif(nYears,1,4),
+      "betaDens" = runif(1,-0.1,0.1),
+      "betaCovs" = array( runif(dim(detCovs)[3],-0.1,0.1),
+                          c(dim(detCovsOth)[3], nYears)),
+      "betaCovsOth" = array( runif(dim(detCovsOth)[3],-0.1,0.1),
+                             c(dim(detCovsOth)[3], nYears)),
+      "betaResponseOth" = runif(dim(y.alive)[3], -0.1, 0.1),
+      "betaResponse" = runif(dim(y.alive)[3], -0.1, 0.1),
+      "detResponse" = InitsDetResponse,
+      "pResponse"  = runif(1, 0.4, 0.5),
+      "phi" = runif(dim(y.alive)[3]-1,0.1,0.3))
     
     
-    ## An extreme number of decimals may cause a number to appear as an integer to Nimble, and then coincide with habitat window boundaries
+    ## An extreme number of decimals may cause a number to appear as an integer 
+    ## to Nimble, and then coincide with habitat window boundaries
     nimInits$sxy <- round(nimInits$sxy, 5)
     
     nimConstants$countyToggle <- nimInits$p01
@@ -1676,7 +1673,6 @@ for(thisSex in c("Hann","Hunn")){
                           paste0(myVars$modelName, thisSex,"_Chain", c, ".RData")))
   }#c
 }#thisSex
-
 
 
 ##------------------------------------------------------------------------------
