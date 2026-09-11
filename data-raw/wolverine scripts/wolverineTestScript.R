@@ -35,7 +35,7 @@ gc()
 
 ## Ctrl + Shift + F10 (to restart R session)
 #pak::pak("PierreDupont/rovquantR@devel")
-devtools::install_github("PierreDupont/rovquantR@devel")
+#devtools::install_github("PierreDupont/rovquantR@devel")
 
 
 
@@ -105,7 +105,7 @@ makeRovquantData(
 load(file.path(working.dir,"nimbleInFiles/female/nimbleInput_2026-09-02_female_1.RData")) 
 nimData_NEW <- nimData
 nimConstants_NEW <- nimConstants
-lapply(nimData_NEW,dim)
+lapply(nimData_NEW,sum)
 lapply(nimConstants_NEW,sum)
 
 

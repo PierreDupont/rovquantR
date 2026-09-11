@@ -67,7 +67,7 @@ makeRovquantData_wolverine_SCR <- function(
   ##-- detectors
   detector.res = 10000,
   subdetector.res = 2000,
-  max.det.dist = 84000,
+  max.det.dist = 40000,
   resize.factor = 1,
   
   ##-- Miscellanious
@@ -1133,45 +1133,45 @@ makeRovquantData_wolverine_SCR <- function(
         
         detResponse[i] ~ dbern(pResponse)
         
-        y[i,1:nMaxDetectors] ~ dbin_LESS_Cached_MultipleCovResponse( 
-          sxy = sxy[i,1:2],
+        y[i,1:maxDetNums] ~ dbinomLocal_normalWolverine(
+          detNums = detNums[i],
+          detIndices = detIndices[i,1:maxDetNums],
+          size = size[1:n.detectors],
+          p0 = p0[1:n.counties],
           sigma = sigma,
-          nbDetections = nbDetections[i],
-          yDets = yDets[i,1:nMaxDetectors],
-          detector.xy = detector.xy[1:n.detectors,1:2],
-          trials = trials[1:n.detectors],
-          detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
-          nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
-          ResizeFactor = ResizeFactor,
-          maxNBDets = maxNBDets,
-          habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
+          s = sxy[i,1:2],
+          trapCoords = detector.xy[1:n.detectors,1:2],
+          localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
+          localTrapsNum = localDetNum[1:n.habWindows],
+          resizeFactor = resizeFactor,
+          lengthYCombined = maxDetNums,
+          habitatGrid = habitatGrid[1:y.max,1:x.max],
           indicator = z[i],
-          p0State = p0[1:n.counties],
-          detCountries = detCounties[1:n.detectors],
-          detCov = detCovs[1:n.detectors,1:n.covs],
-          betaCov = betaCovs[1:n.covs],
-          BetaResponse = betaResponse,
-          detResponse = detResponse[i])
+          trapCovsIntercept = detCounties[1:n.detectors],
+          trapCovs = detCovs[1:n.detectors,1:n.covs],
+          trapBetas = betaCovs[1:n.covs],
+          indBeta = betaResponse,
+          indCov = detResponse[i])
         
-        y.aliveOth[i,1:nMaxDetectorsOth] ~ dbin_LESS_Cached_MultipleCovResponse(
-          sxy = sxy[i,1:2],
+        y.Oth[i,1:maxDetNumsOth] ~ dbinomLocal_normalWolverine(
+          detNums = detNumsOth[i],
+          detIndices = detIndicesOth[i,1:maxDetNumsOth],
+          size = size[1:n.detectors],
+          p0 = p0Oth[1:n.countries],
           sigma = sigma,
-          nbDetections = nbDetectionsOth[i],
-          yDets = yDetsOth[i,1:nMaxDetectorsOth],
-          detector.xy =  detector.xy[1:n.detectors,1:2],
-          trials = trials[1:n.detectors],
-          detectorIndex = detectorIndex[1:n.cellsSparse,1:maxNBDets],
-          nDetectorsLESS = nDetectorsLESS[1:n.cellsSparse],
-          ResizeFactor = ResizeFactor,
-          maxNBDets = maxNBDets,
-          habitatID = habitatIDDet[1:y.maxDet,1:x.maxDet],
+          s = sxy[i,1:2],
+          trapCoords = detector.xy[1:n.detectors,1:2],
+          localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
+          localTrapsNum = localDetNum[1:n.habWindows],
+          resizeFactor = resizeFactor,
+          lengthYCombined = maxDetNumsOth,
+          habitatGrid = habitatGrid[1:y.max,1:x.max],
           indicator = z[i],
-          p0State = p0Oth[1:n.countries],
-          detCountries = detCountries[1:n.detectors],
-          detCov = detCovsOth[1:n.detectors,1:n.covsOth],
-          betaCov = betaCovsOth[1:n.covsOth],
-          BetaResponse = betaResponseOth,
-          detResponse = detResponse[i])
+          trapCovsIntercept = detCountries[1:n.detectors],
+          trapCovs = detCovsOth[1:n.detectors,1:n.covs.Oth],
+          trapBetas = betaCovsOth[1:n.covs.Oth],
+          indBeta = betaResponseOth,
+          indCov = detResponse[i])
       }#i
       
       

@@ -189,8 +189,9 @@ makeRovquantData_wolverine <- function(
       myFullData.sp$alive$Country_sf %in% c("(N)","(S)")) 
     
   ##-- Filter NGS samples outside the GLOBAL MAP
-  ##-- [PD]: should be removed!!
+  ##-- [PD]: should be removed!! 
   ##-- This removes 125 samples falling into lakes
+  ##-- Only here to match last year's analysis
   myStudyArea <- GLOBALMAP %>% 
     dplyr::filter(ISO %in% c("SWE","NOR")) %>%
     mutate(id = 1) %>% 
@@ -495,9 +496,6 @@ makeRovquantData_wolverine <- function(
   ##-- Average snow from December to June (the official monitoring period for Norway&Sweden)
   SNOW <- stack(file.path(data.dir,"Snow/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
   
-  # ##-- RENAME THE LAYERS
-  # names(SNOW) <- paste(years, (years) + 1, sep = "_")
-  
   ##-- SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
   SNOW <- SNOW[[paste("X", years, "_", years + 1, sep = "")]]
   SNOW <- raster::crop(SNOW, c(0,40,55,75))
@@ -598,7 +596,7 @@ makeRovquantData_wolverine <- function(
     sf::st_as_sf( ., coords = c("East_UTM33","North_UTM33")) %>%
     sf::st_set_crs(. , sf::st_crs(REGIONS)) %>%
     ##-- Filter based on space 
-    sf::st_filter( .,habitat.rWthBufferPol, .predicate = st_intersects)
+    sf::st_filter( ., habitat.rWthBufferPol, .predicate = st_intersects)
   
   
   
@@ -860,7 +858,7 @@ makeRovquantData_wolverine <- function(
     tracks = TRACKS)
   
   # ##-- SAVE FOR FASTER LOADING
-  # save(myFilteredData.sp, file = file.path(working.dir, "data/myFilteredData.sp.RData"))
+  # save(data.alive, file = file.path(working.dir, "data/myFilteredData.sp.RData"))
   # load(file.path(working.dir, "data/myFilteredData.sp.RData"))
   
   
@@ -879,7 +877,6 @@ makeRovquantData_wolverine <- function(
         !is.na(trackID) &
         trackDist <= distanceThreshold & 
         !hairTrap)
-  
   
   
   ## ------       6.3.3. PLOT CHECKS ------
@@ -1365,7 +1362,8 @@ makeRovquantData_wolverine <- function(
     
     
     
-    ## ------     7.4. GENERATE INDIVIDUAL-LEVEL COVARIATES ------
+    ## ------     7.4. GENERATE INDIVIDUAL-LEVEL COVARIATES 
+    ------
     
     ##-- Make matrix of previous capture indicator
     detResponse <- makeTrapResponseCov(
@@ -1916,7 +1914,7 @@ makeRovquantData_wolverine <- function(
       
       ##-- Load OPSCR input
       load( file.path( working.dir, "nimbleInFiles", thisSex,
-                       paste0("nimbleInput_", DATE, "_", thisSex, "_", c, ".RData")))
+                       paste0("nimbleInput_", DATE, "_", thisSex, "_", ch, ".RData")))
       
       ##-- Identify detected individuals     
       detectedStruc <- apply(nimData$detNums,2,function(x) x > 0)

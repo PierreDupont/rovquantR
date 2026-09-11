@@ -43,7 +43,8 @@ readTracks <- function(data.dir,
       dplyr::mutate( Dato = as.POSIXct(strptime(Dato, "%Y-%m-%d")),
                      Mth = as.numeric(format(Dato,"%m")),
                      Yr = as.numeric(format(Dato,"%Y")),
-                     Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr)) %>%
+                     Year = ifelse( Mth < unlist(sampling.months)[1], Yr-1,Yr), 
+                     Dato = as.character(Dato)) %>%
       ##-- Filter out irrelevant tracks
       dplyr::filter( Helikopter == "0",      ## Remove helicopter tracks
                      # Jerv == "1",          ## [CHECK] should we keep wolf tracks only?
