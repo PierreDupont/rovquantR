@@ -1362,8 +1362,7 @@ makeRovquantData_wolverine <- function(
     
     
     
-    ## ------     7.4. GENERATE INDIVIDUAL-LEVEL COVARIATES 
-    ------
+    ## ------     7.4. GENERATE INDIVIDUAL-LEVEL COVARIATES ------
     
     ##-- Make matrix of previous capture indicator
     detResponse <- makeTrapResponseCov(
