@@ -35,7 +35,7 @@ readTracks <- function(data.dir,
   ##-- Load all GPS tracks in a list
   data <- list()
   for(f in 1:length(infiles)){
-    message(paste0('Loading file ', infiles[f], '...\n'))
+    message(paste0('Loading file ', infiles[f], '...'))
     
     ##-- Load and filter GPS search tracks
     data[[f]] <- sf::read_sf(file.path(data.dir, "Tracks", infiles[f])) %>%

@@ -35,7 +35,7 @@ gc()
 
 ## Ctrl + Shift + F10 (to restart R session)
 #pak::pak("PierreDupont/rovquantR@devel")
-#devtools::install_github("PierreDupont/rovquantR@devel")
+devtools::install_github("PierreDupont/rovquantR@devel")
 
 
 
@@ -101,13 +101,23 @@ makeRovquantData(
   data.dir = data.dir,
   working.dir = working.dir)
 
+
 ## Load and explore input data
-load(file.path(working.dir,"nimbleInFiles/female/nimbleInput_2026-09-02_female_1.RData")) 
+inFiles <- list.files(path = file.path(working.dir,"nimbleInFiles/female"),
+                      full.names = TRUE)
+load(inFiles[1]) 
 nimData_NEW <- nimData
 nimConstants_NEW <- nimConstants
 lapply(nimData_NEW,sum)
 lapply(nimConstants_NEW,sum)
 
+
+
+
+##-- Check female ID i = 977 ; t = c(6,7)
+##-- Check male ID i = 676 ; t = 7
+
+rovquantR::dbinomLocal_nor
 
 
 ##------------------------------------------------------------------------------

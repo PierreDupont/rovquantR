@@ -44,7 +44,7 @@ The different goals of this international research project are to:
 4.  **Collaborate with managers.** The project results are published annually in technical reports [@milleret2024wolverine; @milleret2025wolf; @dupontNorBear2023].
     In addition, members from the project's team regularly attend meetings and workshops to ensure that RovQuant remains up-to-date on current and emerging challenges in large carnivore monitoring and management.
 
-The methods developed by the RovQuant team are based on the Spatial Capture-Recapture (SCR) methodology and involve large-scale analysis of individual-based datasets in a Bayesian framework [ @bischof2020estimating; @wei2022; @turek2021efficient].
+The methods developed by the RovQuant team are based on the Spatial Capture-Recapture (SCR) methodology and involve large-scale analysis of individual-based datasets in a Bayesian framework [@bischof2020estimating; @wei2022; @turek2021efficient].
 Spatial Capture-Recapture (SCR) methods use the spatial information contained in individual detections, for example DNA samples left behind by wildlife, to estimate the location of activity centers of all individuals in the population, including those never detected.
 SCR models thus produce density estimates and density surfaces, while accounting for the fact that not all individuals are detected.
 Furthermore, abundance estimates produced by SCR models take into account that animals move across the landscape and may be detected in multiple locations – for example, a bear living near the Swedish-Norwegian border may contribute partially to population size estimates in both countries.
@@ -121,13 +121,13 @@ For this, we need to set-up two paths:
 1.  `data.dir`: a path to the repository containing the raw data.
     It contains the different files necessary for the OPSCR analysis:
 
-    -   an excel file of all the brown bear DNA samples available from Rovbase
+    - an excel file of all the brown bear DNA samples available from Rovbase
 
-    -   an excel file of all the brown bear dead recoveries available from Rovbase
+    - an excel file of all the brown bear dead recoveries available from Rovbase
 
-    -   an excel file of all large carnivore observations available from Skandobs
+    - an excel file of all large carnivore observations available from Skandobs
 
-    -   multiple spatial covariates (*e.g.* snow cover, distance to roads, .... , in the 'GIS' folder)
+    - multiple spatial covariates (*e.g.* snow cover, distance to roads, .... , in the 'GIS' folder)
 
     Note that this is NOT the working directory.
     For all intent and purposes, it should be treated as a 'read-only' directory.
@@ -171,7 +171,7 @@ cleanRovbaseData(
   print.report = TRUE)
 ```
 
-```{r makeDirectories, eval = TRUE, echo = FALSE}
+```{r makeDirectories, eval = FALSE, echo = FALSE}
 makeDirectories( path =  "C:/Users/pidu/AQEG Dropbox/AQEG Team Folder/RovQuant/bear/2025/BearVignette",
                  subFolders = c("female","male"),
                  show.dir = TRUE)
@@ -196,7 +196,8 @@ makeRovquantData(
 The next step is to fit the OPSCR model to the prepared bear data using NIMBLE.
 In this example, as in most cases in the [**RovQuant**](https://www.nmbu.no/en/research/projects/rovquant) project, we fit sex-specific models.
 
-When fitting a statistical model using NIMBLE, you first need to create a model object, containing the model code, the constants/dimensions, data and initial values for the model. Here, we load the first input file we created, corresponding to one MCMC chain.
+When fitting a statistical model using NIMBLE, you first need to create a model object, containing the model code, the constants/dimensions, data and initial values for the model.
+Here, we load the first input file we created, corresponding to one MCMC chain.
 
 ```{r run_females2, eval = FALSE}
 ##-- List all prepared input files
@@ -360,7 +361,6 @@ knitr::include_graphics(file.path(working.dir, "figures/NGS_DR_maps.png"))
 ## Density and abundance
 
 We estimated that, within its primary range (`r round(detectors$n.detectors*(detectors$resolution/1000)^2)` $km^{2}$), the brown bear population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males.
-
 
 ```{r, Tab1, echo = FALSE, collapse = TRUE}
 N_LastYear %>%

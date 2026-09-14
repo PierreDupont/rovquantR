@@ -341,16 +341,16 @@ rbinomLocal_normalWolverine <- nimbleFunction(
   })
 
 
-registerDistributions(
-  list(
-    dbinomLocal_normalWolverine = list(
-      BUGSdist = 'dbinomLocal_normalWolverine(detNums, detIndices, size, p0, sigma, s,
-      trapCoords, localTrapsIndices, localTrapsNum, resizeFactor, habitatGrid, indicator,
-      indCov, indBeta, trapCovs, trapBetas, trapCovsIntercept, lengthYCombined)',
-      types = c('value = double(1)', 'detNums = double(0)', 'detIndices = double(1)', 'size = double(1)', 'p0 = double(1)', 'sigma = double(0)', 's = double(1)', 
-                'trapCoords = double(2)', 'localTrapsIndices = double(2)', 'localTrapsNum = double(1)', 'resizeFactor = double(0)', 'habitatGrid = double(2)', 'indicator = double(0)',
-                'indCov = double(0)', 'indBeta = double(0)', 'trapCovs = double(2)', 'trapBetas = double(1)', 'trapCovsIntercept = double(1)', 'lengthYCombined = double(0)'),
-      discrete = TRUE,
-      mixedSizes = TRUE,
-      pqAvail = FALSE)),
-  verbose = T)
+# registerDistributions(
+#   list(
+#     dbinomLocal_normalWolverine = list(
+#       BUGSdist = 'dbinomLocal_normalWolverine(detNums, detIndices, size, p0, sigma, s,
+#       trapCoords, localTrapsIndices, localTrapsNum, resizeFactor, habitatGrid, indicator,
+#       indCov, indBeta, trapCovs, trapBetas, trapCovsIntercept, lengthYCombined)',
+#       types = c('value = double(1)', 'detNums = double(0)', 'detIndices = double(1)', 'size = double(1)', 'p0 = double(1)', 'sigma = double(0)', 's = double(1)', 
+#                 'trapCoords = double(2)', 'localTrapsIndices = double(2)', 'localTrapsNum = double(1)', 'resizeFactor = double(0)', 'habitatGrid = double(2)', 'indicator = double(0)',
+#                 'indCov = double(0)', 'indBeta = double(0)', 'trapCovs = double(2)', 'trapBetas = double(1)', 'trapCovsIntercept = double(1)', 'lengthYCombined = double(0)'),
+#       discrete = TRUE,
+#       mixedSizes = TRUE,
+#       pqAvail = FALSE)),
+#   verbose = T)

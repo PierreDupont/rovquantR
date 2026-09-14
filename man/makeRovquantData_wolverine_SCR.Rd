@@ -2,7 +2,7 @@
 % Please edit documentation in R/makeRovquantData_wolverine_SCR.R
 \name{makeRovquantData_wolverine_SCR}
 \alias{makeRovquantData_wolverine_SCR}
-\title{RovQuant OPSCR wolverine data preparation.}
+\title{RovQuant SCR wolverine data preparation.}
 \usage{
 makeRovquantData_wolverine_SCR(
   data.dir = getwd(),
@@ -15,7 +15,7 @@ makeRovquantData_wolverine_SCR(
   buffer.size = 60000,
   detector.res = 10000,
   subdetector.res = 2000,
-  max.det.dist = 84000,
+  max.det.dist = 40000,
   resize.factor = 1,
   rename.list = NULL
 )
@@ -44,6 +44,10 @@ makeRovquantData_wolverine_SCR(
 \item{max.det.dist}{A \code{Numeric}.}
 
 \item{resize.factor}{A \code{Numeric}.}
+
+\item{rename.list}{A \code{list}.}
+
+\item{max.move.dist}{A \code{Numeric}.}
 }
 \value{
 A \code{html} report summarizing the data preparation process

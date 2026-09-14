@@ -99,22 +99,20 @@
 #' ScaledtrapCoords<- ScaledtrapCoords$coordsDataScaled
 #' habitatMask <- matrix(1, nrow = 4, ncol=4, byrow = TRUE)
 #' 
-#' 
 #' # CREATE LOCAL OBJECTS 
-#' TrapLocal <- getLocalObjects(habitatMask = habitatMask,
-#'                                    coords = ScaledtrapCoords,
-#'                                    dmax=2.5,
-#'                                    resizeFactor = 1,
-#'                                    plot.check = TRUE
-#' )
+#' TrapLocal <- getLocalObjects( habitatMask = habitatMask,
+#'                               coords = ScaledtrapCoords,
+#'                               dmax=2.5,
+#'                               resizeFactor = 1,
+#'                               plot.check = TRUE)
 #' 
 #' # GET SPARSE MATRIX 
 #' SparseY <- getSparseY(y)
 #' 
 #' # II. USING THE DENSITY FUNCTION 
-#'  # WE TAKE THE FIRST INDIVIDUAL
+#' # WE TAKE THE FIRST INDIVIDUAL
 #' i=1
-#'   # OPTION 1: USING THE RANDOM GENERATION FUNCTIONNALITY 
+#' # OPTION 1: USING THE RANDOM GENERATION FUNCTIONNALITY 
 #' dbinomLocal_normalWolf(x=SparseY$y[i,,1],
 #'                    detNums=SparseY$detNums[i],
 #'                    detIndices=SparseY$detIndices[i,,1],
@@ -129,8 +127,8 @@
 #'                    habitatGrid=TrapLocal$habitatGrid,
 #'                    indicator=indicator)
 #'                                                                 
-#'   # OPTION 2: USING RANDOM GENERATION FUNCTIONNALITY 
-#'   # WE DO NOT PROVIDE THE detNums AND detIndices ARGUMENTS
+#' # OPTION 2: USING RANDOM GENERATION FUNCTIONNALITY 
+#' # WE DO NOT PROVIDE THE detNums AND detIndices ARGUMENTS
 #' dbinomLocal_normalWolf(x=SparseY$yCombined[i,,1],
 #'                    size=rep(1,4),
 #'                    p0 = p0,
@@ -234,34 +232,26 @@ dbinomLocal_normalWolf <- nimbleFunction(
     detIndices1 <- c(detIndices1, 0)
     count <- 1 
     
-    
-      for(r in 1:localTrapsNum[sID]){
-        if(theseLocalTraps[r] == detIndices1[count]){ 
-          d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
-          
-          pZero <- ilogit(logit(p0[trapCovsIntercept[theseLocalTraps[r]], z]) +
-                            indBeta*indCov +
-                            inprod(trapBetas, trapCovs[theseLocalTraps[r],]))
-          
-          p <- pZero * exp(alpha * d2)
-          logProb <-  logProb + dbinom(x1[count], prob = p, size = size[theseLocalTraps[r]], log = TRUE)
-          count <- count + 1
-        }else{
-          d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
-          pZero <- ilogit(logit(p0[trapCovsIntercept[theseLocalTraps[r]], z]) +
-                            indBeta * indCov +
-                            inprod(trapBetas, trapCovs[theseLocalTraps[r],]))
-          p <- pZero * exp(alpha * d2)
-          logProb <- logProb + dbinom(0, prob = p, size = size[theseLocalTraps[r]], log = TRUE)
-          
-        }
+    for(r in 1:localTrapsNum[sID]){
+      
+      d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
+      
+      pZero <- ilogit(logit(p0[trapCovsIntercept[theseLocalTraps[r]], z]) +
+                        indBeta*indCov +
+                        inprod(trapBetas, trapCovs[theseLocalTraps[r],]))
+      
+      p <- pZero * exp(alpha * d2)
+      
+      if(theseLocalTraps[r] == detIndices1[count]){ 
+        logProb <-  logProb + dbinom(x1[count], prob = p, size = size[theseLocalTraps[r]], log = TRUE)
+        count <- count + 1
+      } else {
+        logProb <- logProb + dbinom(0, prob = p, size = size[theseLocalTraps[r]], log = TRUE)
       }
-
+    }#r
     
     ## Return the probability of the vector of detections (or log-probability if required)
-    if(log){
-      return(logProb)}else{
-    return(exp(logProb))}
+    if(log){ return(logProb)} else { return(exp(logProb))}
   })
 
 
@@ -293,18 +283,15 @@ rbinomLocal_normalWolf <- nimbleFunction(
     returnType(double(1))
     if(detNums >= 0) stop("Random generation for the rbinomLocal_normal distribution is not currently supported without combining all individual detections information in one vector. See 'getSparseY()'")
     
-    #========================================================
+
     # RETURN TYPE DECLARATION
     if(n!=1){print("rbinomLocal_normal only allows n = 1; using n = 1")}
-    # returnType(double(3))
-    # len <- 2*MAX + 1
+
     ## GET NECESSARY INFO
     alpha <- -1.0 / (2.0 * sigma * sigma)
-    # n.detectors <- dim(detector.xy)[1]
-    # nMAxDetections <- length(detIndices)
     nMAxDetections <- (lengthYCombined-1)/2
+    
     ## SHORTCUT IF INDIVIDUAL IS NOT AVAILABLE FOR DETECTION
-    #if(indicator == 0){return(rep(0.0, 2*nMAxDetections + 1))}
     if(indicator == 0){return(rep(0.0, lengthYCombined))}
     
     ## RETRIEVE THE ID OF THE HABITAT WINDOW THE CURRENT sxy FALLS IN FROM THE HABITAT_ID MATRIX
@@ -337,12 +324,8 @@ rbinomLocal_normalWolf <- nimbleFunction(
         }#if
       }#r 
      
-      
-    
     count <- count - 1
     
-    
-    # out <- rep(-1, 2*nMAxDetections + 1)
     out <- rep(-1, lengthYCombined)
     
     out[1] <- count
@@ -350,25 +333,24 @@ rbinomLocal_normalWolf <- nimbleFunction(
       out[2:(count+1)] <- ys[1:count]
       out[(nMAxDetections+2):(nMAxDetections+count+1)] <- dets[1:count]
     }
+    
     ## OUTPUT
     return(out)
   })
 
-
-registerDistributions(
-  list(
-    dbinomLocal_normalWolf = list(
-      BUGSdist ='dbinomLocal_normalWolf(detNums       , detIndices    , size, p0  , sigma, s, trapCoords, 
-      localTrapsIndices, localTrapsNum, resizeFactor , habitatGrid, indicator, z, indCov, indBeta, trapCovs,
-      trapCovsIntercept, trapBetas, lengthYCombined)',
-      
-
-      types = c('value = double(1)', 'detIndices = double(1)', 'size = double(1)', 's = double(1)', "p0=double(2)",
-                'trapCoords = double(2)', 'localTrapsIndices = double(2)', 'localTrapsNum = double(1)', 'habitatGrid = double(2)',"trapBetas = double(1)",
-                "trapCovsIntercept =  double(1)","trapCovs =  double(2)"),
-      discrete = TRUE,
-      mixedSizes = TRUE,
-      pqAvail = FALSE
-    )
-  ),
-  verbose = T)
+ 
+# registerDistributions(
+#   list(
+#     dbinomLocal_normalWolf = list(
+#       BUGSdist ='dbinomLocal_normalWolf(detNums       , detIndices    , size, p0  , sigma, s, trapCoords, 
+#       localTrapsIndices, localTrapsNum, resizeFactor , habitatGrid, indicator, z, indCov, indBeta, trapCovs,
+#       trapCovsIntercept, trapBetas, lengthYCombined)',
+#       types = c('value = double(1)', 'detIndices = double(1)', 'size = double(1)', 's = double(1)', "p0=double(2)",
+#                 'trapCoords = double(2)', 'localTrapsIndices = double(2)', 'localTrapsNum = double(1)', 'habitatGrid = double(2)',"trapBetas = double(1)",
+#                 "trapCovsIntercept =  double(1)","trapCovs =  double(2)"),
+#       discrete = TRUE,
+#       mixedSizes = TRUE,
+#       pqAvail = FALSE
+#     )
+#   ),
+#   verbose = T)

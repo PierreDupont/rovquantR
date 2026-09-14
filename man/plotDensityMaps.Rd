@@ -16,6 +16,8 @@ plotDensityMaps(
   labels = NULL,
   x.labels = NULL,
   y.labels = NULL,
+  x.names = NULL,
+  y.names = NULL,
   caption = NULL,
   export.raster = TRUE,
   name = "UD_Density"

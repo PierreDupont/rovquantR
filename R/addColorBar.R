@@ -11,7 +11,7 @@
 #' @param lab_name (optional) A \code{character} string to display on the side of the bar.
 #' @param lab_cex (optional) A \code{numeric} value denoting the relative size of the label text.
 #' @param lab_namee (optional) A \code{character} string to display on the side of the bar.
-#' @param tick_cex, tick_num, tick digits (optional) \code{numeric values denoting the relative size, number and digits to display for the values alongside the bar.
+#' @param tick_cex, tick_num, tick digits (optional) \code{numeric} values denoting the relative size, number and digits to display for the values alongside the bar.
 
 #' @return This function adds a color bar to an existing plot.
 #' 

@@ -7,7 +7,7 @@
 #'  - defining and formatting detectors characteristics
 #'  - defining and formatting individual detection histories
 #'
-#' @name makeRovquantData_wolverine
+#' @name makeRovquantData_wolverine_SCR
 #'
 #' @param data.dir A \code{path}.
 #' @param working.dir A \code{path}.

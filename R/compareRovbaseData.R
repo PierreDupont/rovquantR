@@ -37,11 +37,10 @@
 #'
 #' @author Pierre Dupont
 #' 
-#' @importFrom readxl render
-#' @importFrom dplyr png
-#' @importFrom purrr mtext 
-#' @import writexl 
-#' @import tibble
+#' @importFrom rmarkdown render
+#' @importFrom grDevices png
+#' @importFrom graphics mtext 
+#' @importFrom tibble tibble
 #' 
 #' @rdname compareRovbaseData
 #' @export

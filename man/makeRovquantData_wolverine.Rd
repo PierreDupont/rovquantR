@@ -16,7 +16,7 @@ makeRovquantData_wolverine(
   max.move.dist = 250000,
   detector.res = 10000,
   subdetector.res = 2000,
-  max.det.dist = 84000,
+  max.det.dist = 40000,
   resize.factor = 1,
   rename.list = NULL
 )
