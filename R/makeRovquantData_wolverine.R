@@ -179,14 +179,16 @@ makeRovquantData_wolverine <- function(
   n.years <- length(years)
   
   ##-- Filter NGS samples for dates
-  myFullData.sp$alive <- myFullData.sp$alive %>%
+  filteredData <- myFullData.sp
+  filteredData$alive <- filteredData$alive %>%
     dplyr::filter(
       ##-- Subset to years of interest
       Year %in% years,
       ##-- Subset to monitoring period
       Month %in% unlist(sampling.months), 
       ##-- Subset to samples collected in Norway and Sweden
-      myFullData.sp$alive$Country_sf %in% c("(N)","(S)")) 
+      ##-- [PD] should switch to using "country_sample" instead 
+      filteredData$alive$Country_sf %in% c("(N)","(S)")) 
     
   ##-- Filter NGS samples outside the GLOBAL MAP
   ##-- [PD]: should be removed!! 
@@ -198,7 +200,7 @@ makeRovquantData_wolverine <- function(
     group_by(id) %>% 
     summarize() 
   
-  myFullData.sp$alive <- myFullData.sp$alive %>% 
+  filteredData$alive <- filteredData$alive %>% 
     dplyr::filter(!is.na(as.numeric(st_intersects(., myStudyArea))))
   
   
@@ -208,17 +210,16 @@ makeRovquantData_wolverine <- function(
   yearsNotSampled <- years[!years %in% yearsSampledNorrb]
   whichYearsNotSampled <- which(years %in% yearsNotSampled)
   ##-- Identify detections collected in Norrbotten 
-  is.Norr <- as.numeric(st_intersects(myFullData.sp$alive, COUNTIESNorrbotten))
+  is.Norr <- as.numeric(st_intersects(filteredData$alive, COUNTIESNorrbotten))
   ##-- Filter out detections in Norrbotten in years without sampling
-  myFullData.sp$alive <- myFullData.sp$alive %>%
+  filteredData$alive <- filteredData$alive %>%
     dplyr::filter(!(Year %in% yearsNotSampled & is.Norr %in% 1))
   
   
   ##-- Filter Dead recoveries for dates
-  myFullData.sp$dead.recovery <- myFullData.sp$dead.recovery %>%
+  filteredData$dead.recovery <- filteredData$dead.recovery %>%
     ##-- Subset to years of interest
     dplyr::filter(Year %in% years)
-  
   
   
   
@@ -234,7 +235,7 @@ makeRovquantData_wolverine <- function(
   
   ##-- Determine study area based on NGS detections
   ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
-  studyArea <- myFullData.sp$alive %>%
+  studyArea <- filteredData$alive %>%
     sf::st_buffer(., dist = habitat$buffer * 1.4) %>%
     dplyr::mutate(id = 1) %>%
     dplyr::group_by(id) %>% 
@@ -361,14 +362,7 @@ makeRovquantData_wolverine <- function(
     dplyr::summarize() %>%
     dplyr::filter(county %in% c("Norrbotten","Troms","Västerbotten","Nordland","Finnmark")) %>% 
     sf::st_simplify( dTolerance = 500)
-  
-  ##-- Create an index of detectors in Norrbotten
-  distDetsCounties <- sf::st_distance(
-    detectors$main.detector.sp,
-    COUNTIESAroundNorrbotten,
-    byid = T)
-  detsNorrbotten <- which(apply(distDetsCounties, 1, which.min) == 3)
-  
+
   
   
   ## ------     2.2. GENERATE DETECTOR-LEVEL COVARIATES -----
@@ -697,7 +691,7 @@ makeRovquantData_wolverine <- function(
   ## ------         2.2.6.4. IDENTIFY CELLS WITH HAIR TRAPS AS OPPORTUNISTIC ------
   
   ##-- IDENTIFY HAIR SAMPLES
-  tmpHair <- myFullData.sp$alive %>% dplyr::filter(hairTrap)
+  tmpHair <- filteredData$alive %>% dplyr::filter(hairTrap)
   
   ##-- MANUALLY FIND THE HAIR SAMPLES & COLOR THE CELL.
   tmpyr <- unique(tmpHair$Year)
@@ -774,7 +768,7 @@ makeRovquantData_wolverine <- function(
   ## ------   4. CREATE LOCAL OBJECTS -----
   
   ##-- Get local detectors
-  detectors$localObjects <- getLocalObjects(
+  detectors$localObjects <- rovquantR::getLocalObjects(
     habitatMask = habitat$habitat.mx,
     coords = detectors$scaledCoords,
     dmax = (detectors$maxDist * 2.1)/habitat$resolution,  ## [PD] : need to rethink the maxDist criteria
@@ -799,7 +793,7 @@ makeRovquantData_wolverine <- function(
   
   ## ------     6.1. ALIVE DATA -----
   
-  data.alive <- myFullData.sp$alive %>%
+  data.alive <- filteredData$alive %>%
     dplyr::filter(
       ##-- Subset to years of interest
       Year %in% years,
@@ -814,7 +808,7 @@ makeRovquantData_wolverine <- function(
   
   ## ------     6.2. DEAD RECOVERY DATA -----
   
-  data.dead <- myFullData.sp$dead.recovery %>%
+  data.dead <- filteredData$dead.recovery %>%
     dplyr::filter(
       ##-- Subset to years of interest
       Year %in% years,
@@ -963,14 +957,14 @@ makeRovquantData_wolverine <- function(
   #   pdf( file = file.path(working.dir, "figures/OverallDetectionsDeadRecoveries.pdf"))
   #   plot( st_geometry(GLOBALMAP))
   #   plot( st_geometry(studyArea), add = T)
-  #   plot( st_geometry(myFullData.sp$alive),
+  #   plot( st_geometry(filteredData$alive),
   #         pch = 16, col = "red", cex = 0.3, add = T)
-  #   plot( st_geometry(myFullData.sp$dead.recovery),
+  #   plot( st_geometry(filteredData$dead.recovery),
   #         pch = 16, col = "blue", cex = 0.3, add = T)
-  #   mtext(paste("Live detections", nrow(myFullData.sp$alive),
-  #               "; ID:", nrow(unique(myFullData.sp$alive$Id))),
+  #   mtext(paste("Live detections", nrow(filteredData$alive),
+  #               "; ID:", nrow(unique(filteredData$alive$Id))),
   #         line = +1)
-  #   mtext(paste("Dead recovery:", nrow(myFullData.sp$dead.recovery)))
+  #   mtext(paste("Dead recovery:", nrow(filteredData$dead.recovery)))
   #   dev.off()
   # }
   
@@ -979,7 +973,7 @@ makeRovquantData_wolverine <- function(
   ## ------     6.4. SEPARATE MORTALITY CAUSES ------
   
   # ##-- Identify legal mortality causes
-  # MortalityNames <- unique(as.character(myFullData.sp$dead.recovery$Death_cause))
+  # MortalityNames <- unique(as.character(filteredData$dead.recovery$Death_cause))
   # whichLegalCauses <- unlist(lapply(c("Lisensfelling","tamdyr","SNO","Skadefelling","Politibeslutning","menneske"),
   #                                   function(x)grep(x,MortalityNames)))
   # legalCauses <- MortalityNames[whichLegalCauses]
@@ -1096,6 +1090,9 @@ makeRovquantData_wolverine <- function(
   ### ASSIGNED TO A DETECTOR IN NORRBOTTEN IN YEARS WERE THERE IS NO SAMPLING.
   ### FIND THE CASES WHERE IT HAPPENS AND ASSIGN THEM THE CLOSEST DETECTOR OUTSIDE
   ### OF NORRBOTTEN
+  
+  ##-- Create an index of main detectors in Norrbotten
+  detsNorrbotten <- which(detCounties %in% 1)
   
   ##-- Identify sub-detectors inside Norrbotten
   subDetsNorrbotten <- which( detectors$detector.sp$main.cell.id %in% 
@@ -1225,6 +1222,8 @@ makeRovquantData_wolverine <- function(
   
   for(thisSex in sex){
     
+    # thisSex <- "female"
+    
     message(paste0("Preparing individual detection histories for sex: ", thisSex, "... "))
     
     ## ------     7.1. FILTER DATA BY SEX -----
@@ -1279,14 +1278,14 @@ makeRovquantData_wolverine <- function(
     y.ar.DEADProjected[] <- 0
     for(t in 2:n.years){ y.ar.DEADProjected[ , ,t] <- y.ar$y.ar2[ , ,t-1] }
     
-    ##-- Get dead recovery detector index
-    y.ar.DEAD <- apply( y.ar.DEADProjected,
-                        c(1,3),
-                        function(x){
-                          if(sum(x)>0){which(x>0)}else{0}
-                        })
-    dimnames(y.ar.DEAD) <- list( "id" = dimnames(y.ar$y.ar2)[[1]],
-                                 "year" = dimnames(y.ar$y.ar2)[[3]])
+    # ##-- Get dead recovery detector index
+    # y.ar.DEAD <- apply( y.ar.DEADProjected,
+    #                     c(1,3),
+    #                     function(x){
+    #                       if(sum(x)>0){which(x>0)}else{0}
+    #                     })
+    # dimnames(y.ar.DEAD) <- list( "id" = dimnames(y.ar$y.ar2)[[1]],
+    #                              "year" = dimnames(y.ar$y.ar2)[[3]])
     
     ##-- Create binary dead recovery histories (0: not recovered ; 1: recovered dead)
     y.ar.DEAD <- apply(y.ar.DEADProjected, c(1,3), function(x){as.numeric(sum(x)>0)})
@@ -1307,7 +1306,8 @@ makeRovquantData_wolverine <- function(
         detector.xy = detectors$detectors.df[ ,c("x","y")], 
         max.distance = detectors$maxDist,    ## [PD] : need to rethink the maxDist criteria
         method = "pairwise",
-        plot.check = F)
+        plot.check = F,
+        verbose = TRUE)
       
       ##-- If any detection flagged
       if(sum(distances[[t]]$y.flagged) > 0){
@@ -1326,39 +1326,9 @@ makeRovquantData_wolverine <- function(
             dplyr::filter(!(Id %in% idd[i] & Detector %in% detIds & Year %in% years[t]))
         }#i
       }#if
-      
-      # ##-- Plot individuals with detections further than the threshold distance
-      # if(plot.check){
-      #   par(mfrow = c(1,1))
-      #   if(sum(distances[[t]]$y.flagged) > 0){
-      #     affected.ids <- which(apply(distances[[t]]$y.flagged,1,sum)>0)
-      #     count <- 0
-      #     for(i in affected.ids){
-      #       count <- count+1
-      #       plot(st_geometry(studyArea), main = paste("t: ",t,"     i: ", names(affected.ids)[count], sep = ""))
-      #       scalebar(2*myVars$DETECTIONS$maxDist, xy = c(800000,6700000), type = "bar", divs = 2, below = "km",
-      #                label = c(0, myVars$DETECTIONS$maxDist/1000, myVars$DETECTIONS$maxDist/500), cex = 0.8, adj = c(0.5,-0.9))
-      #       plot(st_geometry(COUNTRIES), add = T)
-      #       plot(st_geometry(detectors$main.detector.sp), add = T, col = grey(0.8), cex = 0.3, pch = 19)
-      #       
-      #       tmp <- data.alive[data.alive$Id == dimnames(y.ar.ALIVE)[[1]][i] &
-      #                                        data.alive$Year == years[t], ]
-      #       tmp <- tmp[order(tmp$Date), ]
-      #       tmp.xy <- st_coordinates(tmp)
-      #       n.det <- nrow(tmp.xy)
-      #       
-      #       plot(st_geometry(tmp), col = "pink", pch = 16, cex = 1,add=T)
-      #       arrows(x0 = tmp.xy[1:(n.det-1),1], y0 = tmp.xy[1:(n.det-1),2],
-      #              x1 = tmp.xy[2:n.det,1], y1 = tmp.xy[2:n.det,2],
-      #              length = 0.1, lwd = 1)
-      #       plot(st_geometry(detectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0), ]), pch = 16, col = "red",add=T)
-      #       
-      #       tmp2 <- detectors$main.detector.sp[which(y.ar.ALIVE[i,,t] > 0 & distances[[t]]$y.flagged[i,] == 1), ]
-      #       plot(st_geometry(tmp2), add = T, col = "blue", pch = 13, cex = 1.5, lwd = 1)
-      #     }#i
-      #   }#if
-      # }#if plot.check
     }#t
+    
+    #table(data.alive$data.sp$Year)
     
     
     
@@ -1450,7 +1420,7 @@ makeRovquantData_wolverine <- function(
             s = sxy[i,1:2,t-1],
             lambda = lambda,
             baseIntensities = habIntensity[1:n.habWindows],
-            habitatGrid =  habitatGrid[1:y.max,1:x.max],
+            habitatGrid = habitatGrid[1:y.max,1:x.max],
             numGridRows = y.max,
             numGridCols = x.max,
             numWindows = n.habWindows)
@@ -1633,6 +1603,9 @@ makeRovquantData_wolverine <- function(
       return(zz)
     }))
     
+    table(z, useNA = "always")
+    colSums(z, na.rm = T)
+    
     
     
     ## ------     3.2. LIST DATA ------
@@ -1712,10 +1685,10 @@ makeRovquantData_wolverine <- function(
     AllDets <- scaleCoordsToHabitatGrid(
       coordsData = AllDets,
       coordsHabitatGridCenter = habitat$habitat.xy,
-      scaleToGrid =T )$coordsDataScaled
+      scaleToGrid = T)$coordsDataScaled
     
     ##-- Generate initial sxy values
-    sxy.init <- getSInits( AllDetections = AllDets[,c("Id","Year","x","y")],
+    sxy.init <- getSInits( AllDetections = AllDets[ ,c("Id","Year","x","y")],
                            Id.vector = y.ar$Id.vector,
                            idAugmented = which(rownames(z) %in% "Augmented"),
                            lowerCoords = nimData$lowerHabCoords,
@@ -1753,21 +1726,25 @@ makeRovquantData_wolverine <- function(
         "dmean" = stats::runif(1, 0, 10),
         "betaDens" = stats::runif(1, -0.1, 0.1),
         "omeg1" = c(0.5, 0.5),
-        "gamma" = stats::runif(dim(y.alive)[3]-1, 0, 1),
-        "phi" = stats::runif(dim(y.alive)[3]-1, 0.1, 0.3),
+        "gamma" = stats::runif(n.years-1, 0, 1),
+        "phi" = stats::runif(n.years-1, 0.1, 0.3),
         "pResponse" = stats::runif(1, 0.4, 0.5),
         "detResponse" = detResponse.inits,
         "sigma" = stats::runif(n.years, 1, 4),
-        "p01" = array(stats::runif(18, 0, 0.2),
-                      c(nimConstants$n.counties, dim(y.alive)[3])),
-        "betaResponse" = stats::runif(dim(y.alive)[3], -0.1, 0.1),
-        "betaCovs" = array(stats::runif(dim(detCovs)[3], -0.1, 0.1),
-                           c(dim(detCovs)[3], n.years)),
-        "p01Oth" = array(stats::runif(18, 0, 0.2),
-                         c(nimConstants$n.countries, dim(y.alive)[3])),
-        "betaResponseOth" = stats::runif(dim(y.alive)[3], -0.1, 0.1),
-        "betaCovsOth" = array(stats::runif(dim(detCovsOth)[3], -0.1, 0.1),
-                              c(dim(detCovsOth)[3], n.years))) 
+        "p01" = array(stats::runif(
+          n.years*nimConstants$n.counties, 0, 0.2),
+          c(nimConstants$n.counties, n.years)),
+        "betaResponse" = stats::runif(n.years, -0.1, 0.1),
+        "betaCovs" = array(stats::runif(
+          nimConstants$n.covs * n.years,  -0.1, 0.1),
+          c( nimConstants$n.covs, n.years)),
+        "p01Oth" = array(stats::runif(
+          nimConstants$n.countries * n.years, 0, 0.2),
+          c(nimConstants$n.countries, n.years)),
+        "betaResponseOth" = stats::runif(n.years, -0.1, 0.1),
+        "betaCovsOth" = array(stats::runif(
+          nimConstants$n.covs.Oth * n.years, -0.1, 0.1),
+          c(nimConstants$n.covs.Oth, n.years))) 
       
       save( modelCode,
             nimData,
@@ -1909,11 +1886,18 @@ makeRovquantData_wolverine <- function(
     
     message(paste0("Preparing SCR input for sex: ", thisSex, "... "))
     
-    for(ch in 1:4){
+    ##-- Create folders for SCR files
+    dir.create( path = file.path( working.dir, "nimbleInFiles", thisSex, "SCR", years[t]),
+                recursive = TRUE)
+    dir.create( path = file.path( working.dir, "nimbleOutFiles", thisSex, "SCR", years[t]),
+                recursive = TRUE)
+    
+    ##-- Loop over chains
+    for(c in 1:4){
       
       ##-- Load OPSCR input
       load( file.path( working.dir, "nimbleInFiles", thisSex,
-                       paste0("nimbleInput_", DATE, "_", thisSex, "_", ch, ".RData")))
+                       paste0("nimbleInput_", DATE, "_", thisSex, "_", c, ".RData")))
       
       ##-- Identify detected individuals     
       detectedStruc <- apply(nimData$detNums,2,function(x) x > 0)
@@ -1926,13 +1910,14 @@ makeRovquantData_wolverine <- function(
       
       ## ------     2.1. NIMBLE DATA ------
       
-      ##-- y.alive
+      ##-- y
       nimData$y <- nimData$y[detected[ ,t], ,t]  
       nimData$y <- rbind( nimData$y,
                           matrix( 0,
                                   nrow = n.augmented,
                                   ncol = nimConstants$maxDetNums))
       
+      ##-- y.Oth
       nimData$y.Oth <- nimData$y.Oth[detected[ ,t], ,t]  
       nimData$y.Oth <- rbind( nimData$y.Oth,
                               matrix( 0,
@@ -1961,13 +1946,8 @@ makeRovquantData_wolverine <- function(
       nimData$z <- nimData$z[detected[ ,t],t]  
       nimData$z[nimData$z %in% c(2)] <- 1 # ALIVE IDS BECOMES 1
       nimData$z <- c(nimData$z, rep(NA,n.augmented))
-      
       ## [PD]: alternative
       nimData$z <- c(rep(1,n.detected), rep(NA,n.augmented))
-      
-      
-      ##-- sxy 
-      nimData$sxy <- NULL
       
       ##-- detResponse 
       nimData$detResponse <- nimData$detResponse[detected[ ,t],t]
@@ -1983,16 +1963,23 @@ makeRovquantData_wolverine <- function(
       ##-- detCountries
       nimData$detCountries <- nimData$detCountries[ ,t]
       
+      ##-- Remove useless data
+      nimData$alpha <- NULL
+      nimData$sxy <- NULL
+      
       
       
       ## ------     2.2. NIMBLE CONSTANTS ------
       
       ##-- countyToggle to toggle off Norbotten
       nimConstants$countyToggle <- nimConstants$countyToggle[ ,t]
-      nimConstants$countyToggleOth <- nimConstants$countyToggleOth[ ,t]
+      nimConstants$countryToggle <- nimConstants$countryToggle[ ,t]
       
       ##-- number of individuals
       nimConstants$n.individuals <- n.detected + n.augmented
+      
+      ##-- Remove useless constants
+      nimConstants$n.years <- NULL
       
       
       
@@ -2031,9 +2018,15 @@ makeRovquantData_wolverine <- function(
       nimInits$betaResponse <- nimInits$betaResponse[t]
       nimInits$betaResponseOth <- nimInits$betaResponseOth[t]
       
+      ##-- Remove useless inits
+      nimInits$dmean <- NULL
+      nimInits$omeg1 <- NULL
+      nimInits$gamma <- NULL
+      nimInits$phi <- NULL
       
       
-      ## ------     2.4. NIMBLE INITS ------
+      
+      ## ------     2.4. NIMBLE PARAMS ------
       
       nimParams <- c("N", "betaDens", "psi", 
                      "pResponse", "betaResponse", "sigma", 
@@ -2054,9 +2047,12 @@ makeRovquantData_wolverine <- function(
             nimInits,
             nimParams,
             nimParams2,
-            file = file.path( working.dir, "nimbleInFiles", thisSex,
+            file = file.path( working.dir, "nimbleInFiles", thisSex, "SCR",
                               paste0("SCRinput", years[t], "_", DATE, "_", thisSex, "_", c, ".RData")))
     }#c
+    
+    #}#t
+    
   }#thisSex
   
   
