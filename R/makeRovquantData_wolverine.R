@@ -1603,9 +1603,6 @@ makeRovquantData_wolverine <- function(
       return(zz)
     }))
     
-    table(z, useNA = "always")
-    colSums(z, na.rm = T)
-    
     
     
     ## ------     3.2. LIST DATA ------
