@@ -1583,9 +1583,6 @@ makeRovquantData_wolverine <- function(
       numLocalIndicesMax = detectors$localObjects$numLocalIndicesMax,
       maxDetNums = y.sparse$maxDetNums,
       maxDetNumsOth = y.sparseOth$maxDetNums)
-    #,
-    #lengthYCombined = y.sparse$lengthYCombined,
-    #lengthYCombined.Oth = y.sparseOth$lengthYCombined)
     
     
     
@@ -1629,8 +1626,7 @@ makeRovquantData_wolverine <- function(
       size = detectors$detectors.df$size,
       alpha = rep(1,2),
       detector.xy = as.matrix(detectors$scaledCoords))
-    #habitatGrid = habIDCells.mx)
-    
+
     
     
     ## ------   4. NIMBLE INITS ------
@@ -1884,9 +1880,9 @@ makeRovquantData_wolverine <- function(
     message(paste0("Preparing SCR input for sex: ", thisSex, "... "))
     
     ##-- Create folders for SCR files
-    dir.create( path = file.path( working.dir, "nimbleInFiles", thisSex, "SCR", years[t]),
+    dir.create( path = file.path( working.dir, "nimbleInFiles/SCR", thisSex, years[t]),
                 recursive = TRUE)
-    dir.create( path = file.path( working.dir, "nimbleOutFiles", thisSex, "SCR", years[t]),
+    dir.create( path = file.path( working.dir, "nimbleOutFiles/SCR", thisSex, years[t]),
                 recursive = TRUE)
     
     ##-- Loop over chains
@@ -1940,10 +1936,6 @@ makeRovquantData_wolverine <- function(
                                               ncol = nimConstants$maxDetNumsOth))
       
       ##-- z
-      nimData$z <- nimData$z[detected[ ,t],t]  
-      nimData$z[nimData$z %in% c(2)] <- 1 # ALIVE IDS BECOMES 1
-      nimData$z <- c(nimData$z, rep(NA,n.augmented))
-      ## [PD]: alternative
       nimData$z <- c(rep(1,n.detected), rep(NA,n.augmented))
       
       ##-- detResponse 
@@ -1983,18 +1975,15 @@ makeRovquantData_wolverine <- function(
       ## ------     2.3. NIMBLE INITS ------
       
       ##-- z
-      nimInits$z <- nimInits$z[detected[,t],t]  
-      nimInits$z <- c(nimInits$z, rbinom(n.augmented,1,0.5))
-      ## [PD]: alternative
       nimInits$z <- c(rep(NA,n.detected), rbinom(n.augmented,1,0.5))
       
       ##-- detResponse
       nimInits$detResponse <- c( rep(NA, n.detected),
-                                 rbinom(n.augmented,1,0.5))   ## HERE IT IS TREATED AS A LATENT COVARIATE
+                                 rbinom(n.augmented,1,0.5)) ## HERE IT IS TREATED AS A LATENT COVARIATE
       
       ##-- sxy 
       nimInits$sxy <- nimInits$sxy[detected[ ,t], ,t]  
-      nimInits$sxy <- rbind( nimInits$sxy,              ## GIVE ACS FROM DETECTED INDIVIDUALS TO AUGMENTED IDS. 
+      nimInits$sxy <- rbind( nimInits$sxy,                  ## GIVE ACS FROM DETECTED INDIVIDUALS TO AUGMENTED IDS. 
                              nimInits$sxy[sample(nimInits$sxy, n.augmented, replace = T), ])
       
       ##-- p0
@@ -2044,7 +2033,7 @@ makeRovquantData_wolverine <- function(
             nimInits,
             nimParams,
             nimParams2,
-            file = file.path( working.dir, "nimbleInFiles", thisSex, "SCR",
+            file = file.path( working.dir, "nimbleInFiles/SCR", thisSex,
                               paste0("SCRinput", years[t], "_", DATE, "_", thisSex, "_", c, ".RData")))
     }#c
     
