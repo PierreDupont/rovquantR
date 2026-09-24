@@ -98,7 +98,7 @@ processRovquantOutput <- function(
      sum(grep("jerv", species, ignore.case = T))>0){
     
     ##-- Process the model output
-    out <- processRovquantOutput_wolverine(
+    out <- processRovquantOutput_wolverine_SCR(
       data.dir,
       working.dir,
       nburnin,
@@ -113,17 +113,22 @@ processRovquantOutput <- function(
   
   if(print.report){
     
-    ##-- Find the .rmd template for the report.
+    ##-- Find the correct .rmd template for the report.
     if(is.null(Rmd.template)){
       if(full.report){
         Rmd.template <- system.file("rmd", "RovQuant_FullReport.Rmd", package = "rovquantR")
         if(!file.exists(Rmd.template)) {
-          stop('Can not find a .rmd template called "RovQuant_FullReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
+          stop('Can not find the default .rmd template called "RovQuant_FullReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
         } 
       } else {
-        Rmd.template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
+        if(sum(grep("wolverine", species, ignore.case = T))>0|
+           sum(grep("jerv", species, ignore.case = T))>0){
+          Rmd.template <- system.file("rmd", "RovQuant_OutputReport_SCR.Rmd", package = "rovquantR")
+        } else {
+          Rmd.template <- system.file("rmd", "RovQuant_OutputReport.Rmd", package = "rovquantR")
+        }
         if(!file.exists(Rmd.template)) {
-          stop('Can not find a .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
+          stop('Can not find the .rmd template called "RovQuant_OutputReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
         } 
       }
     }
@@ -136,6 +141,7 @@ processRovquantOutput <- function(
       input = Rmd.template,
       params = list( species = out$SPECIES,
                      years = out$YEARS,
+                     seasons = out$SEASONS,
                      date = out$DATE,
                      working.dir = working.dir),
       output_dir = output.dir,

@@ -201,9 +201,9 @@ processRovquantOutput(
   species = "Wolverines",
   data.dir = data.dir,
   working.dir = working.dir,
-  nburnin = 2,
+  nburnin = 10,
   niter = 100)
 
 
 
-##------------------------------------------------------------------------------
+y##------------------------------------------------------------------------------

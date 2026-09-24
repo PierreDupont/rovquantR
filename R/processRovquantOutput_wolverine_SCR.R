@@ -44,6 +44,8 @@ processRovquantOutput_wolverine_SCR <- function(
   niter = 100,
   ##-- Density 
   extraction.res = 5000,
+  ##-- Years
+  years = NULL,
   ##-- Miscellanious
   overwrite = FALSE
 ){
@@ -70,12 +72,12 @@ processRovquantOutput_wolverine_SCR <- function(
   ## ------ 1. LOAD NECESSARY INPUTS -----
   
   ##-- Females
-  load(list.files(file.path(working.dir, "nimbleInFiles/female"), full.names = T)[1])
+  load(list.files(file.path(working.dir, "nimbleInFiles/SCR/female"), full.names = T)[1])
   nimDataF <- nimData
   nimInitsF <- nimInits
   
   ##-- Males
-  load(list.files(file.path(working.dir, "nimbleInFiles/male"), full.names = T)[1])
+  load(list.files(file.path(working.dir, "nimbleInFiles/SCR/male"), full.names = T)[1])
   nimDataM <- nimData
   nimInitsM <- nimInits
   
@@ -120,11 +122,12 @@ processRovquantOutput_wolverine_SCR <- function(
           extraction.raster <- habitatRasters
           extraction.res <- 20000
         }}}}
-  
-  ##-- Extract years
-  ##-- NEED TO FIX
-  years <- 2025#as.numeric(dimnames(nimDataF$z)[[2]])
 
+  ##-- Extract year
+  if(is.null(years)){
+    years <- as.numeric(format(Sys.Date(), "%Y")) - 1
+  }
+  
   ##-- Polygons of Sweden & Norway
   COUNTRIES <- REGIONS %>%
     dplyr::filter(country %in% c("SWE","NOR")) %>%
@@ -167,7 +170,7 @@ processRovquantOutput_wolverine_SCR <- function(
   ##-- Check that a file with that name does not already exist to avoid overwriting
   mcmcTest <- TRUE
   if(!overwrite){
-    fileName <- paste0("MCMC_wolverine_", DATE, ".RData")
+    fileName <- paste0("MCMC_wolverine_SCR_", DATE, ".RData")
     if (file.exists(file.path(working.dir, "data", fileName))) {
       message(paste0("A processed MCMC output file named '", fileName, "' already exists in: \n",
                      file.path(working.dir, "data")))
@@ -189,12 +192,12 @@ processRovquantOutput_wolverine_SCR <- function(
     
     ##-- Compile MCMC bites
     gc(verbose = FALSE)
-    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/female"),
+    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/SCR/female"),
                                      burnin = nburnin)
     
     ##-- Traceplots
     gc(verbose = FALSE)
-    grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
+    grDevices::pdf(file.path(working.dir, "figures/traceplots_SCR_F.pdf"))
     plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
     grDevices::dev.off()
     
@@ -227,12 +230,12 @@ processRovquantOutput_wolverine_SCR <- function(
     
     ##-- Compile MCMC bites
     gc(verbose = FALSE)
-    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/male"),
+    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/SCR/male"),
                                      burnin = nburnin)
     
     ##-- Traceplots
     gc(verbose = FALSE)
-    grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
+    grDevices::pdf(file.path(working.dir, "figures/traceplots_SCR_M.pdf"))
     plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
     dev.off()
     
@@ -275,8 +278,9 @@ processRovquantOutput_wolverine_SCR <- function(
     dimnames(resultsSXYZ_MF$sims.list$sxy)[[3]] <- c("x","y")
     
     ##-- z
-    resultsSXYZ_MF$sims.list$z <- rbind(resultsSXYZ_M$sims.list$z[1:minIter, ],
-                                        resultsSXYZ_F$sims.list$z[1:minIter, ])
+    resultsSXYZ_MF$sims.list$z <- abind::abind(resultsSXYZ_M$sims.list$z[1:minIter, ],
+                                               resultsSXYZ_F$sims.list$z[1:minIter, ],
+                                               along = 2)
     
     ##-- sigma
     minIterSigma <- min( length(results_F$sims.list$sigma),
@@ -294,7 +298,7 @@ processRovquantOutput_wolverine_SCR <- function(
     ##-- SAVE & LOAD DATA
     save( results_F, results_M, resultsSXYZ_MF,
           file = file.path( working.dir, "data",
-                            paste0("MCMC_wolverine_", DATE, ".RData")))
+                            paste0("MCMC_wolverine_SCR_", DATE, ".RData")))
   }
   
   ##-- Number of activity center posterior samples
@@ -351,6 +355,7 @@ processRovquantOutput_wolverine_SCR <- function(
   rrCounties <- raster::mask(rrCounties, searchedPolygon)
   rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
   #plot(rrCounties)
+  
   ##-- Calculate studied area of each county
   areaCounties <- table(raster::factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
   areaCountiesTotal <- areaCountiesTotal[names(areaCountiesTotal) %in% names(areaCounties)]
@@ -382,12 +387,11 @@ processRovquantOutput_wolverine_SCR <- function(
   percAllRegions <- c(percTotal, percCountries, percRegions, percCounties)
   names(percAllRegions)[1] <- "Total"
   
-  
   ##-- Calculate density only if necessary
   ##-- Check that a file with that name does not already exist to avoid overwriting
   densTest <- TRUE
   if(!overwrite){
-    fileName <- paste0("Density_wolverine_", DATE, ".RData")
+    fileName <- paste0("Density_wolverine_SCR_", DATE, ".RData")
     if (file.exists(file.path(working.dir, "data", fileName))) {
       message(paste0("A density output file named '", fileName, "' already exists in: \n",
                      file.path(working.dir, "data")))
@@ -408,7 +412,6 @@ processRovquantOutput_wolverine_SCR <- function(
   if(densTest){
     
     message("## Extracting population density... \n## This might take a while...")
-    
     
     ## ------   1. PREPARE DENSITY EXTRACTION ------
     
@@ -546,11 +549,11 @@ processRovquantOutput_wolverine_SCR <- function(
           ACdensityM,
           UDdensity,
           file = file.path( working.dir, "data",
-                            paste0("Density_wolverine_", DATE, ".RData")))
+                            paste0("Density_wolverine_SCR_", DATE, ".RData")))
   } 
   
   
-  
+
   ## ------ 4. FIGURES -----
   
   ##-- Plot parameters
@@ -558,6 +561,7 @@ processRovquantOutput_wolverine_SCR <- function(
   colCountries <- c("firebrick2", "deepskyblue2", "black")
   names(colCountries) <- c("Norway","Sweden", "Total")
   colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
+  seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
   
   
   
@@ -575,104 +579,60 @@ processRovquantOutput_wolverine_SCR <- function(
   ##-- AC-density maps
   plotDensityMaps(
     input = inputRaster,
-    estimates = ACdensity,
+    estimates = list(ACdensity),
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES,
     type = c("last.year"),
     path = working.dir,
-    name = "AC_Density")
+    name = "AC_Density_SCR")
   
   ##-- UD-density maps
   plotDensityMaps( 
     input = inputRaster,
-    estimates = UDdensity,
+    estimates = list(UDdensity),
     unit = 100,
     mask = rrCombined,
     background = COUNTRIES,
     type = c("last.year"),#,"summary","summary_NOR"),
     species = "wolverine",
-    labels = list("nor" = ACdensity[[n.years]]$summary["Norway",c("95%CILow","95%CIHigh")],
-                  "swe" = ACdensity[[n.years]]$summary["Sweden",c("95%CILow","95%CIHigh")],
-                  "both" = ACdensity[[n.years]]$summary["Total",c("95%CILow","95%CIHigh")]),
+    labels = list("nor" = ACdensity$summary["Norway",c("95%CILow","95%CIHigh")],
+                  "swe" = ACdensity$summary["Sweden",c("95%CILow","95%CIHigh")],
+                  "both" = ACdensity$summary["Total",c("95%CILow","95%CIHigh")]),
     x.labels = c(0.3,0.75,0.7),
     y.labels = c(0.8,0.7,0.05),
     path = working.dir,
-    name = "UD_Density")
+    name = "UD_Density_SCR")
   
   
   
   ## ------   4.2. NGS, Dead recoveries & Carnivore obs ------
   
   ##-- Plot NGS & Dead recovery maps
-  # pdf(file = file.path(working.dir, "figures", "NGS_DR_maps.pdf"),
-  #     width = 18, height = 12)
-  grDevices::png(filename = file.path(working.dir, "figures/NGS_DR_maps.png"),
+  grDevices::png(filename = file.path(working.dir, "figures/NGS_SCR_maps.png"),
                  width = 5, height = 6, units = "in", pointsize = 12,
                  res = 300, bg = NA)
   
   par(mar = c(0,0,0,0))
-  for(t in 1:length(years)){
-    plot(sf::st_geometry(COUNTIES), border = NA, col = "gray80")
-    points(data.alive$data.sp,
-           pch = 3, col = "orange", lwd = 0.7)
-    points(data.dead,
-           pch = 3, col = "slateblue", lwd = 0.7)
-    mtext(text = years[t]+1, side = 1, -25, adj=0.2, cex=1.8, font = 2)
-    
-    ##-- LEGEND
-    xLeg <- 830000
-    yLeg <- 6730000
-    segments(x0 = xLeg, x1 = xLeg,
-             y0 = yLeg, y1 = yLeg + 500000,
-             col = grey(0.3), lwd = 4, lend = 2)
-    text(xLeg-80000, yLeg+500000/2, labels = "500 km", srt = 90, cex = 2)
-    
-    points(x = c(xLeg-200000,xLeg-200000),
-           y = c(yLeg-100000,yLeg-180000),
-           pch = 3, lwd = 1.5, cex = 3,
-           col = c("orange","slateblue"))
-    text(x = c(xLeg-150000,xLeg-150000),
-         y = c(yLeg-100000,yLeg-180000),
-         c("NGS samples", "Dead recoveries"), cex = 2, pos = 4)
-  }#t
+  plot(sf::st_geometry(COUNTIES), border = NA, col = "gray80")
+  points(data.alive$data.sp[data.alive$data.sp$Year == years, ],
+         pch = 3, col = "orange", lwd = 0.7)
+  mtext(text = seasons, side = 1, -25, adj=0.2, cex=1.2, font = 2)
+  
+  ##-- LEGEND
+  xLeg <- 1000000
+  yLeg <- 6350000
+  segments(x0 = xLeg, x1 = xLeg,
+           y0 = yLeg, y1 = yLeg + 500000,
+           col = grey(0.3), lwd = 2, lend = 2)
+  text(xLeg-80000, yLeg+500000/2, labels = "500 km",
+       srt = 90, cex = 1)
+  
+  points(x = xLeg-200000, y = yLeg-100000,
+         pch = 3, lwd = 1.5, cex = 1.5, col = "orange")
+  text(x = xLeg-170000, y = yLeg-100000,
+       "NGS samples", cex = 1, pos = 4)
   dev.off()
-    
-    
-  # ##-- Plot Carnivore observations maps
-  # pdf(file = file.path(working.dir, "figures", paste0("CarnivoreObs_maps_classic.pdf")),
-  #     width = 18, height = 12)
-  # grDevices::png(filename = file.path(working.dir, "figures/CarnivoreObs_maps_classic.png"),
-  #     width = 18, height = 12, units = "in", pointsize = 12,
-  #     res = 300, bg = NA)
-  #
-  # ##-- layout
-  # mx <- rbind(c(1,rep(1:5, each = 2)),
-  #             c(rep(1:5, each = 2), 5))
-  # mx <- rbind(mx, mx + 5)
-  # nf <- layout(mx,
-  #              widths = c(rep(1,ncol(mx))),
-  #              heights = rep(1,2))
-  # par(mar = c(0,0,0,0))
-  # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
-  #   image(mask(ds.brickCont[[t]],COUNTRIESsimpFig[1,]), add = TRUE, col = c("white","forestgreen"), legend = FALSE)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = "gray80", col = NA, add = TRUE)
-  #   
-  #   mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
-  #   
-  #   if(t == n.years){
-  #     segments(x0 = 830000, x1 = 830000,
-  #              y0 = 6730000, y1 = 6730000 + 500000,
-  #              col = grey(0.3), lwd = 4, lend = 2)
-  #     text(750000, 6730000+500000/2, labels = "500 km", srt = 90, cex = 2)
-  #     
-  #     ##-- LEGEND
-  #     par(mar = c(0,0,0,0), xaxs = "i", yaxs = "i")
-  #     plot(1, ylim = c(-1,7), xlim = c(0,15), type = "n", axes = FALSE)
-  #   }#if
-  # }#t
-  # dev.off()
   
   
   
@@ -753,7 +713,7 @@ processRovquantOutput_wolverine_SCR <- function(
   
   ##-- Export .csv
   write.csv( NCountyEstimatesLastRegions,
-             file = file.path(working.dir, "tables/N_LastYearPerSex_region.csv"))
+             file = file.path(working.dir, "tables/N_LastYearPerSex_region_SCR.csv"))
   #,fileEncoding = "latin1")
   
   ##-- Fix row names
@@ -768,7 +728,7 @@ processRovquantOutput_wolverine_SCR <- function(
         floating = FALSE,
         add.to.row = list(list(seq(1,nrow(NCountyEstimatesLastRegions), by = 2)),
                           "\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/N_LastYearPerSex_region.tex"))
+        file = file.path(working.dir, "tables/N_LastYearPerSex_region_SCR.tex"))
   
   
   
@@ -804,7 +764,7 @@ processRovquantOutput_wolverine_SCR <- function(
   
   ##--  Export .csv
   write.csv( NCountyEstimatesLastRegions,
-             file = file.path(working.dir, "tables/NLastYearPerSexArea.csv"))
+             file = file.path(working.dir, "tables/NLastYearPerSexArea_SCR.csv"))
   #,fileEncoding = "latin1")
   
   
@@ -819,7 +779,7 @@ processRovquantOutput_wolverine_SCR <- function(
         floating = FALSE,
         add.to.row = list( list(seq(1,nrow(NCountyEstimatesLastRegions), by = 2)),
                            "\\rowcolor[gray]{.95} "),
-        file = file.path(working.dir, "tables/NLastYearPerSexArea.tex"))
+        file = file.path(working.dir, "tables/NLastYearPerSexArea_SCR.tex"))
   
   
   
@@ -827,8 +787,8 @@ processRovquantOutput_wolverine_SCR <- function(
   
   ##-- SOME TALLIES TO CHECK THINGS
   ##-- NGS
-  NGS <- data.alive$data.sp
-  dead <- data.dead
+  NGS <- data.alive$data.sp[data.alive$data.sp$Year == years, ]
+  dead <- data.dead[data.dead$Year == years, ]
   
   ##-- FOR REPORT SUMMARY
   dataSummary <- cbind.data.frame(
@@ -845,21 +805,20 @@ processRovquantOutput_wolverine_SCR <- function(
                 length(unique(c(NGS$Id,dead$Id)))))
   row.names(dataSummary) <- c("N_NGS", "N_DR", "N_IDs")
   ##-- print .csv
-  write.csv(dataSummary, file = file.path(working.dir, "tables/dataSummary.csv"))
+  write.csv(dataSummary, file = file.path(working.dir, "tables/dataSummary_SCR.csv"))
   
   
   
   ## ------     5.2.1. NGS SAMPLES & IDs ------
   
   NGS_SEX <- matrix("", ncol = 2, nrow = 2)
-  row.names(NGS_SEX) <- c( "",
-                           "number of NGS samples",
+  row.names(NGS_SEX) <- c( "number of NGS samples",
                            "number of NGS individuals")
   colnames(NGS_SEX) <- c("F","M")
 
   sex <- c("female","male")
   sex1 <- c(0,1)
-  ye <- seq(1, n.years*2, by = 2)
+  #ye <- seq(1, n.years*2, by = 2)
   for(s in 1:2){
       temp <- NGS[NGS$Sex == sex[s], ]
       NGS_SEX["number of NGS samples", s] <- nrow(temp)
@@ -871,7 +830,7 @@ processRovquantOutput_wolverine_SCR <- function(
   gc(verbose = FALSE)    
   
   ##-- print .csv
-  write.csv( NGS_SEX, file = file.path(working.dir, "tables/NGS_SEX.csv"))
+  write.csv( NGS_SEX, file = file.path(working.dir, "tables/NGS_SEX_SCR.csv"))
   
   ##-- print .tex
   addtorow <- list()
@@ -884,26 +843,26 @@ processRovquantOutput_wolverine_SCR <- function(
                         align = paste(c("l",rep("c", ncol(NGS_SEX))), collapse = "")),
         floating = FALSE, include.colnames = FALSE,
         add.to.row = addtorow,
-        file = file.path(working.dir, "tables/NGS_SEX.tex"))
+        file = file.path(working.dir, "tables/NGS_SEX_SCR.tex"))
   
 
   
   ## ------     5.2.3. PROPORTION OF INDIVIDUALS DETECTED OVERALL ------
   
   ##-- Get the number of individuals detected each year
-  n.detected_F <- apply(nimDataF$nbDetections + nimDataF$nbDetectionsOth, 2, function(x)sum(x>0))
-  n.detected_M <- apply(nimDataM$nbDetections + nimDataM$nbDetectionsOth, 2, function(x)sum(x>0))
-  
-  propDetected <- matrix("", ncol = n.years, nrow = 3)
+  n.detected_F <- sum((nimDataF$detNums + nimDataF$detNumsOth) > 0)
+  n.detected_M <- sum((nimDataM$detNums + nimDataM$detNumsOth) > 0)
+
+  propDetected <- matrix("", ncol = 1, nrow = 3)
   row.names(propDetected) <- c("F","M","Total")
-  colnames(propDetected) <- years
-  for(t in 1:n.years){
-    propDetected["F"] <- getCleanEstimates(n.detected_F/colSums(ACdensityF$PosteriorAllRegions))
-    propDetected["M"] <- getCleanEstimates(n.detected_M/colSums(ACdensityMPosteriorAllRegions))
-    propDetected["Total"] <- getCleanEstimates((n.detected_F + n.detected_M)/
-                                                   (colSums(ACdensityF$PosteriorAllRegions)+
-                                                      colSums(ACdensityM$PosteriorAllRegions)))
-  }#t
+  colnames(propDetected) <- seasons
+  
+  propDetected["F",1] <- getCleanEstimates(n.detected_F/colSums(ACdensityF$PosteriorAllRegions))
+  propDetected["M",1] <- getCleanEstimates(n.detected_M/colSums(ACdensityM$PosteriorAllRegions))
+  propDetected["Total",1] <- getCleanEstimates((n.detected_F + n.detected_M)/
+                                               (colSums(ACdensityF$PosteriorAllRegions)+
+                                                  colSums(ACdensityM$PosteriorAllRegions)))
+  
   
   ##-- Remove unnecessary objects from memory
   rm(list = c( "n.detected_F", "n.detected_M"))
@@ -911,7 +870,7 @@ processRovquantOutput_wolverine_SCR <- function(
   
   ##-- print .csv
   write.csv(propDetected,
-            file = file.path(working.dir, "tables/PropDetectedIds.csv"))
+            file = file.path(working.dir, "tables/PropDetectedIds_SCR.csv"))
   
   ##-- print .tex
   print(xtable( propDetected,
@@ -919,15 +878,15 @@ processRovquantOutput_wolverine_SCR <- function(
                 align = paste(c("l",rep("c",ncol(propDetected))), collapse = "")),
         floating = FALSE, sanitize.text.function=function(x){x},
         add.to.row = list(list(seq(1, nrow(propDetected), by = 2)),"\\rowcolor[gray]{.96} "),
-        file = file.path(working.dir, "tables/PropDetectedIds.tex"))
+        file = file.path(working.dir, "tables/PropDetectedIds_SCR.tex"))
   
   
   
   ## ------     5.2.4. PROPORTION OF THE POPULATION DETECTED ------
   
   ##-- Extract number of individuals detected
-  isDetected <- rbind(nimDataM$nbDetections + nimDataM$nbDetectionsOth,
-                      nimDataF$nbDetections + nimDataF$nbDetectionsOth) > 0
+  isDetected <- c(nimDataM$detNums + nimDataM$detNumsOth,
+                  nimDataF$detNums + nimDataF$detNumsOth) > 0
   
   ##-- Identify individual sex
   isFemale <- resultsSXYZ_MF$sims.list$sex == "F"
@@ -937,34 +896,32 @@ processRovquantOutput_wolverine_SCR <- function(
   isAlive <- resultsSXYZ_MF$sims.list$z == 1
   
   ##-- Calculate % of the wolverine population detected 
-  prop <- matrix(NA,3,n.years)
+  prop <- matrix(NA,3,1)
   dimnames(prop) <- list("% individuals" = c("F","M","Total"),
-                         "Years" = c(years+1))
-  for(t in 1:n.years){
-    prop_F <- prop_M <- prop_tot <- rep(NA,n.mcmc)
-    for(iter in 1:n.mcmc){
-      
-      country <- countryRaster[raster::cellFromXY(countryRaster, resultsSXYZ_MF$sims.list$sxy[iter, ,1:2,t])]
-      isIn <- country %in% c(2,4)
-      
-      ##-- Detected female
-      N_F <- sum(isAlive[iter, ,t] & isIn & isFemale)
-      N_det_F <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isIn & isFemale)
-      prop_F[iter] <- N_det_F / N_F 
-      
-      ##-- Detected male
-      N_M <- sum(isAlive[iter, ,t] & isIn & isMale)
-      N_det_M <- sum(isDetected[ ,t] & isAlive[iter, ,t] & isIn & isMale)
-      prop_M[iter] <- N_det_M / N_M 
-      
-      ##-- Detected total
-      prop_tot[iter] <- (N_det_F + N_det_M) / (N_F + N_M) 
-    }#iter
+                         "Years" = seasons)
+  prop_F <- prop_M <- prop_tot <- rep(NA,n.mcmc)
+  for(iter in 1:n.mcmc){
     
-    prop["F",t] <- getCleanEstimates(prop_F)
-    prop["M",t] <- getCleanEstimates(prop_M)
-    prop["Total",t] <- getCleanEstimates(prop_tot)
-  }#t
+    country <- countryRaster[raster::cellFromXY(countryRaster, resultsSXYZ_MF$sims.list$sxy[iter, ,1:2])]
+    isIn <- country %in% c(2,4)
+    
+    ##-- Detected female
+    N_F <- sum(isAlive[iter, ] & isIn & isFemale)
+    N_det_F <- sum(isDetected & isAlive[iter, ] & isIn & isFemale)
+    prop_F[iter] <- N_det_F / N_F 
+    
+    ##-- Detected male
+    N_M <- sum(isAlive[iter, ] & isIn & isMale)
+    N_det_M <- sum(isDetected & isAlive[iter, ] & isIn & isMale)
+    prop_M[iter] <- N_det_M / N_M 
+    
+    ##-- Detected total
+    prop_tot[iter] <- (N_det_F + N_det_M) / (N_F + N_M) 
+  }#iter
+  
+  prop["F",1] <- getCleanEstimates(prop_F)
+  prop["M",1] <- getCleanEstimates(prop_M)
+  prop["Total",1] <- getCleanEstimates(prop_tot)
   
   ##-- Remove unnecessary objects from memory
   rm(list = c( "N_F", "N_M",
@@ -975,43 +932,10 @@ processRovquantOutput_wolverine_SCR <- function(
   
   ##-- print .csv
   write.csv(prop,
-            file = file.path(working.dir, "tables/PropDetected.csv"))
+            file = file.path(working.dir, "tables/PropDetected_SCR.csv"))
   
-  if(n.years > 8){
-    ##-- Print .tex (split in two tables to print in the overleaf document)
-    splitYear <- ceiling(n.years/2)
     
-    tab1 <- rbind(colnames(prop[ ,1:splitYear]), prop[ ,1:splitYear])
-    
-    if(length(1:splitYear) == length((splitYear+1):n.years)){
-      tab2 <-  rbind(colnames(prop[ ,(splitYear+1):n.years]),
-                     prop[ ,(splitYear+1):n.years])
-    } else {
-      diffYears <- length((splitYear+1):n.years) - length(1:splitYear) 
-      tab2 <-  rbind(c(colnames(prop[ ,(splitYear+1):n.years]), rep("", diffYears)),
-                     cbind(prop[ ,(splitYear+1):n.years], matrix("", nrow = nrow(prop), ncol = diffYears)))
-    }
-    
-    splitProp <- rbind(tab1, tab2)
-    splitProp <- cbind(c("","F","M","Total","","F","M","Total"), splitProp)
-    addtorow <- list()
-    addtorow$pos <- list(2,4,6)
-    addtorow$command <- c("\\rowcolor[gray]{.95}", 
-                          "\\hline \\\\",
-                          "\\rowcolor[gray]{.95}")
-    print(xtable( splitProp,
-                  type = "latex",
-                  align = paste(c("l",rep("c", ncol(splitProp))), collapse = "")),
-          floating = FALSE,
-          sanitize.text.function = function(x){x},
-          include.colnames = FALSE,
-          include.rownames = FALSE,
-          hline.after = c(0,1,4,5, nrow(splitProp)),
-          add.to.row = addtorow,
-          file = file.path(working.dir, "tables/PropDetected.tex"))
-  } else {
-    
-    ##-- Print  a single .tex 
+    ##-- Print  a .tex 
     addtorow <- list()
     addtorow$pos <- list(2)
     addtorow$command <- c("\\rowcolor[gray]{.95}")
@@ -1023,5 +947,9 @@ processRovquantOutput_wolverine_SCR <- function(
           hline.after = c(-1,0, nrow(prop)),
           add.to.row = addtorow,
           file = file.path(working.dir, "tables/PropDetected.tex"))
-  }
+  
+  ## ------ 6. OUTPUT -----
+  out$YEARS <- seasons
+    
+  return(out)
 }

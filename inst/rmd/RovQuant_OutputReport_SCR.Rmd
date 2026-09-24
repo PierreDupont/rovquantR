@@ -1,13 +1,13 @@
 ---
 params:
   species: "Brown bear"
-  years: !r 2012:2024
-  seasons: !r 2012:2024
+  years: !r 2024
+  seasons: !r 2024
   date: !r Sys.Date()   
   working.dir: !r getwd()
   sampling.months: NULL
-title: "`r paste(params$species, params$years[1], 'to', params$years[length(params$years)])`"
-subtitle: "RovQuant - OPSCR Results"
+title: "`r paste(params$species, params$years)`"
+subtitle: "RovQuant - SCR Results"
 output:
   html_document: 
     theme: "cerulean" 
@@ -26,7 +26,7 @@ bibliography: references.bib
 
 ```{r, setup, echo = FALSE, warning = FALSE, message = FALSE}
 years <- params$years
-n.years <- length(years)
+season <- params$seasons
 species <- params$species
 working.dir <- params$working.dir
 date <- params$date
@@ -105,8 +105,7 @@ load(file.path( working.dir, "data", paste0("Detectors_", engSpecies, "_", date,
 load(file.path( working.dir, "data", paste0("FilteredData_", engSpecies, "_", date, ".RData")))
 
 ##-- Load results tables
-N_LastYear <- read.csv(file.path( working.dir, "tables/N_LastYearPerSex_region.csv"), check.names = F, row.names = 1)
-#N_All <- read.csv(file.path( working.dir, "tables/N_AllYears_region.csv"),check.names = F, row.names = 1)
+N_LastYear <- read.csv(file.path( working.dir, "tables/N_LastYearPerSex_region_SCR.csv"), check.names = F, row.names = 1)
 
 ##-- Extract abundances for the last year
 CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', N_LastYear["Total","Total"]), "-")[[1]])
@@ -124,7 +123,7 @@ RovQuant has published annual reports summarizing these analyses for wolverines 
 
 RovQuant has also continuously worked on improving the performance of the OPSCR models During these and other analyses [@milleret2018pab; @milleret2019local; @bischof2020consequences; @dupont2021deadreco; @turek2021efficient; @dey2022; @moqanaki2021].
 
-This document refers to the output processing and presents the results of the OPSCR analysis of the **`r species`** data collected during the period **`r years[1]`** to **`r years[length(years)]`**.
+This document refers to the output processing and presents the results of the SCR analysis of the **`r species`** data collected during the monitoring period **`r seasons`**.
 
 ------------------------------------------------------------------------
 
@@ -133,40 +132,36 @@ This document refers to the output processing and presents the results of the OP
 ## Non-invasive genetic samples and dead recoveries
 
 ```{r, ngs data, echo = FALSE, collapse = TRUE}
-ngs <- data.alive$data.sp
+ngs <- data.alive$data.sp[data.alive$data.sp$Year == years, ]
 
-##-- Number of NGS samples collected per sex and per year 
-numDet_sexYear <- table(ngs$Sex,ngs$Year)
+##-- Number of NGS samples collected per sex 
+numDet_sex <- table(ngs$Sex)
 if(length(dim(numDet_sexYear)) > 1){
-  numDet_sexYear <- cbind(numDet_sexYear,rowSums(numDet_sexYear))
-  colnames(numDet_sexYear) <- c(years,"Total")
-  numDet_sexYear <- rbind(numDet_sexYear,colSums(numDet_sexYear))
-  rownames(numDet_sexYear) <- c("female","male","Total")
+  numDet_sex <- c(numDet_sex,sum(numDet_sex))
+  names(numDet_sex) <- c("female","male","Total")
 }
 
 ##-- Number of NGS samples collected per country
-percCountry <- table(data.alive$data.sp$Country_sample)
+percCountry <- table(ngs$Country_sample)
 percCountry <- round(percCountry[1]/sum(percCountry)*100)
 
 ##-- Number of individuals detected per sex and per year
-numId_sexYear <- apply(table(ngs$Id,ngs$Sex,ngs$Year) > 0, c(2,3), sum)
-if(length(dim(numId_sexYear)) > 1){
-  numId_sexYear <- cbind(numId_sexYear,colSums(table(ngs$Id,ngs$Sex) > 0))
-  colnames(numId_sexYear) <- c(years,"Total")
-  numId_sexYear <- rbind(numId_sexYear,colSums(numId_sexYear))
-  rownames(numId_sexYear) <- c("female","male","Total")
+numId_sex <- apply(table(ngs$Id,ngs$Sex) > 0, 2, sum)
+if(length(dim(numId_sex)) > 1){
+  numId_sex <- c(numId_sex, sum(numId_sex))
+  names(numId_sex) <- c("female","male","Total")
 }
 ```
 
-A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Norway. These samples were associated with `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. Individuals with unknown sex were not included in this analysis.
+A total of `r numDet_sex["Total"]` (`r numDet_sex["female"]` female; `r numDet_sex["male"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Norway. These samples were associated with `r numId_sex["Total"]` (`r numId_sex["female"]` female; `r numId_sexYear["male"]` male) individuals. Individuals with unknown sex were not included in this analysis.
 
-```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: Annual distribution of ", engSpecies, " non-invasive genetic samples (NGS, yellow crosses) and dead recoveries (purple crosses) between ", years[1], " and ", years[n.years], " and included in the OPSCR analyses. We included only samples collected within the study area during the primary monitoring period."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/NGS_DR_maps.png"))
+```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: Spatial distribution of ", engSpecies, " non-invasive genetic samples (NGS, yellow crosses) collected during the monitoring period ", seasons, " and included in the SCR analysis. We included only samples collected within the study area during the primary monitoring period."), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/NGS_SCR_maps.png"))
 ```
 
 ## Density and abundance
 
-We estimated that, within its primary range (`r round(detectors$n.detectors*(detectors$resolution/1000)^2)` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r years[length(years)]`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males.
+We estimated that, within its primary range (`r round(detectors$n.detectors*(detectors$resolution/1000)^2)` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r seasons`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males.
 
 ```{r, Tab1, echo = FALSE, collapse = TRUE}
 
@@ -180,7 +175,7 @@ N_LastYear %>%
   kable( format = "html",
          align = "ccc",
          table.attr = "style='width:80%;'",
-         caption = paste0("Table 1. ", SPECIES, " population size estimates in ", years[n.years]," within the study area by sex and large carnivore management region. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
+         caption = paste0("Table 1. ", SPECIES, " population size estimates in ", seasons," within the study area by sex and large carnivore management region. Only management units that are within or that intersect the study area are included in the table. Readers should focus on the 95% credible interval provided in parentheses as these - unlike mean values - convey uncertainty inherent in abundance estimates. Numbers are based on estimated AC locations. Combined female-male estimates were obtained by joining sex-specific posterior distributions. Rounding may result in small deviations between total estimates and the sum of the estimates for constituent regions.")) %>%
   kable_classic(full_width = T, html_font = "Cambria") %>%
   row_spec(row = c(0,whichBold), bold = T) %>%
   add_indent(positions = whichInd1, level_of_indent = 1)  %>%
@@ -189,45 +184,31 @@ N_LastYear %>%
 
 ```
 
-```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 2: ", species, " density in Scandinavia in ", years[length(years)], " based on individual utilization distributions throughout the study area (white background). This map is available as a geo-referenced raster in the 'raster' folder of the working directory"), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/UD_Density_LastYear.png"))
+```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 2: ", species, " density in Scandinavia in ", seasons, " based on individual utilization distributions throughout the study area (white background). This map is available as a geo-referenced raster in the 'raster' folder of the working directory"), echo = FALSE}
+knitr::include_graphics(file.path(working.dir, "figures/UD_Density_SCR_LastYear.png"))
 ```
 
-```{r, Fig3, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 3: ", species, " population size estimates within the study area between ", years[1], " and ", years[length(years)], ". Darker and lighter bars show the 50% and 95% credible intervals, respectively. Credible intervals indicate uncertainty in estimates given the model and data used to generate the estimates. Light grey bars in the background show the total number of individuals detected within the entire study area."), echo = FALSE}
-knitr::include_graphics(file.path(working.dir, "figures/Abundance_TimeSeries.png"))
-```
 
-<!-- ## Vital rates -->
-
-<!-- The OPSCR model produced annual estimates of legal hunting mortality, mortality associated with all other causes (Fig.4), and per capita recruitment rates (Fig.4). -->
-
-<!-- ```{r, Fig4, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 4: Mortality probabilities due to legal culling and all other causes for female and male ", engSpeciess, ". Darker and lighter bars show the 50% and 95% credible intervals, respectively. Shown are overall estimates throughout the study area. Estimates refer to deaths occurring between the start of one sampling season and the start of the next."), echo = FALSE} -->
-<!-- knitr::include_graphics(file.path(working.dir, "figures/Mortality.png")) -->
-<!-- ``` -->
-
-<!-- ```{r, Fig5, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 5: Estimated annual number of recruits for female and male ", engSpeciess, ". Recruitment represents the number of new individuals present in the population on ", firstMonth, " 1 (i.e., individuals that were born between the two consecutive monitoring seasons and survived to ", firstMonth, " 1, or that immigrated in the study area). Darker and lighter bars show the 50% and 95% credible intervals, respectively.."), echo = FALSE} -->
-<!-- knitr::include_graphics(file.path(working.dir, "figures/NumRecruitTotal.png")) -->
-<!-- ``` -->
 
 ## Detection probability
 
 ```{r, propDetected1, echo = FALSE, collapse = TRUE}
 
-propDet <- read.csv(file.path( working.dir, "tables/PropDetected.csv"), check.names = F, row.names = 1)
+propDet <- read.csv(file.path( working.dir, "tables/PropDetected_SCR.csv"), check.names = F, row.names = 1)
 
 ##-- Extract proportion detected for the last year
-CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', propDet["Total",n.years]), "-")[[1]])
+CI <- as.numeric(strsplit(sub('.*\\((.*)\\).*', '\\1', propDet["Total",1]), "-")[[1]])
 ```
 
-Each year, a large proportion of the population is detected during annual large carnivore monitoring. Specifically, in `r years[length(years)]`, between `r round(CI[1]*100)`% and `r round(CI[2]*100)`% of the population were detected in the study area during non-invasive genetic sampling. 
+A large proportion of the population is detected during annual large carnivore monitoring. Specifically, during the monitoring period `r seasons`, between `r round(CI[1]*100)`% and `r round(CI[2]*100)`% of the population were detected in the study area during non-invasive genetic sampling. 
 
 ```{r, Tab2, echo = FALSE, collapse = TRUE}
 propDet %>%
   kable( format = "html",
          escape = F,
-         align = paste0(c(rep("c",length(years)))),
-         caption = paste0("Table 2. Annual ", engSpecies, " proportion of individuals detected in the population. Estimates are based on activity center locations estimated by the open-population spatial capture-recapture (OPSCR) model. Credible intervals (95%) are shown in parentheses.")) %>%
-  kable_classic(full_width = T, html_font = "Cambria") %>%
+         align = "c",
+         caption = paste0("Table 2. Proportion of individuals detected in the population. Estimates are based on activity center locations estimated by the spatial capture-recapture (SCR) model. Credible intervals (95%) are shown in parentheses.")) %>%
+  kable_classic(full_width = F, html_font = "Cambria") %>%
   kable_styling(font_size = 10) %>%
   row_spec(row = 0, bold = T) %>%
   column_spec(column = 1, bold = T) 

@@ -44,6 +44,8 @@ processRovquantOutput_wolverine <- function(
   niter = 100,
   ##-- Density 
   extraction.res = 5000,
+  ##-- Years
+  years = NULL,
   ##-- Miscellanious
   overwrite = FALSE
 ){
@@ -339,6 +341,7 @@ processRovquantOutput_wolverine <- function(
   rrCountries <- raster::mask(rrCountries, searchedPolygon)
   rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
   #plot(rrCountries)
+  
   ##-- Calculate studied area of each county
   areaCountries <- table(raster::factorValues(rrCountries, rrCountries[]))*raster::res(rrCountries)[1]*1e-6 
   percCountries <- round(areaCountries/areaCountriesTotal, 2)
@@ -412,7 +415,6 @@ processRovquantOutput_wolverine <- function(
     
     message("## Extracting population density... \n## This might take a while...")
     
-    
     ## ------   1. PREPARE DENSITY EXTRACTION ------
     
     ##-- Get the objects to run the density function
@@ -476,7 +478,7 @@ processRovquantOutput_wolverine <- function(
         regionID = regionID,
         returnPosteriorCells = F)
     }#t
-    names(ACdensity) <- years+1
+    paste(years, years+1, sep = "-")
     
     
     
@@ -495,7 +497,7 @@ processRovquantOutput_wolverine <- function(
         regionID = regionID,
         returnPosteriorCells = F)
     }#t
-    names(ACdensityM) <- years+1
+    paste(years, years+1, sep = "-")
     
     
     
@@ -514,7 +516,7 @@ processRovquantOutput_wolverine <- function(
         regionID = regionID,
         returnPosteriorCells = F)
     }
-    names(ACdensityF) <- years+1
+    paste(years, years+1, sep = "-")
     
 
     
@@ -554,7 +556,7 @@ processRovquantOutput_wolverine <- function(
       UDdensity[[t]]$CILCell <- NULL
       UDdensity[[t]]$CIHCell <- NULL
     }#t
-    names(UDdensity) <- years+1
+    names(UDdensity) <- paste(years, years+1, sep = "-")
     
     
     
@@ -578,6 +580,9 @@ processRovquantOutput_wolverine <- function(
   colCountries <- c("firebrick2", "deepskyblue2", "black")
   names(colCountries) <- c("Norway","Sweden", "Total")
   colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
+  
+  seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
+  intervals <- paste(years[-length(years)], years[-1], sep = "\n to \n")
   
   
   
@@ -648,7 +653,7 @@ processRovquantOutput_wolverine <- function(
        ylim = c(0,ymax),
        xlab = "", ylab = paste("Estimated number of wolverines"),
        xaxt = "n", axes = F, cex.lab = 1.6)
-  graphics::axis(1, at = c(1:(n.years)), labels = years+1, cex.axis = 1.5, padj = -1)
+  graphics::axis(1, at = c(1:(n.years)), labels = seasons, cex.axis = 1.5, padj = -1)
   graphics::axis(2, at = seq(0,ymax,200), labels = seq(0,ymax,200), cex.axis = 1.5, hadj = 0.5)
   graphics::abline(v = (1:n.years)+0.5, lty = 2)
   graphics::abline(h = seq(0,ymax, by = 100), lty = 2, col = "gray90")
@@ -725,7 +730,7 @@ processRovquantOutput_wolverine <- function(
        xlim = c(0.5, n.years+0.5), ylim = c(0,ymax),
        xlab = "", ylab = "Estimated number of females",
        xaxt = "n", axes = F, cex.lab = 1.6)
-  graphics::axis(1, at = c(1:(n.years)), labels = years+1, cex.axis = 1.5, padj = -1)
+  graphics::axis(1, at = c(1:(n.years)), labels = seasons, cex.axis = 1.5, padj = -1)
   graphics::axis(2, at = seq(0,ymax,200), labels = seq(0,ymax,200), cex.axis = 1.5, hadj = 0.5)
   graphics::abline(v = (1:n.years)+0.5, lty = 2)
   graphics::abline(h = seq(0,ymax, by = 100), lty = 2, col = "gray90")
@@ -774,7 +779,7 @@ processRovquantOutput_wolverine <- function(
        xlim = c(0.5, n.years+0.5), ylim = c(0,ymax),
        xlab = "", ylab = "Estimated number of males",
        xaxt = "n", axes = F, cex.lab = 1.6)
-  graphics::axis(1, at = c(1:(n.years)), labels = years+1, cex.axis = 1.5, padj = -1)
+  graphics::axis(1, at = c(1:(n.years)), labels = seasons, cex.axis = 1.5, padj = -1)
   graphics::axis(2, at = seq(0,ymax,200), labels = seq(0,ymax,200), cex.axis = 1.5, hadj = 0.5)
   graphics::abline(v = (1:n.years)+0.5, lty = 2)
   graphics::abline(h = seq(0,ymax, by = 100), lty = 2, col = "gray90")
@@ -829,12 +834,12 @@ processRovquantOutput_wolverine <- function(
            pch = 3, col = "orange", lwd = 0.7)
     points(data.dead[data.dead$Year == years[t], ],
            pch = 3, col = "slateblue", lwd = 0.7)
-    mtext(text = years[t]+1, side = 1, -25, adj=0.2, cex=1.8, font = 2)
+    mtext(text = seasons[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
     
     if(t == n.years){
       ##-- LEGEND
-      xLeg <- 830000
-      yLeg <- 6730000
+      xLeg <- 1000000
+      yLeg <- 6350000
       segments(x0 = xLeg, x1 = xLeg,
                y0 = yLeg, y1 = yLeg + 500000,
                col = grey(0.3), lwd = 4, lend = 2)
@@ -942,7 +947,7 @@ processRovquantOutput_wolverine <- function(
   ##-- Create table to store abundance & CI
   NCarRegionEstimates <- matrix("", ncol = n.years, nrow = length(rownames_Table))
   row.names(NCarRegionEstimates) <- rownames_Table
-  colnames(NCarRegionEstimates) <- years+1
+  colnames(NCarRegionEstimates) <- seasons
   
   ##-- Fill in the table 
   for(t in 1:n.years){

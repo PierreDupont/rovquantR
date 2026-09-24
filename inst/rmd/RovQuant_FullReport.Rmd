@@ -2,6 +2,7 @@
 params:
   species: "Brown bear"
   years: !r 2012:2024
+  seasons: !r 2012:2024
   date: !r Sys.Date()   
   working.dir: !r getwd()
   sampling.months: NULL
