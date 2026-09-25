@@ -153,7 +153,7 @@ if(length(dim(numId_sex)) > 1){
 }
 ```
 
-A total of `r numDet_sex["Total"]` (`r numDet_sex["female"]` female; `r numDet_sex["male"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Norway. These samples were associated with `r numId_sex["Total"]` (`r numId_sex["female"]` female; `r numId_sexYear["male"]` male) individuals. Individuals with unknown sex were not included in this analysis.
+A total of `r numDet_sex["Total"]` (`r numDet_sex["female"]` female; `r numDet_sex["male"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Norway. These samples were associated with `r numId_sex["Total"]` (`r numId_sex["female"]` female; `r numId_sex["male"]` male) individuals. Individuals with unknown sex were not included in this analysis.
 
 ```{r, Fig1, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 1: Spatial distribution of ", engSpecies, " non-invasive genetic samples (NGS, yellow crosses) collected during the monitoring period ", seasons, " and included in the SCR analysis. We included only samples collected within the study area during the primary monitoring period."), echo = FALSE}
 knitr::include_graphics(file.path(working.dir, "figures/NGS_SCR_maps.png"))
@@ -164,7 +164,6 @@ knitr::include_graphics(file.path(working.dir, "figures/NGS_SCR_maps.png"))
 We estimated that, within its primary range (`r round(detectors$n.detectors*(detectors$resolution/1000)^2)` $km^{2}$), the `r engSpecies` population was likely (95% credible interval) made up of between `r CI[1]` and `r CI[2]` individuals (95% credible interval) in `r seasons`, with between `r CI_F[1]` and `r CI_F[2]` females and between `r CI_M[1]` and `r CI_M[2]` males.
 
 ```{r, Tab1, echo = FALSE, collapse = TRUE}
-
 whichBold <- which(rownames(N_LastYear) %in% c("Total","Sweden","Norway"))
 whichInd0 <- which(rownames(N_LastYear) %in% c("Total"))
 whichInd1 <- which(rownames(N_LastYear) %in% c("Sweden","Norway"))
@@ -181,7 +180,6 @@ N_LastYear %>%
   add_indent(positions = whichInd1, level_of_indent = 1)  %>%
   add_indent(positions = whichInd2, level_of_indent = 2)  %>%
   add_indent(positions = whichInd3, level_of_indent = 3)
-
 ```
 
 ```{r, Fig2, include = TRUE, fig.align = "center", fig.cap = paste0("Figure 2: ", species, " density in Scandinavia in ", seasons, " based on individual utilization distributions throughout the study area (white background). This map is available as a geo-referenced raster in the 'raster' folder of the working directory"), echo = FALSE}
@@ -193,7 +191,6 @@ knitr::include_graphics(file.path(working.dir, "figures/UD_Density_SCR_LastYear.
 ## Detection probability
 
 ```{r, propDetected1, echo = FALSE, collapse = TRUE}
-
 propDet <- read.csv(file.path( working.dir, "tables/PropDetected_SCR.csv"), check.names = F, row.names = 1)
 
 ##-- Extract proportion detected for the last year
