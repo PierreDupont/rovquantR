@@ -1,52 +1,23 @@
-#' @title RovQuant OPSCR wolverine output processing
-#' 
-#' @description
-#' \code{processRovquantOutput_wolverine_SCR} calls a custom Rmarkdown template that combines 
-#' and processes MCMC outputs from NIMBLE models and produces figures,
-#' tables and rasters of interest (e.g. population density maps)
-#' 
-#' @param data.dir A \code{path}
-#' @param working.dir A \code{path}
-#' @param nburnin An \code{integer} denoting the number of iterations to be removed from each MCMC as burnin.
-#' @param niter An \code{integer} denoting the number of MCMC iterations to be used for density extraction.
-#' @param extraction.res A \code{integer} denoting the raster resolution for density extraction.
-#' 
-#' @return 
-#' A \code{.RData} file with the clean NGS and dead recovery data objects
-#' for the species and period specified.
-#' A \code{html} report summarizing the data cleaning process
-#' Additional \code{.png} images that can be reused somewhere else.
-#'
-#' @author Pierre Dupont
-#' 
 #' @import sf 
 #' @import raster
 #' @import dplyr
-#' @importFrom fasterize fasterize
-#' @importFrom adehabitatHR estUDm2spixdf kernelUD
-#' @importFrom stats density
 #' @importFrom grDevices adjustcolor dev.off pdf png grey
 #' @importFrom graphics axis abline par
-#' @importFrom stars st_as_stars
 #' @importFrom nimbleSCR scaleCoordsToHabitatGrid
 #' @importFrom abind abind
 #' @importFrom utils data
 #' @importFrom xtable xtable
 #' 
-#' @rdname processRovquantOutput_wolverine_SCR
+#' @rdname processRovquantOutput
 #' @export
 processRovquantOutput_wolverine_SCR <- function(
-  ##-- paths
-  data.dir = getwd(),
   working.dir = NULL,
-  ##-- MCMC
   nburnin = 0,
   niter = 100,
-  ##-- Density 
+  thin = 1,
+  thin2 = 1,
   extraction.res = 5000,
-  ##-- Years
   years = NULL,
-  ##-- Miscellanious
   overwrite = FALSE
 ){
   
@@ -125,7 +96,7 @@ processRovquantOutput_wolverine_SCR <- function(
 
   ##-- Extract year
   if(is.null(years)){
-    years <- as.numeric(format(Sys.Date(), "%Y")) - 1
+    years <- max(data.alive$data.sp$Year, na.rm = TRUE)
   }
   
   ##-- Polygons of Sweden & Norway
@@ -163,6 +134,7 @@ processRovquantOutput_wolverine_SCR <- function(
   countryRaster <- habitatRasterResolution$`5km`[["Countries"]]
   
   
+  
   ## ------ 2. PROCESS MCMC SAMPLES -----
   
   message("## Processing model MCMC outputs...")
@@ -192,8 +164,11 @@ processRovquantOutput_wolverine_SCR <- function(
     
     ##-- Compile MCMC bites
     gc(verbose = FALSE)
-    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/SCR/female"),
-                                     burnin = nburnin)
+    nimOutput_F <- collectMCMCbites( 
+      path = file.path(working.dir, "nimbleOutFiles/SCR/female"),
+      burnin = nburnin,
+      thin = thin, 
+      thin2 = thin2)
     
     ##-- Traceplots
     gc(verbose = FALSE)
@@ -230,8 +205,11 @@ processRovquantOutput_wolverine_SCR <- function(
     
     ##-- Compile MCMC bites
     gc(verbose = FALSE)
-    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/SCR/male"),
-                                     burnin = nburnin)
+    nimOutput_M <- collectMCMCbites( 
+      path = file.path(working.dir, "nimbleOutFiles/SCR/male"),
+      burnin = nburnin,
+      thin = thin, 
+      thin2 = thin2)
     
     ##-- Traceplots
     gc(verbose = FALSE)
@@ -329,7 +307,8 @@ processRovquantOutput_wolverine_SCR <- function(
   searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
   
   ##-- Habitat raster with extent used in the model
-  habitatPolygon5km <- raster::crop(extraction.raster$Habitat, habitat$habitat.r)
+  habitatPolygon5km <- raster::crop(extraction.raster$Habitat,
+                                    habitat$habitat.r)
   
   ##-- Create raster of countries for extraction
   rrCountries <- extraction.raster$Countries
@@ -337,9 +316,7 @@ processRovquantOutput_wolverine_SCR <- function(
   areaCountriesTotal <- table(raster::factorValues(rrCountries, rrCountries[]))*raster::res(rrCountries)[1]*1e-6
   rrCountries <- raster::mask(rrCountries, searchedPolygon)
   rrCountries <- raster::crop(rrCountries, habitat$habitat.r)
-  #plot(rrCountries)
-  
-  ##-- Calculate studied area of each county
+  ##-- Calculate studied area of each country
   areaCountries <- table(raster::factorValues(rrCountries, rrCountries[]))*raster::res(rrCountries)[1]*1e-6 
   percCountries <- round(areaCountries/areaCountriesTotal, 2)
   percTotal <- round(sum(areaCountries)/sum(areaCountriesTotal),2)
@@ -354,8 +331,6 @@ processRovquantOutput_wolverine_SCR <- function(
   areaCountiesTotal <- table(raster::factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
   rrCounties <- raster::mask(rrCounties, searchedPolygon)
   rrCounties <- raster::crop(rrCounties, habitat$habitat.r)
-  #plot(rrCounties)
-  
   ##-- Calculate studied area of each county
   areaCounties <- table(raster::factorValues(rrCounties, rrCounties[]))*res(rrCounties)[1]*1e-6
   areaCountiesTotal <- areaCountiesTotal[names(areaCountiesTotal) %in% names(areaCounties)]
@@ -376,9 +351,7 @@ processRovquantOutput_wolverine_SCR <- function(
   areaRegionsTotal <- table(factorValues(rrRegions, rrRegions[]))*res(rrRegions)[1]*1e-6
   rrRegions <- mask(rrRegions, searchedPolygon)
   rrRegions <- crop(rrRegions, habitat$habitat.r)
-  #plot(rrRegions)
-  
-  ##-- Calculate studied area of each county
+  ##-- Calculate studied area of each region
   areaRegions <- table(factorValues(rrRegions,rrRegions[]))*res(rrRegions)[1]*1e-6
   areaRegionsTotal <- areaRegionsTotal[names(areaRegionsTotal) %in% names(areaRegions)]
   percRegions <- round(areaRegions/areaRegionsTotal, 2)
@@ -614,7 +587,7 @@ processRovquantOutput_wolverine_SCR <- function(
                  res = 300, bg = NA)
   
   par(mar = c(0,0,0,0))
-  plot(sf::st_geometry(COUNTIES), border = NA, col = "gray80")
+  plot(sf::st_geometry(COUNTRIES), border = NA, col = "gray80")
   points(data.alive$data.sp[data.alive$data.sp$Year == years, ],
          pch = 3, col = "orange", lwd = 0.7)
   mtext(text = seasons, side = 1, -25, adj=0.2, cex=1.2, font = 2)

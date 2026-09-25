@@ -1,53 +1,50 @@
-#' @title RovQuant OPSCR output processing
+#' @title RovQuant model output processing
 #'
 #' @description
-#' The \code{processRovquantOutput} function calls a custom Rmarkdown template that identifies 
-#' and loads the most recent Rovbase data available for the specified species 
-#' and performs the OPSCR data preparation for model fitting. 
-#' The data preparation is specific to each species and incorporates the
-#' different developments from project RovQuant to allow fitting large-scale
-#' SCR and OPSCR models (see Turek et al., 2021 <doi.org/10.1002/ecs2.3385>  for more details):
-#' \enumerate{
-#' \item Rescaling spatial coordinates to a grid for fast look-up assignment.
-#' \item A local evaluation approach (see Milleret et al., 2019 <doi:10.1002/ece3.4751> for more details)
-#' \item A sparse matrix representation of the observation data to reduce the size of objects to be processed.
-#' \item An indicator to shortcut calculations for individuals unavailable for detection.
-#' }
+#' \code{processRovquantOutput_bear} calls a custom Rmarkdown template that combines 
+#' and processes MCMC outputs from NIMBLE models and produces figures,
+#' tables and rasters of interest (e.g. population density maps)
 #' 
-#' @param data.dir A \code{path} to the directory containing the clean Rovbase data, as prepared by \code{cleanRovBaseData}.
-#' @param working.dir A \code{path} to the directory for this analysis containing the \code{nimbleInputFiles} folder to store the prepared data. 
-#' @param species A \code{character} denoting the species; can be one of "bear", "wolf" or "wolverine.
-#' @param nburnin An \code{integer} denoting the number of MCMC bites to be removed from each MCMC chain as burnin.
-#' @param niter An \code{integer} denoting the number of MCMC iterations to be used for density extraction.
-#' @param extraction.res A \code{numeric} denoting the resolution (in meters) to use for density extraction.
-#' @param print.report A \code{logical}  Whether an .html report summarizingf the results should be printed (TRUE) or not (FALSE).
-#' @param Rmd.template (optional) A \code{path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
-#' @param output.dir (optional) A \code{path} where to print the report. Default is to print in the 'reports' folder of the working directory.
-#' @param overwrite A \code{logical} Whether to overwrite (TRUE) or ask before overwriting potentially existing .html reports (FALSE).
-#' 
+#' @param working.dir \code{Path} to the directory containing the \code{nimbleOutFiles} folder where MCMC outputs are stored. 
+#' @param species \code{Character} string denoting the species; can be one of "bear", "wolf" or "wolverine.
+#' @param nburnin Number of initial, pre-thinning, MCMC bites to discard. Default value is 0.
+#' @param thin Thinning interval for collecting MCMC samples, corresponding to monitors. Thinning occurs after the initial nburnin samples are discarded. Default value is 1.
+#' @param thin2 Thinning interval for collecting MCMC samples, corresponding to the second, optional set of monitors2. Thinning occurs after the initial nburnin samples are discarded. Default value is 1.
+#' @param niter Number of MCMC iterations to be used for density extraction. Default value is 100.
+#' @param extraction.res Resolution (in meters) to use for density extraction. Default value is 5000m.
+#' @param years Which years to use for density extraction.
+#' @param print.report \code{Logical}. Whether an .html report summarizing the results should be printed (TRUE) or not (FALSE).
+#' @param Rmd.template (optional) \code{Path} to a custom .Rmd template to use instead of the default one provided in 'rovquantR'.
+#' @param output.dir (optional) \code{Path} to the location of the final .html report. Default is to print in the 'reports' folder of the working directory.
+#' @param overwrite \code{logical} Whether to silently overwrite (TRUE) or ask before overwriting potentially existing .html reports (FALSE).
+#'
 #' @return This function returns:
 #' \enumerate{
 #' \item Multiple \code{.RData} files with the processed MCMC outputs and density outputs.
 #' \item A \code{.html} report summarizing the data cleaning process. 
-#' \item Additional \code{.png} images and \code{.csv} that can be reused somewhere else.
+#' \item Additional \code{.png} images and \code{.csv} files that can be reused somewhere else.
 #' }
 #'
 #' @author Pierre Dupont
+#' 
+#' @importFrom  rmarkdown render
 #' 
 #' @rdname processRovquantOutput
 #' @export
 processRovquantOutput <- function(
   ##-- paths
-  data.dir = "./Data",
   working.dir = NULL,
   
   ##-- MCMC processing
   species = c("bear","wolf","wolverine"),
-  nburnin = 5,
+  nburnin = 0,
+  thin = 1,
+  thin2 = 1,
   
   ##-- Density extraction
   niter = 100,
   extraction.res = 5000,
+  years = NULL,
   
   ##-- miscellanious
   print.report = TRUE,
@@ -65,11 +62,13 @@ processRovquantOutput <- function(
     
     ##-- Process the model output
     out <- processRovquantOutput_bear(
-      data.dir,
       working.dir,
       nburnin,
+      thin, 
+      thin2,
       niter,
       extraction.res,
+      years,
       overwrite)
   }
   
@@ -82,11 +81,13 @@ processRovquantOutput <- function(
 
     ##-- Process the model output
     out <- processRovquantOutput_wolf(
-      data.dir,
       working.dir,
       nburnin,
+      thin, 
+      thin2,
       niter,
       extraction.res,
+      years,
       overwrite)
   }
 
@@ -99,11 +100,13 @@ processRovquantOutput <- function(
     
     ##-- Process the model output
     out <- processRovquantOutput_wolverine_SCR(
-      data.dir,
       working.dir,
       nburnin,
+      thin, 
+      thin2,
       niter,
       extraction.res,
+      years,
       overwrite)
   }
   

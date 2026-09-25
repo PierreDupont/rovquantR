@@ -136,7 +136,7 @@ ngs <- data.alive$data.sp[data.alive$data.sp$Year == years, ]
 
 ##-- Number of NGS samples collected per sex 
 numDet_sex <- table(ngs$Sex)
-if(length(dim(numDet_sexYear)) > 1){
+if(length(dim(numDet_sex)) > 1){
   numDet_sex <- c(numDet_sex,sum(numDet_sex))
   names(numDet_sex) <- c("female","male","Total")
 }

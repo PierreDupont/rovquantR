@@ -1,27 +1,6 @@
-#' @title RovQuant OPSCR bear output processing
-#' 
-#' @description
-#' \code{processRovquantOutput_bear} calls a custom Rmarkdown template that combines 
-#' and processes MCMC outputs from NIMBLE models and produces figures,
-#' tables and rasters of interest (e.g. population density maps)
-#' 
-#' @param data.dir A \code{path} to the directory containing the clean Rovbase data, as prepared by \code{cleanRovBaseData}.
-#' @param working.dir A \code{path} to the directory for this analysis containing the \code{nimbleInputFiles} folder to store the prepared data. 
-#' @param nburnin An \code{integer} denoting the number of MCMC bites to be removed from each MCMC chain as burnin.
-#' @param niter An \code{integer} denoting the number of MCMC iterations to be used for density extraction.
-#' @param extraction.res A \code{integer} denoting the raster resolution for density extraction.
-#' @param overwrite A \code{logical} Whether to overwrite (TRUE) or ask before overwriting potentially existing output files (FALSE).
-#' 
-#' @return 
-#' Multiple \code{.RData} files with the processed MCMC outputs and density outputs.
-#' Additional \code{.png} images and \code{.csv} that can be reused somewhere else.
-#'
-#' @author Pierre Dupont
-#' 
 #' @import sf 
 #' @import raster
 #' @import dplyr
-#' @importFrom fasterize fasterize
 #' @importFrom grDevices adjustcolor dev.off pdf png grey
 #' @importFrom graphics axis abline par
 #' @importFrom nimbleSCR scaleCoordsToHabitatGrid
@@ -29,18 +8,16 @@
 #' @importFrom utils data
 #' @importFrom xtable xtable
 #' 
-#' @rdname processRovquantOutput_bear2
+#' @rdname processRovquantOutput
 #' @export
 processRovquantOutput_bear2 <- function(
-  ##-- paths
-  data.dir = getwd(),
   working.dir = NULL,
-  ##-- MCMC
   nburnin = 0,
   niter = 100,
-  ##-- Density 
+  thin = 1,
+  thin2 = 1,
   extraction.res = 5000,
-  ##-- Miscellanious
+  years = NULL,
   overwrite = FALSE){
   
   ## ------ 0. BASIC SET-UP ------
@@ -56,6 +33,9 @@ processRovquantOutput_bear2 <- function(
   out <- list( SPECIES = "Brown bear",
                engSpecies = "bear",
                DATE = DATE)
+  
+  ##-- States alive
+  alive.states <- 2
   
   
   
@@ -76,13 +56,16 @@ processRovquantOutput_bear2 <- function(
   gc(verbose = FALSE)
   
   ##-- Habitat
-  load(file.path( working.dir, "data", paste0("Habitat_bear_", DATE, ".RData")))
+  load(file.path( working.dir, "data",
+                  paste0("Habitat_bear_", DATE, ".RData")))
   
   ##-- Detectors
-  load(file.path( working.dir, "data", paste0("Detectors_bear_", DATE, ".RData")))
+  load(file.path( working.dir, "data",
+                  paste0("Detectors_bear_", DATE, ".RData")))
   
   ##-- Load filtered data
-  load(file.path( working.dir, "data", paste0("FilteredData_bear_", DATE, ".RData")))
+  load(file.path( working.dir, "data",
+                  paste0("FilteredData_bear_", DATE, ".RData")))
   
   ##-- Habitat Rasters
   if(extraction.res <= 1000){
@@ -109,24 +92,30 @@ processRovquantOutput_bear2 <- function(
           extraction.raster <- habitatRasters
           extraction.res <- 20000
         }}}}
-  years <- as.numeric(dimnames(detectors$covariates)[[3]])
+  
+  ##-- Extract years
+  years <- as.numeric(dimnames(nimDataF$z)[[2]])
   n.years <- length(years) 
   
-  ##-- MERGE & SIMPLIFY SOME NORWEGIAN COUNTIES
-  COUNTIES_s <- COUNTIES[COUNTIES$country %in% "NOR", ] %>% sf::st_intersection(COUNTRIES)
-  COUNTIES_s$county[COUNTIES_s$county %in% c("Trøndelag","Nordland")] <- "Trøndelag"
-  COUNTIES_s$county[COUNTIES_s$county %in% c("Troms","Finnmark")] <- "Finnmark"
-  COUNTIES_s$county[!COUNTIES_s$county %in% c("Finnmark","Trøndelag")] <- "Innlandet"
-  COUNTIES_s <- COUNTIES_s %>%
-    dplyr::group_by(county) %>%
-    dplyr::summarize() 
+  ##-- Merge counties for practical reasons
+  COUNTIES_AGGREGATED <- REGIONS %>%
+    filter(country %in% "NOR") %>%
+    mutate(id = case_when(
+      county %in% c("Trøndelag","Nordland") ~ "Trøndelag",
+      county %in% c("Troms","Finnmark") ~ "Finnmark",
+      TRUE ~ "Innlandet")) %>%
+    dplyr::group_by(id) %>%
+    dplyr::summarize() %>%
+    sf::st_simplify( ., preserveTopology = T, dTolerance = 500) %>%
+    mutate(.,
+           index = c(1,3,2),
+           Name = c("NO1","NO3","NO2"))
   
-  COUNTIES_s <- sf::st_simplify(sf::st_as_sf(COUNTIES_s), preserveTopology = T, dTolerance = 500)
-  COUNTIES_s$index <- c(1,3,2)
-  COUNTIES_s$Name <- c("NO1","NO3","NO2")
+  ##-- Prepare raster of countries
+  countryRaster <- habitatRasterResolution$`5km`[["Countries"]]
   
   
-  
+
   ## ------ 2. PROCESS MCMC SAMPLES -----
   
   message("## Processing model MCMC outputs...")
@@ -155,17 +144,25 @@ processRovquantOutput_bear2 <- function(
     ## ------   2.1. FEMALES -----
     
     ##-- Compile MCMC bites
-    nimOutput_F <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/female"),
-                                     burnin = nburnin)
+    gc(verbose = FALSE)
+    nimOutput_F <- collectMCMCbites( 
+      path = file.path(working.dir, "nimbleOutFiles/female"),
+      burnin = nburnin,
+      thin = thin, 
+      thin2 = thin2)
     
     ##-- Traceplots
+    gc(verbose = FALSE)
     grDevices::pdf(file.path(working.dir, "figures/traceplots_F.pdf"))
     plot(nimOutput_F$samples[ ,!is.na(nimOutput_F$samples[[1]][1, ])])
     grDevices::dev.off()
     
     ##-- Process MCMC output
+    gc(verbose = FALSE)
     results_F <- processCodaOutput( nimOutput_F$samples,
                                     params.omit = c("sxy","z"))
+    
+    gc(verbose = FALSE)
     resultsSXYZ_F <- processCodaOutput(nimOutput_F$samples2)
     
     ##-- Remove unnecessary objects from memory
@@ -188,32 +185,38 @@ processRovquantOutput_bear2 <- function(
     ## ------   2.2. MALES -----
     
     ##-- Compile MCMC bites
-    nimOutput_M <- collectMCMCbites( path = file.path(working.dir, "nimbleOutFiles/male"),
-                                     burnin = nburnin)
+    gc(verbose = FALSE)
+    nimOutput_M <- collectMCMCbites( 
+      path = file.path(working.dir, "nimbleOutFiles/male"),
+      burnin = nburnin,
+      thin = thin, 
+      thin2 = thin2)
     
     ##-- Traceplots
+    gc(verbose = FALSE)
     grDevices::pdf(file.path(working.dir, "figures/traceplots_M.pdf"))
     plot(nimOutput_M$samples[ ,!is.na(nimOutput_M$samples[[1]][1, ])])
     dev.off()
     
     ##-- Process MCMC output
+    gc(verbose = FALSE)
     results_M <- processCodaOutput( nimOutput_M$samples,
                                     params.omit = c("sxy","z"))
+    gc(verbose = FALSE)
     resultsSXYZ_M <- processCodaOutput(nimOutput_M$samples2)
     
     ##-- Remove unnecessary objects from memory
     rm(list = c("nimOutput_M"))
     gc(verbose = FALSE)
     
-    
-    ##-- RESCALE SXY TO THE ORIGINAL COORDINATE SYSTEM
+    ##-- Rescale sxy to the original coordinate system
     dimnames(resultsSXYZ_M$sims.list$sxy)[[3]] <- c("x","y")
     resultsSXYZ_M$sims.list$sxy <- nimbleSCR::scaleCoordsToHabitatGrid(
       coordsData = resultsSXYZ_M$sims.list$sxy,
       coordsHabitatGridCenter = habitat$habitat.df,
       scaleToGrid = FALSE)$coordsDataScaled
     
-    ##-- RESCALE sigma AND tau TO THE ORIGINAL COORDINATE SYSTEM
+    ##-- Rescale sigma & tau to the original coordinate system
     results_M$sims.list$sigma <- results_M$sims.list$sigma * raster::res(habitat$habitat.r)[1]
     results_M$sims.list$tau <- results_M$sims.list$tau * raster::res(habitat$habitat.r)[1]
     
@@ -250,11 +253,13 @@ processRovquantOutput_bear2 <- function(
     
     ##-- SAVE AND LOAD DATA
     save( results_F, results_M, resultsSXYZ_MF,
-          file = file.path( working.dir, "data", paste0("MCMC_bear_", DATE, ".RData")))
+          file = file.path( working.dir, "data",
+                            paste0("MCMC_bear_", DATE, ".RData")))
   }
   
   ##-- Number of activity center posterior samples
   n.mcmc <- dim(resultsSXYZ_MF$sims.list$z)[1]
+  gc(verbose = FALSE)
   
   
   
@@ -272,6 +277,13 @@ processRovquantOutput_bear2 <- function(
     iter <- 1:n.mcmc
   }
 
+  # ##-- Remove buffer from the habitat
+  # habitat.rWthBuffer <- habitat$habitat.rWthBuffer
+  # habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
+  # searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer), 
+  #                                 as_points = FALSE, merge = TRUE)
+  # searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
+  
   ##-- Habitat raster with extent used in the model
   habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
                                      habitat$habitat.r)
@@ -285,7 +297,7 @@ processRovquantOutput_bear2 <- function(
   areaCountries <- table(raster::factorValues(rrCountries,rrCountries[]))*(raster::res(rrCountries)[1]^2)*1e-6
   percTotal <- round(sum(areaCountries)/sum(areaCountriesTotal),2)
 
-  ##-- Create 5km raster of carnivore regions in Norway for extraction
+  ##-- Create raster of carnivore regions in Norway for extraction
   rrRegions <- extraction.raster$Regions
   rrRegions[!grepl("Norway", unlist(raster::factorValues(extraction.raster$Countries, extraction.raster$Countries[])))] <- NA
   areaRegionsTotal <- table(raster::factorValues(rrRegions, rrRegions[]))*raster::res(rrRegions)[1]*1e-6
@@ -296,7 +308,7 @@ processRovquantOutput_bear2 <- function(
   areaRegionsTotal <- areaRegionsTotal[names(areaRegionsTotal) %in% names(areaRegions)]
   percRegions <- round(areaRegions/areaRegionsTotal, 2)
   
-  ##-- Create 5km raster of counties for extraction
+  ##-- Create raster of counties for extraction
   rrCounties <- extraction.raster$Counties
   rrCounties[!grepl("Norway", unlist(raster::factorValues(extraction.raster$Countries, extraction.raster$Countries[])))] <- NA
   areaCountiesTotal <- table(raster::factorValues(rrCounties, rrCounties[]))*raster::res(rrCounties)[1]*1e-6
@@ -335,7 +347,6 @@ processRovquantOutput_bear2 <- function(
   if(densTest){
     
     message("## Extracting population density... \n## This might take a while...")
-    
     
     ## ------   1. PREPARE DENSITY EXTRACTION ------
     
@@ -376,7 +387,7 @@ processRovquantOutput_bear2 <- function(
         sy = densityInputRegions$sy[ , ,t],
         z = resultsSXYZ_MF$sims.list$z[ , ,t],
         IDmx = densityInputRegions$habitat.id,
-        aliveStates = 2,
+        aliveStates = alive.states,
         display_progress = FALSE,
         regionID = regionID,
         returnPosteriorCells = FALSE)
@@ -396,7 +407,7 @@ processRovquantOutput_bear2 <- function(
         sy =  densityInputRegions$sy[ ,IDMales,t],
         z = resultsSXYZ_MF$sims.list$z[ ,IDMales,t],
         IDmx = densityInputRegions$habitat.id,
-        aliveStates = 2,
+        aliveStates = alive.states,
         display_progress = FALSE,
         regionID = regionID,
         returnPosteriorCells = FALSE)
@@ -416,7 +427,7 @@ processRovquantOutput_bear2 <- function(
         sy = densityInputRegions$sy[ ,IDFemales,t],
         z = resultsSXYZ_MF$sims.list$z[ ,IDFemales,t],
         IDmx = densityInputRegions$habitat.id,
-        aliveStates = 2,
+        aliveStates = alive.states,
         display_progress = FALSE,
         regionID = regionID,
         returnPosteriorCells = FALSE)
@@ -426,7 +437,7 @@ processRovquantOutput_bear2 <- function(
     
     
     
-    ## ------   3. UD-BASED DENSITY (5km) ------
+    ## ------   3. UD-BASED DENSITY ------
     
     ##-- Combine male and female sigma
     sigma <- do.call(cbind,lapply(resultsSXYZ_MF$sims.list$sex,
@@ -442,8 +453,26 @@ processRovquantOutput_bear2 <- function(
     sigma <- sigma/raster::res(inputRaster)[1]
     
     
+    ## ------     3.1. MALE & FEMALES -----
     
-    ## ------     3.1. MALE -----
+    UDdensity <- list()
+    for(t in 1:n.years){
+      UDdensity[[t]] <- GetSpaceUse(
+        sx = densityInputRegions$sx[iter, ,t],
+        sy = densityInputRegions$sy[iter, ,t],
+        z = resultsSXYZ_MF$sims.list$z[iter, ,t],
+        sigma = sigma,
+        habitatxy = densityInputRegions$habitat.xy,
+        aliveStates = alive.states,
+        display_progress = FALSE,
+        regionID = densityInputRegions$regions.rgmx,
+        returnPosteriorCells = FALSE)
+    }#t
+    names(UDdensity) <- years
+    
+    
+    
+    ## ------     3.2. MALE -----
     
     IDMales <- which(resultsSXYZ_MF$sims.list$sex == "M")
     
@@ -455,7 +484,7 @@ processRovquantOutput_bear2 <- function(
         z = resultsSXYZ_MF$sims.list$z[iter,IDMales,t],
         sigma = sigma[ ,IDMales],
         habitatxy = densityInputRegions$habitat.xy,
-        aliveStates = 2,
+        aliveStates = alive.states,
         display_progress = FALSE,
         regionID = densityInputRegions$regions.rgmx,
         returnPosteriorCells = FALSE)
@@ -464,7 +493,7 @@ processRovquantOutput_bear2 <- function(
     
     
     
-    ## ------     3.2. FEMALE -----
+    ## ------     3.3. FEMALE -----
     
     IDFemales <- which(resultsSXYZ_MF$sims.list$sex == "F")
     
@@ -476,7 +505,7 @@ processRovquantOutput_bear2 <- function(
         z = resultsSXYZ_MF$sims.list$z[iter,IDFemales,t],
         sigma = sigma[ ,IDFemales],
         habitatxy = densityInputRegions$habitat.xy,
-        aliveStates = 2,
+        aliveStates = alive.states,
         display_progress = FALSE,
         regionID = densityInputRegions$regions.rgmx,
         returnPosteriorCells = FALSE)
@@ -485,22 +514,7 @@ processRovquantOutput_bear2 <- function(
     
     
     
-    ## ------     3.3. MALE & FEMALES -----
-    
-    UDdensity <- list()
-    for(t in 1:n.years){
-      UDdensity[[t]] <- GetSpaceUse(
-        sx = densityInputRegions$sx[iter, ,t],
-        sy = densityInputRegions$sy[iter, ,t],
-        z = resultsSXYZ_MF$sims.list$z[iter, ,t],
-        sigma = sigma,
-        habitatxy = densityInputRegions$habitat.xy,
-        aliveStates = 2,
-        display_progress = FALSE,
-        regionID = densityInputRegions$regions.rgmx,
-        returnPosteriorCells = FALSE)
-    }#t
-    names(UDdensity) <- years
+
     
     
     
@@ -1485,7 +1499,7 @@ processRovquantOutput_bear2 <- function(
                widths = c(1,0.5),
                heights = 1)
 
-  for(c in 1:nrow(COUNTIES_s)){
+  for(c in 1:nrow(COUNTIES_AGGREGATED)){
     par(mar = c(4,4,1,1), tck = 0)
 
     plot(10, xlim = c(0.5, n.years+0.5), ylim = c(0,0.01), type ="n", xaxt="n",
@@ -1496,11 +1510,11 @@ processRovquantOutput_bear2 <- function(
     abline(v = 1:(n.years-1) + 0.5, lty = 2)
 
     for(t in 1:n.years){
-      plotQuantiles( x = results_F$sims.list$p0[ ,COUNTIES_s$index == c,t],
+      plotQuantiles( x = results_F$sims.list$p0[ ,COUNTIES_AGGREGATED$index == c,t],
                      at = t - diffSex,
                      col = colSex[1])
 
-      plotQuantiles( x = results_M$sims.list$p0[ ,COUNTIES_s$index == c,t],
+      plotQuantiles( x = results_M$sims.list$p0[ ,COUNTIES_AGGREGATED$index == c,t],
                      at = t + diffSex,
                      col = colSex[2])
     }#t
@@ -1518,11 +1532,11 @@ processRovquantOutput_bear2 <- function(
 
 
     par(mar = c(0,0,0,0))
-    plot(st_geometry(COUNTIES_s), border = grey(0.5), col = grey(0.5), lwd = 0.1)
-    plot(st_geometry(COUNTIES_s[COUNTIES_s$index == c, ]),
+    plot(st_geometry(COUNTIES_AGGREGATED), border = grey(0.5), col = grey(0.5), lwd = 0.1)
+    plot(st_geometry(COUNTIES_AGGREGATED[COUNTIES_AGGREGATED$index == c, ]),
          add = T, col = adjustcolor("red",0.5), border = "red")
-    text(COUNTIES_s[COUNTIES_s$index == c, ],
-         labels = COUNTIES_s$Name[COUNTIES_s$index == c],
+    text(COUNTIES_AGGREGATED[COUNTIES_AGGREGATED$index == c, ],
+         labels = COUNTIES_AGGREGATED$Name[COUNTIES_AGGREGATED$index == c],
          col = "white")
   }#c
   dev.off()
@@ -1630,7 +1644,7 @@ processRovquantOutput_bear2 <- function(
                heights = rep(1,2))
   par(mar = c(0,0,0,0))
   for(t in 1:length(years)){
-    plot(sf::st_geometry(COUNTIES_s), border = NA, col = "gray80")
+    plot(sf::st_geometry(COUNTIES_AGGREGATED), border = NA, col = "gray80")
     points(data.alive$data.sp[data.alive$data.sp$Year == years[t], ],
            pch = 3, col = "orange", lwd = 0.7)
     points(data.dead[data.dead$Year == years[t], ],
@@ -2467,10 +2481,6 @@ processRovquantOutput_bear2 <- function(
   write.csv(dataSummary, file = file.path(working.dir, "tables/dataSummary.csv"))
   
   
-  ##-- Prepare raster of countries
-  countryRaster <- habitatRasterResolution$`5km`[["Countries"]]
-  
-  
   
   ## ------     5.2.1. NGS SAMPLES & IDs ------
   
@@ -3136,6 +3146,7 @@ processRovquantOutput_bear2 <- function(
   ## ------ 6. OUTPUT -----
   
   out$YEARS <- years
+  out$SEASONS <- years
   
   return(out)
 }
