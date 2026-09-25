@@ -948,8 +948,12 @@ processRovquantOutput_wolverine_SCR <- function(
           add.to.row = addtorow,
           file = file.path(working.dir, "tables/PropDetected.tex"))
   
+    
+    
   ## ------ 6. OUTPUT -----
-  out$YEARS <- seasons
+    
+  out$YEARS <- years
+  out$SEASONS <- seasons
     
   return(out)
 }
