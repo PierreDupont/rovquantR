@@ -17,6 +17,7 @@ processRovquantOutput_wolf <- function(
     thin = 1,
     thin2 = 1,
     extraction.res = 5000,
+    years = NULL,
     overwrite = FALSE
 ){
   

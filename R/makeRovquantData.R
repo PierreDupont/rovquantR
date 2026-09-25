@@ -212,14 +212,12 @@ makeRovquantData <- function(
         ##-- habitat
         habitat.res,
         buffer.size,
-        max.move.dist,
         ##-- detectors
         detector.res,
         subdetector.res,
         max.det.dist,
         resize.factor,
         rename.list)
-    
       } else {
       ##-- Prepare the data
       out <- makeRovquantData_wolverine(

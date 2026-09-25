@@ -62,14 +62,14 @@ processRovquantOutput <- function(
     
     ##-- Process the model output
     out <- processRovquantOutput_bear(
-      working.dir,
-      nburnin,
-      thin, 
-      thin2,
-      niter,
-      extraction.res,
-      years,
-      overwrite)
+      working.dir = working.dir,
+      nburnin = nburnin,
+      niter = niter,
+      thin = thin, 
+      thin2 = thin2,
+      extraction.res = extraction.res,
+      years = years,
+      overwrite = overwrite)
   }
   
   
@@ -81,14 +81,14 @@ processRovquantOutput <- function(
 
     ##-- Process the model output
     out <- processRovquantOutput_wolf(
-      working.dir,
-      nburnin,
-      thin, 
-      thin2,
-      niter,
-      extraction.res,
-      years,
-      overwrite)
+      working.dir = working.dir,
+      nburnin = nburnin,
+      niter = niter,
+      thin = thin,
+      thin2 = thin2,
+      extraction.res = extraction.res,
+      years = years,
+      overwrite = overwrite)
   }
 
   
@@ -100,14 +100,14 @@ processRovquantOutput <- function(
     
     ##-- Process the model output
     out <- processRovquantOutput_wolverine_SCR(
-      working.dir,
-      nburnin,
-      thin, 
-      thin2,
-      niter,
-      extraction.res,
-      years,
-      overwrite)
+      working.dir = working.dir,
+      nburnin = nburnin,
+      niter = niter,
+      thin = thin,
+      thin2 = thin2,
+      extraction.res = extraction.res,
+      years = years,
+      overwrite = overwrite)
   }
   
   
