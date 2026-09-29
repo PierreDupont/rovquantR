@@ -62,6 +62,8 @@ makeRovquantData_wolverine <- function(
   
   ##-- habitat
   habitat.res = 20000, 
+  x.extent = NULL,
+  y.extent = NULL,
   buffer.size = 60000,
   max.move.dist = 250000,
   
@@ -81,6 +83,8 @@ makeRovquantData_wolverine <- function(
   if(is.null(aug.factor)){aug.factor <- 0.8}
   if(is.null(sampling.months)){sampling.months <- list(12,1:6)}
   if(is.null(habitat.res)){habitat.res <- 20000} 
+  if(is.null(x.extent)){x.extent <- c(-51000, 1150000)}
+  if(is.null(y.extent)){y.extent <- c(6520000, 7950000)}
   if(is.null(buffer.size)){buffer.size <- 60000}
   if(is.null(max.move.dist)){max.move.dist <- 250000}
   if(is.null(detector.res)){detector.res <- 10000}
@@ -89,7 +93,7 @@ makeRovquantData_wolverine <- function(
   if(is.null(resize.factor)){resize.factor <- 1}
   if(is.null(rename.list)) {
     if(!exists("r.list.internalWolf")) stop("Default 'rename.list' not available")
-    rename.list <- r.list.internalWolf
+    rename.list <- r.list.internal
   }  
   
   ##-- Set up list of Habitat characteristics
@@ -99,8 +103,8 @@ makeRovquantData_wolverine <- function(
   
   ##-- Set up list of Detectors characteristics
   detectors <- list( resolution = detector.res,
-                     resolution.sub = subdetector.res,
-                     maxDist = max.det.dist,                      ## [PD] : need to rethink the maxDist criteria
+                     resolution.sub = subdetector.res, 
+                     maxDist = max.det.dist, ## [PD] : need to rethink the maxDist criteria
                      resize.factor = resize.factor)
   
   ##-- Set up list of Data characteristics
@@ -187,21 +191,21 @@ makeRovquantData_wolverine <- function(
       ##-- Subset to monitoring period
       Month %in% unlist(sampling.months), 
       ##-- Subset to samples collected in Norway and Sweden
-      ##-- [PD] should switch to using "country_sample" instead 
-      filteredData$alive$Country_sf %in% c("(N)","(S)")) 
+      ##-- [PD] switched to using "country_sample" instead 
+      filteredData$alive$Country_sample %in% c("(N)","(S)")) 
     
+  
   ##-- Filter NGS samples outside the GLOBAL MAP
   ##-- [PD]: should be removed!! 
   ##-- This removes 125 samples falling into lakes
   ##-- Only here to match last year's analysis
-  myStudyArea <- GLOBALMAP %>% 
-    dplyr::filter(ISO %in% c("SWE","NOR")) %>%
-    mutate(id = 1) %>% 
-    group_by(id) %>% 
-    summarize() 
-  
-  filteredData$alive <- filteredData$alive %>% 
-    dplyr::filter(!is.na(as.numeric(st_intersects(., myStudyArea))))
+  # myStudyArea <- GLOBALMAP %>% 
+  #   dplyr::filter(ISO %in% c("SWE","NOR")) %>%
+  #   mutate(id = 1) %>% 
+  #   group_by(id) %>% 
+  #   summarize() 
+  # filteredData$alive <- filteredData$alive %>% 
+  #   dplyr::filter(!is.na(as.numeric(st_intersects(., myStudyArea))))
   
   
   ##-- Filter out detections in Norrbotten except in 2016:18 and after 2023
@@ -233,15 +237,24 @@ makeRovquantData_wolverine <- function(
   
   ## ------     1.1. GENERATE HABITAT CHARACTERISTICS ------
   
-  ##-- Determine study area based on NGS detections
-  ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
-  studyArea <- filteredData$alive %>%
-    sf::st_buffer(., dist = habitat$buffer * 1.4) %>%
-    dplyr::mutate(id = 1) %>%
-    dplyr::group_by(id) %>% 
-    dplyr::summarize() %>% 
-    sf::st_intersection(., COUNTRIES) %>%
-    sf::st_as_sf()
+  # ##-- Determine study area based on NGS detections
+  # ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
+  # studyArea <- filteredData$alive %>%
+  #   sf::st_buffer(., dist = habitat$buffer * 1.4) %>%
+  #   dplyr::mutate(id = 1) %>%
+  #   dplyr::group_by(id) %>%
+  #   dplyr::summarize() %>%
+  #   sf::st_intersection(., COUNTRIES) %>%
+  #   sf::st_as_sf()
+  
+  ##-- [PD] switch to fixed extent for the study area to match bear and wolf analyses.
+  ##-- Determine study area based on predefined extent
+  studyArea <- COUNTRIES %>%
+    dplyr::filter(ISO %in% c("NOR","SWE")) %>%
+    sf::st_crop( ., xmin = x.extent[1], xmax = x.extent[2],
+                 ymin = y.extent[1], ymax = y.extent[2]) %>%
+    sf::st_collection_extract(., "POLYGON") %>%
+    summarise() 
   
   ##-- Get study area extent
   studyArea.extent <- st_bbox(extent(studyArea))
@@ -451,8 +464,13 @@ makeRovquantData_wolverine <- function(
   
   ## ------       2.2.4. EXTRACT DISTANCES TO ROADS ------
   
-  ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster::raster(file.path(data.dir,"Roads/MinDistAllRoads1km.tif"))
+  # ##-- Load map of distance to roads (1km resolution)
+  # DistAllRoads <- raster::raster(file.path(data.dir,"Roads/MinDistAllRoads1km.tif"))
+  
+  ##-- Load raster stack of snow cover
+  DistAllRoads <- readMostRecent( path = file.path(data.dir, "Roads"), 
+                          extension = ".tif", 
+                          stack = FALSE)
   
   ##-- Fasterize to remove values that fall in the sea
   r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
@@ -487,8 +505,13 @@ makeRovquantData_wolverine <- function(
   
   ## ------       2.2.5. EXTRACT DAYS OF SNOW ------
   
-  ##-- Average snow from December to June (the official monitoring period for Norway&Sweden)
-  SNOW <- stack(file.path(data.dir,"Snow/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
+  # ##-- Average snow from December to June (the official monitoring period for Norway&Sweden)
+  # SNOW <- stack(file.path(data.dir,"Snow/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
+  
+  ##-- Load raster stack of snow cover
+  SNOW <- readMostRecent( path = file.path(data.dir, "Snow"), 
+                          extension = ".tif", 
+                          stack = TRUE)
   
   ##-- SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
   SNOW <- SNOW[[paste("X", years, "_", years + 1, sep = "")]]
@@ -530,13 +553,8 @@ makeRovquantData_wolverine <- function(
                    year = as.numeric(format(date,"%Y")),
                    month = as.numeric(format(date,"%m")),
                    species = stringi::stri_trans_general(species, "Latin-ASCII"),
-                   monitoring.season = ifelse( month > unlist(sampling.months)[1],
-                                               year, year-1)) %>%
-    ## [PD] the version above corresponds to last year's analysis ("54.Cleaned2025TestPDScript.R")
-    ## It is wrong because it does nothing. Only samples collected AFTER December get their year changed (i.e. no samples at all).
-    ## Below is the correct version, similar to what we do in cleanRovbaseData():
-    ## monitoring.season = ifelse( month < unlist(sampling.months)[1],
-    ##                             year - 1, year)) %>%
+                   monitoring.season = ifelse( month < unlist(sampling.months)[1],
+                                               year - 1, year)) %>%
     ##-- Filter based on monitoring season
     dplyr::filter( month %in% unlist(sampling.months)) %>%
     ##-- Turn into spatial points object
@@ -566,13 +584,8 @@ makeRovquantData_wolverine <- function(
       Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
       year = as.numeric(format(Date,"%Y")),
       month = as.numeric(format(Date,"%m")),
-      monitoring.season = ifelse( month > unlist(sampling.months)[1],
-                                  year, year-1)) %>%
-    ## [PD] the version above corresponds to last year's analysis ("54.Cleaned2025TestPDScript.R")
-    ## It is wrong because it does nothing. Only samples collected AFTER December get their year changed (i.e. no samples at all).
-    ## Below is the correct version, similar to what we do in cleanRovbaseData():
-    ## monitoring.season = ifelse( month < unlist(sampling.months)[1],
-    ##                             year - 1, year)) %>%
+      monitoring.season = ifelse( month < unlist(sampling.months)[1],
+                                  year-1, year)) %>%
     ##-- Filter out unusable samples
     dplyr::filter( 
       ##-- Filter out samples without coordinates,...
