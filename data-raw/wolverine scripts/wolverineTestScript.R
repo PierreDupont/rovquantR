@@ -110,9 +110,6 @@ nimConstants_NEW <- nimConstants
 lapply(nimData_NEW,sum)
 lapply(nimConstants_NEW,sum)
 
-##-- Check female ID i = 977 ; t = c(6,7)
-##-- Check male ID i = 676 ; t = 7
-
 
 
 ##------------------------------------------------------------------------------
@@ -199,7 +196,6 @@ system.time(runMCMCbites( mcmc = Cmcmc,
 
 processRovquantOutput(   
   species = "Wolverines",
-  data.dir = data.dir,
   working.dir = working.dir,
   nburnin = 10,
   niter = 100)

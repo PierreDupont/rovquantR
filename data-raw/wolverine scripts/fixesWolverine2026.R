@@ -19,4 +19,5 @@
 #' 1.use 'nimbleSCR' format for everything:
 #'  1.1. use a sf spatial grid dataframe for all habitat and detector characteristics (i.e. get rid of rasters and spatial points)
 #'  
-#'  2. distance to roads : no need to remove values where habitat is NA before assigning to each detector; this is what creates NAs when assigning to detectors.
+#' 2. distance to roads : no need to remove values where habitat is NA before assigning to each detector; 
+#' this is what creates NAs when assigning to detectors.
