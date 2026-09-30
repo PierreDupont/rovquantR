@@ -1124,8 +1124,8 @@ cleanRovbaseData <- function(
     
     ##-- Add year
     graphics::mtext(text = seasons[t],
-                    side = 1, line = -18,
-                    adj = 0.18, cex = 1.2)
+                    side = 1, line = -19,
+                    adj = 0.17, cex = 1)
   }#t
   dev.off()
   
