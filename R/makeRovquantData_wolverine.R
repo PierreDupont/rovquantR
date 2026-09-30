@@ -50,7 +50,7 @@ NULL
 #' @rdname makeRovquantData_wolverine
 #' @export
 makeRovquantData_wolverine <- function(
-  ##-- paths
+    ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
   
@@ -197,7 +197,7 @@ makeRovquantData_wolverine <- function(
       ##-- Subset to samples collected in Norway and Sweden
       ##-- [PD] switched to using "country_sample" instead 
       filteredData$alive$Country_sample %in% c("(N)","(S)")) 
-    
+  
   
   ##-- Filter NGS samples outside the GLOBAL MAP
   ##-- [PD]: should be removed!! 
@@ -379,7 +379,7 @@ makeRovquantData_wolverine <- function(
     dplyr::summarize() %>%
     dplyr::filter(county %in% c("Norrbotten","Troms","Västerbotten","Nordland","Finnmark")) %>% 
     sf::st_simplify( dTolerance = 500)
-
+  
   
   
   ## ------     2.2. GENERATE DETECTOR-LEVEL COVARIATES -----
@@ -468,13 +468,10 @@ makeRovquantData_wolverine <- function(
   
   ## ------       2.2.4. EXTRACT DISTANCES TO ROADS ------
   
-  # ##-- Load map of distance to roads (1km resolution)
-  # DistAllRoads <- raster::raster(file.path(data.dir,"Roads/MinDistAllRoads1km.tif"))
-  
-  ##-- Load raster stack of snow cover
+  ##-- Load map of distance to roads (1km resolution)
   DistAllRoads <- readMostRecent( path = file.path(data.dir, "Roads"), 
-                          extension = ".tif", 
-                          stack = FALSE)
+                                  extension = ".tif", 
+                                  stack = FALSE)
   
   ##-- Fasterize to remove values that fall in the sea
   r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
@@ -1643,7 +1640,7 @@ makeRovquantData_wolverine <- function(
       size = detectors$detectors.df$size,
       alpha = rep(1,2),
       detector.xy = as.matrix(detectors$scaledCoords))
-
+    
     
     
     ## ------   4. NIMBLE INITS ------
