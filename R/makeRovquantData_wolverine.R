@@ -182,6 +182,10 @@ makeRovquantData_wolverine <- function(
   DATA$years <- years
   n.years <- length(years)
   
+  ##-- List monitoring seasons
+  seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
+  intervals <- paste(years[-length(years)], years[-1], sep = "\n to \n")
+  
   ##-- Filter NGS samples for dates
   filteredData <- myFullData.sp
   filteredData$alive <- filteredData$alive %>%
@@ -1886,17 +1890,17 @@ makeRovquantData_wolverine <- function(
   
   for(thisSex in c("female","male")){
     
-    ## [PD] : For now, I am only creating the last year's SCR dataset (faster)
-    #for(t in 1:n.years){ 
-    t <- n.years
-    
     message(paste0("Preparing SCR input for sex: ", thisSex, "... "))
     
     ##-- Create folders for SCR files
-    dir.create( path = file.path( working.dir, "nimbleInFiles/SCR", thisSex, years[t]),
+    dir.create( path = file.path( working.dir, "nimbleInFiles/SCR", thisSex),
                 recursive = TRUE)
-    dir.create( path = file.path( working.dir, "nimbleOutFiles/SCR", thisSex, years[t]),
+    dir.create( path = file.path( working.dir, "nimbleOutFiles/SCR", thisSex),
                 recursive = TRUE)
+    
+    ##-- [PD] : For now, I am only creating the last year's SCR dataset (faster)
+    #for(t in 1:n.years){ 
+    t <- n.years
     
     ##-- Loop over chains
     for(c in 1:4){
@@ -2063,6 +2067,7 @@ makeRovquantData_wolverine <- function(
   return(list( SPECIES = "Wolverine",
                engSpecies = "wolverine",
                YEARS = years,
+               SEASONS = seasons, 
                SEX = sex,
                DATE = DATE))
   

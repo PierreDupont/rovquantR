@@ -265,6 +265,7 @@ makeRovquantData <- function(
       input = Rmd.template,
       params = list( species = out$SPECIES,
                      years = out$YEARS,
+                     seasons = out$SEASONS,
                      sex = out$SEX,
                      date = out$DATE,
                      working.dir = working.dir),

@@ -6,7 +6,7 @@ params:
   date: !r Sys.Date()   
   working.dir: !r getwd()
   sampling.months: NULL
-title: "`r paste(params$species, params$years)`"
+title: "`r paste(params$species, params$seasons)`"
 subtitle: "RovQuant - SCR Results"
 output:
   html_document: 

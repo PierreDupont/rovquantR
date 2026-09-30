@@ -274,7 +274,7 @@ r.list.internalWolf = c(
   SVAID = "SVAID",
   Uncertain_date = "Usikker dødsdato",
   Weight_slaughter = "Slaktevekt",
-  Weight_total =  "Helvekt")
+  Weight_total = "Helvekt")
 
 
 ## -----------------------------------------------------------------------------

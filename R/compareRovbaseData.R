@@ -41,6 +41,8 @@
 #' @importFrom grDevices png
 #' @importFrom graphics mtext 
 #' @importFrom tibble tibble
+#' @importFrom dplyr select
+#' @importFrom purrr map_dfr
 #' 
 #' @rdname compareRovbaseData
 #' @export
@@ -193,10 +195,10 @@ compareRovbaseData <- function(
   ## ----- 6. Find rows only in one dataset -----
   
   keys_only_in_df1 <- anti_join(df1, df2, by = keys) %>%
-    select(all_of(keys))
+    dplyr::select(all_of(keys))
   
   keys_only_in_df2 <- anti_join(df2, df1, by = keys) %>%
-    select(all_of(keys))
+    dplyr::select(all_of(keys))
   
   rows_only_in_df1 <- anti_join(df1, df2, by = keys)
   rows_only_in_df2 <- anti_join(df2, df1, by = keys)
@@ -207,7 +209,7 @@ compareRovbaseData <- function(
   
   common <- inner_join(df1, df2, by = keys, suffix = c(".old", ".new"))
   
-  diff_table <- map_dfr(
+  diff_table <- purrr::map_dfr(
     cols_to_check,
     function(col) {
       old_col <- paste0(col, ".old")
@@ -351,7 +353,7 @@ compareRovbaseData <- function(
 
     ##-- Find the .rmd template for the report
     if(is.null(Rmd.template)) {
-      Rmd.template <- system.file("rmd", "RovQuant_CompareReport.Rmd", package = "rovquantR")
+      Rmd.template <- system.file("rmd", "RovQuant_ComparisonReport.Rmd", package = "rovquantR")
       if(!file.exists(Rmd.template)) {
         stop("Can not find the Rmarkdown document to use for cleaning Rovbase.3.0 data.\n You must provide the path to the Rmarkdown template through the \"Rmd_template\" argument.")
       }
@@ -363,15 +365,12 @@ compareRovbaseData <- function(
     ##-- Render .Rmd report
     rmarkdown::render(
       input = Rmd.template,
-      params = list( species = SPECIES,
-                     years = years,
-                     sampling.months = sampling.months,
-                     data.dir = data.dir,
-                     working.dir = working.dir,
-                     date = DATE,
+      params = list( species = "Wolverine",
+                     years = 2012:2025,
+                     date = Sys.Date() ,
                      info.ls = info.ls),
       output_dir = output.dir,
-      output_file = paste0("CompareData_", engSpecies, "_", DATE,".html"))
+      output_file = paste0("CompareData_Wolverine_", Sys.Date(),".html"))
   }
   
   

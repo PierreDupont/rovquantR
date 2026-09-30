@@ -1,23 +1,36 @@
 #' Wolverine Package Analysis 2026 - Problems & Fixes
 #'
-#' Still uses 'sex(analysis)' for the sex assignment to match previous analysis (same as wolves).
-#'  ==> Switch to 'sex (individ)' for next analysis.
+#'
+#' FIXES:
 #'  
-#' Still uses wrong assignment of monitoring seasons for skandobs and rovbase.
+#' 1. Still uses wrong assignment of monitoring seasons for skandobs and rovbase.
 #' It should be from the start of the monitoring season and not from December
-#'  ==> fix already in the script (commented out)
-#'   
-#' Could not get readTracks() to reproduce the previous analysis script
-#' Could not get readMostRecent() to read .tif files (SNOW AND ROADS)
-#' Could not get readMultiples() to work all samples from Rovbase
-#' 'Sample_type' used from rovbase samples do not use "Loepeblod", "Vev" to match previous analysis. 
-#' Could not get assignSearchTracks() to reproduce the previous analysis script 
-#' 
-#' 
-#' FURTHER IMPROVEMENTS:
-#' 
-#' 1.use 'nimbleSCR' format for everything:
-#'  1.1. use a sf spatial grid dataframe for all habitat and detector characteristics (i.e. get rid of rasters and spatial points)
+#'   ==> fix already in the script 
+#'   ==> DONE in branch 'wolverine2'
 #'  
-#' 2. distance to roads : no need to remove values where habitat is NA before assigning to each detector; 
-#' this is what creates NAs when assigning to detectors.
+#' 2. Problem generating 'RovQuant_DataReport.Rmd'
+#'   ==> "Quitting from RovQuant_DataReport.Rmd:414-569 [nimble data]" 
+#'  
+#' 3. Fix monitoring season names throughout the markdown reports
+#'   ==> use 'seasons' instead of years for all titles, plot labels, tables, etc... 
+#'   
+#' 4. Fix the set-up for SCR models directories 
+#'   ==> remove the unused folder with the year as a name 
+#'   ==> DONE in branch 'wolverine2'
+#'   
+#' 
+#' IMPROVEMENTS:
+#' 
+#' 1. Use fixed extent instead of habitat based on detections 
+#'   ==> DONE in branch 'wolverine2'
+#' 
+#' 2. Use 'nimbleSCR' format for everything:
+#'   ==> Use a sf spatial grid dataframe for all habitat and detector characteristics 
+#'  (i.e. get rid of rasters and spatial points)
+#'  
+#' 3. Distance to roads : 
+#' - no need to remove values where habitat is NA before assigning to each detector; 
+#' - this is what creates NAs when assigning to detectors.
+#' 
+#' 
+#' 
