@@ -1379,6 +1379,7 @@ makeRovquantData_bear <- function(
   out <- list( SPECIES = "Brown bear",
                engSpecies = "bear",
                YEARS = years,
+               SEASONS = years,
                SEX = sex,
                DATE = DATE)
   return(out)

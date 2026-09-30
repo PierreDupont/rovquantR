@@ -534,6 +534,7 @@ processRovquantOutput_wolverine_SCR <- function(
   colCountries <- c("firebrick2", "deepskyblue2", "black")
   names(colCountries) <- c("Norway","Sweden", "Total")
   colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
+  
   seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
   
   

@@ -118,9 +118,16 @@ cleanRovbaseData <- function(
   ##-- Years
   if(is.null(years)) { years <- 2012:as.numeric(format(Sys.Date(), "%Y")) }
   
+  ##-- List monitoring seasons
+  if(engSpecies %in% c("wolf","wolverine")) {
+    seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
+  } else {
+    seasons <- years
+  }
+    
   ##-- Sampling months
   if(is.null(sampling.months)) {
-    if (engSpecies == "bear") {
+    if(engSpecies == "bear") {
       sampling.months <- list(4:11)
     } else {
       if (engSpecies == "wolf") {
@@ -234,6 +241,7 @@ cleanRovbaseData <- function(
   NGS_samples <- table(DNA$Sex, DNA$Year, useNA = "ifany")
   NGS_samples <- rbind(NGS_samples, "Total" = colSums(NGS_samples))
   NGS_samples <- cbind(NGS_samples, "Total" = rowSums(NGS_samples))
+  colnames(NGS_samples) <- c(seasons, "Total")
   write.csv( NGS_samples,
              file = file.path( working.dir, "tables",
                                paste0(engSpecies, "_Raw NGS Samples_",
@@ -244,6 +252,7 @@ cleanRovbaseData <- function(
   NGS_ids <- apply(table(DNA$Sex, DNA$Year, DNA$Id, useNA = "ifany"), c(1,2), function(x)sum(x>0))
   NGS_ids <- rbind(NGS_ids, "Total" = apply(table(DNA$Year,DNA$Id, useNA = "ifany"), 1, function(x)sum(x>0)))
   NGS_ids <- cbind(NGS_ids, "Total" = c(apply(table(DNA$Sex,DNA$Id, useNA = "ifany"), 1, function(x)sum(x>0)),length(unique(DNA$Id))))
+  colnames(NGS_ids) <- c(seasons, "Total")
   write.csv( NGS_ids,
              file = file.path( working.dir, "tables",
                                paste0(engSpecies, "_Raw NGS Ids_",
@@ -299,6 +308,7 @@ cleanRovbaseData <- function(
   DR_samples <- table(DR$Sex, DR$Year, useNA = "ifany")
   DR_samples <- rbind(DR_samples, "Total" = colSums(DR_samples))
   DR_samples <- cbind(DR_samples, "Total" = rowSums(DR_samples))
+  colnames(DR_samples) <- c(seasons, "Total")
   write.csv( DR_samples,
              file = file.path( working.dir, "tables",
                                paste0( engSpecies, "_Raw DR Samples_",
@@ -309,6 +319,7 @@ cleanRovbaseData <- function(
   DR_ids <- apply(table(DR$Sex, DR$Year, DR$Id, useNA = "ifany"), c(1,2), function(x)sum(x>0))
   DR_ids <- rbind(DR_ids, "Total" = apply(table(DR$Year,DR$Id, useNA = "ifany"), 1, function(x)sum(x>0)))
   DR_ids <- cbind(DR_ids, "Total" = c(apply(table(DR$Sex,DR$Id, useNA = "ifany"), 1, function(x)sum(x>0)),length(unique(DR$Id))))
+  colnames(DR_ids) <- c(seasons, "Total")
   write.csv( DR_ids,
              file = file.path( working.dir, "tables",
                                paste0( engSpecies, "_Raw DR Ids_",
@@ -926,6 +937,7 @@ cleanRovbaseData <- function(
   samples <- table(alive$Country_sample, alive$Year)
   samples <- rbind(samples, "Total" = colSums(samples))
   samples <- cbind(samples, "Total" = rowSums(samples))
+  colnames(samples) <- c(seasons, "Total")
   write.csv( samples,
              file = file.path( working.dir, "tables",
                                paste0( engSpecies, "_Clean NGS Samples_",
@@ -936,6 +948,7 @@ cleanRovbaseData <- function(
   ids <- apply(table(alive$Country_sample, alive$Year, alive$Id), c(1,2), function(x)sum(x>0))
   ids <- rbind(ids, "Total" = apply(table(alive$Year, alive$Id), 1, function(x)sum(x>0)))
   ids <- cbind(ids, "Total" = c(apply(table(alive$Country_sample,alive$Id), 1, function(x)sum(x>0)), length(unique(alive$Id))))
+  colnames(ids) <- c(seasons, "Total")
   write.csv( ids,
              file = file.path( working.dir, "tables",
                                paste0( engSpecies, "_Clean NGS Ids_",
@@ -946,6 +959,7 @@ cleanRovbaseData <- function(
   deadSamples <- table(dead.recovery$Country_sample, dead.recovery$Year)
   deadSamples <- rbind(deadSamples, "Total" = colSums(deadSamples))
   deadSamples <- cbind(deadSamples, "Total" = rowSums(deadSamples))
+  colnames(deadSamples) <- c(seasons, "Total")
   write.csv( deadSamples,
              file = file.path( working.dir, "tables",
                                paste0( engSpecies, "_Clean DR Samples_",
@@ -956,6 +970,7 @@ cleanRovbaseData <- function(
   deadIds <- apply(table(dead.recovery$Country_sample,dead.recovery$Year,dead.recovery$Id),c(1,2),function(x)sum(x>0))
   deadIds <- rbind(deadIds, "Total" = apply(table(dead.recovery$Year,dead.recovery$Id), 1, function(x)sum(x>0)))
   deadIds <- cbind(deadIds, "Total" = c(apply(table(dead.recovery$Country_sample,dead.recovery$Id), 1, function(x)sum(x>0)), length(unique(dead.recovery$Id))))
+  colnames(deadIds) <- c(seasons, "Total")
   write.csv( deadIds,
              file = file.path( working.dir, "tables",
                                paste0( engSpecies, "_Clean DR Ids_",
@@ -1043,7 +1058,7 @@ cleanRovbaseData <- function(
           axis.text.x = element_text(angle = 60,
                                      hjust = 1)) +
     scale_x_continuous( breaks = years,
-                        labels = years)
+                        labels = seasons)
   ##-- Export as .png
   ggsave(filename = file.path(working.dir, "figures",
                               paste0( engSpecies, "_Clean Rovbase Ids_",
@@ -1108,7 +1123,7 @@ cleanRovbaseData <- function(
     plot( sf::st_geometry(COUNTRIES), border = "gray40", col = NA, add = TRUE)
     
     ##-- Add year
-    graphics::mtext(text = years[t],
+    graphics::mtext(text = seasons[t],
                     side = 1, line = -18,
                     adj = 0.18, cex = 1.2)
   }#t
@@ -1131,7 +1146,7 @@ cleanRovbaseData <- function(
            legend.title = element_blank(),
            axis.text.x = element_text(angle = 60,
                                       hjust = 1)) +
-    scale_x_continuous(breaks = years, labels = years) +
+    scale_x_continuous(breaks = years, labels = seasons) +
     scale_fill_manual(values = c("gray20", "gray60"))
   
   ##-- Plot number of dead recoveries with previous detections
@@ -1147,7 +1162,7 @@ cleanRovbaseData <- function(
            legend.position.inside = 2,
            axis.text.x = element_text(angle = 60,
                                       hjust = 1)) +
-    scale_x_continuous(breaks = years, labels = years) +
+    scale_x_continuous(breaks = years, labels = seasons) +
     scale_fill_manual(values = c("gray20", "gray60"))
   plot_total <- plot1 + plot2
   
@@ -1229,6 +1244,7 @@ cleanRovbaseData <- function(
       input = Rmd.template,
       params = list( species = SPECIES, 
                      years = years,
+                     seasons = seasons,
                      sampling.months = sampling.months,
                      data.dir = data.dir,
                      working.dir = working.dir,

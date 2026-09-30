@@ -176,6 +176,11 @@ makeRovquantData_wolverine_SCR <- function(
   }
   DATA$years <- years
   
+  ##-- List monitoring seasons
+  seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
+  intervals <- paste(years[-length(years)], years[-1], sep = "\n to \n")
+  
+  
   ##-- Filter NGS samples for dates
   myFullData.sp$alive <- myFullData.sp$alive %>%
     dplyr::filter(
@@ -1638,6 +1643,7 @@ makeRovquantData_wolverine_SCR <- function(
   return(list( SPECIES = "Wolverine",
                engSpecies = "wolverine",
                YEARS = years,
+               SEASONS = seasons,
                SEX = sex,
                DATE = DATE))
 }
