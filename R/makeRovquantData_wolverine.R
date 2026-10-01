@@ -184,8 +184,7 @@ makeRovquantData_wolverine <- function(
   
   ##-- List monitoring seasons
   seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
-  intervals <- paste(years[-length(years)], years[-1], sep = "\n to \n")
-  
+
   ##-- Filter NGS samples for dates
   filteredData <- myFullData.sp
   filteredData$alive <- filteredData$alive %>%
@@ -1147,13 +1146,13 @@ makeRovquantData_wolverine <- function(
   ncols <- ceiling(L/nrows)
   
   
-  ##-- NGS maps
+  ##-- NGS maps time-series
   grDevices::png(filename = file.path(working.dir, "figures/NGS_TimeSeries.png"),
                  width = ncols*2, height = nrows*4,
                  units = "in", pointsize = 12,
                  res = 300, bg = NA)
   ##-- layout
-  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  mx <- matrix(NA, nrow = nrows*2, ncol = (ncols*2)+1)
   for(r in 1:nrows){
     mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
     mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
@@ -1162,7 +1161,6 @@ makeRovquantData_wolverine <- function(
                          widths = c(rep(1,ncol(mx))),
                          heights = rep(1,2))
   par(mar = c(0,0,0,0))
-  
   for(t in 1:length(years)){
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
@@ -1172,20 +1170,47 @@ makeRovquantData_wolverine <- function(
     plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
     
     ##-- Add year
-    graphics::mtext(text = years[t],
-                    side = 1, line = -18,
-                    adj = 0.18, cex = 1.2)
+    graphics::mtext(text = seasons[t],
+                    side = 1, line = -19,
+                    adj = 0.17, cex = 1)
   }#t
   dev.off()
   
   
-  ##-- Dead recoveries maps
+  ##-- NGS map last year
+  grDevices::png(filename = file.path(working.dir, "figures/NGS_SCR_maps.png"),
+                 width = 5, height = 6, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  
+  par(mar = c(0,0,0,0))
+  plot(sf::st_geometry(COUNTRIES), border = NA, col = "gray80")
+  points(data.alive$data.sp[data.alive$data.sp$Year == years, ],
+         pch = 3, col = "orange", lwd = 0.7)
+  mtext(text = seasons, side = 1, -25, adj=0.2, cex=1.2, font = 2)
+  
+  ##-- LEGEND
+  xLeg <- 1000000
+  yLeg <- 6350000
+  segments(x0 = xLeg, x1 = xLeg,
+           y0 = yLeg, y1 = yLeg + 500000,
+           col = grey(0.3), lwd = 2, lend = 2)
+  text(xLeg-80000, yLeg+500000/2, labels = "500 km",
+       srt = 90, cex = 1)
+  
+  points(x = xLeg-200000, y = yLeg-100000,
+         pch = 3, lwd = 1.5, cex = 1.5, col = "orange")
+  text(x = xLeg-170000, y = yLeg-100000,
+       "NGS samples", cex = 1, pos = 4)
+  dev.off()
+  
+  
+  ##-- Dead recoveries maps time-series
   grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
                  width = ncols*2, height = nrows*4,
                  units = "in", pointsize = 12,
                  res = 300, bg = NA)
   ##-- layout
-  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  mx <- matrix(NA, nrow = nrows*2, ncol = (ncols*2)+1)
   for(r in 1:nrows){
     mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
     mx[r*2, ] <- c(rep(1:ncols, each = 2), ncols) + (r-1)*ncols
@@ -1194,7 +1219,6 @@ makeRovquantData_wolverine <- function(
                          widths = c(rep(1,ncol(mx))),
                          heights = rep(1,2))
   par(mar = c(0,0,0,0))
-  
   for(t in 1:length(years)){
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
@@ -1215,9 +1239,9 @@ makeRovquantData_wolverine <- function(
           add = TRUE)
     
     ##-- Add year
-    graphics::mtext(text = years[t],
-                    side = 1, line = -18,
-                    adj = 0.18, cex = 1.2)
+    graphics::mtext(text = seasons[t],
+                    side = 1, line = -19,
+                    adj = 0.17, cex = 1)
   }#t
   dev.off()
   
@@ -2061,12 +2085,14 @@ makeRovquantData_wolverine <- function(
   
   ## ------ IV. RETURN IMPORTANT INFOS FOR REPORT ------
   
-  return(list( SPECIES = "Wolverine",
+  out <- list( SPECIES = "Wolverine",
                engSpecies = "wolverine",
                YEARS = years,
                SEASONS = seasons, 
                SEX = sex,
-               DATE = DATE))
+               DATE = DATE)
+  
+  return(out)
   
   
   
