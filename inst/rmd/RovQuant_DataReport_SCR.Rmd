@@ -195,7 +195,7 @@ percCountry <- round(percCountry[2]/sum(percCountry)*100)
 ##-- Number of NGS samples collected per sex and per year 
 numDet_sexYear <- table(ngs$Sex,ngs$Year)
 colnames(numDet_sexYear) <- "number of \nNGS samples"
-numDet_sexYear <- rbind(numDet_sexYear,colSums(numDet_sexYear))
+numDet_sexYear <- rbind(numDet_sexYear, colSums(numDet_sexYear))
 rownames(numDet_sexYear) <- c(sex,"Total")
 
 ##-- Number of individuals detected per sex and per year
@@ -248,9 +248,9 @@ mu <- summarize( df,
 knitr::include_graphics(file.path(working.dir, "figures/NGS_SCR_maps.png"))
 ```
 
-A total of `r numDet_sexYear["Total","Total"]` (`r numDet_sexYear["female","Total"]` female; `r numDet_sexYear["male","Total"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. These samples were associated with `r numId_sexYear["Total","Total"]` (`r numId_sexYear["female","Total"]` female; `r numId_sexYear["male","Total"]` male) individuals. We did not include individuals with unknown sex in this analysis.
+A total of `r numDet_sexYear["Total"]` (`r numDet_sexYear["female"]` female; `r numDet_sexYear["male"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. These samples were associated with `r numId_sexYear["Total"]` (`r numId_sexYear["female"]` female; `r numId_sexYear["male"]` male) individuals. We did not include individuals with unknown sex in this analysis.
 
-```{r, ngs data, echo = FALSE, collapse = TRUE}
+```{r, data table, echo = FALSE, collapse = TRUE}
 kable( numIdSamples, 
        align = "cc",
        caption = paste0("Number of ", species," non-invasive genetic samples and individuals detected included in the SCR analysis. We included only samples collected within the study area during the primary monitoring period ", seasons, ".")) %>%
@@ -369,5 +369,14 @@ if(engSpecies == "wolverine"){
     kable_styling(full_width = F)
 }
 ```
+------------------------------------------------------------------------
+
+# References
 
 ------------------------------------------------------------------------
+
+# Metadata
+
+```{r, metadata, echo = F}
+utils::sessionInfo()
+```

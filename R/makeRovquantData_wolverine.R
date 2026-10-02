@@ -38,7 +38,6 @@
 #' @importFrom fasterize fasterize
 #' @importFrom grDevices grey
 #' @importFrom nimbleSCR getSparseY scaleCoordsToHabitatGrid getLocalObjects
-#' @importFrom sp SpatialPoints CRS
 #' @importFrom spatstat.geom as.owin ppp
 #' @importFrom spatstat.explore density.ppp
 #' @importFrom stars st_as_stars
@@ -273,9 +272,9 @@ makeRovquantData_wolverine <- function(
   
   ##-- Retrieve number of habitat windows 
   isHab <- habitat$habitat.r[] == 1
-  n.habWindows <- habitat$n.habWindows <- sum(isHab)
+  n.habwindows <- habitat$n.habwindows <- sum(isHab)
   habitat$habitat.df <- cbind.data.frame(
-    "id" = 1:n.habWindows,
+    "id" = 1:n.habwindows,
     "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
     "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
   
@@ -309,6 +308,7 @@ makeRovquantData_wolverine <- function(
     sf::st_set_crs(value = sf::st_crs(myFullData.sp$alive)) %>%
     dplyr::mutate(id = 1)
   
+  ##-- Interpolate density of number of dens
   DEN.r <- raster::raster(
     adehabitatHR::estUDm2spixdf(
       adehabitatHR::kernelUD( as(DEN[ ,"id"], "Spatial"),
@@ -1436,16 +1436,16 @@ makeRovquantData_wolverine <- function(
       lambda <- 1/dmean
       
       betaDens ~ dnorm(0.0,0.01)
-      habIntensity[1:n.habWindows] <- exp(betaDens * denCounts[1:n.habWindows])
-      sumHabIntensity <- sum(habIntensity[1:n.habWindows])
-      logHabIntensity[1:n.habWindows] <- log(habIntensity[1:n.habWindows])
+      habIntensity[1:n.habwindows] <- exp(betaDens * denCounts[1:n.habwindows])
+      sumHabIntensity <- sum(habIntensity[1:n.habwindows])
+      logHabIntensity[1:n.habwindows] <- log(habIntensity[1:n.habwindows])
       logSumHabIntensity <- log(sumHabIntensity)
       
       for(i in 1:n.individuals){
         sxy[i, 1:2, 1] ~ dbernppAC(
-          lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
-          upperCoords = upperHabCoords[1:n.habWindows,1:2],
-          logIntensities = logHabIntensity[1:n.habWindows],
+          lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
+          upperCoords = upperHabCoords[1:n.habwindows,1:2],
+          logIntensities = logHabIntensity[1:n.habwindows],
           logSumIntensity = logSumHabIntensity,
           habitatGrid = habitatGrid[1:y.max,1:x.max],
           numGridRows = y.max,
@@ -1453,15 +1453,15 @@ makeRovquantData_wolverine <- function(
         
         for(t in 2:n.years){
           sxy[i, 1:2, t] ~ dbernppACmovement_exp(
-            lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
-            upperCoords = upperHabCoords[1:n.habWindows,1:2],
+            lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
+            upperCoords = upperHabCoords[1:n.habwindows,1:2],
             s = sxy[i,1:2,t-1],
             lambda = lambda,
-            baseIntensities = habIntensity[1:n.habWindows],
+            baseIntensities = habIntensity[1:n.habwindows],
             habitatGrid = habitatGrid[1:y.max,1:x.max],
             numGridRows = y.max,
             numGridCols = x.max,
-            numWindows = n.habWindows)
+            numWindows = n.habwindows)
         }#i  
       }#t
       
@@ -1523,26 +1523,6 @@ makeRovquantData_wolverine <- function(
         
         for(t in 1:n.years){
           
-          # y.alive[i,1:maxDetNums,t] ~ dbin_LESS_Cached_MultipleCovResponse(  
-          #   sxy = sxy[i,1:2,t],
-          #   sigma = sigma[t],
-          #   nbDetections = nbDetections[i,t],
-          #   yDets = detIndices[i,1:maxDetNums,t],
-          #   detector.xy = detector.xy[1:n.detectors,1:2],
-          #   trials = trials[1:n.detectors],
-          #   detectorIndex = detectorIndex[1:n.habWindows,1:numLocalIndicesMax],
-          #   nDetectorsLESS = nDetectorsLESS[1:n.habWindows],
-          #   ResizeFactor = resizeFactor,
-          #   maxNBDets = maxDetNums,
-          #   habitatID = habitatIDDet[1:y.max,1:x.max],
-          #   indicator = isAlive[i,t],
-          #   p0State = p0[1:n.counties,t],
-          #   detCountries = detCounties[1:n.detectors],
-          #   detCov = detCovs[1:n.detectors,t,1:n.covs],
-          #   betaCov = betaCovs[1:n.covs,t],
-          #   BetaResponse = betaResponse[t],
-          #   detResponse = detResponse[i,t])
-          
           y[i,1:maxDetNums,t] ~ dbinomLocal_normalWolverine(
             detNums = detNums[i,t],
             detIndices = detIndices[i,1:maxDetNums,t],
@@ -1551,8 +1531,8 @@ makeRovquantData_wolverine <- function(
             sigma = sigma[t],
             s = sxy[i,1:2,t],
             trapCoords = detector.xy[1:n.detectors,1:2],
-            localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-            localTrapsNum = localDetNum[1:n.habWindows],
+            localTrapsIndices = localDetIndices[1:n.habwindows,1:numLocalIndicesMax],
+            localTrapsNum = localDetNum[1:n.habwindows],
             resizeFactor = resizeFactor,
             lengthYCombined = maxDetNums,
             habitatGrid = habitatGrid[1:y.max,1:x.max],
@@ -1571,8 +1551,8 @@ makeRovquantData_wolverine <- function(
             sigma = sigma[t],
             s = sxy[i,1:2,t],
             trapCoords = detector.xy[1:n.detectors,1:2],
-            localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-            localTrapsNum = localDetNum[1:n.habWindows],
+            localTrapsIndices = localDetIndices[1:n.habwindows,1:numLocalIndicesMax],
+            localTrapsNum = localDetNum[1:n.habwindows],
             resizeFactor = resizeFactor,
             lengthYCombined = maxDetNumsOth,
             habitatGrid = habitatGrid[1:y.max,1:x.max],
@@ -1607,7 +1587,7 @@ makeRovquantData_wolverine <- function(
     nimConstants <- list( 
       n.individuals = dim(y.sparse$y)[1],
       n.detectors = nrow(detectors$scaledCoords),
-      n.habWindows = nrow(habitat$scaledLowerCoords),
+      n.habwindows = nrow(habitat$scaledLowerCoords),
       n.years = dim(y.sparse$y)[3], 
       n.covs = dim(detCovs)[3],
       n.covs.Oth = dim(detCovsOth)[3],
@@ -1801,16 +1781,16 @@ makeRovquantData_wolverine <- function(
     ##------ SPATIAL PROCESS ------ 
     
     betaDens  ~ dnorm(0.0,0.01)
-    habIntensity[1:n.habWindows] <- exp(betaDens * denCounts[1:n.habWindows])
-    sumHabIntensity <- sum(habIntensity[1:n.habWindows])
-    logHabIntensity[1:n.habWindows] <- log(habIntensity[1:n.habWindows])
+    habIntensity[1:n.habwindows] <- exp(betaDens * denCounts[1:n.habwindows])
+    sumHabIntensity <- sum(habIntensity[1:n.habwindows])
+    logHabIntensity[1:n.habwindows] <- log(habIntensity[1:n.habwindows])
     logSumHabIntensity <- log(sumHabIntensity)
     
     for(i in 1:n.individuals){
       sxy[i,1:2] ~ dbernppAC(
-        lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
-        upperCoords = upperHabCoords[1:n.habWindows,1:2],
-        logIntensities = logHabIntensity[1:n.habWindows],
+        lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
+        upperCoords = upperHabCoords[1:n.habwindows,1:2],
+        logIntensities = logHabIntensity[1:n.habwindows],
         logSumIntensity = logSumHabIntensity,
         habitatGrid = habitatGrid[1:y.max,1:x.max],
         numGridRows = y.max,
@@ -1865,8 +1845,8 @@ makeRovquantData_wolverine <- function(
         sigma = sigma,
         s = sxy[i,1:2],
         trapCoords = detector.xy[1:n.detectors,1:2],
-        localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-        localTrapsNum = localDetNum[1:n.habWindows],
+        localTrapsIndices = localDetIndices[1:n.habwindows,1:numLocalIndicesMax],
+        localTrapsNum = localDetNum[1:n.habwindows],
         resizeFactor = resizeFactor,
         lengthYCombined = maxDetNums,
         habitatGrid = habitatGrid[1:y.max,1:x.max],
@@ -1885,8 +1865,8 @@ makeRovquantData_wolverine <- function(
         sigma = sigma,
         s = sxy[i,1:2],
         trapCoords = detector.xy[1:n.detectors,1:2],
-        localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-        localTrapsNum = localDetNum[1:n.habWindows],
+        localTrapsIndices = localDetIndices[1:n.habwindows,1:numLocalIndicesMax],
+        localTrapsNum = localDetNum[1:n.habwindows],
         resizeFactor = resizeFactor,
         lengthYCombined = maxDetNumsOth,
         habitatGrid = habitatGrid[1:y.max,1:x.max],
@@ -2017,7 +1997,7 @@ makeRovquantData_wolverine <- function(
       
       ##-- detResponse
       nimInits$detResponse <- c( rep(NA, n.detected),
-                                 rbinom(n.augmented,1,0.5)) ## HERE IT IS TREATED AS A LATENT COVARIATE
+                                 rbinom(n.augmented,1,0.5)) ## HERE IT IS TREATED AS A LATENT COVARIATE for augmented ids only
       
       ##-- sxy 
       nimInits$sxy <- nimInits$sxy[detected[ ,t], ,t]  
@@ -2093,7 +2073,6 @@ makeRovquantData_wolverine <- function(
                DATE = DATE)
   
   return(out)
-  
   
   
   ##----------------------------------------------------------------------------
