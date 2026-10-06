@@ -99,7 +99,7 @@ processRovquantOutput_wolverine <- function(
   n.years <- length(years) 
   
   ##-- years not sampled in Norrbotten
-  yearsSampledNorrb <- c(2016:2018,2023)
+  yearsSampledNorrb <- c(2016:2018,2023:as.numeric(format(Sys.Date(), "%Y")))
   yearsNotSampled <- which(!years %in% yearsSampledNorrb)
   
   ##-- Polygons of Sweden & Norway

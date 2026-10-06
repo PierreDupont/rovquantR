@@ -2,7 +2,6 @@
 #'
 #'
 #' FIXES:
-#'  
 #' 1. Still uses wrong assignment of monitoring seasons for skandobs and rovbase.
 #' It should be from the start of the monitoring season and not from December
 #'   ==> fix already in the script 
@@ -17,10 +16,9 @@
 #' 4. Fix the set-up for SCR models directories 
 #'   ==> remove the unused folder with the year as a name 
 #'   ==> DONE in branch 'wolverine2'
-#'   
 #' 
-#' IMPROVEMENTS:
 #' 
+#' IMPROVEMENT
 #' 1. Use fixed extent instead of habitat based on detections 
 #'   ==> DONE in branch 'wolverine2'
 #' 
@@ -33,4 +31,7 @@
 #' - this is what creates NAs when assigning to detectors.
 #' 
 #' 
+#' OTHER TASKS:
+#' 1. Check w/ CM if I can delete branches "wolf" and "wolfdevel"
+#' 2. Continue uniformization/cleaning of the wolf functions
 #' 

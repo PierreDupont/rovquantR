@@ -14,7 +14,7 @@
 ## Faculty of Environmental Sciences and Natural Resource Management (MINA)
 ## Norwegian University of Life Sciences (NMBU), Ås, Norway 
 ##
-## -----------------------------------------------------------------------------
+##------------------------------------------------------------------------------
 ##
 ## Notes: this script is for internal use only!
 ##   
@@ -64,7 +64,9 @@ library(smoothr)
 ##-- during package development ; Only done once when creating the package
 #usethis::use_data_raw()
 
-## -----------------------------------------------------------------------------
+##------------------------------------------------------------------------------
+
+##------ CLEANING OBJECTS ------
 
 ##-- Load and prepare translation data 
 ##-- This is saved in R/sysdata.rda as it is only used inside the 'translateForeignCharacters' function.
@@ -277,7 +279,9 @@ r.list.internalWolf = c(
   Weight_total = "Helvekt")
 
 
-## -----------------------------------------------------------------------------
+##------------------------------------------------------------------------------
+
+##------ SPATIAL OBJECTS ------
 
 ##-- Load and prepare spatial data (COUNTRIES and COUNTIES maps in our case)
 ##-- These are saved in ./data 
@@ -369,8 +373,39 @@ load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/Habitat20kmNewNorCountie
 load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNewNorCounties.RData"))
 
 
+
+##------------------------------------------------------------------------------
+
+##------ PREVIOUS ESTIMATES ------
+
+
+##-- Country specific N estimates
+load(file.path(dir.dropbox,"wolverine/CM/2025/54.Cleaned2025/Figure/CICounties.RData"))
+
+N.quantiles <- array(NA, c(length(quantile50Nor)))
+quantile50Nor
+
+##-- Table of year- and region-specific estimates
+
+
+##-- Table of year- and county-specific estimates for Norway
+
+
+##-- Raster of pop density (get them from GitHub directly?)
+
+
+
+load(file.path(working.dir,"Figure","CICounties.RData"))
+
+##------------------------------------------------------------------------------
+
 ##-- Save necessary data in the right folder (./data)
-use_data(fromto, age.lookup.table, r.list.internal, r.list.internalWolf, internal = TRUE, overwrite = TRUE)
+use_data( fromto,
+         age.lookup.table,
+         r.list.internal,
+         r.list.internalWolf,
+         previous.results,
+         internal = TRUE, overwrite = TRUE)
 use_data(COUNTIES, overwrite = TRUE)
 use_data(REGIONS, overwrite = TRUE)
 use_data(COUNTRIES, overwrite = TRUE)
