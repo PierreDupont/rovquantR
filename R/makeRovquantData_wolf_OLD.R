@@ -166,6 +166,10 @@ makeRovquantData_wolf_OLD <- function(
   DATA$years <- years
   n.years <- length(years)
   
+  ##-- List monitoring seasons
+  seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
+  intervals <- paste(years[-length(years)], years[-1], sep = "\n to \n")
+  
   
   
   ## ---------------------------------------------------------------------------
@@ -1466,6 +1470,7 @@ makeRovquantData_wolf_OLD <- function(
   return(list( SPECIES = "Wolf",
                engSpecies = "wolf",
                YEARS = years,
+               SEASONS = seasons,
                SEX = sex,
                DATE = DATE))
 }

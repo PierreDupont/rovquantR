@@ -1,12 +1,12 @@
 ---
 params:
   species: "Brown bear"
-  years: !r 2024
-  seasons: !r 2024
+  years: !r as.numeric(format(Sys.Date(), "%Y"))
+  seasons: !r as.numeric(format(Sys.Date(), "%Y"))
   date: !r Sys.Date()   
   working.dir: !r getwd()
   sampling.months: NULL
-title: "`r paste(params$species, params$years)`"
+title: "`r paste(params$species, params$seasons)`"
 subtitle: "RovQuant - SCR Results"
 output:
   html_document: 

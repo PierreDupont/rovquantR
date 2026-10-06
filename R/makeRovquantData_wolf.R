@@ -40,7 +40,6 @@
 #' @importFrom fasterize fasterize
 #' @importFrom grDevices grey
 #' @importFrom nimbleSCR getSparseY scaleCoordsToHabitatGrid getLocalObjects
-#' @importFrom sp SpatialPoints CRS
 #' @importFrom spatstat.geom as.owin ppp
 #' @importFrom spatstat.explore density.ppp
 #' @importFrom stars st_as_stars
@@ -116,7 +115,7 @@ makeRovquantData_wolf <- function(
                 sampling.months = sampling.months)
   
   
-  ## ---------------------------------------------------------------------------
+  ##----------------------------------------------------------------------------
   
   ## ------ I. LOAD AND SELECT DATA ------
   
@@ -167,9 +166,13 @@ makeRovquantData_wolf <- function(
   DATA$years <- years
   n.years <- length(years)
   
+  ##-- List monitoring seasons
+  seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
+  intervals <- paste(years[-length(years)], years[-1], sep = "\n to \n")
   
   
-  ## ---------------------------------------------------------------------------
+  
+  ##----------------------------------------------------------------------------
   
   ## ------ II. CREATE OPSCR DATA ------
   
@@ -201,9 +204,9 @@ makeRovquantData_wolf <- function(
   
   ##-- Retrieve number of habitat windows 
   isHab <- habitat$habitat.r[] == 1
-  n.habWindows <- habitat$n.habWindows <- sum(isHab)
+  n.habwindows <- habitat$n.habwindows <- sum(isHab)
   habitat$habitat.df <- cbind.data.frame(
-    "id" = 1:n.habWindows,
+    "id" = 1:n.habwindows,
     "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
     "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
   
@@ -231,7 +234,7 @@ makeRovquantData_wolf <- function(
   ##-- Kernel of NGS detections of individuals in pairs
   #[CM] move this to be sex-specific as in previous analyses 
   # kern <- list()
-  # habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
+  # habDens <- matrix(NA, nrow = n.habwindows, ncol = n.years)
   # for(t in 1:n.years){
   #   ##-- Subset the NGS data to individuals in packs/pairs this year
   #   data.pairs.t <- myFullData.sp$alive %>%
@@ -1417,7 +1420,7 @@ makeRovquantData_wolf <- function(
     #[CM] Commented out 
     #[CM] use the what we had in the previous script
     # kern <- list()
-    # habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
+    # habDens <- matrix(NA, nrow = n.habwindows, ncol = n.years)
     # for(t in 1:n.years){
     #   ##-- Subset the NGS data to individuals in packs/pairs this year
     #   data.pairs.t <- myFullData.sp$alive %>%
@@ -1464,7 +1467,7 @@ makeRovquantData_wolf <- function(
     #[CM] Future improvements => use both sex to construct the map.
     #[CM] few diffs because maps are constructed using all data since 2012 in "original" script
     kern <- list()
-    habDens <- matrix(NA, nrow = n.habWindows, ncol = n.years)
+    habDens <- matrix(NA, nrow = n.habwindows, ncol = n.years)
     IDS <- unlist(lapply(strsplit(as.character(myFullData.sp$alive$Id) , " "), function(x)x[1])) 
     for(t in 1:n.years){
       id.fam <- which(y.obsALL[ ,as.character(years[t]-1)] 
@@ -1559,17 +1562,17 @@ makeRovquantData_wolf <- function(
       betaDens ~ dnorm(0.0,0.01)
       
       for(t in 1:n.years){
-        habIntensity[1:n.habWindows,t] <- exp(betaDens * habDens[1:n.habWindows,t])
-        sumHabIntensity[t] <- sum(habIntensity[1:n.habWindows,t])
-        logHabIntensity[1:n.habWindows,t] <- log(habIntensity[1:n.habWindows,t])
+        habIntensity[1:n.habwindows,t] <- exp(betaDens * habDens[1:n.habwindows,t])
+        sumHabIntensity[t] <- sum(habIntensity[1:n.habwindows,t])
+        logHabIntensity[1:n.habwindows,t] <- log(habIntensity[1:n.habwindows,t])
         logSumHabIntensity[t] <- log(sumHabIntensity[t])
       }#t
       
       for(i in 1:n.individuals){
         sxy[i,1:2,1] ~ dbernppAC(
-          lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
-          upperCoords = upperHabCoords[1:n.habWindows,1:2],
-          logIntensities = logHabIntensity[1:n.habWindows,1],
+          lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
+          upperCoords = upperHabCoords[1:n.habwindows,1:2],
+          logIntensities = logHabIntensity[1:n.habwindows,1],
           logSumIntensity = logSumHabIntensity[1],
           habitatGrid = habitatGrid[1:y.max,1:x.max],
           numGridRows = y.max,
@@ -1577,15 +1580,15 @@ makeRovquantData_wolf <- function(
         
         for(t in 2:n.years){
           sxy[i,1:2,t] ~ dbernppACmovement_exp(
-            lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
-            upperCoords = upperHabCoords[1:n.habWindows,1:2],
+            lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
+            upperCoords = upperHabCoords[1:n.habwindows,1:2],
             s = sxy[i,1:2,t-1],
             lambda = lambda[state[i,t-1]+1],
-            baseIntensities = habIntensity[1:n.habWindows,t],
+            baseIntensities = habIntensity[1:n.habwindows,t],
             habitatGrid = habitatGrid[1:y.max,1:x.max],
             numGridRows = y.max,
             numGridCols = x.max,
-            numWindows = n.habWindows)
+            numWindows = n.habwindows)
         }#t
       }#i
       
@@ -1671,8 +1674,8 @@ makeRovquantData_wolf <- function(
             sigma = sigma[state[i,t]+1,t],
             s = sxy[i,1:2,t],
             trapCoords = detector.xy[1:n.detectors,1:2],
-            localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-            localTrapsNum = localDetNum[1:n.habWindows],
+            localTrapsIndices = localDetIndices[1:n.habwindows,1:numLocalIndicesMax],
+            localTrapsNum = localDetNum[1:n.habwindows],
             resizeFactor = resizeFactor,
             habitatGrid = habitatGrid[1:y.max,1:x.max],
             indicator = isAlive[i,t],
@@ -1693,8 +1696,8 @@ makeRovquantData_wolf <- function(
             sigma = sigma[state[i,t]+1,t],
             s = sxy[i,1:2,t],
             trapCoords = detector.xy[1:n.detectors,1:2],
-            localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-            localTrapsNum = localDetNum[1:n.habWindows],
+            localTrapsIndices = localDetIndices[1:n.habwindows,1:numLocalIndicesMax],
+            localTrapsNum = localDetNum[1:n.habwindows],
             resizeFactor = resizeFactor,
             habitatGrid = habitatGrid[1:y.max,1:x.max],
             indicator = isAlive[i,t],
@@ -1727,7 +1730,7 @@ makeRovquantData_wolf <- function(
     
     nimConstants <- list( 
       n.individuals = dim(y.sparse$y)[1],
-      n.habWindows = nrow(habitat$scaledLowerCoords),
+      n.habwindows = nrow(habitat$scaledLowerCoords),
       n.detectors = nrow(detectors$scaledCoords),
       n.years = dim(y.sparse$y)[3], 
       n.covs = dim(detCovs)[2],
@@ -2040,13 +2043,24 @@ makeRovquantData_wolf <- function(
   # 
   # $x.deadOther
   # [1] 57
-  ## ------   8. RETURN IMPORTANT INFOS FOR REPORT ------
   
-  return(list( SPECIES = "Wolf",
+  
+  
+  ##----------------------------------------------------------------------------
+  
+  ## ------ IV. RETURN IMPORTANT INFOS FOR REPORT ------
+  
+  out <- list( SPECIES = "Wolf",
                engSpecies = "wolf",
                YEARS = years,
+               SEASONS = seasons,
                SEX = sex,
-               DATE = DATE))
+               DATE = DATE)
+  
+  return(out)
+  
+  
+  ##----------------------------------------------------------------------------
 }
 
 

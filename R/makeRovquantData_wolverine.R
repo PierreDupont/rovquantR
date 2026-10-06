@@ -38,7 +38,6 @@
 #' @importFrom fasterize fasterize
 #' @importFrom grDevices grey
 #' @importFrom nimbleSCR getSparseY scaleCoordsToHabitatGrid getLocalObjects
-#' @importFrom sp SpatialPoints CRS
 #' @importFrom spatstat.geom as.owin ppp
 #' @importFrom spatstat.explore density.ppp
 #' @importFrom stars st_as_stars
@@ -50,7 +49,7 @@ NULL
 #' @rdname makeRovquantData_wolverine
 #' @export
 makeRovquantData_wolverine <- function(
-  ##-- paths
+    ##-- paths
   data.dir = getwd(),
   working.dir = getwd(),
   
@@ -62,6 +61,8 @@ makeRovquantData_wolverine <- function(
   
   ##-- habitat
   habitat.res = 20000, 
+  x.extent = NULL,
+  y.extent = NULL,
   buffer.size = 60000,
   max.move.dist = 250000,
   
@@ -81,6 +82,8 @@ makeRovquantData_wolverine <- function(
   if(is.null(aug.factor)){aug.factor <- 0.8}
   if(is.null(sampling.months)){sampling.months <- list(12,1:6)}
   if(is.null(habitat.res)){habitat.res <- 20000} 
+  if(is.null(x.extent)){x.extent <- c(-51000, 1150000)}
+  if(is.null(y.extent)){y.extent <- c(6520000, 7950000)}
   if(is.null(buffer.size)){buffer.size <- 60000}
   if(is.null(max.move.dist)){max.move.dist <- 250000}
   if(is.null(detector.res)){detector.res <- 10000}
@@ -89,7 +92,7 @@ makeRovquantData_wolverine <- function(
   if(is.null(resize.factor)){resize.factor <- 1}
   if(is.null(rename.list)) {
     if(!exists("r.list.internalWolf")) stop("Default 'rename.list' not available")
-    rename.list <- r.list.internalWolf
+    rename.list <- r.list.internal
   }  
   
   ##-- Set up list of Habitat characteristics
@@ -99,8 +102,8 @@ makeRovquantData_wolverine <- function(
   
   ##-- Set up list of Detectors characteristics
   detectors <- list( resolution = detector.res,
-                     resolution.sub = subdetector.res,
-                     maxDist = max.det.dist,                      ## [PD] : need to rethink the maxDist criteria
+                     resolution.sub = subdetector.res, 
+                     maxDist = max.det.dist, ## [PD] : need to rethink the maxDist criteria
                      resize.factor = resize.factor)
   
   ##-- Set up list of Data characteristics
@@ -178,6 +181,9 @@ makeRovquantData_wolverine <- function(
   DATA$years <- years
   n.years <- length(years)
   
+  ##-- List monitoring seasons
+  seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
+
   ##-- Filter NGS samples for dates
   filteredData <- myFullData.sp
   filteredData$alive <- filteredData$alive %>%
@@ -187,21 +193,21 @@ makeRovquantData_wolverine <- function(
       ##-- Subset to monitoring period
       Month %in% unlist(sampling.months), 
       ##-- Subset to samples collected in Norway and Sweden
-      ##-- [PD] should switch to using "country_sample" instead 
-      filteredData$alive$Country_sf %in% c("(N)","(S)")) 
-    
+      ##-- [PD] switched to using "country_sample" instead 
+      filteredData$alive$Country_sample %in% c("(N)","(S)")) 
+  
+  
   ##-- Filter NGS samples outside the GLOBAL MAP
   ##-- [PD]: should be removed!! 
   ##-- This removes 125 samples falling into lakes
   ##-- Only here to match last year's analysis
-  myStudyArea <- GLOBALMAP %>% 
-    dplyr::filter(ISO %in% c("SWE","NOR")) %>%
-    mutate(id = 1) %>% 
-    group_by(id) %>% 
-    summarize() 
-  
-  filteredData$alive <- filteredData$alive %>% 
-    dplyr::filter(!is.na(as.numeric(st_intersects(., myStudyArea))))
+  # myStudyArea <- GLOBALMAP %>% 
+  #   dplyr::filter(ISO %in% c("SWE","NOR")) %>%
+  #   mutate(id = 1) %>% 
+  #   group_by(id) %>% 
+  #   summarize() 
+  # filteredData$alive <- filteredData$alive %>% 
+  #   dplyr::filter(!is.na(as.numeric(st_intersects(., myStudyArea))))
   
   
   ##-- Filter out detections in Norrbotten except in 2016:18 and after 2023
@@ -233,15 +239,24 @@ makeRovquantData_wolverine <- function(
   
   ## ------     1.1. GENERATE HABITAT CHARACTERISTICS ------
   
-  ##-- Determine study area based on NGS detections
-  ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
-  studyArea <- filteredData$alive %>%
-    sf::st_buffer(., dist = habitat$buffer * 1.4) %>%
-    dplyr::mutate(id = 1) %>%
-    dplyr::group_by(id) %>% 
-    dplyr::summarize() %>% 
-    sf::st_intersection(., COUNTRIES) %>%
-    sf::st_as_sf()
+  # ##-- Determine study area based on NGS detections
+  # ##-- Buffer NGS detections and cut to Swedish and Norwegian borders
+  # studyArea <- filteredData$alive %>%
+  #   sf::st_buffer(., dist = habitat$buffer * 1.4) %>%
+  #   dplyr::mutate(id = 1) %>%
+  #   dplyr::group_by(id) %>%
+  #   dplyr::summarize() %>%
+  #   sf::st_intersection(., COUNTRIES) %>%
+  #   sf::st_as_sf()
+  
+  ##-- [PD] switch to fixed extent for the study area to match bear and wolf analyses.
+  ##-- Determine study area based on predefined extent
+  studyArea <- COUNTRIES %>%
+    dplyr::filter(ISO %in% c("NOR","SWE")) %>%
+    sf::st_crop( ., xmin = x.extent[1], xmax = x.extent[2],
+                 ymin = y.extent[1], ymax = y.extent[2]) %>%
+    sf::st_collection_extract(., "POLYGON") %>%
+    summarise() 
   
   ##-- Get study area extent
   studyArea.extent <- st_bbox(extent(studyArea))
@@ -257,9 +272,9 @@ makeRovquantData_wolverine <- function(
   
   ##-- Retrieve number of habitat windows 
   isHab <- habitat$habitat.r[] == 1
-  n.habWindows <- habitat$n.habWindows <- sum(isHab)
+  n.habwindows <- habitat$n.habwindows <- sum(isHab)
   habitat$habitat.df <- cbind.data.frame(
-    "id" = 1:n.habWindows,
+    "id" = 1:n.habwindows,
     "x" = raster::coordinates(habitat$habitat.r)[isHab,1],
     "y" = raster::coordinates(habitat$habitat.r)[isHab,2])
   
@@ -293,6 +308,7 @@ makeRovquantData_wolverine <- function(
     sf::st_set_crs(value = sf::st_crs(myFullData.sp$alive)) %>%
     dplyr::mutate(id = 1)
   
+  ##-- Interpolate density of number of dens
   DEN.r <- raster::raster(
     adehabitatHR::estUDm2spixdf(
       adehabitatHR::kernelUD( as(DEN[ ,"id"], "Spatial"),
@@ -362,7 +378,7 @@ makeRovquantData_wolverine <- function(
     dplyr::summarize() %>%
     dplyr::filter(county %in% c("Norrbotten","Troms","Västerbotten","Nordland","Finnmark")) %>% 
     sf::st_simplify( dTolerance = 500)
-
+  
   
   
   ## ------     2.2. GENERATE DETECTOR-LEVEL COVARIATES -----
@@ -452,7 +468,9 @@ makeRovquantData_wolverine <- function(
   ## ------       2.2.4. EXTRACT DISTANCES TO ROADS ------
   
   ##-- Load map of distance to roads (1km resolution)
-  DistAllRoads <- raster::raster(file.path(data.dir,"Roads/MinDistAllRoads1km.tif"))
+  DistAllRoads <- readMostRecent( path = file.path(data.dir, "Roads"), 
+                                  extension = ".tif", 
+                                  stack = FALSE)
   
   ##-- Fasterize to remove values that fall in the sea
   r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
@@ -487,8 +505,13 @@ makeRovquantData_wolverine <- function(
   
   ## ------       2.2.5. EXTRACT DAYS OF SNOW ------
   
-  ##-- Average snow from December to June (the official monitoring period for Norway&Sweden)
-  SNOW <- stack(file.path(data.dir,"Snow/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
+  # ##-- Average snow from December to June (the official monitoring period for Norway&Sweden)
+  # SNOW <- stack(file.path(data.dir,"Snow/AverageSnowCoverModisSeason2014_2025_Wolverine.tif"))
+  
+  ##-- Load raster stack of snow cover
+  SNOW <- readMostRecent( path = file.path(data.dir, "Snow"), 
+                          extension = ".tif", 
+                          stack = TRUE)
   
   ##-- SELECT SNOW DATA CORRESPONDING TO THE MONITORING PERIOD
   SNOW <- SNOW[[paste("X", years, "_", years + 1, sep = "")]]
@@ -530,13 +553,8 @@ makeRovquantData_wolverine <- function(
                    year = as.numeric(format(date,"%Y")),
                    month = as.numeric(format(date,"%m")),
                    species = stringi::stri_trans_general(species, "Latin-ASCII"),
-                   monitoring.season = ifelse( month > unlist(sampling.months)[1],
-                                               year, year-1)) %>%
-    ## [PD] the version above corresponds to last year's analysis ("54.Cleaned2025TestPDScript.R")
-    ## It is wrong because it does nothing. Only samples collected AFTER December get their year changed (i.e. no samples at all).
-    ## Below is the correct version, similar to what we do in cleanRovbaseData():
-    ## monitoring.season = ifelse( month < unlist(sampling.months)[1],
-    ##                             year - 1, year)) %>%
+                   monitoring.season = ifelse( month < unlist(sampling.months)[1],
+                                               year - 1, year)) %>%
     ##-- Filter based on monitoring season
     dplyr::filter( month %in% unlist(sampling.months)) %>%
     ##-- Turn into spatial points object
@@ -566,13 +584,8 @@ makeRovquantData_wolverine <- function(
       Date = as.POSIXct(strptime(Date, "%Y-%m-%d")),
       year = as.numeric(format(Date,"%Y")),
       month = as.numeric(format(Date,"%m")),
-      monitoring.season = ifelse( month > unlist(sampling.months)[1],
-                                  year, year-1)) %>%
-    ## [PD] the version above corresponds to last year's analysis ("54.Cleaned2025TestPDScript.R")
-    ## It is wrong because it does nothing. Only samples collected AFTER December get their year changed (i.e. no samples at all).
-    ## Below is the correct version, similar to what we do in cleanRovbaseData():
-    ## monitoring.season = ifelse( month < unlist(sampling.months)[1],
-    ##                             year - 1, year)) %>%
+      monitoring.season = ifelse( month < unlist(sampling.months)[1],
+                                  year-1, year)) %>%
     ##-- Filter out unusable samples
     dplyr::filter( 
       ##-- Filter out samples without coordinates,...
@@ -1133,13 +1146,13 @@ makeRovquantData_wolverine <- function(
   ncols <- ceiling(L/nrows)
   
   
-  ##-- NGS maps
+  ##-- NGS maps time-series
   grDevices::png(filename = file.path(working.dir, "figures/NGS_TimeSeries.png"),
                  width = ncols*2, height = nrows*4,
                  units = "in", pointsize = 12,
                  res = 300, bg = NA)
   ##-- layout
-  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  mx <- matrix(NA, nrow = nrows*2, ncol = (ncols*2)+1)
   for(r in 1:nrows){
     mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
     mx[r*2, ] <- c(rep(1:ncols, each = 2),ncols) + (r-1)*ncols
@@ -1148,7 +1161,6 @@ makeRovquantData_wolverine <- function(
                          widths = c(rep(1,ncol(mx))),
                          heights = rep(1,2))
   par(mar = c(0,0,0,0))
-  
   for(t in 1:length(years)){
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
@@ -1158,20 +1170,47 @@ makeRovquantData_wolverine <- function(
     plot( sf::st_geometry(COUNTRIES), border = "gray20", col = NA, add = TRUE)
     
     ##-- Add year
-    graphics::mtext(text = years[t],
-                    side = 1, line = -18,
-                    adj = 0.18, cex = 1.2)
+    graphics::mtext(text = seasons[t],
+                    side = 1, line = -19,
+                    adj = 0.17, cex = 1)
   }#t
   dev.off()
   
   
-  ##-- Dead recoveries maps
+  ##-- NGS map last year
+  grDevices::png(filename = file.path(working.dir, "figures/NGS_SCR_maps.png"),
+                 width = 5, height = 6, units = "in", pointsize = 12,
+                 res = 300, bg = NA)
+  
+  par(mar = c(0,0,0,0))
+  plot(sf::st_geometry(COUNTRIES), border = NA, col = "gray80")
+  points(data.alive$data.sp[data.alive$data.sp$Year == years, ],
+         pch = 3, col = "orange", lwd = 0.7)
+  mtext(text = seasons, side = 1, -25, adj=0.2, cex=1.2, font = 2)
+  
+  ##-- LEGEND
+  xLeg <- 1000000
+  yLeg <- 6350000
+  segments(x0 = xLeg, x1 = xLeg,
+           y0 = yLeg, y1 = yLeg + 500000,
+           col = grey(0.3), lwd = 2, lend = 2)
+  text(xLeg-80000, yLeg+500000/2, labels = "500 km",
+       srt = 90, cex = 1)
+  
+  points(x = xLeg-200000, y = yLeg-100000,
+         pch = 3, lwd = 1.5, cex = 1.5, col = "orange")
+  text(x = xLeg-170000, y = yLeg-100000,
+       "NGS samples", cex = 1, pos = 4)
+  dev.off()
+  
+  
+  ##-- Dead recoveries maps time-series
   grDevices::png(filename = file.path(working.dir, "figures/DEAD_TimeSeries.png"),
                  width = ncols*2, height = nrows*4,
                  units = "in", pointsize = 12,
                  res = 300, bg = NA)
   ##-- layout
-  mx <- matrix(NA, nrow = nrows*2, ncol =  (ncols*2)+1)
+  mx <- matrix(NA, nrow = nrows*2, ncol = (ncols*2)+1)
   for(r in 1:nrows){
     mx[r*2-1, ] <- c(1,rep(1:ncols, each = 2)) + (r-1)*ncols
     mx[r*2, ] <- c(rep(1:ncols, each = 2), ncols) + (r-1)*ncols
@@ -1180,7 +1219,6 @@ makeRovquantData_wolverine <- function(
                          widths = c(rep(1,ncol(mx))),
                          heights = rep(1,2))
   par(mar = c(0,0,0,0))
-  
   for(t in 1:length(years)){
     ##-- Plot maps
     plot( sf::st_geometry(COUNTRIES), border = NA, col = c("gray80","gray60"))
@@ -1201,9 +1239,9 @@ makeRovquantData_wolverine <- function(
           add = TRUE)
     
     ##-- Add year
-    graphics::mtext(text = years[t],
-                    side = 1, line = -18,
-                    adj = 0.18, cex = 1.2)
+    graphics::mtext(text = seasons[t],
+                    side = 1, line = -19,
+                    adj = 0.17, cex = 1)
   }#t
   dev.off()
   
@@ -1398,16 +1436,16 @@ makeRovquantData_wolverine <- function(
       lambda <- 1/dmean
       
       betaDens ~ dnorm(0.0,0.01)
-      habIntensity[1:n.habWindows] <- exp(betaDens * denCounts[1:n.habWindows])
-      sumHabIntensity <- sum(habIntensity[1:n.habWindows])
-      logHabIntensity[1:n.habWindows] <- log(habIntensity[1:n.habWindows])
+      habIntensity[1:n.habwindows] <- exp(betaDens * denCounts[1:n.habwindows])
+      sumHabIntensity <- sum(habIntensity[1:n.habwindows])
+      logHabIntensity[1:n.habwindows] <- log(habIntensity[1:n.habwindows])
       logSumHabIntensity <- log(sumHabIntensity)
       
       for(i in 1:n.individuals){
         sxy[i, 1:2, 1] ~ dbernppAC(
-          lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
-          upperCoords = upperHabCoords[1:n.habWindows,1:2],
-          logIntensities = logHabIntensity[1:n.habWindows],
+          lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
+          upperCoords = upperHabCoords[1:n.habwindows,1:2],
+          logIntensities = logHabIntensity[1:n.habwindows],
           logSumIntensity = logSumHabIntensity,
           habitatGrid = habitatGrid[1:y.max,1:x.max],
           numGridRows = y.max,
@@ -1415,15 +1453,15 @@ makeRovquantData_wolverine <- function(
         
         for(t in 2:n.years){
           sxy[i, 1:2, t] ~ dbernppACmovement_exp(
-            lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
-            upperCoords = upperHabCoords[1:n.habWindows,1:2],
+            lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
+            upperCoords = upperHabCoords[1:n.habwindows,1:2],
             s = sxy[i,1:2,t-1],
             lambda = lambda,
-            baseIntensities = habIntensity[1:n.habWindows],
+            baseIntensities = habIntensity[1:n.habwindows],
             habitatGrid = habitatGrid[1:y.max,1:x.max],
             numGridRows = y.max,
             numGridCols = x.max,
-            numWindows = n.habWindows)
+            numWindows = n.habwindows)
         }#i  
       }#t
       
@@ -1485,26 +1523,6 @@ makeRovquantData_wolverine <- function(
         
         for(t in 1:n.years){
           
-          # y.alive[i,1:maxDetNums,t] ~ dbin_LESS_Cached_MultipleCovResponse(  
-          #   sxy = sxy[i,1:2,t],
-          #   sigma = sigma[t],
-          #   nbDetections = nbDetections[i,t],
-          #   yDets = detIndices[i,1:maxDetNums,t],
-          #   detector.xy = detector.xy[1:n.detectors,1:2],
-          #   trials = trials[1:n.detectors],
-          #   detectorIndex = detectorIndex[1:n.habWindows,1:numLocalIndicesMax],
-          #   nDetectorsLESS = nDetectorsLESS[1:n.habWindows],
-          #   ResizeFactor = resizeFactor,
-          #   maxNBDets = maxDetNums,
-          #   habitatID = habitatIDDet[1:y.max,1:x.max],
-          #   indicator = isAlive[i,t],
-          #   p0State = p0[1:n.counties,t],
-          #   detCountries = detCounties[1:n.detectors],
-          #   detCov = detCovs[1:n.detectors,t,1:n.covs],
-          #   betaCov = betaCovs[1:n.covs,t],
-          #   BetaResponse = betaResponse[t],
-          #   detResponse = detResponse[i,t])
-          
           y[i,1:maxDetNums,t] ~ dbinomLocal_normalWolverine(
             detNums = detNums[i,t],
             detIndices = detIndices[i,1:maxDetNums,t],
@@ -1513,8 +1531,8 @@ makeRovquantData_wolverine <- function(
             sigma = sigma[t],
             s = sxy[i,1:2,t],
             trapCoords = detector.xy[1:n.detectors,1:2],
-            localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-            localTrapsNum = localDetNum[1:n.habWindows],
+            localTrapsIndices = localDetIndices[1:n.habwindows,1:numLocalIndicesMax],
+            localTrapsNum = localDetNum[1:n.habwindows],
             resizeFactor = resizeFactor,
             lengthYCombined = maxDetNums,
             habitatGrid = habitatGrid[1:y.max,1:x.max],
@@ -1533,8 +1551,8 @@ makeRovquantData_wolverine <- function(
             sigma = sigma[t],
             s = sxy[i,1:2,t],
             trapCoords = detector.xy[1:n.detectors,1:2],
-            localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-            localTrapsNum = localDetNum[1:n.habWindows],
+            localTrapsIndices = localDetIndices[1:n.habwindows,1:numLocalIndicesMax],
+            localTrapsNum = localDetNum[1:n.habwindows],
             resizeFactor = resizeFactor,
             lengthYCombined = maxDetNumsOth,
             habitatGrid = habitatGrid[1:y.max,1:x.max],
@@ -1569,7 +1587,7 @@ makeRovquantData_wolverine <- function(
     nimConstants <- list( 
       n.individuals = dim(y.sparse$y)[1],
       n.detectors = nrow(detectors$scaledCoords),
-      n.habWindows = nrow(habitat$scaledLowerCoords),
+      n.habwindows = nrow(habitat$scaledLowerCoords),
       n.years = dim(y.sparse$y)[3], 
       n.covs = dim(detCovs)[3],
       n.covs.Oth = dim(detCovsOth)[3],
@@ -1626,7 +1644,7 @@ makeRovquantData_wolverine <- function(
       size = detectors$detectors.df$size,
       alpha = rep(1,2),
       detector.xy = as.matrix(detectors$scaledCoords))
-
+    
     
     
     ## ------   4. NIMBLE INITS ------
@@ -1763,16 +1781,16 @@ makeRovquantData_wolverine <- function(
     ##------ SPATIAL PROCESS ------ 
     
     betaDens  ~ dnorm(0.0,0.01)
-    habIntensity[1:n.habWindows] <- exp(betaDens * denCounts[1:n.habWindows])
-    sumHabIntensity <- sum(habIntensity[1:n.habWindows])
-    logHabIntensity[1:n.habWindows] <- log(habIntensity[1:n.habWindows])
+    habIntensity[1:n.habwindows] <- exp(betaDens * denCounts[1:n.habwindows])
+    sumHabIntensity <- sum(habIntensity[1:n.habwindows])
+    logHabIntensity[1:n.habwindows] <- log(habIntensity[1:n.habwindows])
     logSumHabIntensity <- log(sumHabIntensity)
     
     for(i in 1:n.individuals){
       sxy[i,1:2] ~ dbernppAC(
-        lowerCoords = lowerHabCoords[1:n.habWindows,1:2],
-        upperCoords = upperHabCoords[1:n.habWindows,1:2],
-        logIntensities = logHabIntensity[1:n.habWindows],
+        lowerCoords = lowerHabCoords[1:n.habwindows,1:2],
+        upperCoords = upperHabCoords[1:n.habwindows,1:2],
+        logIntensities = logHabIntensity[1:n.habwindows],
         logSumIntensity = logSumHabIntensity,
         habitatGrid = habitatGrid[1:y.max,1:x.max],
         numGridRows = y.max,
@@ -1827,8 +1845,8 @@ makeRovquantData_wolverine <- function(
         sigma = sigma,
         s = sxy[i,1:2],
         trapCoords = detector.xy[1:n.detectors,1:2],
-        localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-        localTrapsNum = localDetNum[1:n.habWindows],
+        localTrapsIndices = localDetIndices[1:n.habwindows,1:numLocalIndicesMax],
+        localTrapsNum = localDetNum[1:n.habwindows],
         resizeFactor = resizeFactor,
         lengthYCombined = maxDetNums,
         habitatGrid = habitatGrid[1:y.max,1:x.max],
@@ -1847,8 +1865,8 @@ makeRovquantData_wolverine <- function(
         sigma = sigma,
         s = sxy[i,1:2],
         trapCoords = detector.xy[1:n.detectors,1:2],
-        localTrapsIndices = localDetIndices[1:n.habWindows,1:numLocalIndicesMax],
-        localTrapsNum = localDetNum[1:n.habWindows],
+        localTrapsIndices = localDetIndices[1:n.habwindows,1:numLocalIndicesMax],
+        localTrapsNum = localDetNum[1:n.habwindows],
         resizeFactor = resizeFactor,
         lengthYCombined = maxDetNumsOth,
         habitatGrid = habitatGrid[1:y.max,1:x.max],
@@ -1873,17 +1891,17 @@ makeRovquantData_wolverine <- function(
   
   for(thisSex in c("female","male")){
     
-    ## [PD] : For now, I am only creating the last year's SCR dataset (faster)
-    #for(t in 1:n.years){ 
-    t <- n.years
-    
     message(paste0("Preparing SCR input for sex: ", thisSex, "... "))
     
     ##-- Create folders for SCR files
-    dir.create( path = file.path( working.dir, "nimbleInFiles/SCR", thisSex, years[t]),
+    dir.create( path = file.path( working.dir, "nimbleInFiles/SCR", thisSex),
                 recursive = TRUE)
-    dir.create( path = file.path( working.dir, "nimbleOutFiles/SCR", thisSex, years[t]),
+    dir.create( path = file.path( working.dir, "nimbleOutFiles/SCR", thisSex),
                 recursive = TRUE)
+    
+    ##-- [PD] : For now, I am only creating the last year's SCR dataset (faster)
+    #for(t in 1:n.years){ 
+    t <- n.years
     
     ##-- Loop over chains
     for(c in 1:4){
@@ -1979,7 +1997,7 @@ makeRovquantData_wolverine <- function(
       
       ##-- detResponse
       nimInits$detResponse <- c( rep(NA, n.detected),
-                                 rbinom(n.augmented,1,0.5)) ## HERE IT IS TREATED AS A LATENT COVARIATE
+                                 rbinom(n.augmented,1,0.5)) ## HERE IT IS TREATED AS A LATENT COVARIATE for augmented ids only
       
       ##-- sxy 
       nimInits$sxy <- nimInits$sxy[detected[ ,t], ,t]  
@@ -2047,12 +2065,14 @@ makeRovquantData_wolverine <- function(
   
   ## ------ IV. RETURN IMPORTANT INFOS FOR REPORT ------
   
-  return(list( SPECIES = "Wolverine",
+  out <- list( SPECIES = "Wolverine",
                engSpecies = "wolverine",
                YEARS = years,
+               SEASONS = seasons, 
                SEX = sex,
-               DATE = DATE))
+               DATE = DATE)
   
+  return(out)
   
   
   ##----------------------------------------------------------------------------

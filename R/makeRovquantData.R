@@ -251,7 +251,12 @@ makeRovquantData <- function(
     
     ##-- Find the .rmd template for the report.
     if (is.null(Rmd.template)) {
-      Rmd.template <- system.file("rmd", "RovQuant_DataReport.Rmd", package = "rovquantR")
+      if(sum(grep("wolverine", species, ignore.case = T))>0|
+         sum(grep("jerv", species, ignore.case = T))>0){
+        Rmd.template <- system.file("rmd", "RovQuant_DataReport_SCR.Rmd", package = "rovquantR")
+      } else {
+        Rmd.template <- system.file("rmd", "RovQuant_DataReport.Rmd", package = "rovquantR")
+      }
       if (!file.exists(Rmd.template)) {
         stop('Can not find a .rmd template called "RovQuant_DataReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
       } 
@@ -265,6 +270,7 @@ makeRovquantData <- function(
       input = Rmd.template,
       params = list( species = out$SPECIES,
                      years = out$YEARS,
+                     seasons = out$SEASONS,
                      sex = out$SEX,
                      date = out$DATE,
                      working.dir = working.dir),

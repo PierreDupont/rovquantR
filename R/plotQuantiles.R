@@ -30,7 +30,8 @@ plotQuantiles <- function(
     quantiles = c(0.0275,0.975),
     quantiles2 = c(0.25,0.75),
     col = adjustcolor("firebrick3",0.5),
-    add.star = FALSE)
+    add.star = FALSE,
+    calc.quantiles = TRUE)
 {
   if(!is.null(quantiles2)){
     col1 <- adjustcolor(col,0.3)
@@ -38,22 +39,33 @@ plotQuantiles <- function(
   } else {
     col1 <- col
   }
-    
-  q1 <- quantile(x, prob = quantiles)
-  polygon(x = c(at - width, at + width, at + width, at - width),
-          y = c(q1[1], q1[1],  q1[2], q1[2]), 
-          col = col1,
-          border = NA)
+  
+  if(calc.quantiles){
+    q1 <- quantile(x, prob = quantiles)
+  } else {
+    q1 <- x[[1]]
+  }
+  polygon( x = c(at - width, at + width, at + width, at - width),
+           y = c(q1[1], q1[1], q1[2], q1[2]), 
+           col = col1,
+           border = NA)
   
   if(!is.null(quantiles2)){
-    q2 <- quantile(x,prob = quantiles2)
-    polygon(x = c(at - width, at + width, at + width, at - width),
-            y = c(q2[1], q2[1],  q2[2], q2[2]), 
-            col = col2,
-            border = NA)
+    if(calc.quantiles){
+      q2 <- quantile(x,prob = quantiles2)
+    } else {
+      q2 <- x[[2]]
+    }
+    polygon( x = c(at - width, at + width, at + width, at - width),
+             y = c(q2[1], q2[1], q2[2], q2[2]), 
+             col = col2,
+             border = NA)
   }
   
   if(add.star){
-    text(x = at+width+0.05, y = q1[2], "*", cex = 1.5)
+    text( x = at + width + 0.05,
+          y = q1[2],
+          "*",
+          cex = 1.5)
   }
 }

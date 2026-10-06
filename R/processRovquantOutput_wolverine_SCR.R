@@ -99,6 +99,8 @@ processRovquantOutput_wolverine_SCR <- function(
     years <- max(data.alive$data.sp$Year, na.rm = TRUE)
   }
   
+  seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
+  
   ##-- Polygons of Sweden & Norway
   COUNTRIES <- REGIONS %>%
     dplyr::filter(country %in% c("SWE","NOR")) %>%
@@ -534,7 +536,6 @@ processRovquantOutput_wolverine_SCR <- function(
   colCountries <- c("firebrick2", "deepskyblue2", "black")
   names(colCountries) <- c("Norway","Sweden", "Total")
   colCause  <- adjustcolor( c("#E69F00","#009E73"), 0.5)
-  seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
   
   
   
@@ -576,36 +577,7 @@ processRovquantOutput_wolverine_SCR <- function(
     y.labels = c(0.8,0.7,0.05),
     path = working.dir,
     name = "UD_Density_SCR")
-  
-  
-  
-  ## ------   4.2. NGS, Dead recoveries & Carnivore obs ------
-  
-  ##-- Plot NGS & Dead recovery maps
-  grDevices::png(filename = file.path(working.dir, "figures/NGS_SCR_maps.png"),
-                 width = 5, height = 6, units = "in", pointsize = 12,
-                 res = 300, bg = NA)
-  
-  par(mar = c(0,0,0,0))
-  plot(sf::st_geometry(COUNTRIES), border = NA, col = "gray80")
-  points(data.alive$data.sp[data.alive$data.sp$Year == years, ],
-         pch = 3, col = "orange", lwd = 0.7)
-  mtext(text = seasons, side = 1, -25, adj=0.2, cex=1.2, font = 2)
-  
-  ##-- LEGEND
-  xLeg <- 1000000
-  yLeg <- 6350000
-  segments(x0 = xLeg, x1 = xLeg,
-           y0 = yLeg, y1 = yLeg + 500000,
-           col = grey(0.3), lwd = 2, lend = 2)
-  text(xLeg-80000, yLeg+500000/2, labels = "500 km",
-       srt = 90, cex = 1)
-  
-  points(x = xLeg-200000, y = yLeg-100000,
-         pch = 3, lwd = 1.5, cex = 1.5, col = "orange")
-  text(x = xLeg-170000, y = yLeg-100000,
-       "NGS samples", cex = 1, pos = 4)
-  dev.off()
+
   
   
   

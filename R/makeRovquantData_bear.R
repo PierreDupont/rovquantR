@@ -114,7 +114,7 @@ makeRovquantData_bear <- function(
   
   
   
-  ## ---------------------------------------------------------------------------
+  ##----------------------------------------------------------------------------
   
   ## ------ I. LOAD AND SELECT DATA ------
   
@@ -170,7 +170,7 @@ makeRovquantData_bear <- function(
   
   
   
-  ## ---------------------------------------------------------------------------
+  ##----------------------------------------------------------------------------
   
   ## ------ II. CREATE OPSCR DATA ------
   
@@ -1379,6 +1379,7 @@ makeRovquantData_bear <- function(
   out <- list( SPECIES = "Brown bear",
                engSpecies = "bear",
                YEARS = years,
+               SEASONS = years,
                SEX = sex,
                DATE = DATE)
   return(out)
