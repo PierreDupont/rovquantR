@@ -16,9 +16,11 @@
 NULL
 #' @rdname readTracks
 #' @export
-readTracks <- function(data.dir, 
-                       years = 1950:format(Sys.Date(), "%Y"),
-                       sampling.months = 1:12){
+readTracks <- function(
+    data.dir, 
+    years = 1950:format(Sys.Date(), "%Y"),
+    sampling.months = 1:12
+){
   
   ##-- Check that a "Tracks" folder exists
   if(!dir.exists(file.path(data.dir,"Tracks"))){

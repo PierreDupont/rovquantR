@@ -24,7 +24,8 @@ checkDistanceDetections <- function(
     max.distance = NULL,
     method = "pairwise",
     plot.check = FALSE,
-    verbose = FALSE){
+    verbose = FALSE
+){
   
   ##-- MAKE CONTAINER FOR FLAGS
   y.flagged <- y.distance <- y
@@ -43,7 +44,7 @@ checkDistanceDetections <- function(
   # ##-- List detectors for each individual
   # detector.index <- apply(y, 1, function(x) detector.sf[which(x>0), ])
   # detections.sp.ls <- apply(y, 1 ,function(x) detector.sf[which(x>0), ])
-
+  
   if(method == "pairwise"){ 
     for(i in 1:dim(y)[1]){
       detector.index <- which(y[i, ]>0)
@@ -111,8 +112,8 @@ checkDistanceDetections <- function(
     }
   }
   if(verbose){
-  print(paste("Detections removed: ", sum(y * y.flagged), " of ",sum(y),sep=""))
-  print(paste("Individuals affected: ", sum(apply(y.flagged, 1, function(x) sum(x)>0)), " of ", sum(apply(y, 1, function(x)sum(x)>0)), sep=""))
+    print(paste("Detections removed: ", sum(y * y.flagged), " of ",sum(y),sep=""))
+    print(paste("Individuals affected: ", sum(apply(y.flagged, 1, function(x) sum(x)>0)), " of ", sum(apply(y, 1, function(x)sum(x)>0)), sep=""))
   }
   out <- list( y.flagged = y.flagged, 
                y.distance = y.distance) 

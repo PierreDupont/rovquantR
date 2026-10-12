@@ -48,8 +48,8 @@ plotDensityMaps <- function(
     y.names = NULL,
     caption = NULL,
     export.raster = TRUE,
-    name = "UD_Density")
-{
+    name = "UD_Density"
+    ){
   
   ##-- Initial checks
   if(is.null(mask)){ mask <- input }

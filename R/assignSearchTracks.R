@@ -25,8 +25,9 @@ assignSearchTracks <- function(
     data,
     tracks,
     #dist = 500,
-    progress.bar = T)
-{
+    progress.bar = T
+){
+  
   ##-- Initialise track ID and distance
   data$trackID <- NA
   data$trackDist <- NA

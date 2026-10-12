@@ -21,7 +21,8 @@ writeREADME <- function(
     template = NULL,
     name = "rovquantR analysis",
     save_as = "README.Rmd",
-    overwrite = FALSE){
+    overwrite = FALSE
+    ){
   if (is.null(path)) {path <- getwd()}
   
   ##-- Check that a file with that name does not already exist to avoid overwriting
@@ -74,12 +75,3 @@ writeREADME <- function(
   
   invisible(TRUE)
 }
-
-
-
-
-
-
-
-
-

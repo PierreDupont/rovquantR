@@ -40,6 +40,7 @@ getDensityInput <- function(
     s = NULL,
     plot.check = TRUE
 ){
+  
   ##-- 1. If a raster is provided as input, use its resolution.
   ##-- Else, turn spatial object 'regions' into a raster with the desired 
   ##-- output resolution.

@@ -17,8 +17,7 @@
 NULL
 #' @rdname populate
 #' @export
-get.dim <- function(params)
-{
+get.dim <- function(params){
   
   ##-- Get all unique parameters (i.e., collapse indexed non-scalars)
   ps <- unique(sapply(strsplit(params, "\\["), "[", 1)) 
@@ -51,11 +50,12 @@ get.dim <- function(params)
 NULL
 #' @rdname populate
 #' @export
-populate <- function( input,
-                      dim,
-                      simslist = FALSE,
-                      samples = NULL)
-  {
+populate <- function( 
+    input,
+    dim,
+    simslist = FALSE,
+    samples = NULL
+){
   
   if(!simslist){
     charinds <- sub(".*\\[(.*)\\].*", "\\1", names(input), perl=TRUE) 

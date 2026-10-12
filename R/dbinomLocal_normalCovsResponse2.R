@@ -76,26 +76,27 @@ NULL
 #' @rdname dbinomLocal_normalCovsResponse2
 #' @export
 dbinomLocal_normalCovsResponse2 <- nimbleFunction(
-  run = function( x = double(1),
-                  detNums = double(0, default = -999),
-                  detIndices = double(1),
-                  size = double(1),
-                  p0State = double(1),
-                  sigma = double(0),
-                  s = double(1),
-                  trapCoords = double(2),
-                  localTrapsIndices = double(2),
-                  localTrapsNum = double(1),
-                  resizeFactor = double(0, default = 1),
-                  habitatGrid = double(2),                    
-                  indicator = double(0, default = 1.0),
-                  lengthYCombined = double(0, default = 0),
-                  trapCountries = double(1),
-                  trapCovs = double(2),
-                  trapBetas = double(1),
-                  responseCovs = double(0),
-                  responseBetas = double(0),
-                  log = integer(0, default = 0)
+  run = function( 
+    x = double(1),
+    detNums = double(0, default = -999),
+    detIndices = double(1),
+    size = double(1),
+    p0State = double(1),
+    sigma = double(0),
+    s = double(1),
+    trapCoords = double(2),
+    localTrapsIndices = double(2),
+    localTrapsNum = double(1),
+    resizeFactor = double(0, default = 1),
+    habitatGrid = double(2),                    
+    indicator = double(0, default = 1.0),
+    lengthYCombined = double(0, default = 0),
+    trapCountries = double(1),
+    trapCovs = double(2),
+    trapBetas = double(1),
+    responseCovs = double(0),
+    responseBetas = double(0),
+    log = integer(0, default = 0)
   ){
     
     ##-- Return type declaration
@@ -175,26 +176,28 @@ NULL
 #' @rdname dbinomLocal_normalCovsResponse2
 #' @export
 rbinomLocal_normalCovsResponse2 <- nimbleFunction(
-  run = function( n = double(0, default = 1),
-                  detNums = double(0, default = -999),
-                  detIndices = double(1),
-                  size = double(1),
-                  p0State = double(1),
-                  sigma = double(0),
-                  s = double(1),
-                  trapCoords = double(2),
-                  localTrapsIndices = double(2),
-                  localTrapsNum = double(1),
-                  resizeFactor = double(0, default = 1),
-                  habitatGrid = double(2),                    
-                  indicator = double(0, default = 1.0),
-                  lengthYCombined = double(0, default = 0),
-                  trapCountries = double(1),
-                  trapCovs = double(2),
-                  trapBetas = double(1),
-                  responseCovs = double(0),
-                  responseBetas = double(0)
-  ) {
+  run = function( 
+    n = double(0, default = 1),
+    detNums = double(0, default = -999),
+    detIndices = double(1),
+    size = double(1),
+    p0State = double(1),
+    sigma = double(0),
+    s = double(1),
+    trapCoords = double(2),
+    localTrapsIndices = double(2),
+    localTrapsNum = double(1),
+    resizeFactor = double(0, default = 1),
+    habitatGrid = double(2),                    
+    indicator = double(0, default = 1.0),
+    lengthYCombined = double(0, default = 0),
+    trapCountries = double(1),
+    trapCovs = double(2),
+    trapBetas = double(1),
+    responseCovs = double(0),
+    responseBetas = double(0)
+  ){
+    
     ##-- Specify return type
     returnType(double(1))
     

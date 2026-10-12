@@ -33,9 +33,10 @@ getSInits <- function(
     habitatGrid = habitatGrid,
     intensity = NULL,
     sd = 4,
-    movementMethod = "dbernppACmovement_normal")
-{
-  #compile R nimble function for faster runs 
+    movementMethod = "dbernppACmovement_normal"
+    ){
+  
+  ## compile R nimble function for faster runs 
   if(movementMethod == "dbernppACmovement_normal"){
     crbernppACmovement_normal <- compileNimble(rbernppACmovement_normal)
   }

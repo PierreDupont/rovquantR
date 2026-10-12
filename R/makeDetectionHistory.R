@@ -73,12 +73,15 @@
 #'
 #' @rdname makeDetectionHistory
 #' @export
-makeDetectionHistory <- function( data,   
-                                  detectors,
-                                  detection.fun,
-                                  all.ids = NULL,
-                                  diff.occ = FALSE,
-                                  M = NULL){
+makeDetectionHistory <- function( 
+    data,   
+    detectors,
+    detection.fun,
+    all.ids = NULL,
+    diff.occ = FALSE,
+    M = NULL
+){
+  
   ##---- 1. Initial checks ----
   
   ##-- 1. Make sure requested detection functions are available in nimbleSCR
@@ -149,7 +152,7 @@ makeDetectionHistory <- function( data,
     all.occ <- dimnames(tab)[[3]]
     n.occ <- apply(tab, c(1,2), function(x)sum(x > 0))
     n.occ.max <- max(n.occ)
-
+    
     
     
     ##----    2.1. "Classic" formats ----
@@ -232,8 +235,8 @@ makeDetectionHistory <- function( data,
         thisK <- which(all.occ == detK[d,2])
         thisT <- which(all.sess == detT[d,3])
         y[thisI,thisK,thisT] <- thisData[thisData$id == detI[d,1] &
-                                       thisData$occasion == detK[d,2] & 
-                                       thisData$session == detT[d,3], "detector"]
+                                           thisData$occasion == detK[d,2] & 
+                                           thisData$session == detT[d,3], "detector"]
         
       }#d
     }
@@ -435,7 +438,7 @@ makeDetectionHistory <- function( data,
           for(t in 1:n.sess){
             if(detNums[i,k,t] > 0){
               y[thisID,1:3,1:detNums[i,k,t],k,t] <- unlist(thisData[thisData$id == detIDs[i],
-                                                                c("x","y","detector")])
+                                                                    c("x","y","detector")])
             }
           }#t
         }#k

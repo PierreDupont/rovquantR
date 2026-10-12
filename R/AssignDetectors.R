@@ -21,9 +21,9 @@ assignDetectors <- function(
     data,                              
     detectors,
     subDetectors = NULL,
-    radius = 20000)
-{
-
+    radius = 20000
+){
+  
   ##-- RETRIEVE NUMBER OF YEARS 
   if(is.null(data$Year)){data$Year <- 1}
   years <- min(unique(data$Year)):max(unique(data$Year))

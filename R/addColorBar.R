@@ -39,7 +39,8 @@ addColorBar <- function(
     lab_cex = 0.9,
     tick_cex = 0.9,
     tick_num = 5,
-    tick_digits = 1) {
+    tick_digits = 1
+){
   
   usr <- par("usr")
   xlim <- usr[1:2]

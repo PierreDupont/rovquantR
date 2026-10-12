@@ -40,8 +40,8 @@ makeHabitatFromRaster <- function(
     habitat.r, 			  
     buffer = NULL, 		 
     plot.check = TRUE, 
-    tolerance = NULL)
-{ 
+    tolerance = NULL
+    ){ 
   
   if(is.null(tolerance)){
     tolerance <- (raster::res(habitat.r)[1]/5)

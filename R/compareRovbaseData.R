@@ -51,13 +51,13 @@ compareRovbaseData <- function(
     df2,
     keys,
     compare_cols = NULL,
-    
     ##-- miscellanious
     print.report = FALSE,
     Rmd.template = NULL,
     output.dir = NULL,
     verbose = TRUE,
-    overwrite = FALSE) {
+    overwrite = FALSE
+){
   
   ## ----- 0. Helper functions ----- 
   
@@ -83,7 +83,7 @@ compareRovbaseData <- function(
   
   
   ## ----- 1. Load files ----- 
-
+  
   if (verbose) {
     cat("Dataset 1 rows:", nrow(df1), "| columns:", ncol(df1), "\n")
     cat("Dataset 2 rows:", nrow(df2), "| columns:", ncol(df2), "\n\n")
@@ -310,8 +310,6 @@ compareRovbaseData <- function(
   #   }
   # }
   
-  
-  
   info.ls <- list(
     data1 = df1,
     data2 = df2,
@@ -330,27 +328,24 @@ compareRovbaseData <- function(
   
   
   
-  
-  
   ## ----- 10. PRINT REPORT -----
-
   
   if (print.report) {
-
+    
     ##-- List of rendering parameters for the .Rmd report
     if (engSpecies == "bear") {
       info.ls$remove.alive <- remove.alive
       info.ls$remove.dead <- remove.dead
     }
-
+    
     if (engSpecies == "wolverine") {
       info.ls$youngDeads <- youngDeads
       info.ls$lowWeightDeads <- lowWeightDeads
       info.ls$zeroWeightDeads <- zeroWeightDeads
     }
-
+    
     if (engSpecies == "wolf") {}
-
+    
     ##-- Find the .rmd template for the report
     if(is.null(Rmd.template)) {
       Rmd.template <- system.file("rmd", "RovQuant_ComparisonReport.Rmd", package = "rovquantR")
@@ -358,10 +353,10 @@ compareRovbaseData <- function(
         stop("Can not find the Rmarkdown document to use for cleaning Rovbase.3.0 data.\n You must provide the path to the Rmarkdown template through the \"Rmd_template\" argument.")
       }
     }
-
+    
     ##-- Find the directory to print the report
     if(is.null(output.dir)){ output.dir <- file.path(working.dir, "reports") }
-
+    
     ##-- Render .Rmd report
     rmarkdown::render(
       input = Rmd.template,
@@ -375,7 +370,7 @@ compareRovbaseData <- function(
   
   
   
-
+  
   # Return results
   return(info.ls)
 }

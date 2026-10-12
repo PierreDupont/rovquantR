@@ -18,7 +18,8 @@ processRovquantOutput_bear2 <- function(
   thin2 = 1,
   extraction.res = 5000,
   years = NULL,
-  overwrite = FALSE){
+  overwrite = FALSE
+  ){
   
   ## ------ 0. BASIC SET-UP ------
   

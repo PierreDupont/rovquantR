@@ -73,7 +73,6 @@ cleanRovbaseData(
   data.dir = data.dir,
   working.dir = working.dir)
 
-
 ##-- Load the most recent clean wolverine data from RovBase
 myFullData.sp <- readMostRecent( 
   path = file.path(working.dir, "data"),
@@ -99,7 +98,6 @@ makeRovquantData(
   years = 2015:2024,
   data.dir = data.dir,
   working.dir = working.dir)
-
 
 ##-- Load and explore input data
 inFiles <- list.files( path = file.path(working.dir,"nimbleInFiles/female"),

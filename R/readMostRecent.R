@@ -37,8 +37,8 @@ readMostRecent <- function(
     sep = ",",
     dec = ".",
     stack = TRUE,
-    ...)
-  {
+    ...
+){
   
   ##-- List all files with the requested extension (including in sub-directories)
   infiles <- list.files( path = path,
@@ -65,10 +65,10 @@ readMostRecent <- function(
   ##-- read the most recent .csv file
   if(length(grep("csv", extension, ignore.case = T)) > 0){
     data <- utils::read.csv( file = file.path(path,infiles[lastFile]),
-                      header = TRUE,
-                      sep = sep,
-                      dec = dec,
-                      ...)
+                             header = TRUE,
+                             sep = sep,
+                             dec = dec,
+                             ...)
   }
   
   ##-- function to read the most recent .xls or .xlsx file
@@ -93,7 +93,7 @@ readMostRecent <- function(
       data <- raster::stack(file.path(path, infiles[lastFile]))
     } else { 
       data <- raster::raster(file.path(path, infiles[lastFile]))
-      }
+    }
   }
   
   
@@ -116,8 +116,8 @@ readMostRecent.csv <- function(
     path,
     returnDate = F,
     fileEncoding = NULL,
-    ...)
-  {
+    ...
+){
   infiles <- list.files(path = path, pattern = ".csv", recursive = TRUE)
   modTime <- lapply(file.path(path, infiles), file.mtime)
   lastFile <- which.max(unlist(modTime))
@@ -147,8 +147,8 @@ NULL
 readMostRecent.excel <- function( 
     path,
     returnDate = F,
-    ...)
-  {
+    ...
+){
   infiles <- list.files(path = path, pattern = ".xls", recursive = TRUE)
   modTime <- lapply(file.path(path, infiles), file.mtime)
   lastFile <- which.max(unlist(modTime))
@@ -172,8 +172,8 @@ readMostRecent.RData <- function(
     path,
     pattern = ".RData",
     returnDate = F,
-    ...)
-  {
+    ...
+){
   infiles <- list.files(path = path, pattern = pattern, recursive = TRUE)
   modTime <- lapply(file.path(path, infiles), file.mtime)
   lastFile <- which.max(unlist(modTime))
@@ -199,8 +199,8 @@ NULL
 ##-- function to get the most recent modification date
 getMostRecent <- function(
     path,
-    pattern)
-  {
+    pattern
+){
   
   dirTest <- dir( path = path,
                   pattern = pattern,
@@ -225,8 +225,8 @@ NULL
 ##-- function to write ".csv" (but first checks if the file exists) 
 writeMostRecent.csv <- function(
     x,
-    file)
-  {
+    file
+){
   if(file.exists(file)){
     message(paste0("A file named '", file, "' already exists in the specified directory."))
     message("Are you sure you want to proceed and overwrite existing data? (y/n) ")

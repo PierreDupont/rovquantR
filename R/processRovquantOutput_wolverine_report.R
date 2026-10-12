@@ -66,7 +66,21 @@ processRovquantOutput_wolverine_report <- function(
     years = NULL,
     overwrite = FALSE
 ){
-
+  
+  ##---- 1. SCR RESULTS PROCESSING -----
+  
+  ##-- Process the model output
+  out1 <- processRovquantOutput_wolverine_SCR(
+    working.dir = working.dir,
+    nburnin = nburnin,
+    niter = niter,
+    thin = thin,
+    thin2 = thin2,
+    extraction.res = extraction.res,
+    years = years,
+    overwrite = overwrite)
+  
+  
   
   ##---- 2. OPSCR RESULTS PROCESSING -----
   
@@ -86,6 +100,22 @@ processRovquantOutput_wolverine_report <- function(
   ##---- 3. COMBINE OPSCR & SCR RESULTS -----
   
   ## ------ 3.1. LOAD PREVIOUS RESULTS ------
+  
+  
+  ##-- Load one input
+  load(list.files(file.path(working.dir, "nimbleInFiles/female"), full.names = T)[1])
+  
+  ##-- Extract years
+  years <- as.numeric(dimnames(nimData$z)[[2]])
+  n.years <- length(years) 
+  
+  ##-- Load density rasters from previous results
+  raster.list <- readGitHub(
+    owner = "richbi",
+    repo = "RovQuantPublic",
+    target = paste0("Wolverine",years[1]-1,"-",years[length(years)]-1,"/output/rasters/RasterForRovbase"),
+    extension = ".tif")
+  
   
   
   ## ------ Figure 1. Abundance time series (previous results + SCR) ------
@@ -162,11 +192,6 @@ processRovquantOutput_wolverine_report <- function(
   
   ##-- Remove unnecessary objects from memory
   gc(verbose = FALSE)
-  
-  
-  
-  
-  
   
   
   

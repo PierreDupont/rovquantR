@@ -15,9 +15,12 @@
 #' 
 #' @rdname makeDirectories
 #' @export
-makeDirectories <- function( path = NULL,
-                             subFolders = NULL,
-                             show.dir = TRUE){
+makeDirectories <- function(
+    path = NULL,
+    subFolders = NULL,
+    show.dir = TRUE
+){
+  
   ##-- Check if the directory already exists 
   if (is.null(path)) {path <- getwd()}
   split <- unlist(strsplit(path, split = "/"))
@@ -26,16 +29,16 @@ makeDirectories <- function( path = NULL,
     message(paste(split[-length(split)], collapse = "/"))
   } else {
     dir.create(path, showWarnings = F, recursive = T)
-    }
-
+  }
+  
   ##-- Set-up directory structure
   if (!is.null(subFolders)) {
-   for (f in subFolders) {
-     dir.create( file.path(path, "nimbleInFiles", f), showWarnings = F, recursive = T)
-     dir.create( file.path(path, "nimbleInFiles", f), showWarnings = F, recursive = T)
-     dir.create( file.path(path, "nimbleOutFiles", f), showWarnings = F, recursive = T)
-     dir.create( file.path(path, "nimbleOutFiles", f), showWarnings = F, recursive = T)
-   }#f
+    for (f in subFolders) {
+      dir.create( file.path(path, "nimbleInFiles", f), showWarnings = F, recursive = T)
+      dir.create( file.path(path, "nimbleInFiles", f), showWarnings = F, recursive = T)
+      dir.create( file.path(path, "nimbleOutFiles", f), showWarnings = F, recursive = T)
+      dir.create( file.path(path, "nimbleOutFiles", f), showWarnings = F, recursive = T)
+    }#f
   } else {
     dir.create( file.path(path, "nimbleInFiles"), showWarnings = F)
     dir.create( file.path(path, "nimbleOutFiles"), showWarnings = F)  
@@ -57,8 +60,8 @@ makeDirectories <- function( path = NULL,
   ##-- Display contents of directories in a tree-like format
   if (show.dir) {
     if (requireNamespace("fs", quietly = TRUE)) {
-    message("\n The following directory structure was created for this analysis:\n")
-    fs::dir_tree(path)
+      message("\n The following directory structure was created for this analysis:\n")
+      fs::dir_tree(path)
     } else {
       warning("The 'fs' package must be installed to use this functionality.")
     }

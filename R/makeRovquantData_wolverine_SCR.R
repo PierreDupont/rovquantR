@@ -71,7 +71,8 @@ makeRovquantData_wolverine_SCR <- function(
   resize.factor = 1,
   
   ##-- Miscellanious
-  rename.list = NULL){
+  rename.list = NULL
+  ){
   
   ## ------ 0. BASIC SET-UP ------
   

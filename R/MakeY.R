@@ -25,8 +25,8 @@ makeY <- function(
     detectors2 = NULL,
     method2 = "Bernoulli",
     IDs = NULL,
-    returnIdvector = FALSE)
-{
+    returnIdvector = FALSE
+    ){
   
   ##-- PREPARE THE DATA 
   data <- as.data.frame(data)

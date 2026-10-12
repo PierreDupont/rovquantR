@@ -73,8 +73,8 @@ NULL
 #' @export
 sanitizeInput <- function(
     data,
-    detectors)
-{
+    detectors
+    ){
   ##-- 1. Get input names (needed as this function modifies the `data` and `detectors` objects "in place)
   data_name <- deparse(substitute(data))
   detectors_name <- deparse(substitute(detectors))
@@ -168,7 +168,6 @@ sanitizeInput <- function(
         data[[l]]$occasion <- 1
       }
     }  
-    
   }#l
   
   
@@ -188,8 +187,8 @@ NULL
 fixNames <- function( 
     data,
     name = NULL,
-    is.data = TRUE)
-{
+    is.data = TRUE
+    ){
   
   ##-- 1 - "id"
   if(is.data){

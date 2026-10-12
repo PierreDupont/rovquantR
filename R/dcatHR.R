@@ -63,6 +63,7 @@ dcatHR <- nimbleFunction(run = function(
     mhW = double(0),
     log = integer(0, default = 0)
 ){
+  
   # Return type declaration
   returnType(double(0))
   
@@ -103,7 +104,7 @@ rcatHR <- nimbleFunction(run = function(
 ){
   # Return type declaration
   returnType(double(0))
-
+  
   if(z == 1){
     state <- rcat(1, prob = c(1 - gamma, gamma))
     return(state)

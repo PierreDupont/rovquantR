@@ -31,8 +31,9 @@ plotQuantiles <- function(
     quantiles2 = c(0.25,0.75),
     col = adjustcolor("firebrick3",0.5),
     add.star = FALSE,
-    calc.quantiles = TRUE)
-{
+    calc.quantiles = TRUE
+    ){
+  
   if(!is.null(quantiles2)){
     col1 <- adjustcolor(col,0.3)
     col2 <- adjustcolor(col,0.7)

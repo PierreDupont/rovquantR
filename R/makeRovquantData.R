@@ -88,7 +88,7 @@ makeRovquantData <- function(
   Rmd.template = NULL,
   output.dir = NULL,
   overwrite = FALSE
-) {
+){
   
   
   ##-- Check that a file with that name does not already exist to avoid overwriting
@@ -240,7 +240,6 @@ makeRovquantData <- function(
         resize.factor,
         rename.list)
     }
-
   }
   
   
@@ -277,5 +276,4 @@ makeRovquantData <- function(
       output_dir = output.dir,
       output_file = paste0("ProcessedData_", out$engSpecies, "_", out$DATE,".html"))
   }
-  
   }

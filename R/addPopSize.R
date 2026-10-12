@@ -25,7 +25,11 @@
 #'
 #' @rdname addPopSize
 #' @export
-addPopSize <- function(x,y,labels){
+addPopSize <- function(
+    x,
+    y,
+    labels
+){
   
   ##-- Initial checks
   if(!inherits(labels,"list")){ labels <- list(labels) }

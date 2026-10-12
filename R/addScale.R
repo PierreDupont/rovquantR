@@ -20,7 +20,12 @@
 #'
 #' @rdname addScale
 #' @export
-addScale <- function(x, y, size, dir = "v"){
+addScale <- function(
+    x, 
+    y,
+    size,
+    dir = "v"
+){
   
   ##-- Get dimensions of existing plot
   xLims <- graphics::par("usr")[1:2]

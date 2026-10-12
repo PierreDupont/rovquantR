@@ -72,7 +72,7 @@ cleanRovbaseData <- function(
   Rmd.template = NULL,
   output.dir = NULL,
   overwrite = FALSE
-) {
+){
   
   ## ----- 1. INITIAL CHECKS -----
   
@@ -124,7 +124,7 @@ cleanRovbaseData <- function(
   } else {
     seasons <- years
   }
-    
+  
   ##-- Sampling months
   if(is.null(sampling.months)) {
     if(engSpecies == "bear") {
@@ -226,8 +226,8 @@ cleanRovbaseData <- function(
       ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
       ##-- Set all months in given sampling period to the same year)
       Year = ifelse( Month < unlist(sampling.months)[1],
-                       Year-1,
-                       Year),
+                     Year-1,
+                     Year),
       ##-- Fix unknown "Id"
       Id = ifelse(Id %in% "", NA, Id),
       ##-- Fix unknown "Sex"
@@ -291,8 +291,8 @@ cleanRovbaseData <- function(
       ##-- (for sampling periods spanning over two calendar years (wolf & wolverine)
       ##-- Set all months in given sampling period to the same year)
       Year = ifelse( Month < unlist(sampling.months)[1],
-                       Year-1,
-                       Year), 
+                     Year-1,
+                     Year), 
       ##-- Fix unknown "Id"
       Id = ifelse(Id %in% "", NA, Id),
       ##-- Fix unknown "Sex"
@@ -303,7 +303,7 @@ cleanRovbaseData <- function(
       Legal = grepl(paste(legal.dead, collapse = "|"), Death_cause)) %>%
     ##-- Filter to the focal years
     dplyr::filter(., Year %in% years)
- 
+  
   ##-- Number of DR samples
   DR_samples <- table(DR$Sex, DR$Year, useNA = "ifany")
   DR_samples <- rbind(DR_samples, "Total" = colSums(DR_samples))
@@ -377,7 +377,7 @@ cleanRovbaseData <- function(
     tmp <- DNA[substr(DNA$RovbaseID,1,1) %in% "M", ]
     RovbaseID_inDNA_notinDR <- tmp[!tmp$RovbaseID %in% DR$RovbaseID, c("DNAID", "RovbaseID", "Id")]
   } 
-
+  
   ##-- Duplicated dead recoveries
   numDupId_DR <- sum(duplicated(DR$Id))  
   dupId_DR <- NULL
@@ -411,7 +411,7 @@ cleanRovbaseData <- function(
     ##-- Remove duplicated data in DNA before merging 
     # DNA <- DNA[!DNA$DNAID %in% duplicateData$DNAID, ]
   }#if
-
+  
   
   
   ## -----   2.4. MERGE -----
@@ -619,7 +619,7 @@ cleanRovbaseData <- function(
     micke.sex[micke.sex %in% names(table(micke.sex))[3]] <- NA
     micke.sex[micke.sex %in% "Hona"] <- "Hunn"
     micke.sex[micke.sex %in% "Hane"] <- "Hann"
-
+    
     DATA$Sex <- ifelse(!is.na(micke.sex), micke.sex, DATA$Sex)
     
     ##-- Status 
@@ -646,7 +646,7 @@ cleanRovbaseData <- function(
         }
       }#t
     }#i
-
+    
     ##-- Overwrite Sex with pack id info from 2023
     for(i in 1:nrow(Pack_ID2023)){
       DATA$Sex[DATA$IdSimplified %in% Pack_ID2023$IdSimplified[i]] <- Pack_ID2023$Sex[i]
@@ -686,7 +686,7 @@ cleanRovbaseData <- function(
     # if(engSpecies == "wolf"){
     #   tmp <- ALL_SEX$Sex[ALL_SEX$IdSimplified == unlist(lapply(strsplit(ID[i], " "), function(x) x[1]))]
     # } else {
-      tmp <- DATA$Sex[DATA$Id == ID[i]]
+    tmp <- DATA$Sex[DATA$Id == ID[i]]
     # }
     
     ##-- Number of times individual i was assigned to each sex
@@ -753,7 +753,7 @@ cleanRovbaseData <- function(
   ## -----   3.1. WOLVERINE -----
   
   if(engSpecies == "wolverine"){
-
+    
     ##-- Load suspect NGS samples according to Henrik
     SUSPECT_NGS_SAMPLES <- readMostRecent(
       path = data.dir,
@@ -782,7 +782,7 @@ cleanRovbaseData <- function(
         !grepl(pattern = "Påskutt", x = Outcome),
         ##-- Remove additional dead recoveries flagged by Henrik Brøseth (email from the 18/12/2024)
         !RovbaseID %in% c("M495994","M524051","M524052","M524053"))
-
+    
     ##-- Remove pups killed before recruitment based on weight (cf. Henrik)
     ##-- 1) remove individuals that are "Ja" in column "Doedt.individ..Unge" and recovered dead between March and November
     youngDeads <- which(dead.recovery$Age_class %in% "Unge" &
@@ -1214,7 +1214,7 @@ cleanRovbaseData <- function(
     info.ls$DNAID_inDNA_notinDR <- DNAID_inDNA_notinDR
     info.ls$numDupData <- numDupData
     info.ls$samples.to.remove <- samples.to.remove
-
+    
     if (engSpecies == "bear") {
       info.ls$remove.alive <- remove.alive
       info.ls$remove.dead <- remove.dead

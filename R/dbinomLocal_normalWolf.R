@@ -162,30 +162,31 @@ NULL
 #' @rdname dbinomLocal_normalWolf
 #' @export
 dbinomLocal_normalWolf <- nimbleFunction(
-  run = function( x = double(1),
-                  detNums = double(0, default = -999),
-                  detIndices = double(1),
-                  size = double(1),
-                  p0 = double(2),
-                  sigma = double(0),
-                  s = double(1),
-                  trapCoords = double(2),
-                  localTrapsIndices = double(2),
-                  localTrapsNum = double(1),
-                  resizeFactor = double(0, default = 1),
-                  habitatGrid = double(2),
-                  indicator = double(0),
-                  z = double(0),
-                  indCov = double(0),
-                  indBeta = double(0),
-                  trapCovs =  double(2),
-                  trapCovsIntercept =  double(1),
-                  trapBetas = double(1),
-                  lengthYCombined = double(0, default = 0),
-                  log = integer(0, default = 0)
-                  
-  ) {
-    ## Specify return type
+  run = function( 
+    x = double(1),
+    detNums = double(0, default = -999),
+    detIndices = double(1),
+    size = double(1),
+    p0 = double(2),
+    sigma = double(0),
+    s = double(1),
+    trapCoords = double(2),
+    localTrapsIndices = double(2),
+    localTrapsNum = double(1),
+    resizeFactor = double(0, default = 1),
+    habitatGrid = double(2),
+    indicator = double(0),
+    z = double(0),
+    indCov = double(0),
+    indBeta = double(0),
+    trapCovs =  double(2),
+    trapCovsIntercept =  double(1),
+    trapBetas = double(1),
+    lengthYCombined = double(0, default = 0),
+    log = integer(0, default = 0)
+  ){
+    
+    ##-- Return type declaration
     returnType(double(0))
     
     ## Deal with cases where detection info is combined in one vector 
@@ -258,35 +259,36 @@ dbinomLocal_normalWolf <- nimbleFunction(
 #' @rdname dbinomLocal_normalWolf
 #' @export
 rbinomLocal_normalWolf <- nimbleFunction(
-  run = function( n = double(0, default = 1),
-                  detNums = double(0, default = -999),
-                  detIndices = double(1),
-                  size = double(1),
-                  p0 = double(2),
-                  sigma = double(0),
-                  s = double(1),
-                  trapCoords = double(2),
-                  localTrapsIndices = double(2),
-                  localTrapsNum = double(1),
-                  resizeFactor = double(0, default = 1),
-                  habitatGrid = double(2),
-                  indicator = double(0),
-                  z = double(0),
-                  indCov = double(0),
-                  indBeta = double(0),
-                  trapCovs =  double(2),
-                  trapCovsIntercept =  double(1),
-                  trapBetas = double(1),
-                  lengthYCombined = double(0, default = 0)
-  ) {
+  run = function( 
+    n = double(0, default = 1),
+    detNums = double(0, default = -999),
+    detIndices = double(1),
+    size = double(1),
+    p0 = double(2),
+    sigma = double(0),
+    s = double(1),
+    trapCoords = double(2),
+    localTrapsIndices = double(2),
+    localTrapsNum = double(1),
+    resizeFactor = double(0, default = 1),
+    habitatGrid = double(2),
+    indicator = double(0),
+    z = double(0),
+    indCov = double(0),
+    indBeta = double(0),
+    trapCovs =  double(2),
+    trapCovsIntercept =  double(1),
+    trapBetas = double(1),
+    lengthYCombined = double(0, default = 0)
+  ){
     ## Specify return type
     returnType(double(1))
     if(detNums >= 0) stop("Random generation for the rbinomLocal_normal distribution is not currently supported without combining all individual detections information in one vector. See 'getSparseY()'")
     
-
+    
     # RETURN TYPE DECLARATION
     if(n!=1){print("rbinomLocal_normal only allows n = 1; using n = 1")}
-
+    
     ## GET NECESSARY INFO
     alpha <- -1.0 / (2.0 * sigma * sigma)
     nMAxDetections <- (lengthYCombined-1)/2
@@ -307,23 +309,23 @@ rbinomLocal_normalWolf <- nimbleFunction(
     count <- 1
     
     ## SAMPLE THE DETECTION HISTORY (FOR RELEVANT DETECTORS ONLY)
-      for(r in 1:localTrapsNum[sID]){
-        d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
-        pZero <- ilogit(logit(p0[trapCovsIntercept[theseLocalTraps[r]], z]) +
-                          indBeta*indCov +
-                          inprod(trapBetas, trapCovs[theseLocalTraps[r],]))
-        
-        p <- pZero * exp(alpha * d2)        # Draw the observation at detector j from a binomial distribution with probability p
-        detectOut[r] <- rbinom(1, size[theseLocalTraps[r]], p)
-        if(detectOut[r] >0){
-          if(nMAxDetections<count){stop("Simulated individual detections occur at more traps than what can be stored within x.\n
+    for(r in 1:localTrapsNum[sID]){
+      d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
+      pZero <- ilogit(logit(p0[trapCovsIntercept[theseLocalTraps[r]], z]) +
+                        indBeta*indCov +
+                        inprod(trapBetas, trapCovs[theseLocalTraps[r],]))
+      
+      p <- pZero * exp(alpha * d2)        # Draw the observation at detector j from a binomial distribution with probability p
+      detectOut[r] <- rbinom(1, size[theseLocalTraps[r]], p)
+      if(detectOut[r] >0){
+        if(nMAxDetections<count){stop("Simulated individual detections occur at more traps than what can be stored within x.\n
                                           You may need to augment the size of the x object with the argument 'nMaxTraps' from the getSparseY() function")}
-          ys[count] <- detectOut[r]
-          dets[count] <- theseLocalTraps[r]
-          count <- count + 1
-        }#if
-      }#r 
-     
+        ys[count] <- detectOut[r]
+        dets[count] <- theseLocalTraps[r]
+        count <- count + 1
+      }#if
+    }#r 
+    
     count <- count - 1
     
     out <- rep(-1, lengthYCombined)
@@ -338,19 +340,3 @@ rbinomLocal_normalWolf <- nimbleFunction(
     return(out)
   })
 
- 
-# registerDistributions(
-#   list(
-#     dbinomLocal_normalWolf = list(
-#       BUGSdist ='dbinomLocal_normalWolf(detNums       , detIndices    , size, p0  , sigma, s, trapCoords, 
-#       localTrapsIndices, localTrapsNum, resizeFactor , habitatGrid, indicator, z, indCov, indBeta, trapCovs,
-#       trapCovsIntercept, trapBetas, lengthYCombined)',
-#       types = c('value = double(1)', 'detIndices = double(1)', 'size = double(1)', 's = double(1)', "p0=double(2)",
-#                 'trapCoords = double(2)', 'localTrapsIndices = double(2)', 'localTrapsNum = double(1)', 'habitatGrid = double(2)',"trapBetas = double(1)",
-#                 "trapCovsIntercept =  double(1)","trapCovs =  double(2)"),
-#       discrete = TRUE,
-#       mixedSizes = TRUE,
-#       pqAvail = FALSE
-#     )
-#   ),
-#   verbose = T)

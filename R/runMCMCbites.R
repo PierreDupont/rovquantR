@@ -67,8 +67,8 @@ runMCMCbites <- function(
     bite.size,
     bite.number,
     path,
-    save.rds = FALSE)
-{
+    save.rds = FALSE
+){
   
   if(!dir.exists(path))dir.create(path, showWarnings = F, recursive = T)
   if(save.rds & is.null(model))stop("You must provide a nimble model object (obtained from 'nimbleModel(...)') in order to use the 'save.rds' option")
@@ -135,8 +135,8 @@ restartMCMCbites <- function(
     bite.number,
     path,
     save.rds = TRUE,
-    path.rds = NULL)
-{
+    path.rds = NULL
+){
   
   ##-- Load the .rds file 
   if(is.null(path.rds)){
@@ -212,8 +212,8 @@ collectMCMCbites <- function(
     thin2 = NULL,
     pattern = "mcmcSamples",
     param.omit = NULL,
-    progress.bar = T)
-{
+    progress.bar = TRUE
+){
   
   ##-- Two possibilities:
   if(length(list.dirs(path, recursive = F)) == 0){
@@ -350,8 +350,9 @@ collectMCMCbites <- function(
 NULL
 #' @rdname runMCMCbites
 #' @export
-getStateVariableNames <- function(samplerDef) 
-{
+getStateVariableNames <- function(
+    samplerDef
+){
   resetMethod <- body(samplerDef$reset)
   stateVars <- character()
   if(resetMethod[[1]] != '{') stop('something wrong')
@@ -376,8 +377,9 @@ getStateVariableNames <- function(samplerDef)
 NULL
 #' @rdname runMCMCbites
 #' @export
-getModelState <- function(model) 
-{
+getModelState <- function(
+    model
+){
   modelVarNames <- model$getVarNames()
   modelVarValuesList <- vector('list', length(modelVarNames))
   names(modelVarValuesList) <- modelVarNames
@@ -390,9 +392,10 @@ getModelState <- function(model)
 NULL
 #' @rdname runMCMCbites
 #' @export
-setModelState <- function( model,
-                           modelState) 
-{
+setModelState <- function(
+    model,
+    modelState
+){
   modelVarNames <- model$getVarNames()
   if(!identical(sort(modelVarNames), sort(names(modelState)))) stop('saved model variables don\'t agree')
   for(var in modelVarNames) {
@@ -404,9 +407,10 @@ setModelState <- function( model,
 NULL
 #' @rdname runMCMCbites
 #' @export
-getMCMCstate <- function( conf,
-                          mcmc) 
-{
+getMCMCstate <- function( 
+    conf,
+    mcmc
+){
   stateVarNamesList <- vector('list', length(conf$samplerConfs))
   mcmcStateValuesList <- vector('list', length(conf$samplerConfs))
   for(i in seq_along(conf$samplerConfs)) {
@@ -438,10 +442,11 @@ getMCMCstate <- function( conf,
 NULL
 #' @rdname runMCMCbites
 #' @export
-setMCMCstate <- function( conf,
-                          mcmc,
-                          mcmcState) 
-{
+setMCMCstate <- function(
+    conf,
+    mcmc,
+    mcmcState
+){
   if(length(mcmcState) != length(conf$samplerConfs)) stop('saved mcmc samplers don\'t agree')
   for(i in seq_along(conf$samplerConfs)) {
     theseStateValuesList <- mcmcState[[i]]

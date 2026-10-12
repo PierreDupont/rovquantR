@@ -183,7 +183,7 @@ makeRovquantData_wolverine <- function(
   
   ##-- List monitoring seasons
   seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
-
+  
   ##-- Filter NGS samples for dates
   filteredData <- myFullData.sp
   filteredData$alive <- filteredData$alive %>%
@@ -2054,9 +2054,7 @@ makeRovquantData_wolverine <- function(
             file = file.path( working.dir, "nimbleInFiles/SCR", thisSex,
                               paste0("SCRinput", years[t], "_", DATE, "_", thisSex, "_", c, ".RData")))
     }#c
-    
     #}#t
-    
   }#thisSex
   
   

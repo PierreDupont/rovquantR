@@ -23,8 +23,8 @@ processCodaOutput <- function(
     x,
     DIC = F,
     params.omit = NULL,
-    verbose = TRUE)
-  {
+    verbose = TRUE
+    ){
   
   if(verbose){cat('Calculating statistics.......','\n')}  
   

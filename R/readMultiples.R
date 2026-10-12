@@ -28,8 +28,8 @@ readMultiples <- function(
     pattern = NULL,
     sep = ",",
     dec = ".",
-    ...)
-{
+    ...
+    ){
   
   ##-- List all files with the requested extension (including in sub-directories)
   infiles <- list.files( path = path,

@@ -64,26 +64,27 @@ NULL
 #' @rdname dbinomLocal_normalCovs
 #' @export
 dbinomLocal_normalCovs <- nimbleFunction(
-  run = function( x = double(1),
-                  detNums = double(0, default = -999),
-                  detIndices = double(1),
-                  size = double(1),
-                  p0 = double(0, default = -999),
-                  p0Traps = double(1),
-                  sigma = double(0),
-                  s = double(1),
-                  trapCoords = double(2),
-                  localTrapsIndices = double(2),
-                  localTrapsNum = double(1),
-                  resizeFactor = double(0, default = 1),
-                  habitatGrid = double(2),
-                  indicator = double(0),
-                  lengthYCombined = double(0, default = 0),
-                  allowNoLocal = double(0, default = 0),
-                  trapCovs = double(2),
-                  trapCovsIntercept = double(1),
-                  trapBetas = double(1),
-                  log = integer(0, default = 0)
+  run = function(
+    x = double(1),
+    detNums = double(0, default = -999),
+    detIndices = double(1),
+    size = double(1),
+    p0 = double(0, default = -999),
+    p0Traps = double(1),
+    sigma = double(0),
+    s = double(1),
+    trapCoords = double(2),
+    localTrapsIndices = double(2),
+    localTrapsNum = double(1),
+    resizeFactor = double(0, default = 1),
+    habitatGrid = double(2),
+    indicator = double(0),
+    lengthYCombined = double(0, default = 0),
+    allowNoLocal = double(0, default = 0),
+    trapCovs = double(2),
+    trapCovsIntercept = double(1),
+    trapBetas = double(1),
+    log = integer(0, default = 0)
   ){
     ## Specify return type
     returnType(double(0))
@@ -150,12 +151,12 @@ dbinomLocal_normalCovs <- nimbleFunction(
       for(r in 1:localTrapsNum[sID]){
         d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) +
           pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
-
+        
         p0Trap <- ilogit(logit(p0Traps[trapCovsIntercept[theseLocalTraps[r]]]) +
-                            inprod(trapBetas,trapCovs[theseLocalTraps[r], ]))
+                           inprod(trapBetas,trapCovs[theseLocalTraps[r], ]))
         p <- p0Trap * exp(alpha * d2)
         
-         if(theseLocalTraps[r] == detIndices1[count]){ 
+        if(theseLocalTraps[r] == detIndices1[count]){ 
           logProb <-  logProb + dbinom(x1[count], prob = p, size = size[theseLocalTraps[r]], log = TRUE)
           count <- count + 1
         } else {
@@ -191,25 +192,26 @@ NULL
 #' @rdname dbinomLocal_normalCovs
 #' @export
 rbinomLocal_normalCovs <- nimbleFunction(
-  run = function( n = double(0, default = 1),
-                  detNums = double(0, default = -999),
-                  detIndices = double(1),
-                  size = double(1),
-                  p0 = double(0, default = -999),
-                  p0Traps = double(1),
-                  sigma = double(0),
-                  s = double(1),
-                  trapCoords = double(2),
-                  localTrapsIndices = double(2),
-                  localTrapsNum = double(1),
-                  resizeFactor = double(0, default = 1),
-                  habitatGrid = double(2),
-                  indicator = double(0),
-                  lengthYCombined = double(0, default = 0),
-                  allowNoLocal = double(0, default = 0),
-                  trapCovs =  double(2),
-                  trapCovsIntercept = double(1),
-                  trapBetas = double(1)
+  run = function( 
+    n = double(0, default = 1),
+    detNums = double(0, default = -999),
+    detIndices = double(1),
+    size = double(1),
+    p0 = double(0, default = -999),
+    p0Traps = double(1),
+    sigma = double(0),
+    s = double(1),
+    trapCoords = double(2),
+    localTrapsIndices = double(2),
+    localTrapsNum = double(1),
+    resizeFactor = double(0, default = 1),
+    habitatGrid = double(2),
+    indicator = double(0),
+    lengthYCombined = double(0, default = 0),
+    allowNoLocal = double(0, default = 0),
+    trapCovs =  double(2),
+    trapCovsIntercept = double(1),
+    trapBetas = double(1)
   ) {
     ## Specify return type
     returnType(double(1))
@@ -217,7 +219,7 @@ rbinomLocal_normalCovs <- nimbleFunction(
     
     ## RETURN TYPE DECLARATION
     if(n!=1){print("rbinomLocal_normal only allows n = 1; using n = 1")}
-
+    
     ## GET NECESSARY INFO
     alpha <- -1.0 / (2.0 * sigma * sigma)
     nMAxDetections <- (lengthYCombined - 1)/2
@@ -243,9 +245,9 @@ rbinomLocal_normalCovs <- nimbleFunction(
       for(r in 1:localTrapsNum[sID]){
         d2 <- pow(trapCoords[theseLocalTraps[r],1] - s[1], 2) + pow(trapCoords[theseLocalTraps[r],2] - s[2], 2)
         p0Trap <- ilogit(logit(p0Traps[trapCovsIntercept[theseLocalTraps[r]]]) +
-                          inprod(trapBetas,trapCovs[theseLocalTraps[r], ]))
+                           inprod(trapBetas,trapCovs[theseLocalTraps[r], ]))
         p <- p0Trap * exp(alpha * d2)
-
+        
         ## Draw the observation at detector j from a binomial distribution with probability p
         detectOut[r] <- rbinom(1, size[theseLocalTraps[r]], p)
         

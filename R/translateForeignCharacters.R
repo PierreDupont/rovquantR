@@ -16,8 +16,8 @@
 #' @export
 translateForeignCharacters <- function(
     data,
-    dir.translation = NULL) 
-{
+    dir.translation = NULL
+    ){
   ##-- Load .RData file with special characters
   if(!is.null(dir.translation)){
     load(dir.translation)

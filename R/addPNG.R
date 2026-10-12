@@ -22,7 +22,13 @@
 #'
 #' @rdname addPNG
 #' @export
-addPNG <- function(x, y, name, size, path = NULL){
+addPNG <- function(
+    x,
+    y,
+    name,
+    size,
+    path = NULL
+){
   
   ##-- Identify directory containing the images
   if(is.null(path)){

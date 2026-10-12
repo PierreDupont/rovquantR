@@ -22,8 +22,8 @@
 getCleanEstimates <- function(
     x,
     moment = "mean",
-    quantiles = c(0.025,0.975))
-{
+    quantiles = c(0.025,0.975)
+){
   if(moment == "mean"){
     paste0(format(round(mean(x),digits = 2),nsmall = 2)," (",
            format(round(quantile(x, probs = quantiles[1]), digits = 2),nsmall = 2), "-",

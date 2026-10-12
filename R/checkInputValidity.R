@@ -54,7 +54,8 @@ checkInputValidity <- function(
     habitatGridLocal = NULL,
     silent = FALSE,
     printReport = FALSE,
-    pathReport = NULL){
+    pathReport = NULL
+){
   
   ##-- Initial set-up & checks
   finalReport1 <- finalReport2 <- NULL
@@ -171,9 +172,9 @@ checkInputValidity <- function(
         
         ##-- Plot AC movement
         graphics::arrows( x0 = s[i,1,t-1],
-                x1 = s[i,1,t],
-                y0 = s[i,2,t-1],
-                y1 = s[i,2,t], col = myCol[t], length = 0.08, lwd = 1.5)
+                          x1 = s[i,1,t],
+                          y0 = s[i,2,t-1],
+                          y1 = s[i,2,t], col = myCol[t], length = 0.08, lwd = 1.5)
         
         ##-- Plot proposed AC location
         if(isNotOk_sID[t] | isNotOk_local[t]){
@@ -347,7 +348,7 @@ checkInputValidity_lite <- function(
   n.years <- dim(s)[3]
   lengthYCombined <- dim(y)[2]
   nMaxDetectors <- (lengthYCombined-1)/2
-
+  
   if (is.null(id)) { id <- 1:dim(s)[1] }
   
   ##-- Loop over individuals
