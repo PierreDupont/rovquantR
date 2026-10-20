@@ -15,8 +15,8 @@
 #' @param path A \code{path} denoting where to save the density maps.
 #' @param species (optional) A \code{character} string with the name of the species to be displayed (only used with \code{type = "summary"}). 
 #' @param labels (optional) A \code{list} of labels to be displayed with the density maps. Typically, country-specific credible intervals of population abundance estimates.
-#' @param x.labels (optional) A \code{numeric} vector of values between 0 and 1, one value for each item in the \code{labels} list, denoting the relative position(s) of labels along the x-axis. 
-#' @param y.labels (optional) A \code{numeric} vector of values between 0 and 1, one value for each item in the \code{labels} list, denoting the relative position(s) of labels along the y-axes. 
+#' @param x.labels,y.labels (optional) \code{numeric} values between 0 and 1, one value for each item in the \code{labels} list, denoting the relative position(s) of labels along the x- and y-axes. 
+#' @param x.names,y.names (optional) \code{numeric} values between 0 and 1 denoting the relative position(s) of names (usually years) along the x- and y-axes. 
 #' @param caption (optional) A \code{numeric} vector with the boundaries of the credible interval for the population size estimates to be displayed (only used with \code{type = "summary"}).
 #' @param export.raster A \code{logical}; whether to save density rasters as .tif files or not.
 #' @param name A \code{character} string with the name to be used when saving .png and .tif files.
@@ -47,6 +47,7 @@ plotDensityMaps <- function(
     x.names = NULL,
     y.names = NULL,
     caption = NULL,
+    cex.caption = 1,
     export.raster = TRUE,
     name = "UD_Density"
     ){
@@ -93,13 +94,11 @@ plotDensityMaps <- function(
   }#t
   names(density) <- names(estimates)
   
-  
   ##-- Set color scale
   max <- max(unlist(lapply(density, function(x) max(x[], na.rm = T))))
-  cuts <- seq(0, max, length.out = 100) ##-- set breaks
+  cuts <- seq(0, max, length.out = 100) 
   colfunc <- grDevices::colorRampPalette(c("white", "slateblue", "yellow", "orange", "red", "red"))
   col <- colfunc(100)
-  
   
   ##-- Set x- and y-limits
   xLims <- raster::extent(background)[1:2]
@@ -144,9 +143,9 @@ plotDensityMaps <- function(
                            widths = c(rep(1,ncol(mx))),
                            heights = rep(1,2))
     
-    ##-- legend coordinates
-    legend.x <- xLims[1] + 0.78 * xRange
-    legend.y <- yLims[1] + 0.3 * yRange
+    # ##-- legend coordinates
+    # legend.x <- xLims[1] + 0.78 * xRange
+    # legend.y <- yLims[1] + 0.3 * yRange
     
     ##-- Plot density maps
     graphics::par(mar = c(0,0,0,0))
@@ -160,7 +159,7 @@ plotDensityMaps <- function(
       plot( sf::st_geometry(background),
             border = "gray40", col = NA, add = TRUE)
       
-      ##-- Add year if available
+      ##-- Add name if available
       if(!is.null(names(estimates))){
         if(is.null(x.names)){x.names = 0.1}
         if(is.null(y.names)){y.names = 0.1}
@@ -172,16 +171,18 @@ plotDensityMaps <- function(
           cex = base_cex*1.2)
       }
       
-      ##-- Add legend
+      ##-- Add legend if last year
       if(t == length(density)){
-        graphics::segments(
-          x0 = legend.x, x1 = legend.x,
-          y0 = legend.y - 250000, y1 = legend.y + 250000,
-          col = "grey10", lwd = 3, lend = 2)
-        graphics::text(
-          x = legend.x - 0.04 * xRange,
-          y = legend.y,
-          labels = "500 km", srt = 90, cex = base_cex*1.2)
+        # graphics::segments(
+        #   x0 = legend.x, x1 = legend.x,
+        #   y0 = legend.y - 250000, y1 = legend.y + 250000,
+        #   col = "grey10", lwd = 3, lend = 2)
+        # graphics::text(
+        #   x = legend.x - 0.04 * xRange,
+        #   y = legend.y,
+        #   labels = "500 km", srt = 90, cex = base_cex*1.2)
+
+        ##-- Add colour scale 
         raster::plot( density[[t]],
                       legend.only = T, breaks = cuts,
                       col = col, legend.width = 2,
@@ -193,9 +194,13 @@ plotDensityMaps <- function(
                       legend.args = list( text = legendName,
                                           side = 2, font = 1,
                                           line = 0, cex = base_cex/1.2))
+        
+        ##-- Add km scale 
+        addScale(x = 0.75, y = 0.25, size = 500000)
+        
       }#if
       
-      #-- Export rasters
+      ##-- Export rasters
       if(export.raster){
         writeRaster( density[[t]],
                      file.path( path, "rasters",
@@ -226,36 +231,37 @@ plotDensityMaps <- function(
     plot( sf::st_geometry(background),
           border = "gray40", col = NA, add = TRUE)
     
-    ##-- Add caption if available
+    ##-- Add name if available
     if(!is.null(names(estimates))){
-      mtext(text = names(estimates)[t],
-            side = 1, line = -25,
-            adj = 0.25, cex = base_cex/1.2, font = 2)
+      if(is.null(x.names)){x.names = 0.1}
+      if(is.null(y.names)){y.names = 0.1}
+      graphics::text(
+        x = xLims[1] + x.names * xRange,
+        y = yLims[1] + y.names * yRange,
+        labels = names(estimates)[t],
+        font = 2,
+        cex = base_cex*1.2)
     }
     
-    ##-- Add legend
-    legend.x <- xLims[1] + 0.89 * xRange
-    legend.y <- yLims[1] + 0.3 * yRange
+    # ##-- Add legend
+    # legend.x <- xLims[1] + 0.89 * xRange
+    # legend.y <- yLims[1] + 0.3 * yRange
     
-    graphics::segments(
-      x0 = legend.x, x1 = legend.x,
-      y0 = legend.y-250000, y1 = legend.y + 250000,
-      col = "gray30", lwd = 4, lend = 2)
-    graphics::text(
-      x = legend.x - 0.05 * xRange,
-      y = legend.y,
-      labels = "500 km", srt = 90, cex = base_cex)
-    
+    ##-- Add colour scale 
     raster::plot( density[[t]],
                   legend.only = T, breaks = cuts,
                   col = col, legend.width = 1.5,
                   axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                     labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                     cex.axis = base_cex),
-                  smallplot = c(0.88, 0.90, 0.2, 0.4),
+                  smallplot = c(0.80, 0.83, 0.25, 0.45),
                   legend.args = list( text = legendName,
                                       side = 2, font = 1,
                                       line = 0, cex = base_cex/1.3))
+    
+    ##-- Add km scale 
+    addScale(x = 0.75, y = 0.25, size = 500000)
+
     dev.off()
     
     #-- Export rasters
@@ -309,7 +315,7 @@ plotDensityMaps <- function(
       addScale(x = 0.75, y = 0.25, size = 500000)
       
       ##-- Add species silhouette 
-      addPNG( x = 0.8, y = 0.5, name = species, size = 0.15)
+      addPNG( x = 0.8, y = 0.5, name = species, size = 0.12)
       
       ##-- Add flags 
       if(!is.null(labels)){
@@ -323,9 +329,9 @@ plotDensityMaps <- function(
         mtext(text = paste0("Density map and estimated ", engSpecies,
                             "\nabundance range in ",
                             names(estimates)[length(density)]),
-              side = 1, line = 2, adj = 0.5, cex = base_cex, font = 2)
+              side = 1, line = 2, adj = 0.5, cex = cex.caption * base_cex, font = 2)
       } else {
-        mtext(text = caption, side = 1, line = 2, adj = 0.5, cex = base_cex, font = 2)
+        mtext(text = caption, side = 1, line = 2, adj = 0.5, cex = cex.caption * base_cex, font = 2)
       }
       dev.off()
     }
@@ -353,7 +359,6 @@ plotDensityMaps <- function(
       plot( sf::st_geometry(background),
             border = "gray40", col = NA, add = TRUE)
       
-      
       ##-- Add colour scale 
       raster::plot( density[[t]],
                     legend.only = T,
@@ -372,7 +377,7 @@ plotDensityMaps <- function(
       addScale(x = 0.75, y = 0.25, size = 500000)
       
       ##-- Add species silhouette 
-      addPNG( x = 0.8, y = 0.45, name = species, size = 0.15)
+      addPNG( x = 0.8, y = 0.5, name = species, size = 0.12)
       
       ##-- Add flags 
       if(!is.null(labels)){addPopSize( x = x.labels, y = y.labels, labels = labels)}
@@ -382,9 +387,9 @@ plotDensityMaps <- function(
         mtext(text = paste0("Kart som viser tetthet av ", norSpecies,
                             " med \nintervall for estimert antall ", norSpecies,
                             " i ", names(estimates)[length(density)]),
-              side = 1,line = 2, adj = 0.5, cex = base_cex, font = 2)
+              side = 1,line = 2, adj = 0.5, cex = cex.caption * base_cex, font = 2)
       } else {
-        mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = base_cex, font = 2)
+        mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = cex.caption * base_cex, font = 2)
       }
       dev.off()
     }
