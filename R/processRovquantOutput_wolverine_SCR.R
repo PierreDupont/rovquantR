@@ -98,7 +98,6 @@ processRovquantOutput_wolverine_SCR <- function(
   if(is.null(years)){
     years <- max(data.alive$data.sp$Year, na.rm = TRUE)
   }
-  
   seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
   
   ##-- Polygons of Sweden & Norway
@@ -594,7 +593,7 @@ processRovquantOutput_wolverine_SCR <- function(
   countyNames_Middle <- sort(unique(factorValues(rrCounties, rrCounties[rrRegions[] %in% 2], layer=1)[,1]))
   countyNames_South <- sort(unique(factorValues(rrCounties, rrCounties[rrRegions[] %in% 3], layer=1)[,1]))
   
-  rownames_Table <- c("Total",
+  rownames_Table <- c( "Total",
                       "Norway", regionNames_NOR,
                       "Sweden",
                       "Nordre", countyNames_North,
@@ -749,65 +748,121 @@ processRovquantOutput_wolverine_SCR <- function(
                 length(dead$Id),
                 length(unique(c(NGS$Id,dead$Id)))))
   row.names(dataSummary) <- c("N_NGS", "N_DR", "N_IDs")
+  
   ##-- print .csv
   write.csv(dataSummary, file = file.path(working.dir, "tables/dataSummary_SCR.csv"))
   
   
   
-  ## ------     5.2.1. NGS SAMPLES & IDs ------
+  ## ------     5.2.1. NGS SAMPLES PER COUNTRY ------
   
-  NGS_SEX <- matrix("", ncol = 2, nrow = 2)
-  row.names(NGS_SEX) <- c( "number of NGS samples",
-                           "number of NGS individuals")
-  colnames(NGS_SEX) <- c("F","M")
-
-  sex <- c("female","male")
-  sex1 <- c(0,1)
-  #ye <- seq(1, n.years*2, by = 2)
+  NGSCountrySEX <- matrix(NA, ncol = 2, nrow = 3)
+  row.names(NGSCountrySEX) <- c("Norway","Sweden","Total")
+  colnames(NGSCountrySEX) <- c("female","male")
   for(s in 1:2){
-      temp <- NGS[NGS$Sex == sex[s], ]
-      NGS_SEX["number of NGS samples", s] <- nrow(temp)
-      NGS_SEX["number of NGS individuals", s] <- length(unique(temp$Id))
+    temp <- NGS[NGS$Sex == colnames(NGSCountrySEX)[s], ]
+    
+    NGSCountrySEX["Norway",s] <- nrow(temp[temp$Country_sample %in% "(N)", ])
+    NGSCountrySEX["Sweden",s] <- nrow(temp[temp$Country_sample %in% "(S)", ])
+    NGSCountrySEX["Total",s] <- nrow(temp[temp$Country_sample %in% c("(S)","(N)"), ])
   }#s
+ 
+  ##-- print .csv
+  write.csv( NGSCountrySEX, file = file.path(working.dir, "tables/NGS_SEX_SCR.csv"))
   
-  ##-- Remove unnecessary objects from memory
-  rm(list = c( "temp"))
-  gc(verbose = FALSE)    
+  # ##-- print .tex
+  # addtorow <- list()
+  # addtorow$pos <- list(c(0),0)
+  # addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGS_SEX))),
+  #                                     '}', collapse = ''), '\\\\'), rep("\\rowcolor[gray]{.95}",1))
+  # colnames(NGS_SEX) <- rep("", ncol(NGS_SEX))
+  # print(xtable::xtable( NGS_SEX,
+  #                       type = "latex",
+  #                       align = paste(c("l",rep("c", ncol(NGS_SEX))), collapse = "")),
+  #       floating = FALSE, include.colnames = FALSE,
+  #       add.to.row = addtorow,
+  #       file = file.path(working.dir, "tables/NGS_SEX_SCR.tex"))
+  
+  
+  
+  ## ------     5.2.2. NUMBER OF IDs PER COUNTRY ------
+  
+  IDCountrySEX <- matrix(NA, ncol = 3, nrow = 3)
+  row.names(IDCountrySEX) <- c("Norway","Sweden","Total")
+  colnames(IDCountrySEX) <- c("female","male","Total")
+  for(s in 1:2){
+    temp <- NGS[NGS$Sex == colnames(IDCountrySEX)[s], ]
+    
+    IDCountrySEX["Norway",s] <- length(unique(temp$Id[temp$Country_sample %in% "(N)"]))
+    IDCountrySEX["Sweden",s] <- length(unique(temp$Id[temp$Country_sample %in% "(S)"]))
+    IDCountrySEX["Total",s] <- length(unique(temp$Id[temp$Country_sample %in% c("(S)","(N)")]))
+  }#s
+  ##-- Total
+  IDCountrySEX[ ,"Total"] <- IDCountrySEX[ ,"female"] + IDCountrySEX[ ,"male"] 
   
   ##-- print .csv
-  write.csv( NGS_SEX, file = file.path(working.dir, "tables/NGS_SEX_SCR.csv"))
-  
-  ##-- print .tex
-  addtorow <- list()
-  addtorow$pos <- list(c(0),0)
-  addtorow$command <- c(paste0(paste0('& \\multicolumn{2}{c}{', sort(unique(colnames(NGS_SEX))),
-                                      '}', collapse = ''), '\\\\'), rep("\\rowcolor[gray]{.95}",1))
-  colnames(NGS_SEX) <- rep("", ncol(NGS_SEX))
-  print(xtable::xtable( NGS_SEX,
-                        type = "latex",
-                        align = paste(c("l",rep("c", ncol(NGS_SEX))), collapse = "")),
-        floating = FALSE, include.colnames = FALSE,
-        add.to.row = addtorow,
-        file = file.path(working.dir, "tables/NGS_SEX_SCR.tex"))
+  write.csv( IDCountrySEX, file = file.path(working.dir, "tables/ID_SEX_SCR.csv"))
   
 
   
-  ## ------     5.2.3. PROPORTION OF INDIVIDUALS DETECTED OVERALL ------
+  ## ------     5.2.3. NGS SAMPLES PER OBSERVATION PROCESS ------
   
-  ##-- Get the number of individuals detected each year
-  n.detected_F <- sum((nimDataF$detNums + nimDataF$detNumsOth) > 0)
-  n.detected_M <- sum((nimDataM$detNums + nimDataM$detNumsOth) > 0)
-
-  propDetected <- matrix("", ncol = 1, nrow = 3)
-  row.names(propDetected) <- c("F","M","Total")
-  colnames(propDetected) <- seasons
+  NGSStructured <- NGS[NGS$structured, ]
+  NGSOther <- NGS[!NGS$structured, ]
   
-  propDetected["F",1] <- getCleanEstimates(n.detected_F/colSums(ACdensityF$PosteriorAllRegions))
-  propDetected["M",1] <- getCleanEstimates(n.detected_M/colSums(ACdensityM$PosteriorAllRegions))
-  propDetected["Total",1] <- getCleanEstimates((n.detected_F + n.detected_M)/
-                                               (colSums(ACdensityF$PosteriorAllRegions)+
-                                                  colSums(ACdensityM$PosteriorAllRegions)))
+  NGSCountrySEXoBS <- matrix(NA, ncol = 3, nrow = 6)
+  row.names(NGSCountrySEXoBS) <- rep(c("Norway","Sweden","Total"), each = 2)
+  colnames(NGSCountrySEXoBS) <- c("","F","M")
+  NGSCountrySEXoBS[ ,1] <- rep(c("Structured","Unstructured"),3)
+  sex <- c("female","male")
+  for(s in 1:2){
+    ##-- Structured
+    tempStruc <- NGSStructured[NGSStructured$Sex == sex[s], ]
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[1],s+1] <- nrow(tempStruc[tempStruc$Country_sample %in% "(N)", ])
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[1],s+1] <- nrow(tempStruc[tempStruc$Country_sample %in% "(S)", ])
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[1],s+1] <- nrow(tempStruc[tempStruc$Country_sample %in% c("(S)","(N)"), ])
+    
+    ##-- Other
+    tempOther <- NGSOther[NGSOther$Sex == sex[s], ]
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Norway")[2],s+1] <- nrow(tempOther[tempOther$Country_sample %in% "(N)", ])
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Sweden")[2],s+1] <- nrow(tempOther[tempOther$Country_sample %in% "(S)", ])
+    NGSCountrySEXoBS[which(row.names(NGSCountrySEXoBS) %in% "Total")[2],s+1] <- nrow(tempOther[tempOther$Country_sample %in% c("(S)","(N)"), ])
+  }#s
   
+  ##-- print .csv
+  write.csv( NGSCountrySEXoBS, file = file.path(working.dir, "tables/NGS_SEX_OBS_SCR.csv"))
+  
+  
+  
+  ## ------     5.2.4. PROPORTION OF INDIVIDUALS DETECTED OVERALL ------
+  
+  propDetected <- matrix(NA, ncol = 3, nrow = 3)
+  row.names(propDetected) <- c("Norway","Sweden","Total")
+  colnames(propDetected) <- c("female","male","Total")
+  
+  ##-- Sweden
+  propDetected["Sweden","female"] <- getCleanEstimates(
+    IDCountrySEX["Sweden","female"]/ACdensityF$PosteriorRegions["Sweden", ])
+  propDetected["Sweden","male"] <- getCleanEstimates(
+    IDCountrySEX["Sweden","male"]/ACdensityM$PosteriorRegions["Sweden", ])
+  propDetected["Sweden","Total"] <- getCleanEstimates(
+    IDCountrySEX["Sweden","Total"]/ACdensity$PosteriorRegions["Sweden", ])
+  
+  ##-- Norway
+  propDetected["Norway","female"] <- getCleanEstimates(
+    IDCountrySEX["Norway","female"]/ACdensityF$PosteriorRegions["Norway", ])
+  propDetected["Norway","male"] <- getCleanEstimates(
+    IDCountrySEX["Norway","male"]/ACdensityM$PosteriorRegions["Norway", ])
+  propDetected["Norway","Total"] <- getCleanEstimates(
+    IDCountrySEX["Norway","Total"]/ACdensity$PosteriorRegions["Norway", ])
+  
+  ##-- Total
+  propDetected["Total","female"] <- getCleanEstimates(
+    IDCountrySEX["Total","female"]/colSums(ACdensityF$PosteriorAllRegions))
+  propDetected["Total","male"] <- getCleanEstimates(
+    IDCountrySEX["Total","male"]/colSums(ACdensityM$PosteriorAllRegions))
+  propDetected["Total","Total"] <- getCleanEstimates(
+    IDCountrySEX["Total","Total"]/colSums(ACdensity$PosteriorAllRegions))
   
   ##-- Remove unnecessary objects from memory
   rm(list = c( "n.detected_F", "n.detected_M"))
@@ -827,7 +882,7 @@ processRovquantOutput_wolverine_SCR <- function(
   
   
   
-  ## ------     5.2.4. PROPORTION OF THE POPULATION DETECTED ------
+  ## ------     5.2.5. PROPORTION OF THE POPULATION DETECTED ------
   
   ##-- Extract number of individuals detected
   isDetected <- c(nimDataM$detNums + nimDataM$detNumsOth,
@@ -841,57 +896,74 @@ processRovquantOutput_wolverine_SCR <- function(
   isAlive <- resultsSXYZ_MF$sims.list$z == 1
   
   ##-- Calculate % of the wolverine population detected 
-  prop <- matrix(NA,3,1)
-  dimnames(prop) <- list("% individuals" = c("F","M","Total"),
-                         "Years" = seasons)
+  prop <- matrix(NA, ncol = 3, nrow = 3)
+  row.names(prop) <- c("Norway","Sweden","Total")
+  colnames(prop) <- c("female","male","Total")
+  
   prop_F <- prop_M <- prop_tot <- rep(NA,n.mcmc)
+  prop_F_SWE <- prop_M_SWE <- prop_tot_SWE <- rep(NA,n.mcmc)
+  prop_F_NOR <- prop_M_NOR <- prop_tot_NOR <- rep(NA,n.mcmc)
+  
   for(iter in 1:n.mcmc){
     
     country <- countryRaster[raster::cellFromXY(countryRaster, resultsSXYZ_MF$sims.list$sxy[iter, ,1:2])]
-    isIn <- country %in% c(2,4)
+    isNor <- country %in% c(2)
+    isSwe <- country %in% c(4)
     
-    ##-- Detected female
-    N_F <- sum(isAlive[iter, ] & isIn & isFemale)
-    N_det_F <- sum(isDetected & isAlive[iter, ] & isIn & isFemale)
-    prop_F[iter] <- N_det_F / N_F 
+    ##-- % Detected female Norway
+    N_F_NOR <- sum(isAlive[iter, ] & isNor & isFemale)
+    N_det_F_NOR <- sum(isDetected & isAlive[iter, ] & isNor & isFemale)
+    prop_F_NOR[iter] <- N_det_F_NOR / N_F_NOR 
+    ##-- % Detected female Sweden
+    N_F_SWE <- sum(isAlive[iter, ] & isSwe & isFemale)
+    N_det_F_SWE  <- sum(isDetected & isAlive[iter, ] & isSwe & isFemale)
+    prop_F_SWE[iter] <- N_det_F_SWE  / N_F_SWE 
+    ##-- % Detected female Total
+    prop_F[iter] <- (N_det_F_NOR + N_det_F_SWE) / (N_F_NOR + N_F_SWE)
     
-    ##-- Detected male
-    N_M <- sum(isAlive[iter, ] & isIn & isMale)
-    N_det_M <- sum(isDetected & isAlive[iter, ] & isIn & isMale)
-    prop_M[iter] <- N_det_M / N_M 
+    ##-- % Detected male Norway
+    N_M_NOR <- sum(isAlive[iter, ] & isNor & isMale)
+    N_det_M_NOR <- sum(isDetected & isAlive[iter, ] & isNor & isMale)
+    prop_M_NOR[iter] <- N_det_M_NOR / N_M_NOR 
+    ##-- % Detected female Sweden
+    N_M_SWE <- sum(isAlive[iter, ] & isSwe & isMale)
+    N_det_M_SWE  <- sum(isDetected & isAlive[iter, ] & isSwe & isMale)
+    prop_M_SWE[iter] <- N_det_M_SWE  / N_M_SWE 
+    ##-- % Detected female Total
+    prop_M[iter] <- (N_det_M_NOR + N_det_M_SWE) / (N_M_NOR + N_M_SWE)
     
     ##-- Detected total
-    prop_tot[iter] <- (N_det_F + N_det_M) / (N_F + N_M) 
+    prop_tot_NOR[iter] <- (N_det_F_NOR + N_det_M_NOR) / (N_F_NOR + N_M_NOR) 
+    prop_tot_SWE[iter] <- (N_det_F_SWE + N_det_M_SWE) / (N_F_SWE + N_M_SWE) 
+    prop_tot[iter] <- (N_det_F_NOR + N_det_M_NOR +
+                         N_det_F_SWE + N_det_M_SWE) / (N_F_NOR + N_M_NOR + 
+                                                         N_F_SWE + N_M_SWE) 
   }#iter
   
-  prop["F",1] <- getCleanEstimates(prop_F)
-  prop["M",1] <- getCleanEstimates(prop_M)
-  prop["Total",1] <- getCleanEstimates(prop_tot)
+  prop["Norway","female"] <- getCleanEstimates(prop_F_NOR)
+  prop["Sweden","female"] <- getCleanEstimates(prop_F_SWE)
+  prop["Total","female"] <- getCleanEstimates(prop_F)
+  
+  prop["Norway","male"] <- getCleanEstimates(prop_M_NOR)
+  prop["Sweden","male"] <- getCleanEstimates(prop_M_SWE)
+  prop["Total","male"] <- getCleanEstimates(prop_M) 
+  
+  prop["Norway","Total"] <- getCleanEstimates(prop_tot_NOR)
+  prop["Sweden","Total"] <- getCleanEstimates(prop_tot_SWE)
+  prop["Total","Total"] <- getCleanEstimates(prop_tot)
   
   ##-- Remove unnecessary objects from memory
-  rm(list = c( "N_F", "N_M",
-               "N_det_F", "N_det_M",
-               "prop_F", "prop_M", "prop_tot"))
+  rm(list = c( "N_det_F_NOR", "N_det_M_NOR", "N_det_F_SWE", "N_det_M_SWE",
+               "N_F_NOR", "N_M_NOR", "N_F_SWE", "N_M_SWE",
+               "prop_F", "prop_M", "prop_tot", 
+               "prop_F_SWE", "prop_M_SWE", "prop_tot_SWE" , 
+               "prop_F_NOR", "prop_M_NOR", "prop_tot_NOR"))
   gc(verbose = FALSE)  
   
   
   ##-- print .csv
   write.csv(prop,
             file = file.path(working.dir, "tables/PropDetected_SCR.csv"))
-  
-    
-    ##-- Print  a .tex 
-    addtorow <- list()
-    addtorow$pos <- list(2)
-    addtorow$command <- c("\\rowcolor[gray]{.95}")
-    print(xtable( prop,
-                  type = "latex",
-                  align = paste(c("l",rep("c", ncol(prop))), collapse = "")),
-          floating = FALSE,
-          sanitize.text.function = function(x){x},
-          hline.after = c(-1,0, nrow(prop)),
-          add.to.row = addtorow,
-          file = file.path(working.dir, "tables/PropDetected.tex"))
   
     
     

@@ -257,6 +257,16 @@ plotDensityMaps <- function(
                                       side = 2, font = 1,
                                       line = 0, cex = base_cex/1.3))
     dev.off()
+    
+    #-- Export rasters
+    if(export.raster){
+      writeRaster( density[[t]],
+                   file.path( path, "rasters",
+                              paste0( name, "_",
+                                      raster::res(input)[1]/1000, "km",
+                                      names(estimates)[t], ".tif")),
+                   overwrite = TRUE)
+    }
   }
   
   

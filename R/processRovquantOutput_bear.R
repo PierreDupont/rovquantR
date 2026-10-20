@@ -97,6 +97,7 @@ processRovquantOutput_bear <- function(
   ##-- Extract years
   years <- as.numeric(dimnames(nimDataF$z)[[2]])
   n.years <- length(years) 
+  seasons <- years
   
   ##-- Merge counties for practical reasons
   COUNTIES_AGGREGATED <- REGIONS %>%
@@ -243,8 +244,14 @@ processRovquantOutput_bear <- function(
                                                along = 2)
     
     ##-- sigma
-    resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[1:minIter],
-                                            results_F$sims.list$sigma[1:minIter])
+    minIterSigma <- min(dim(results_F$sims.list$sigma)[1],dim(results_M$sims.list$sigma)[1])
+    iterSigma <- seq(1, minIterSigma, by = minIterSigma/minIter)
+    resultsSXYZ_MF$sims.list$sigma <- abind::abind(results_M$sims.list$sigma[iterSigma, , ],
+                                                   results_F$sims.list$sigma[iterSigma, , ],
+                                                   along = 4)
+    
+    resultsSXYZ_MF$sims.list$sigma <- cbind(results_M$sims.list$sigma[iterSigma],
+                                            results_F$sims.list$sigma[iterSigma])
     dimnames(resultsSXYZ_MF$sims.list$sigma)[[2]] <- c("M","F")
     
     ##-- sex
@@ -278,12 +285,12 @@ processRovquantOutput_bear <- function(
     iter <- 1:n.mcmc
   }
   
-  # ##-- Remove buffer from the habitat
-  # habitat.rWthBuffer <- habitat$habitat.rWthBuffer
-  # habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
-  # searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer), 
-  #                                 as_points = FALSE, merge = TRUE)
-  # searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
+  ##-- Remove buffer from the habitat
+  habitat.rWthBuffer <- habitat$habitat.rWthBuffer
+  habitat.rWthBuffer[habitat.rWthBuffer[] %in% 0] <- NA
+  searchedPolygon <- sf::st_as_sf(stars::st_as_stars(habitat.rWthBuffer),
+                                  as_points = FALSE, merge = TRUE)
+  searchedPolygon <- searchedPolygon[searchedPolygon$Habitat > 0, ]
   
   ##-- Habitat raster with extent used in the model
   habitatPolygon5km <- raster::crop( extraction.raster$Habitat,
