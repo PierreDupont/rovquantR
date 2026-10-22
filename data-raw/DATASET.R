@@ -1,4 +1,4 @@
-## -----------------------------------------------------------------------------
+##------------------------------------------------------------------------------
 ##
 ## Script name: 'rovquantR' dataset preparation.
 ##
@@ -18,7 +18,7 @@
 ##
 ## Notes: this script is for internal use only!
 ##   
-## -----------------------------------------------------------------------------
+##------------------------------------------------------------------------------
 
 rm(list = ls())
 gc()
@@ -58,7 +58,7 @@ library(smoothr)
 
 
 
-## -----------------------------------------------------------------------------
+##------------------------------------------------------------------------------
 
 ##-- Create a folder to contain this script, as well as other R scripts used 
 ##-- during package development ; Only done once when creating the package
@@ -289,14 +289,25 @@ GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_wa
   dplyr::filter(., area > 80000000) %>%
   st_crop(., st_bbox(raster::extent(c(-70000,1200000,5100000,8080000))))
 
+
 ##-- POLYGONS OF SWEDEN & NORWAY
 COUNTRIES <- GLOBALMAP %>%
-  filter(ISO %in% c("SWE","NOR"), 
-         area > 80000000) %>%
+  filter(ISO %in% c("SWE","NOR")) %>%
   group_by(ISO) %>%
   summarize() %>%
   fill_holes(., threshold = units::set_units(600, km^2)) ##-- Remove holes to keep only the two big lakes in Sweden
 plot(COUNTRIES)
+
+
+##-- POLYGONS OF SWEDEN & NORWAY
+BACKGROUND <- GLOBALMAP %>%
+  filter(ISO %in% c("SWE","NOR")) %>%
+  mutate(ID = 1) %>%
+  group_by(ID) %>%
+  summarize() %>%
+  fill_holes(., threshold = units::set_units(800, km^2)) ##-- Remove holes to keep only the two big lakes in Sweden
+plot(BACKGROUND)
+
 
 ##-- POLYGONS OF CARNIVORE MANAGEMENT REGIONS IN NORWAY 
 REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) %>%
@@ -332,6 +343,9 @@ REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_bord
 REGIONS_NOR$area <- as.numeric(st_area(REGIONS_NOR))
 REGIONS_NOR <- REGIONS_NOR[ ,c("country","region","county","area")]
 plot(REGIONS_NOR)
+plot(st_geometry(REGIONS_NOR))
+plot(st_geometry(REGIONS_NOR[REGIONS_NOR$county == "Innlandet",]),
+     col = "red", add = T)
 # ##-- POLYGONS OF COUNTIES IN NORWAY 
 # COUNTIES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/new_scandinavian_border/fylker-2024.shp")) %>%
 #   st_transform( crs = st_crs(COUNTRIES)) %>%
@@ -343,8 +357,9 @@ plot(REGIONS_NOR)
 #   group_by(region,county) %>%
 #   summarise()
 
+
 ##-- POLYGONS OF COUNTIES AND REGIONS IN SWEDEN 
-REGIONS_SWE <- st_read(file.path(dir.dropbox,"/DATA/GISData/new_scandinavian_border/alla_lan.shp")) %>%
+REGIONS_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/new_scandinavian_border/alla_lan.shp")) %>%
   mutate( county = unlist(lapply(strsplit(LAN_NAMN," län"), function(x)strsplit(x[1],"s$"))),
           country = "SWE",
           region = case_when( 
@@ -353,10 +368,18 @@ REGIONS_SWE <- st_read(file.path(dir.dropbox,"/DATA/GISData/new_scandinavian_bor
                           "Örebro","Västra Götaland") ~ "Mellersta",
             TRUE ~ "Södra")) %>%
   st_transform(., st_crs(COUNTRIES))
-REGIONS_SWE$area <- as.numeric(st_area(REGIONS_SWE))
+
+REGIONS_SWE.df <- st_drop_geometry(REGIONS_SWE)
+
+REGIONS_SWE <- REGIONS_SWE %>%
+  st_intersection(., BACKGROUND) %>%
+  group_by(fid) %>%
+  summarize() %>%
+  left_join(., REGIONS_SWE.df) %>%
+  mutate(area = as.numeric(st_area(.)))
+  
 REGIONS_SWE <- REGIONS_SWE[ ,c("country","region","county","area")]
 plot(REGIONS_SWE)
-
 
 ##-- JOIN POLYGONS
 ##-- Simplification is needed because of size for the package

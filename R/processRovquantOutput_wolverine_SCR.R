@@ -100,37 +100,6 @@ processRovquantOutput_wolverine_SCR <- function(
   }
   seasons <- paste(years, "/", substr(years+1, 3, 4), sep = "")
   
-  ##-- Polygons of Sweden & Norway
-  COUNTRIES <- REGIONS %>%
-    dplyr::filter(country %in% c("SWE","NOR")) %>%
-    dplyr::group_by(country) %>%
-    dplyr::summarize()
-  
-  ##-- Polygons of counties in Sweden & Norway
-  COUNTIES <- REGIONS %>%
-    group_by(county) %>%
-    summarize()
-  
-  ##-- Merge counties for practical reasons
-  COUNTIES_AGGREGATED <- REGIONS %>%
-    dplyr::mutate(id = dplyr::case_when(
-      county %in% c("Norrbotten") ~ 1,
-      county %in% c("Västerbotten") ~ 2,
-      county %in% c("Blekinge","Dalarna","Gävleborg","Gotland","Halland","Jämtland",
-                    "Jönköping","Kalmar","Kronoberg","Örebro","Östergötland","Skåne",
-                    "Södermanland","Stockholm","Uppsala","Värmland","Västernorrland",
-                    "Västmanland","Västra Götaland") ~ 3,
-      county %in% c("Agder","Akershus","Buskerud","Innlandet","Møre og Romsdal",
-                    "Oppland","Oslo","Østfold","Rogaland","Vestland","Telemark",
-                    "Vestfold") ~ 4,
-      county %in% c("Trøndelag") ~ 5,
-      county %in% c("Finnmark") ~ 6,
-      county %in% c("Nordland") ~ 7,
-      county %in% c("Troms") ~ 8)) %>%
-    dplyr::group_by(id) %>%
-    dplyr::summarize() %>%
-    sf::st_simplify( ., preserveTopology = T, dTolerance = 500)
-  
   ##-- Prepare raster of countries
   countryRaster <- habitatRasterResolution$`5km`[["Countries"]]
   
@@ -346,7 +315,7 @@ processRovquantOutput_wolverine_SCR <- function(
   rrRegions <- ratify(rrRegions)
   levels(rrRegions)[[1]] <- data.frame(
     "ID" = c(1,2,3,23:30),
-    "Regions"= c( "Nordre","Midtre","Söndre",
+    "Regions"= c( "Norra","Mellersta","Södra",
                   "Region 3","Region 1","Region 2","Region 4",
                   "Region 7","Region 6","Region 8","Region 5"))
   areaRegionsTotal <- table(factorValues(rrRegions, rrRegions[]))*res(rrRegions)[1]*1e-6
@@ -596,9 +565,9 @@ processRovquantOutput_wolverine_SCR <- function(
   rownames_Table <- c( "Total",
                       "Norway", regionNames_NOR,
                       "Sweden",
-                      "Nordre", countyNames_North,
-                      "Midtre", countyNames_Middle,
-                      "Söndre", countyNames_South)
+                      "Norra", countyNames_North,
+                      "Mellersta", countyNames_Middle,
+                      "Södra", countyNames_South)
   
   
   ##-- Fix names for .tex table and add grey color for Norrbotten

@@ -125,6 +125,7 @@ makeRovquantData_wolf_OLD <- function(
   ##-- Load pre-defined habitat rasters and shapefiles
   data(habitatRasters, envir = environment()) 
   data(REGIONS, envir = environment())
+  data(COUNTRIES, envir = environment())
   
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
@@ -183,7 +184,7 @@ makeRovquantData_wolf_OLD <- function(
   ## ------     1.1. GENERATE HABITAT CHARACTERISTICS ------
   
   ##-- Determine study area based on predefined extent
-  studyArea <- sf::st_crop( REGIONS,
+  studyArea <- sf::st_crop( COUNTRIES,
                             xmin = x.extent[1], xmax = x.extent[2],
                             ymin = y.extent[1], ymax = y.extent[2]) %>%
     sf::st_collection_extract(., "POLYGON") %>%
@@ -382,7 +383,7 @@ makeRovquantData_wolf_OLD <- function(
                                   stack = FALSE)
   
   ##-- Fasterize to remove values that fall in the sea
-  r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
+  r <- fasterize::fasterize(sf::st_as_sf(COUNTRIES), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
   DistAllRoads <- raster::crop(DistAllRoads, studyArea)

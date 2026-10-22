@@ -1689,9 +1689,9 @@ processRovquantOutput_bear2 <- function(
   #              heights = rep(1,2))
   # par(mar = c(0,0,0,0))
   # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
-  #   image(mask(ds.brickCont[[t]],COUNTRIESsimpFig[1,]), add = TRUE, col = c("white","forestgreen"), legend = FALSE)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = "gray80", col = NA, add = TRUE)
+  #   plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
+  #   image(mask(ds.brickCont[[t]],COUNTRIES[1,]), add = TRUE, col = c("white","forestgreen"), legend = FALSE)
+  #   plot(st_geometry(COUNTRIES[1, ]), border = "gray80", col = NA, add = TRUE)
   #
   #   mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
   #
@@ -1769,11 +1769,11 @@ processRovquantOutput_bear2 <- function(
   # 
   # ##-- FEMALES
   # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = NA, col = "gray80")
+  #   plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
   #   detectab.r <- regions.r
   #   detectab.r[isHabitat] <- DetectabilityRegionsF[[t]]$MeanCell
   #   image(detectab.r, add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])),
+  #   plot(st_geometry(COUNTRIES[1, ]),
   #        border = grey(0.4), col = NA, add = TRUE)
   #   mtext(text = years[t], side = 1, -17, adj = 0.2, cex = 1.2, font = 2)
   #   
@@ -1798,11 +1798,11 @@ processRovquantOutput_bear2 <- function(
   # 
   # ##-- MALES
   # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = NA, col = "gray80")
+  #   plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
   #   detectab.r <- regions.r
   #   detectab.r[isHabitat] <- DetectabilityRegionsM[[t]]$MeanCell
   #   image(detectab.r, add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])),
+  #   plot(st_geometry(COUNTRIES[1, ]),
   #        border = grey(0.4), col = NA, add = TRUE)
   #   mtext(text = years[t], side = 1, -17, adj = 0.2, cex = 1.2, font = 2)
   #   
@@ -1909,9 +1909,9 @@ processRovquantOutput_bear2 <- function(
   # 
   # ##-- Plot Sex-ratio maps
   # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
+  #   plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
   #   image(SexRatioMap[[t]], add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = grey(0.4), col = NA, add = TRUE)
+  #   plot(st_geometry(COUNTRIES[1, ]), border = grey(0.4), col = NA, add = TRUE)
   #   mtext(text = years[t], side = 1, -20, adj=0.2, cex=1.2)
   # 
   #   if(t == n.years){
@@ -1977,9 +1977,9 @@ processRovquantOutput_bear2 <- function(
   # 
   #   ##-- Plot AC maps
   #   for(t in 1:length(years)){
-  #     plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1, ])), border = NA, col = "gray80")
+  #     plot(st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
   #     image( SexRatioMap.smooth[[t]], add = TRUE, breaks = c(cuts, max(cuts)+1000), col = col, legend = FALSE)
-  #     plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = grey(0.4), col = NA, add = TRUE)
+  #     plot(st_geometry(COUNTRIES[1, ]), border = grey(0.4), col = NA, add = TRUE)
   #     mtext(text = years[t], side = 1, -20, adj=0.2, cex=1.2)
   # 
   #     if(t == n.years){

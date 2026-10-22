@@ -124,8 +124,8 @@ makeRovquantData_wolf <- function(
   ##-- Load pre-defined habitat rasters and shapefiles
   data(habitatRasters, envir = environment()) 
   data(REGIONS, envir = environment())
+  data(COUNTRIES, envir = environment())
   data(studyAreaWolf, envir = environment())
-  
   
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(

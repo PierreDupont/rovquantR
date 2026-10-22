@@ -102,17 +102,6 @@ processRovquantOutput_wolverine <- function(
   yearsSampledNorrb <- c(2016:2018,2023:as.numeric(format(Sys.Date(), "%Y")))
   yearsNotSampled <- which(!years %in% yearsSampledNorrb)
   
-  ##-- Polygons of Sweden & Norway
-  COUNTRIES <- REGIONS %>%
-    dplyr::filter(country %in% c("SWE","NOR")) %>%
-    dplyr::group_by(country) %>%
-    dplyr::summarize()
-  
-  ##-- Polygons of counties in Sweden & Norway
-  COUNTIES <- REGIONS %>%
-    group_by(county) %>%
-    summarize()
-  
   ##-- Merge counties for practical reasons
   COUNTIES_AGGREGATED <- REGIONS %>%
     dplyr::mutate(id = dplyr::case_when(
@@ -847,9 +836,9 @@ processRovquantOutput_wolverine <- function(
   #              heights = rep(1,2))
   # par(mar = c(0,0,0,0))
   # for(t in 1:length(years)){
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = NA, col = "gray80")
-  #   image(mask(ds.brickCont[[t]],COUNTRIESsimpFig[1,]), add = TRUE, col = c("white","forestgreen"), legend = FALSE)
-  #   plot(RemoveHolesSp(as_Spatial(COUNTRIESsimpFig[1,])), border = "gray80", col = NA, add = TRUE)
+  #   plot(st_geometry(COUNTRIES), border = NA, col = "gray80")
+  #   image(mask(ds.brickCont[[t]],COUNTRIES), add = TRUE, col = c("white","forestgreen"), legend = FALSE)
+  #   plot(st_geometry(COUNTRIES), border = "gray80", col = NA, add = TRUE)
   #   
   #   mtext(text = years[t], side = 1, -25, adj=0.2, cex=1.8, font = 2)
   #   

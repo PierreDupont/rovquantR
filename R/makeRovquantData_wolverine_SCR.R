@@ -439,7 +439,7 @@ makeRovquantData_wolverine_SCR <- function(
   DistAllRoads <- raster::raster(file.path(data.dir,"Roads/MinDistAllRoads1km.tif"))
   
   ##-- Fasterize to remove values that fall in the sea
-  r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
+  r <- fasterize::fasterize(sf::st_as_sf(COUNTRIES), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
   DistAllRoads <- raster::crop(DistAllRoads, studyArea)

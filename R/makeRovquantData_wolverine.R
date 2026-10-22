@@ -90,8 +90,8 @@ makeRovquantData_wolverine <- function(
   if(is.null(subdetector.res)){subdetector.res <- 2000}
   if(is.null(max.det.dist)){max.det.dist <- 40000}
   if(is.null(resize.factor)){resize.factor <- 1}
-  if(is.null(rename.list)) {
-    if(!exists("r.list.internalWolf")) stop("Default 'rename.list' not available")
+  if(is.null(rename.list)){
+    if(!exists("r.list.internal")) stop("Default 'rename.list' not available")
     rename.list <- r.list.internal
   }  
   
@@ -120,11 +120,10 @@ makeRovquantData_wolverine <- function(
   ## ------   1. HABITAT DATA -----
   
   ##-- Load pre-defined habitat rasters and shapefiles
-  data("habitatRasters", envir = environment()) 
-  data("REGIONS", envir = environment())
-  data("COUNTRIES", envir = environment())
-  data("GLOBALMAP", envir = environment())
-  
+  data(habitatRasters, envir = environment()) 
+  data(REGIONS, envir = environment())
+  data(COUNTRIES, envir = environment())
+
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
     x = habitatRasters[["Habitat"]],
@@ -253,7 +252,8 @@ makeRovquantData_wolverine <- function(
   ##-- Determine study area based on predefined extent
   studyArea <- COUNTRIES %>%
     dplyr::filter(ISO %in% c("NOR","SWE")) %>%
-    sf::st_crop( ., xmin = x.extent[1], xmax = x.extent[2],
+    sf::st_crop( .,
+                 xmin = x.extent[1], xmax = x.extent[2],
                  ymin = y.extent[1], ymax = y.extent[2]) %>%
     sf::st_collection_extract(., "POLYGON") %>%
     summarise() 
@@ -473,7 +473,7 @@ makeRovquantData_wolverine <- function(
                                   stack = FALSE)
   
   ##-- Fasterize to remove values that fall in the sea
-  r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
+  r <- fasterize::fasterize(sf::st_as_sf(COUNTRIES), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
   DistAllRoads <- raster::crop(DistAllRoads, studyArea)
@@ -968,7 +968,7 @@ makeRovquantData_wolverine <- function(
   #   
   #   ##-- plot check
   #   pdf( file = file.path(working.dir, "figures/OverallDetectionsDeadRecoveries.pdf"))
-  #   plot( st_geometry(GLOBALMAP))
+  #   plot( st_geometry(COUNTRIES))
   #   plot( st_geometry(studyArea), add = T)
   #   plot( st_geometry(filteredData$alive),
   #         pch = 16, col = "red", cex = 0.3, add = T)
@@ -1009,7 +1009,7 @@ makeRovquantData_wolverine <- function(
   #   #   NGS_TabIn <- table(tempIn$Country_sf)
   #   #   ID_TabIn <- apply(table(tempIn$Id, tempIn$Country_sf), 2, function(x) sum(x>0))
   #   #   ## PLOT NGS SAMPLES
-  #   #   plot(st_geometry(GLOBALMAP), col="gray80")
+  #   #   plot(st_geometry(COUNTRIES), col="gray80")
   #   #   plot(st_geometry(studyArea), col = rgb(34/250, 139/250, 34/250, alpha = 0.5), add=T)
   #   #   plot(st_geometry(tempIn), pch = 21, bg = "blue",add=T)
   #   #   ## ADD NUMBER OF NGS samples and IDs per COUNTRY

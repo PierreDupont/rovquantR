@@ -121,11 +121,10 @@ makeRovquantData_bear <- function(
   ## ------   1. HABITAT DATA -----
   
   ##-- Load pre-defined habitat rasters and shapefiles
-  data(COUNTRIES, envir = environment()) 
   data(REGIONS, envir = environment()) 
+  data(COUNTRIES, envir = environment()) 
   data(habitatRasters, envir = environment()) 
-  #data(GLOBALMAP, envir = environment()) 
-  
+
   ##-- Disaggregate habitat raster to the desired resolution
   habRaster <- raster::disaggregate(
     x = habitatRasters[["Habitat"]],
@@ -189,9 +188,10 @@ makeRovquantData_bear <- function(
   #   sf::st_as_sf()
   
   ##-- Determine study area based on predefined extent
-  studyArea <- REGIONS %>%
+  studyArea <- COUNTRIES %>%
     dplyr::filter(country == "NOR") %>%
-    sf::st_crop( ., xmin = x.extent[1], xmax = x.extent[2],
+    sf::st_crop( .,
+                 xmin = x.extent[1], xmax = x.extent[2],
                  ymin = y.extent[1], ymax = y.extent[2]) %>%
     sf::st_collection_extract(., "POLYGON") %>%
     summarise()  
@@ -461,7 +461,7 @@ makeRovquantData_bear <- function(
                                   stack = FALSE)
   
   ##-- Fasterize to remove values that fall in the sea
-  r <- fasterize::fasterize(sf::st_as_sf(REGIONS), DistAllRoads)
+  r <- fasterize::fasterize(sf::st_as_sf(COUNTRIES), DistAllRoads)
   r[!is.na(r)] <- DistAllRoads[!is.na(r)]
   DistAllRoads <- r
   DistAllRoads <- raster::crop(DistAllRoads, studyArea)
@@ -663,7 +663,7 @@ makeRovquantData_bear <- function(
                heights = rep(1,2))
   par(mar = c(0,0,0,0))
   for(t in 1:length(years)){
-    plot(sf::st_geometry(COUNTRIES[1,]), border = NA, col = "gray80")
+    plot(sf::st_geometry(COUNTRIES[1, ]), border = NA, col = "gray80")
     
     thisColumn <- which(names(st_drop_geometry(detectors$grid)) == paste0("detOtherSamples.",years[t]))
     thisCol <- ifelse(st_drop_geometry(detectors$grid)[,thisColumn] == 0, "white", "forestgreen")
