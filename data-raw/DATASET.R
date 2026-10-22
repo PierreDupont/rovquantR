@@ -315,6 +315,7 @@ COUNTRIES <- BACKGROUND %>%
 plot(COUNTRIES)
 
 
+
 ##-- POLYGONS OF CARNIVORE MANAGEMENT REGIONS IN NORWAY 
 REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox, "DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) %>%
   mutate( 
@@ -341,8 +342,8 @@ REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox, "DATA/GISData/scandinavian_bor
       NAME_1 %in% c("Ãstfold") ~ "Østfold",
       TRUE ~ NAME_1)) %>%
   summarise( ., 
-            .by = c(county, region),
-            across(geometry, st_union)) %>%
+             .by = c(county, region),
+             across(geometry, st_union)) %>%
   mutate( country = "NOR",
           area = as.numeric(st_area(.))) %>%
   ms_simplify( .,
@@ -353,6 +354,7 @@ plot(REGIONS_NOR)
 plot(st_geometry(REGIONS_NOR))
 plot(st_geometry(REGIONS_NOR[REGIONS_NOR$county == "Innlandet", ]),
      col = "red", add = T)
+
 
 # ##-- POLYGONS OF COUNTIES IN NORWAY 
 # COUNTIES_NOR <- st_read(file.path(dir.dropbox, "DATA/GISData/new_scandinavian_border/fylker-2024.shp")) %>%
@@ -365,8 +367,9 @@ plot(st_geometry(REGIONS_NOR[REGIONS_NOR$county == "Innlandet", ]),
 #   group_by(region,county) %>%
 #   summarise()
 
+
 ##-- POLYGONS OF COUNTIES AND REGIONS IN SWEDEN 
-REGIONS_SWE <- st_read(file.path(dir.dropbox, "DATA/GISData/new_scandinavian_border/alla_lan.shp")) %>%
+REGIONS_SWE <- st_read(file.path(dir.dropbox,"DATA/GISData/new_scandinavian_border/alla_lan.shp")) %>%
   mutate( county = unlist(lapply(strsplit(LAN_NAMN," län"), function(x)strsplit(x[1],"s$"))),
           country = "SWE",
           region = case_when( 
@@ -384,7 +387,7 @@ REGIONS_SWE <- REGIONS_SWE %>%
   summarize() %>%
   left_join(., REGIONS_SWE.df) %>%
   mutate(area = as.numeric(st_area(.)))
-  
+
 REGIONS_SWE <- REGIONS_SWE[ ,c("country","region","county","area")]
 plot(REGIONS_SWE)
 
@@ -425,11 +428,11 @@ load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNew
 
 ##-- Save necessary data in the right folder (./data)
 use_data( fromto,
-         age.lookup.table,
-         r.list.internal,
-         r.list.internalWolf,
-         #previous.results,
-         internal = TRUE, overwrite = TRUE)
+          age.lookup.table,
+          r.list.internal,
+          r.list.internalWolf,
+          #previous.results,
+          internal = TRUE, overwrite = TRUE)
 # use_data(COUNTIES, overwrite = TRUE)
 use_data(REGIONS, overwrite = TRUE)
 use_data(COUNTRIES, overwrite = TRUE)
