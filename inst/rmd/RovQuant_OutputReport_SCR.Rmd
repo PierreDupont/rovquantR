@@ -167,7 +167,7 @@ We estimated that, within its primary range (`r round(detectors$n.detectors*(det
 whichBold <- which(rownames(N_LastYear) %in% c("Total","Sweden","Norway"))
 whichInd0 <- which(rownames(N_LastYear) %in% c("Total"))
 whichInd1 <- which(rownames(N_LastYear) %in% c("Sweden","Norway"))
-whichInd2 <- c( grep("Region",rownames(N_LastYear)), which(rownames(N_LastYear) %in% c("Nordre","Söndre","Midtre")))
+whichInd2 <- c( grep("Region",rownames(N_LastYear)), which(rownames(N_LastYear) %in% c("Norra","Mellersta","Södra")))
 whichInd3 <- which(!1:nrow(N_LastYear) %in% c(whichInd0,whichInd1,whichInd2))
   
 N_LastYear %>%

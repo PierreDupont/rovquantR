@@ -21,7 +21,7 @@
 #' @param export.raster A \code{logical}; whether to save density rasters as .tif files or not.
 #' @param name A \code{character} string with the name to be used when saving .png and .tif files.
 #'
-#' @return This function prints out \code{.png} image of density maps in the specified folder.
+#' @return This function prints out \code{.png} image of density maps in the specified folder, and optionally saves the corresponding \code{.tif} raster files.
 #' 
 #' @author Pierre Dupont
 #'
@@ -49,7 +49,7 @@ plotDensityMaps <- function(
     caption = NULL,
     cex.caption = 1,
     export.raster = TRUE,
-    name = "UD_Density"
+    name = "Density"
     ){
   
   ##-- Initial checks
@@ -105,11 +105,8 @@ plotDensityMaps <- function(
   xRange <- diff(xLims)
   yLims <- raster::extent(background)[3:4]
   yRange <- diff(yLims)
-  
-  # xLims <- par("usr")[1:2]
-  # xRange <- diff(xLims)
-  # yLims <- par("usr")[3:4]
-  # yRange <- diff(yLims)
+
+  ##-- Set 
   base_cex <- par("din")[1]/6
   
   ##-- Density maps time series
@@ -142,11 +139,7 @@ plotDensityMaps <- function(
     nf <- graphics::layout(mx,
                            widths = c(rep(1,ncol(mx))),
                            heights = rep(1,2))
-    
-    # ##-- legend coordinates
-    # legend.x <- xLims[1] + 0.78 * xRange
-    # legend.y <- yLims[1] + 0.3 * yRange
-    
+
     ##-- Plot density maps
     graphics::par(mar = c(0,0,0,0))
     
@@ -173,19 +166,12 @@ plotDensityMaps <- function(
       
       ##-- Add legend if last year
       if(t == length(density)){
-        # graphics::segments(
-        #   x0 = legend.x, x1 = legend.x,
-        #   y0 = legend.y - 250000, y1 = legend.y + 250000,
-        #   col = "grey10", lwd = 3, lend = 2)
-        # graphics::text(
-        #   x = legend.x - 0.04 * xRange,
-        #   y = legend.y,
-        #   labels = "500 km", srt = 90, cex = base_cex*1.2)
-
         ##-- Add colour scale 
         raster::plot( density[[t]],
-                      legend.only = T, breaks = cuts,
-                      col = col, legend.width = 2,
+                      legend.only = T,
+                      breaks = cuts,
+                      col = col,
+                      legend.width = 2,
                       axis.args = list( at = round(seq(0, max-0.04, length.out = 4), digits = 1),
                                         labels = round(seq(0, max-0.04, length.out = 4), digits = 1),
                                         cex.axis = base_cex,
@@ -197,7 +183,6 @@ plotDensityMaps <- function(
         
         ##-- Add km scale 
         addScale(x = 0.75, y = 0.25, size = 500000)
-        
       }#if
       
       ##-- Export rasters
@@ -243,25 +228,23 @@ plotDensityMaps <- function(
         cex = base_cex*1.2)
     }
     
-    # ##-- Add legend
-    # legend.x <- xLims[1] + 0.89 * xRange
-    # legend.y <- yLims[1] + 0.3 * yRange
-    
     ##-- Add colour scale 
     raster::plot( density[[t]],
-                  legend.only = T, breaks = cuts,
-                  col = col, legend.width = 1.5,
+                  legend.only = T,
+                  breaks = cuts,
+                  col = col,
+                  legend.width = 2,
                   axis.args = list( at = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                     labels = round(seq(0, max-0.05, length.out = 4), digits = 1),
                                     cex.axis = base_cex),
                   smallplot = c(0.80, 0.83, 0.25, 0.45),
                   legend.args = list( text = legendName,
                                       side = 2, font = 1,
-                                      line = 0, cex = base_cex/1.3))
+                                      line = 0, cex = base_cex/1.2))
     
     ##-- Add km scale 
     addScale(x = 0.75, y = 0.25, size = 500000)
-
+    
     dev.off()
     
     #-- Export rasters
@@ -273,6 +256,7 @@ plotDensityMaps <- function(
                                       names(estimates)[t], ".tif")),
                    overwrite = TRUE)
     }
+    
   }
   
   
@@ -308,8 +292,10 @@ plotDensityMaps <- function(
                                       cex.axis = base_cex),
                     smallplot = c(0.80, 0.83, 0.25, 0.45),
                     legend.args = list( text = legendName,
-                                        side = 2, font = 1,
-                                        line = 0, cex = base_cex/1.2))
+                                        side = 2,
+                                        font = 1,
+                                        line = 0,
+                                        cex = base_cex/1.2))
       
       ##-- Add km scale 
       addScale(x = 0.75, y = 0.25, size = 500000)
@@ -333,6 +319,7 @@ plotDensityMaps <- function(
       } else {
         mtext(text = caption, side = 1, line = 2, adj = 0.5, cex = cex.caption * base_cex, font = 2)
       }
+      
       dev.off()
     }
   }
@@ -391,6 +378,7 @@ plotDensityMaps <- function(
       } else {
         mtext(text = caption, side = 1,line = 2, adj = 0.5, cex = cex.caption * base_cex, font = 2)
       }
+      
       dev.off()
     }
   }

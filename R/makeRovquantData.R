@@ -113,7 +113,7 @@ makeRovquantData <- function(
   ##---- 1. BROWN BEAR DATA PREPARATION -----
   
   ##-- Check species and use corresponding function
-  if (sum(grep("bear", species, ignore.case = T))>0|
+  if(sum(grep("bear", species, ignore.case = T))>0|
      sum(grep("bjørn", species, ignore.case = T))>0|
      sum(grep("bjorn", species, ignore.case = T))>0) {
   
@@ -185,7 +185,7 @@ makeRovquantData <- function(
   ##---- 3. WOLVERINE DATA PREPARATION -----
 
   ##-- Check species and use corresponding function
-  if (sum(grep("wolverine", species, ignore.case = T))>0|
+  if(sum(grep("wolverine", species, ignore.case = T))>0|
      sum(grep("jerv", species, ignore.case = T))>0|
      sum(grep("järv", species, ignore.case = T))>0) {
 
@@ -256,7 +256,7 @@ makeRovquantData <- function(
       } else {
         Rmd.template <- system.file("rmd", "RovQuant_DataReport.Rmd", package = "rovquantR")
       }
-      if (!file.exists(Rmd.template)) {
+      if(!file.exists(Rmd.template)) {
         stop('Can not find a .rmd template called "RovQuant_DataReport.Rmd". \n You must provide the path to the Rmarkdown template through the "Rmd.template" argument.')
       } 
     }

@@ -98,10 +98,10 @@ processRovquantOutput_wolf <- function(
   years <- as.numeric(dimnames(nimDataF$z)[[2]])
   n.years <- length(years) 
   
-  ##-- Polygons of counties in Sweden & Norway
-  COUNTIES <- REGIONS %>%
-    group_by(county) %>%
-    summarize()
+  # ##-- Polygons of counties in Sweden & Norway
+  # COUNTIES <- REGIONS %>%
+  #   group_by(county) %>%
+  #   summarize()
   
   ##-- Merge counties for practical reasons
   COUNTIES_AGGREGATED <- REGIONS %>%
@@ -1208,7 +1208,7 @@ processRovquantOutput_wolf <- function(
   #              widths = c(1,0.5),
   #              heights = 1)
   # 
-  # for(c in 1:nrow(COUNTIES)){
+  # for(c in 1:nrow(COUNTIES_AGGREGATED)){
   #   par(mar = c(4,4,1,1), tck=0)
   # 
   #   plot(10, xlim = c(0.5, n.years+0.5), ylim = c(0,0.01), type ="n", xaxt="n",
@@ -1219,11 +1219,11 @@ processRovquantOutput_wolf <- function(
   #   abline(v = 1:(n.years-1) + 0.5, lty = 2)
   # 
   #   for(t in 1:n.years){
-  #     plotQuantiles( x = results_F$sims.list$p0[ ,COUNTIES$index == c,t],
+  #     plotQuantiles( x = results_F$sims.list$p0[ ,COUNTIES_AGGREGATED$index == c,t],
   #                    at = t - diffSex,
   #                    col = colSex[1])
   # 
-  #     plotQuantiles( x = results_M$sims.list$p0[ ,COUNTIES$index == c,t],
+  #     plotQuantiles( x = results_M$sims.list$p0[ ,COUNTIES_AGGREGATED$index == c,t],
   #                    at = t + diffSex,
   #                    col = colSex[2])
   #   }#t
@@ -1241,11 +1241,11 @@ processRovquantOutput_wolf <- function(
   # 
   # 
   #   par(mar = c(0,0,0,0))
-  #   plot(st_geometry(COUNTIES), border = grey(0.5), col = grey(0.5), lwd = 0.1)
-  #   plot(st_geometry(COUNTIES[COUNTIES$index == c, ]),
+  #   plot(st_geometry(COUNTIES_AGGREGATED), border = grey(0.5), col = grey(0.5), lwd = 0.1)
+  #   plot(st_geometry(COUNTIES_AGGREGATED[COUNTIES_AGGREGATED$index == c, ]),
   #        add = T, col = adjustcolor("red",0.5), border = "red")
-  #   text(COUNTIES[COUNTIES$index == c, ],
-  #        labels = COUNTIES$Name[COUNTIES$index == c],
+  #   text(COUNTIES_AGGREGATED[COUNTIES_AGGREGATED$index == c, ],
+  #        labels = COUNTIES_AGGREGATED$Name[COUNTIES_AGGREGATED$index == c],
   #        col = "white")
   # }#c
   # dev.off()

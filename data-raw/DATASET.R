@@ -1,4 +1,4 @@
-## -----------------------------------------------------------------------------
+##------------------------------------------------------------------------------
 ##
 ## Script name: 'rovquantR' dataset preparation.
 ##
@@ -18,7 +18,7 @@
 ##
 ## Notes: this script is for internal use only!
 ##   
-## -----------------------------------------------------------------------------
+##------------------------------------------------------------------------------
 
 rm(list = ls())
 gc()
@@ -58,7 +58,7 @@ library(smoothr)
 
 
 
-## -----------------------------------------------------------------------------
+##------------------------------------------------------------------------------
 
 ##-- Create a folder to contain this script, as well as other R scripts used 
 ##-- during package development ; Only done once when creating the package
@@ -289,17 +289,34 @@ GLOBALMAP <- st_read(file.path(dir.dropbox,"DATA/GISData/vegetation/Countries_wa
   dplyr::filter(., area > 80000000) %>%
   st_crop(., st_bbox(raster::extent(c(-70000,1200000,5100000,8080000))))
 
-##-- POLYGONS OF SWEDEN & NORWAY
-COUNTRIES <- GLOBALMAP %>%
-  filter(ISO %in% c("SWE","NOR"), 
-         area > 80000000) %>%
-  group_by(ISO) %>%
+##-- POLYGONS OF SWEDEN & NORWAY without holes
+BACKGROUND <- GLOBALMAP %>%
+  filter(ISO %in% c("SWE","NOR")) %>%
+  mutate(ID = 1) %>%
+  group_by(ID) %>%
   summarize() %>%
   fill_holes(., threshold = units::set_units(600, km^2)) ##-- Remove holes to keep only the two big lakes in Sweden
+plot(BACKGROUND)
+
+##-- Polygon of NORWAY without holes
+NORWAY <- GLOBALMAP %>%
+  filter(ISO %in% c("NOR")) %>%
+  group_by(ISO) %>%
+  summarize() %>%
+  fill_holes(., threshold = units::set_units(600, km^2))
+plot(NORWAY)
+
+##-- Polygon of BOTH COUNTRIES without holes
+COUNTRIES <- BACKGROUND %>%
+  st_difference(.,NORWAY) %>%
+  mutate( ISO = "SWE",
+          ID = NULL) %>%
+  rbind(.,NORWAY)
 plot(COUNTRIES)
 
+
 ##-- POLYGONS OF CARNIVORE MANAGEMENT REGIONS IN NORWAY 
-REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) %>%
+REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox, "DATA/GISData/scandinavian_border/NOR_adm2_UTM33.shp")) %>%
   mutate( 
     NAME_1 = case_when(
       NAME_2 %in% c("Lunner","Jevnaker") ~ "Akershus",
@@ -323,17 +340,22 @@ REGIONS_NOR <- sf::read_sf(file.path(dir.dropbox,"DATA/GISData/scandinavian_bord
       NAME_1 %in% c("Hordaland","Sogn og Fjordane") ~ "Vestland",
       NAME_1 %in% c("Ãstfold") ~ "Østfold",
       TRUE ~ NAME_1)) %>%
-  group_by(across(all_of(c("county","region")))) %>%
-  summarise() %>%
-  mutate( country = "NOR") %>% 
+  summarise( ., 
+            .by = c(county, region),
+            across(geometry, st_union)) %>%
+  mutate( country = "NOR",
+          area = as.numeric(st_area(.))) %>%
   ms_simplify( .,
                keep = 0.01,
                keep_shapes = FALSE)
-REGIONS_NOR$area <- as.numeric(st_area(REGIONS_NOR))
 REGIONS_NOR <- REGIONS_NOR[ ,c("country","region","county","area")]
 plot(REGIONS_NOR)
+plot(st_geometry(REGIONS_NOR))
+plot(st_geometry(REGIONS_NOR[REGIONS_NOR$county == "Innlandet", ]),
+     col = "red", add = T)
+
 # ##-- POLYGONS OF COUNTIES IN NORWAY 
-# COUNTIES_NOR <- st_read(file.path(dir.dropbox,"DATA/GISData/new_scandinavian_border/fylker-2024.shp")) %>%
+# COUNTIES_NOR <- st_read(file.path(dir.dropbox, "DATA/GISData/new_scandinavian_border/fylker-2024.shp")) %>%
 #   st_transform( crs = st_crs(COUNTRIES)) %>%
 #   mutate( county = unlist(lapply(strsplit(fylkesnavn, " - "), function(x)x[1])),
 #           country = "NOR") %>%
@@ -344,7 +366,7 @@ plot(REGIONS_NOR)
 #   summarise()
 
 ##-- POLYGONS OF COUNTIES AND REGIONS IN SWEDEN 
-REGIONS_SWE <- st_read(file.path(dir.dropbox,"/DATA/GISData/new_scandinavian_border/alla_lan.shp")) %>%
+REGIONS_SWE <- st_read(file.path(dir.dropbox, "DATA/GISData/new_scandinavian_border/alla_lan.shp")) %>%
   mutate( county = unlist(lapply(strsplit(LAN_NAMN," län"), function(x)strsplit(x[1],"s$"))),
           country = "SWE",
           region = case_when( 
@@ -353,10 +375,18 @@ REGIONS_SWE <- st_read(file.path(dir.dropbox,"/DATA/GISData/new_scandinavian_bor
                           "Örebro","Västra Götaland") ~ "Mellersta",
             TRUE ~ "Södra")) %>%
   st_transform(., st_crs(COUNTRIES))
-REGIONS_SWE$area <- as.numeric(st_area(REGIONS_SWE))
+
+REGIONS_SWE.df <- st_drop_geometry(REGIONS_SWE)
+
+REGIONS_SWE <- REGIONS_SWE %>%
+  st_intersection(., BACKGROUND) %>%
+  group_by(fid) %>%
+  summarize() %>%
+  left_join(., REGIONS_SWE.df) %>%
+  mutate(area = as.numeric(st_area(.)))
+  
 REGIONS_SWE <- REGIONS_SWE[ ,c("country","region","county","area")]
 plot(REGIONS_SWE)
-
 
 ##-- JOIN POLYGONS
 ##-- Simplification is needed because of size for the package
@@ -378,24 +408,18 @@ load(file.path(dir.dropbox, "DATA/GISData/spatialDomain/HabitatAllResolutionsNew
 
 ##------ PREVIOUS ESTIMATES ------
 
-
-##-- Country specific N estimates
-load(file.path(dir.dropbox,"wolverine/CM/2025/54.Cleaned2025/Figure/CICounties.RData"))
-
-N.quantiles <- array(NA, c(length(quantile50Nor)))
-quantile50Nor
-
-##-- Table of year- and region-specific estimates
-
-
-##-- Table of year- and county-specific estimates for Norway
-
-
-##-- Raster of pop density (get them from GitHub directly?)
-
-
-
-load(file.path(working.dir,"Figure","CICounties.RData"))
+# ##-- Country specific N estimates
+# load(file.path(dir.dropbox,"wolverine/CM/2025/54.Cleaned2025/Figure/CICounties.RData"))
+# 
+# N.quantiles <- array(NA, c(length(quantile50Nor)))
+# 
+# ##-- Table of year- and region-specific estimates
+# 
+# ##-- Table of year- and county-specific estimates for Norway
+# 
+# ##-- Raster of pop density (get them from GitHub directly?) 
+# 
+# load(file.path(working.dir,"Figure","CICounties.RData"))
 
 ##------------------------------------------------------------------------------
 
@@ -404,12 +428,12 @@ use_data( fromto,
          age.lookup.table,
          r.list.internal,
          r.list.internalWolf,
-         previous.results,
+         #previous.results,
          internal = TRUE, overwrite = TRUE)
-use_data(COUNTIES, overwrite = TRUE)
+# use_data(COUNTIES, overwrite = TRUE)
 use_data(REGIONS, overwrite = TRUE)
 use_data(COUNTRIES, overwrite = TRUE)
-use_data(GLOBALMAP, overwrite = TRUE)
+#use_data(GLOBALMAP, overwrite = TRUE)
 use_data(habitatRasterResolution, overwrite = TRUE)
 use_data(habitatRasters, overwrite = TRUE)
 # use_data(COUNTRIESWaterHumans, overwrite = TRUE)
