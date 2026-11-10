@@ -60,11 +60,8 @@ if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, 
   norSpecies <- "Jerv"
 }
 
-##-- Load pre-processed habitat shapefiles
-data(COUNTRIESWaterHumans, envir = environment()) 
-COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
-  dplyr::group_by(ISO) %>%
-  dplyr::summarise()
+# ##-- Load pre-processed habitat shapefiles
+# data(COUNTRIES, envir = environment()) 
 ```
 
 # Introduction

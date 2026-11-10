@@ -522,10 +522,10 @@ makeRovquantData_wolverine <- function(
   det.sptransf <- st_transform(detectors$main.detector.sp, st_crs(SNOW))
   detSnow[ ,1:n.years] <- raster::extract(SNOW, det.sptransf)
   
-  ##-- if NA returns the average value of the cells within 15km 
+  ##-- if NA returns the average value of the cells within 20km 
   isna <- which(apply(detSnow, 1, function(x)any(is.na(x))))
   tmp <- raster::extract( SNOW, det.sptransf[isna, ],
-                          buffer = 15000, fun = mean, na.rm = T)
+                          buffer = 20000, fun = mean, na.rm = T)
   detSnow[isna,1:n.years] <- tmp
   
   ##-- Put into "nimble2SCR" format
@@ -1184,9 +1184,9 @@ makeRovquantData_wolverine <- function(
   
   par(mar = c(0,0,0,0))
   plot(sf::st_geometry(COUNTRIES), border = NA, col = "gray80")
-  points(data.alive$data.sp[data.alive$data.sp$Year == years, ],
+  points(data.alive$data.sp[data.alive$data.sp$Year == years[n.years], ],
          pch = 3, col = "orange", lwd = 0.7)
-  mtext(text = seasons, side = 1, -25, adj=0.2, cex=1.2, font = 2)
+  mtext(text = seasons[n.years], side = 1, -25, adj=0.2, cex=1.2, font = 2)
   
   ##-- LEGEND
   xLeg <- 1000000
@@ -2065,8 +2065,8 @@ makeRovquantData_wolverine <- function(
   
   out <- list( SPECIES = "Wolverine",
                engSpecies = "wolverine",
-               YEARS = years,
-               SEASONS = seasons, 
+               YEARS = years[n.years],
+               SEASONS = seasons[n.years], 
                SEX = sex,
                DATE = DATE)
   

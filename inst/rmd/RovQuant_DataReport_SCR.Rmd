@@ -62,12 +62,6 @@ if(sum(grep("wolverine", species, ignore.case = T))>0|sum(grep("jerv", species, 
   engSpecies <- species
   norSpecies <- species
 } 
-
-##-- Load pre-processed habitat shapefiles
-data(COUNTRIESWaterHumans, envir = environment()) 
-COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
-  dplyr::group_by(ISO) %>%
-  dplyr::summarise()
 ```
 
 # Introduction
@@ -248,11 +242,11 @@ mu <- summarize( df,
 knitr::include_graphics(file.path(working.dir, "figures/NGS_SCR_maps.png"))
 ```
 
-A total of `r numDet_sexYear["Total"]` (`r numDet_sexYear["female"]` female; `r numDet_sexYear["male"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. These samples were associated with `r numId_sexYear["Total"]` (`r numId_sexYear["female"]` female; `r numId_sexYear["male"]` male) individuals. We did not include individuals with unknown sex in this analysis.
+A total of `r numIdSamples["Total","number of \nNGS samples"]` (`r numIdSamples["female","number of \nNGS samples"]` female; `r numIdSamples["male","number of \nNGS samples"]` male) genotyped `r species` genetic samples were included in the analysis, of which `r percCountry`% originated from Sweden. These samples were associated with `r numIdSamples["Total","number of \nindividuals detected"]` (`r numIdSamples["female","number of \nindividuals detected"]` female; `r numIdSamples["male","number of \nindividuals detected"]` male) individuals. We did not include individuals with unknown sex in this analysis.
 
 ```{r, data table, echo = FALSE, collapse = TRUE}
 kable( numIdSamples, 
-       align = "cc",
+       align = "c",
        caption = paste0("Number of ", species," non-invasive genetic samples and individuals detected included in the SCR analysis. We included only samples collected within the study area during the primary monitoring period ", seasons, ".")) %>%
   kable_styling(full_width = F)
 ```

@@ -588,7 +588,6 @@ processRovquantOutput_bear2 <- function(
   
   message("## Plotting abundance...")
   
-  ##-- Plot N  
   # pdf(file = file.path(working.dir, "figures/Abundance_TimeSeries.pdf"),
   #     width = 12, height = 8.5)
   grDevices::png(filename = file.path(working.dir,"figures/Abundance_TimeSeries.png"),

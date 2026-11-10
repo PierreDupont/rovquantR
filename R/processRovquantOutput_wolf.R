@@ -612,7 +612,8 @@ processRovquantOutput_wolf <- function(
     path = file.path(working.dir,"data"),
     pattern = "FilteredData_wolf",
     extension = ".RData")
-  # ##-- Print .csv table with the total number of IDs per year
+  
+  ##-- Print .csv table with the total number of IDs per year
   NGSidCountryTotal <- matrix(0, ncol = n.years, nrow = 1)
   row.names(NGSidCountryTotal) <- c("Total")
   colnames(NGSidCountryTotal) <- seasons
@@ -631,17 +632,20 @@ processRovquantOutput_wolf <- function(
   ##-- Plot N  
   # pdf(file = file.path(working.dir, "figures/Abundance_TimeSeries.pdf"),
   #     width = 12, height = 8.5)
-  grDevices::png(filename = file.path(working.dir,"figures/Abundance_TimeSeries.png"),
-                 width = 12, height = 8.5, units = "in", pointsize = 12,
-                 res = 300, bg = NA)
+  grDevices::png( filename = file.path(working.dir, "figures/Abundance_TimeSeries.png"),
+                  width = 12,
+                  height = 8.5,
+                  units = "in",
+                  pointsize = 12,
+                  res = 300, bg = NA)
   
-  graphics::par(mar = c(5,8,3,1),
-                las = 1,
-                cex.lab = 2,
-                cex.axis = 1.3,
-                mgp = c(6, 2, 0),
-                xaxs = "i",
-                yaxs = "i")
+  graphics::par( mar = c(5,8,3,1),
+                 las = 1,
+                 cex.lab = 2,
+                 cex.axis = 1.3,
+                 mgp = c(6, 2, 0),
+                 xaxs = "i",
+                 yaxs = "i")
   
   ymax <- 100*(trunc(max(unlist(lapply(ACdensity, function(x)max(colSums(x$PosteriorAllRegions)))))/100)+1)
   
