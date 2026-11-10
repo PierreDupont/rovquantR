@@ -631,7 +631,7 @@ processRovquantOutput_wolverine <- function(
     
     ##-- Sweden 
     add.star <- t %in% yearsNotSampled
-    3+0.l
+    
     plotQuantiles(x = ACdensity[[t]]$PosteriorRegions["Sweden", ],
                   at = t - diffSex,
                   width = 0.15,
