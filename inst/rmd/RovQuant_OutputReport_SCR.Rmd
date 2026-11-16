@@ -88,10 +88,10 @@ library(rovquantR)
 
 ```{r, data, echo = FALSE}
 ##-- Load pre-processed habitat shapefiles
-data(COUNTRIESWaterHumans, envir = environment()) 
-COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
-  dplyr::group_by(ISO) %>%
-  dplyr::summarise()
+data(COUNTRIES, envir = environment()) 
+# COUNTRIES <- COUNTRIESWaterHumans[COUNTRIESWaterHumans$ISO %in% c("SWE","NOR"), ] %>%
+#   dplyr::group_by(ISO) %>%
+#   dplyr::summarise()
 
 ##-- Get extraction date
 fileList <- list.files(file.path(working.dir, "data")) 

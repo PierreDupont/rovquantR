@@ -163,9 +163,8 @@ cleanRovbaseData <- function(
   }
   
   ##-- Load pre-processed habitat shapefiles
-  data(REGIONS, envir = environment()) 
-  data(GLOBALMAP, envir = environment()) 
-  
+  data(COUNTRIES, envir = environment()) 
+
   ##-- data info
   DATE <- getMostRecent(path = data.dir, pattern = "DNA")
   
