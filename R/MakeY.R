@@ -30,7 +30,7 @@ makeY <- function(
   
   ##-- PREPARE THE DATA 
   data <- as.data.frame(data)
-  data2 <- as.data.frame(data2)
+  if(!is.null(data2)){ data2 <- as.data.frame(data2) }
   
    # if(sum(duplicated(data2$Id))>0){stop("INDIVIDUALS CANNOT BE DEAD TWICE!!!!")}
   if(!sum(class(detectors) %in% "list")==1){detectors <- list(detectors)}
@@ -55,7 +55,7 @@ makeY <- function(
   ##-- NUMBER OF DETECTORS 
   ## [PD] : need to check if this does not introduce a problem (e.g. if detectors have names and are not simply numbered)
   ## Here we assume detector 'names' are always 1:n.detectors[t] each year
-  ## This is the most likely scenario but we mau have situations where this is not the case.
+  ## This is the most likely scenario but we may have situations where this is not the case.
   ## Suggested fix: use the actual detector names, whether they are reset every year or not.
   ## Detectors <- unique(data$detectors) 
   N_Detec <- max(unlist(lapply(detectors, function(x) dim(x)[1])))
